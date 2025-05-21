@@ -1,0 +1,133 @@
+name: immich
+
+services:
+  immich-server:
+    container_name: immich-server
+    image: ghcr.io/immich-app/immich-server:release
+    restart: unless-stopped
+    volumes:
+      - /DATA/AppData/$AppID/uploads:/usr/src/app/uploads
+      - /DATA/AppData/$AppID/config:/usr/src/app/config
+    depends_on:
+      - redis
+      - database
+    environment:
+      - DB_HOSTNAME=database
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - DB_DATABASE_NAME=immich
+      - REDIS_HOSTNAME=redis
+    networks:
+      pcs: null
+
+  immich-microservices:
+    container_name: immich-microservices
+    image: ghcr.io/immich-app/immich-server:release
+    restart: unless-stopped
+    volumes:
+      - /DATA/AppData/$AppID/uploads:/usr/src/app/uploads
+      - /DATA/AppData/$AppID/config:/usr/src/app/config
+    depends_on:
+      - redis
+      - database
+    environment:
+      - DB_HOSTNAME=database
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - DB_DATABASE_NAME=immich
+      - REDIS_HOSTNAME=redis
+    command: ["start.sh", "microservices"]
+    networks:
+      pcs: null
+
+  immich-machine-learning:
+    container_name: immich-machine-learning
+    image: ghcr.io/immich-app/immich-machine-learning:release
+    restart: unless-stopped
+    volumes:
+      - /DATA/AppData/$AppID/model-cache:/cache
+    environment:
+      - REDIS_HOSTNAME=redis
+      - MACHINE_LEARNING_CACHE_FOLDER=/cache
+    networks:
+      pcs: null
+
+  immich-web:
+    container_name: immich-web
+    image: ghcr.io/immich-app/immich-web:release
+    restart: unless-stopped
+    depends_on:
+      - immich-server
+    environment:
+      - IMMICH_SERVER_URL=http://immich-server:3001
+    networks:
+      pcs: null
+
+  redis:
+    container_name: immich-redis
+    image: redis:alpine
+    restart: unless-stopped
+    networks:
+      pcs: null
+
+  database:
+    container_name: immich-postgres
+    image: postgres:14-alpine
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=immich
+    volumes:
+      - /DATA/AppData/$AppID/database:/var/lib/postgresql/data
+    networks:
+      pcs: null
+
+  immich-proxy:
+    container_name: immich-proxy
+    image: ghcr.io/immich-app/immich-proxy:release
+    restart: unless-stopped
+    ports:
+      - "2283:8080"
+    depends_on:
+      - immich-server
+      - immich-web
+    networks:
+      pcs: null
+
+networks:
+  pcs:
+    name: pcs
+
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  author: self
+  category: photos
+  description:
+    en_us: Immich - A high-performance, self-hosted photo and video backup solution, featuring on-device machine learning, mobile apps, and a beautiful web interface that feels like Google Photos.
+    zh_cn: Immich - 高性能的自托管照片和视频备份解决方案，具有设备上机器学习、移动应用程序和类似Google Photos的美观网页界面。
+    ko_kr: Immich - 기기 내 머신 러닝, 모바일 앱 및 Google 포토와 같은 아름다운 웹 인터페이스를 갖춘 고성능 셀프 호스팅 사진 및 비디오 백업 솔루션입니다.
+  icon: https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Immich/icons.png
+  screenshot_link:
+    - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Immich/screenshots1.png
+    - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Immich/screenshots2.png
+    - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Immich/screenshots3.png
+  index: /
+  tagline:
+    en_us: Self-hosted photo and video backup solution with Google Photos-like experience
+    zh_cn: 提供类似Google Photos体验的自托管照片和视频备份解决方案
+    ko_kr: Google 포토와 같은 경험을 제공하는 셀프 호스팅 사진 및 비디오 백업 솔루션
+  port_map: "2283"
+  store_app_id: immich
+  title:
+    en_us: Immich
+    zh_cn: Immich
+    ko_kr: Immich
+  main: immich-server
+  volumes:
+    - /DATA/AppData/$AppID/uploads
+    - /DATA/AppData/$AppID/config
+    - /DATA/AppData/$AppID/database
+    - /DATA/AppData/$AppID/model-cache
