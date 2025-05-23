@@ -1,7 +1,7 @@
 name: immich
 
 services:
-  immich-server:
+  app:
     container_name: immich-server
     image: ghcr.io/immich-app/immich-server:release
     restart: unless-stopped
@@ -9,7 +9,7 @@ services:
       - /DATA/AppData/$AppID/uploads:/usr/src/app/upload
       - /etc/localtime:/etc/localtime:ro
     environment:
-      DB_HOSTNAME: database
+      DB_HOSTNAME: immich-server-database
       DB_USERNAME: postgres
       DB_PASSWORD: postgres
       DB_DATABASE_NAME: immich
@@ -18,7 +18,26 @@ services:
       - "2283:3001"
     depends_on:
       - redis
-      - immich-server-database
+      - database
+    networks:
+      pcs: null
+
+  database:
+    container_name: immich-postgres
+    image: docker.io/tensorchord/pgvecto-rs:pg14-v0.2.0
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: immich
+      POSTGRES_INITDB_ARGS: '--data-checksums'
+    volumes:
+      - /DATA/AppData/$AppID/database:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d ${POSTGRES_DB} -U ${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     networks:
       pcs: null
 
@@ -46,25 +65,6 @@ services:
     networks:
       pcs: null
 
-  immich-server-database:
-    container_name: immich-postgres
-    image: docker.io/tensorchord/pgvecto-rs:pg14-v0.2.0
-    restart: unless-stopped
-    environment:
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_USER: postgres
-      POSTGRES_DB: immich
-      POSTGRES_INITDB_ARGS: '--data-checksums'
-    volumes:
-      - /DATA/AppData/$AppID/database:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    networks:
-      pcs: null
-
 networks:
   pcs:
     name: pcs
@@ -77,7 +77,7 @@ x-casaos:
   category: photos
   description:
     en_us: Immich - A high-performance, self-hosted photo and video backup solution, featuring on-device machine learning, mobile apps, and a beautiful web interface that feels like Google Photos.
-    zh_cn: Immich - 高性능的自토管照片和视频备份解决方案，具有设备上机器学习、移动应用程序和类似Google Photos的美观网页界面。
+    zh_cn: Immich - 高性能的自托管照片和视频备份解决方案，具有设备上机器学习、移动应用程序和类似Google Photos的美观网页界面。
     ko_kr: Immich - 기기 내 머신 러닝, 모바일 앱 및 Google 포토와 같은 아름다운 웹 인터페이스를 갖춘 고성능 셀프 호스팅 사진 및 비디오 백업 솔루션입니다.
   icon: https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Immich/icons.png
   screenshot_link:
@@ -95,7 +95,7 @@ x-casaos:
     en_us: Immich
     zh_cn: Immich
     ko_kr: Immich
-  main: immich-server
+  main: app
   volumes:
     - /DATA/AppData/$AppID/uploads
     - /DATA/AppData/$AppID/database
