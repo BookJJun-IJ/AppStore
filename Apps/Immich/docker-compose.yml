@@ -2,70 +2,115 @@ name: immich
 
 services:
   immich-server:
-    container_name: immich_server
+    container_name: immich-server
     image: ghcr.io/immich-app/immich-server:release
-    command: ['start.sh', 'immich']
+    restart: unless-stopped
     volumes:
-      - /DATA/AppData/$AppID/upload:/usr/src/app/upload
+      - /DATA/AppData/$AppID/uploads:/usr/src/app/upload
       - /etc/localtime:/etc/localtime:ro
     environment:
-      DB_HOSTNAME: immich_postgres
+      DB_HOSTNAME: database
       DB_USERNAME: postgres
       DB_PASSWORD: postgres
       DB_DATABASE_NAME: immich
-      REDIS_HOSTNAME: immich_redis
-      IMMICH_VERSION: release
-    ports:
-      - 2283:3001
+      REDIS_HOSTNAME: redis
+    command: ["start.sh", "immich"]
     depends_on:
       - redis
       - database
-    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/api/server-info/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     networks:
       pcs: null
 
   immich-microservices:
-    container_name: immich_microservices
+    container_name: immich-microservices
     image: ghcr.io/immich-app/immich-server:release
-    extends:
-      service: immich-server
-    command: ['start.sh', 'microservices']
-    ports: []
+    restart: unless-stopped
+    volumes:
+      - /DATA/AppData/$AppID/uploads:/usr/src/app/upload
+    environment:
+      DB_HOSTNAME: database
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      DB_DATABASE_NAME: immich
+      REDIS_HOSTNAME: redis
+    command: ["start.sh", "microservices"]
     depends_on:
       - redis
       - database
-    restart: unless-stopped
+      - immich-server
     networks:
       pcs: null
 
   immich-machine-learning:
-    container_name: immich_machine_learning
+    container_name: immich-machine-learning
     image: ghcr.io/immich-app/immich-machine-learning:release
+    restart: unless-stopped
     volumes:
       - /DATA/AppData/$AppID/model-cache:/cache
     environment:
-      IMMICH_VERSION: release
+      REDIS_HOSTNAME: redis
+      MACHINE_LEARNING_CACHE_FOLDER: /cache
+    networks:
+      pcs: null
+
+  immich-web:
+    container_name: immich-web
+    image: ghcr.io/immich-app/immich-web:release
     restart: unless-stopped
+    depends_on:
+      - immich-server
+    environment:
+      IMMICH_SERVER_URL: http://immich-server:3001
     networks:
       pcs: null
 
   redis:
-    container_name: immich_redis
-    image: registry.hub.docker.com/library/redis:6.2-alpine@sha256:51d6c56749a4243096327e3fb964a48ed92254357108449cb6e23999c37773c5
+    container_name: immich-redis
+    image: redis:6.2-alpine
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
     networks:
       pcs: null
 
   database:
-    container_name: immich_postgres
-    image: registry.hub.docker.com/tensorchord/pgvecto-rs:pg14-v0.2.0@sha256:90724186f0a3517cf6914295b5ab410db9ce23190a2d9d0b9dd6463e3fa298f0
+    container_name: immich-postgres
+    image: tensorchord/pgvecto-rs:pg14-v0.2.0
+    restart: unless-stopped
     environment:
       POSTGRES_PASSWORD: postgres
       POSTGRES_USER: postgres
       POSTGRES_DB: immich
     volumes:
       - /DATA/AppData/$AppID/database:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d immich"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      pcs: null
+
+  immich-proxy:
+    container_name: immich-proxy
+    image: ghcr.io/immich-app/immich-proxy:release
     restart: unless-stopped
+    ports:
+      - "2283:8080"
+    depends_on:
+      - immich-server
+      - immich-web
+    environment:
+      IMMICH_SERVER_URL: http://immich-server:3001
+      IMMICH_WEB_URL: http://immich-web:3000
     networks:
       pcs: null
 
@@ -80,9 +125,9 @@ x-casaos:
   author: self
   category: media
   description:
-    en_us: Immich - High performance self-hosted photo and video management solution with machine learning-powered features like facial recognition and smart search
-    zh_cn: Immich - 高性能自托管照片和视频管理解决方案，具有面部识别和智能搜索等机器学习功能
-    ko_kr: Immich - 얼굴 인식 및 스마트 검색과 같은 머신러닝 기반 기능을 갖춘 고성능 자체 호스팅 사진 및 비디오 관리 솔루션
+    en_us: Immich - A high-performance, self-hosted photo and video backup solution, featuring on-device machine learning, mobile apps, and a beautiful web interface that feels like Google Photos.
+    zh_cn: Immich - 高性能的自托管照片和视频备份解决方案，具有设备上机器学习、移动应用程序和类似Google Photos的美观网页界面。
+    ko_kr: Immich - 기기 내 머신 러닝, 모바일 앱 및 Google 포토와 같은 아름다운 웹 인터페이스를 갖춘 고성능 셀프 호스팅 사진 및 비디오 백업 솔루션입니다.
   icon: https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Immich/icons.png
   screenshot_link:
     - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Immich/screenshots1.png
@@ -90,9 +135,9 @@ x-casaos:
     - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Immich/screenshots3.png
   index: /
   tagline:
-    en_us: Self-hosted photo and video backup solution with AI-powered features
-    zh_cn: 具有AI功能的自托管照片和视频备份解决方案
-    ko_kr: AI 기반 기능을 갖춘 자체 호스팅 사진 및 비디오 백업 솔루션
+    en_us: Self-hosted photo and video backup solution with Google Photos-like experience
+    zh_cn: 提供类似Google Photos体验的自托管照片和视频备份解决方案
+    ko_kr: Google 포토와 같은 경험을 제공하는 셀프 호스팅 사진 및 비디오 백업 솔루션
   is_uncontrolled: false
   port_map: "2283"
   title: 
@@ -100,7 +145,9 @@ x-casaos:
     zh_cn: Immich
     ko_kr: Immich
   main: immich-server
+  category: photos
+  store_app_id: immich
   volumes:
-    - /DATA/AppData/$AppID/upload
-    - /DATA/AppData/$AppID/model-cache
+    - /DATA/AppData/$AppID/uploads
     - /DATA/AppData/$AppID/database
+    - /DATA/AppData/$AppID/model-cache
