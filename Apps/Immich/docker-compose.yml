@@ -18,7 +18,7 @@ services:
       - "2283:3001"
     depends_on:
       - redis
-      - database
+      - immich-server-database
     networks:
       pcs: null
 
