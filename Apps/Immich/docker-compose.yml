@@ -123,7 +123,6 @@ x-casaos:
     - amd64
     - arm64
   author: self
-  category: media
   description:
     en_us: Immich - A high-performance, self-hosted photo and video backup solution, featuring on-device machine learning, mobile apps, and a beautiful web interface that feels like Google Photos.
     zh_cn: Immich - 高性能的自托管照片和视频备份解决方案，具有设备上机器学习、移动应用程序和类似Google Photos的美观网页界面。
@@ -146,7 +145,6 @@ x-casaos:
     ko_kr: Immich
   main: immich-server
   category: photos
-  store_app_id: immich
   volumes:
     - /DATA/AppData/$AppID/uploads
     - /DATA/AppData/$AppID/database
