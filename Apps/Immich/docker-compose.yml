@@ -22,7 +22,7 @@ services:
     networks:
       pcs: null
 
-  immich-machine-learning:
+  machine-learning:
     container_name: immich-machine-learning
     image: ghcr.io/immich-app/immich-machine-learning:release
     restart: unless-stopped
@@ -46,7 +46,7 @@ services:
     networks:
       pcs: null
 
-  database:
+  immich-server-database:
     container_name: immich-postgres
     image: docker.io/tensorchord/pgvecto-rs:pg14-v0.2.0
     restart: unless-stopped
