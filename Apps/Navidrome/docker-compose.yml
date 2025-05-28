@@ -1,0 +1,82 @@
+name: navidrome
+
+services:
+  app:
+    container_name: navidrome
+    image: deluan/navidrome:latest
+    restart: unless-stopped
+    user: 1000:1000 
+    ports:
+      - "4533:4533"
+    environment:
+      ND_MUSICFOLDER: /music
+      ND_DATAFOLDER: /data
+      ND_LOGLEVEL: info
+      ND_BASEURL: ""
+      
+      ND_ENABLETRANSCODINGCONFIG: "true"
+      ND_ENABLEDOWNLOADS: "true"
+      ND_ENABLEEXTERNALSERVICES: "false"
+      ND_ENABLESHARING: "true"
+      ND_ENABLESTARRATING: "true"
+      ND_ENABLEUSEREDITING: "false"
+      
+      ND_TRANSCODINGCACHESIZE: "100MB"
+      ND_IMAGECACHESIZE: "100MB"
+      ND_SCANNER_INTERVAL: "1m"
+      ND_SESSIONTIMEOUT: "24h"
+      
+      ND_UILOGINBACKGROUNDURL: ""
+      ND_UIWELCOMEMESSAGE: "Welcome to Navidrome!"
+      ND_DEFAULTLANGUAGE: "en"
+      ND_DEFAULTTHEME: "Dark"
+      
+      ND_LASTFM_ENABLED: "true"
+      ND_SPOTIFY_ID: ""
+      ND_LISTENBRAINZ_ENABLED: "false"
+    volumes:
+      - /DATA/AppData/$AppID/data:/data
+      - /DATA/AppData/$AppID/music:/music:ro
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:4533/app"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      pcs: null
+
+networks:
+  pcs:
+    name: pcs
+
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  author: self
+  category: media
+  description:
+    en_us: Navidrome - Modern Music Server and Streamer compatible with Subsonic/Airsonic clients, featuring a beautiful web interface, mobile apps support, and smart playlists
+    zh_cn: Navidrome - 现代音乐服务器和流媒体播放器，兼容Subsonic/Airsonic客户端，具有美观的网页界面、移动应用支持和智能播放列表
+    ko_kr: Navidrome - Subsonic/Airsonic 클라이언트와 호환되는 현대적인 음악 서버 및 스트리머로, 아름다운 웹 인터페이스, 모바일 앱 지원, 스마트 플레이리스트 기능 제공
+  icon: https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Navidrome/icons.png
+  screenshot_link:
+    - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Navidrome/screenshots1.png
+    - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Navidrome/screenshots2.png
+    - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Navidrome/screenshots3.png
+  index: /
+  tagline:
+    en_us: Your personal music streaming server with modern web interface
+    zh_cn: 具有现代网页界面的个人音乐流媒体服务器
+    ko_kr: 현대적인 웹 인터페이스를 갖춘 개인 음악 스트리밍 서버
+  port_map: "4533"
+  store_app_id: navidrome
+  title:
+    en_us: Navidrome
+    zh_cn: Navidrome
+    ko_kr: Navidrome
+  main: app
+  is_uncontrolled: false
+  volumes:
+    - /DATA/AppData/$AppID/data
+    - /DATA/AppData/$AppID/music
