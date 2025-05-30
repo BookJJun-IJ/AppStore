@@ -6,10 +6,11 @@ services:
     image: ghcr.io/immich-app/immich-server:release
     restart: unless-stopped
     volumes:
-      - /DATA/AppData/$AppID/uploads:/usr/src/app/upload
+      - /DATA/Gallery:/usr/src/app/upload
+      - /DATA/Downloads:/usr/src/app/external:ro
       - /etc/localtime:/etc/localtime:ro
     environment:
-      DB_HOSTNAME: database
+      DB_HOSTNAME: immich-server-database
       DB_USERNAME: postgres
       DB_PASSWORD: postgres
       DB_DATABASE_NAME: immich
@@ -97,6 +98,67 @@ x-casaos:
     ko_kr: Immich
   main: app
   volumes:
-    - /DATA/AppData/$AppID/uploads
+    - /DATA/Gallery
+    - /DATA/Downloads
     - /DATA/AppData/$AppID/database
     - /DATA/AppData/$AppID/model-cache
+  tips:
+    en_us: |
+      📁 Folder Structure Guide:
+      • Photo Storage: /DATA/Gallery
+      • Import Photos: /DATA/Downloads
+      • Database: /DATA/AppData/immich/database (Do not modify)
+      
+      🚀 Getting Started:
+      • First visit: Create admin account at http://YourServerIP:2283
+      • Mobile Apps: Search "Immich" on Play Store / App Store
+      • Web Access: http://localhost:2283
+      
+      💡 Usage Tips:
+      • Upload via mobile app → Auto-saved to /DATA/Gallery
+      • Copy existing photos to /DATA/Downloads → Use "External Library Scan"
+      • AI features may take time during first scan
+      
+      ⚠️ Important:
+      • Never delete database folder
+      • Backup is recommended before major updates
+
+    zh_cn: |
+      📁 文件夹结构指南：
+      • 照片存储：/DATA/Gallery
+      • 导入照片：/DATA/Downloads
+      • 数据库：/DATA/AppData/immich/database（请勿修改）
+      
+      🚀 入门指南：
+      • 首次访问：在 http://您的服务器IP:2283 创建管理员账户
+      • 手机应用：在应用商店搜索"Immich"
+      • 网页访问：http://localhost:2283
+      
+      💡 使用技巧：
+      • 通过手机应用上传 → 自动保存到 /DATA/Gallery
+      • 将现有照片复制到 /DATA/Downloads → 使用"外部库扫描"
+      • AI功能首次扫描可能需要较长时间
+      
+      ⚠️ 重要提示：
+      • 切勿删除数据库文件夹
+      • 建议在重大更新前进行备份
+
+    ko_kr: |
+      📁 폴더 구조 안내:
+      • 사진 저장 위치: /DATA/Gallery
+      • 외부 사진 가져오기: /DATA/Downloads
+      • 데이터베이스: /DATA/AppData/immich/database (수정 금지)
+      
+      🚀 시작하기:
+      • 첫 접속: http://서버IP:2283 에서 관리자 계정 생성
+      • 모바일 앱: Play Store, App Store에서 "Immich" 검색
+      • 웹 접속: http://localhost:2283
+      
+      💡 사용 팁:
+      • 모바일 앱으로 업로드 → /DATA/Gallery에 자동 저장
+      • 기존 사진을 /DATA/Downloads에 복사 → "외부 라이브러리 스캔" 사용
+      • AI 기능 첫 스캔 시 시간이 오래 걸릴 수 있음
+      
+      ⚠️ 주의사항:
+      • 데이터베이스 폴더 절대 삭제 금지
+      • 대규모 업데이트 전 백업 권장

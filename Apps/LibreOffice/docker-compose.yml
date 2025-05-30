@@ -9,16 +9,19 @@ services:
       - "3000:3000"
     volumes:
       - type: bind
-        source: /DATA/AppData/libreoffice/documents
+        source: /DATA/Documents
         target: /config/Documents
       - type: bind
-        source: /DATA/AppData/libreoffice/config
+        source: /DATA/Downloads
+        target: /config/Downloads
+      - type: bind
+        source: /DATA/AppData/$AppID/config
         target: /config/.config/libreoffice
     environment:
       - PUID=1000
       - PGID=1000
       - TZ=Asia/Seoul
-      - ID = abc
+      - ID=abc
       - PASSWORD=libreoffice
       - SECURE_CONNECTION=0
       - NOVNC_PORT=3000
@@ -40,8 +43,8 @@ x-casaos:
   category: office
   description:
     en_us: LibreOffice - A powerful productivity suite featuring Writer, Calc, Impress, Draw, Base, and Math applications for creating professional documents, spreadsheets, presentations, and more
-    zh_cn: Stirling-PDF LibreOffice - 功能强大的生产力套件，包含 Writer、Calc、Impress、Draw、Base 和 Math 应用程序，用于创建专业文档、电子表格、演示文稿等
-    ko_kr: LibreOffice - 전문적인 문서, 스프레드시트, 프레젠테이션 등을 만들 수 있는 Writer, Calc, Impress, Draw, Base, Math 응용 프로그램을 갖춘 강력한 생산성 도구 모음 입니다.
+    zh_cn: LibreOffice - 功能强大的生产力套件，包含 Writer、Calc、Impress、Draw、Base 和 Math 应用程序，用于创建专业文档、电子表格、演示文稿等
+    ko_kr: LibreOffice - 전문적인 문서, 스프레드시트, 프레젠테이션 등을 만들 수 있는 Writer, Calc, Impress, Draw, Base, Math 응용 프로그램을 갖춘 강력한 생산성 도구 모음입니다.
   icon: https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/LibreOffice/icons.png
   screenshot_link:
     - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/LibreOffice/screenshots1.png
@@ -58,3 +61,79 @@ x-casaos:
     en_us: LibreOffice
     zh_cn: LibreOffice
     ko_kr: LibreOffice
+  tips:
+    en_us: |
+      🔐 Access Settings:
+      • Web Access: http://YourServerIP:3000
+      • Default Password: libreoffice
+      • Browser-based desktop environment
+      
+      📁 Folder Structure:
+      • Documents: /DATA/Documents
+      • Downloads: /DATA/Downloads
+      • Config: /DATA/AppData/libreoffice/config (Do not modify)
+      
+      💡 Applications Included:
+      • Writer - Word processing (like MS Word)
+      • Calc - Spreadsheets (like MS Excel)
+      • Impress - Presentations (like MS PowerPoint)
+      • Draw - Vector graphics and diagrams
+      • Base - Database management
+      • Math - Formula editor
+      
+      ⚠️ Usage Tips:
+      • Save files to /DATA/Documents for easy access
+      • Downloads from web go to /DATA/Downloads
+      • Works best with modern browsers (Chrome, Firefox)
+
+    zh_cn: |
+      🔐 访问设置：
+      • 网页访问：http://您的服务器IP:3000
+      • 默认密码：libreoffice
+      • 基于浏览器的桌面环境
+      
+      📁 文件夹结构：
+      • 文档：/DATA/Documents
+      • 下载：/DATA/Downloads
+      • 配置：/DATA/AppData/libreoffice/config（请勿修改）
+      
+      💡 包含应用：
+      • Writer - 文字处理（类似MS Word）
+      • Calc - 电子表格（类似MS Excel）
+      • Impress - 演示文稿（类似MS PowerPoint）
+      • Draw - 矢量图形和图表
+      • Base - 数据库管理
+      • Math - 公式编辑器
+      
+      ⚠️ 使用技巧：
+      • 将文件保存到 /DATA/Documents 便于访问
+      • 网页下载的文件存放在 /DATA/Downloads
+      • 建议使用现代浏览器（Chrome, Firefox）
+
+    ko_kr: |
+      🔐 접속 설정:
+      • 웹 접속: http://서버IP:3000
+      • 기본 비밀번호: libreoffice
+      • 브라우저 기반 데스크톱 환경
+      
+      📁 폴더 구조:
+      • 문서: /DATA/Documents
+      • 다운로드: /DATA/Downloads
+      • 설정: /DATA/AppData/libreoffice/config (수정 금지)
+      
+      💡 포함된 애플리케이션:
+      • Writer - 문서 작성 (MS Word와 유사)
+      • Calc - 스프레드시트 (MS Excel과 유사)
+      • Impress - 프레젠테이션 (MS PowerPoint와 유사)
+      • Draw - 벡터 그래픽 및 다이어그램
+      • Base - 데이터베이스 관리
+      • Math - 수식 편집기
+      
+      ⚠️ 사용 팁:
+      • 파일을 /DATA/Documents에 저장하면 쉽게 접근 가능
+      • 웹에서 다운로드한 파일은 /DATA/Downloads에 저장
+      • 최신 브라우저(Chrome, Firefox) 사용 권장
+  volumes:
+    - /DATA/Documents
+    - /DATA/Downloads
+    - /DATA/AppData/$AppID/config
