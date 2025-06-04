@@ -2,21 +2,16 @@ name: tribler
 
 services:
   app:
-    image: linuxserver/qbittorrent:latest
-    container_name: tribler_alternative
+    image: tribler/tribler:latest
+    container_name: tribler
     restart: unless-stopped
     ports:
-      - "8085:8080"
-      - "6881:6881"
-      - "6881:6881/udp"
+      - "8085:8085"
     volumes:
-      - /DATA/AppData/$AppID/config:/config
+      - /DATA/AppData/$AppID/data:/root/.Tribler
       - /DATA/Downloads:/downloads
     environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Asia/Seoul
-      - WEBUI_PORT=8080
+      - DISPLAY=:0
     networks:
       pcs: null
 
@@ -31,27 +26,25 @@ x-casaos:
   author: self
   category: network
   description:
-    en_us: qBittorrent - Reliable BitTorrent client with advanced web interface and search capabilities
-    zh_cn: qBittorrent - 可靠的BitTorrent客户端，具有高级网页界面和搜索功能
-    ko_kr: qBittorrent - 고급 웹 인터페이스와 검색 기능을 갖춘 안정적인 BitTorrent 클라이언트
-  icon: https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/qBittorrent/icons.png
+    en_us: Tribler - Decentralized BitTorrent client with anonymous downloading
+    zh_cn: Tribler - 具有匿名下载功能的去中心化BitTorrent客户端
+    ko_kr: Tribler - 익명 다운로드 기능을 갖춘 분산형 BitTorrent 클라이언트
+  icon: https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Tribler/icons.png
   screenshot_link:
-    - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/qBittorrent/screenshots1.png
-    - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/qBittorrent/screenshots2.png
-    - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/qBittorrent/screenshots3.png
+    - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Tribler/screenshots1.png
   index: /
   tagline:
-    en_us: Advanced BitTorrent client with built-in search and RSS support
-    zh_cn: 具有内置搜索和RSS支持的高级BitTorrent客户端
-    ko_kr: 내장 검색 및 RSS 지원을 갖춘 고급 BitTorrent 클라이언트
+    en_us: Anonymous BitTorrent client
+    zh_cn: 匿名BitTorrent客户端
+    ko_kr: 익명 BitTorrent 클라이언트
   port_map: "8085"
-  store_app_id: qbittorrent
+  store_app_id: tribler
   title:
-    en_us: qBittorrent
-    zh_cn: qBittorrent
-    ko_kr: qBittorrent
+    en_us: Tribler
+    zh_cn: Tribler
+    ko_kr: Tribler
   main: app
   is_uncontrolled: false
   volumes:
-    - /DATA/AppData/$AppID/config
+    - /DATA/AppData/$AppID/data
     - /DATA/Downloads

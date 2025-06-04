@@ -12,13 +12,10 @@ services:
     volumes:
       - /DATA/AppData/$AppID/config:/config
       - /DATA/Downloads:/downloads
-      - /DATA/Downloads/watch:/watch
     environment:
       - PUID=1000
       - PGID=1000
       - TZ=Asia/Seoul
-      - USER=admin
-      - PASS=transmission
     networks:
       pcs: null
 
@@ -33,19 +30,17 @@ x-casaos:
   author: self
   category: network
   description:
-    en_us: Transmission - Fast and lightweight BitTorrent client with web interface
-    zh_cn: Transmission - 快速轻量的BitTorrent客户端，带有网页界面
-    ko_kr: Transmission - 웹 인터페이스를 갖춘 빠르고 가벼운 BitTorrent 클라이언트
+    en_us: Transmission BitTorrent client with web interface
+    zh_cn: Transmission BitTorrent客户端，带有网页界面
+    ko_kr: 웹 인터페이스를 갖춘 Transmission BitTorrent 클라이언트
   icon: https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Transmission/icons.png
   screenshot_link:
     - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Transmission/screenshots1.png
-    - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Transmission/screenshots2.png
-    - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Transmission/screenshots3.png
   index: /
   tagline:
-    en_us: Simple BitTorrent client with web interface
-    zh_cn: 简单的BitTorrent客户端，带有网页界面
-    ko_kr: 웹 인터페이스를 갖춘 간단한 BitTorrent 클라이언트
+    en_us: Simple BitTorrent client
+    zh_cn: 简单的BitTorrent客户端
+    ko_kr: 간단한 BitTorrent 클라이언트
   port_map: "9091"
   store_app_id: transmission
   title:
@@ -57,4 +52,3 @@ x-casaos:
   volumes:
     - /DATA/AppData/$AppID/config
     - /DATA/Downloads
-    - /DATA/Downloads/watch
