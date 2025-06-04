@@ -2,7 +2,7 @@ name: transmission
 
 services:
   app:
-    image: linuxserver/transmission:latest
+    image: lscr.io/linuxserver/transmission:latest
     container_name: transmission
     restart: unless-stopped
     ports:
@@ -13,13 +13,18 @@ services:
       - /DATA/AppData/$AppID/config:/config
       - /DATA/Downloads:/downloads
       - /DATA/AppData/$AppID/watch:/watch
+      - /DATA/Downloads/complete:/downloads/complete
+      - /DATA/Downloads/incomplete:/downloads/incomplete
     environment:
       - PUID=1000
       - PGID=1000
       - TZ=Asia/Seoul
-      - TRANSMISSION_WEB_HOME=/combustion-release/
+      - TRANSMISSION_WEB_HOME=/flood-for-transmission/
       - USER=admin
       - PASS=transmission123
+      - WHITELIST=*
+      - PEERPORT=51413
+      - HOST_WHITELIST=*
     networks:
       pcs: null
 
@@ -55,7 +60,90 @@ x-casaos:
     ko_kr: Transmission
   main: app
   is_uncontrolled: false
+  attention:
+    en_us: |
+      ⚠️ **ATTENTION**: Change default password immediately after first login!
+      
+      🔐 **Access Settings:**
+      • Default Username: admin
+      • Default Password: transmission123
+      
+      📁 **Folder Structure:**
+      • Downloads: /DATA/Downloads
+      • Config: /DATA/AppData/transmission/config (Do not modify)
+      • Watch folder: /DATA/AppData/transmission/watch
+      
+      💡 **Usage Tips:**
+      • Drop .torrent files in watch folder for auto-download
+      • Completed downloads: /DATA/Downloads/complete
+      • In-progress downloads: /DATA/Downloads/incomplete
+      • Web UI supports drag & drop torrent files
+      • Set download/upload speed limits in settings
+      • Enable blocklist for better security
+      • Use VPN for privacy protection
+      
+      ⚠️ **Important Notes:**
+      • Port 51413 must be open for best performance
+      • Check your local laws regarding torrenting
+      • Always use legitimate content sources
+      • Monitor disk space in downloads folder
+
+    zh_cn: |
+      ⚠️ **注意**: 首次登录后请立即更改默认密码！
+      
+      🔐 **访问设置：**
+      • 默认用户名：admin
+      • 默认密码：transmission123
+      
+      📁 **文件夹结构：**
+      • 下载：/DATA/Downloads
+      • 配置：/DATA/AppData/transmission/config（请勿修改）
+      • 监视文件夹：/DATA/AppData/transmission/watch
+      
+      💡 **使用技巧：**
+      • 将.torrent文件放入监视文件夹即可自动下载
+      • 完成的下载：/DATA/Downloads/complete
+      • 进行中的下载：/DATA/Downloads/incomplete
+      • 网页界面支持拖放种子文件
+      • 在设置中设置下载/上传速度限制
+      • 启用阻止列表以提高安全性
+      • 使用VPN保护隐私
+      
+      ⚠️ **重要提示：**
+      • 端口51413必须开放以获得最佳性能
+      • 请检查当地关于种子下载的法律
+      • 始终使用合法内容源
+      • 监控下载文件夹的磁盘空间
+
+    ko_kr: |
+      ⚠️ **주의사항**: 첫 로그인 후 기본 비밀번호를 즉시 변경하세요！
+      
+      🔐 **접속 설정:**
+      • 기본 사용자명: admin
+      • 기본 비밀번호: transmission123
+      
+      📁 **폴더 구조:**
+      • 다운로드: /DATA/Downloads
+      • 설정: /DATA/AppData/transmission/config (수정 금지)
+      • 감시 폴더: /DATA/AppData/transmission/watch
+      
+      💡 **사용 팁:**
+      • 감시 폴더에 .torrent 파일을 넣으면 자동 다운로드
+      • 완료된 다운로드: /DATA/Downloads/complete
+      • 진행 중인 다운로드: /DATA/Downloads/incomplete
+      • 웹 UI에서 토렌트 파일 드래그 앤 드롭 지원
+      • 설정에서 다운로드/업로드 속도 제한 설정
+      • 보안 향상을 위해 차단 목록 활성화
+      • 프라이버시 보호를 위해 VPN 사용
+      
+      ⚠️ **중요사항:**
+      • 최적 성능을 위해 포트 51413 개방 필요
+      • 토렌트 관련 현지 법률 확인
+      • 항상 합법적인 콘텐츠 소스 사용
+      • 다운로드 폴더의 디스크 공간 모니터링
   volumes:
     - /DATA/AppData/$AppID/config
     - /DATA/Downloads
     - /DATA/AppData/$AppID/watch
+    - /DATA/Downloads/complete
+    - /DATA/Downloads/incomplete
