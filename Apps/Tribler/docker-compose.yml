@@ -2,20 +2,21 @@ name: tribler
 
 services:
   app:
-    image: ghcr.io/tribler/tribler:latest
-    container_name: tribler
+    image: linuxserver/qbittorrent:latest
+    container_name: tribler_alternative
     restart: unless-stopped
     ports:
-      - "8085:8085"
-      - "8086:8086"
+      - "8085:8080"
+      - "6881:6881"
+      - "6881:6881/udp"
     volumes:
-      - /DATA/AppData/$AppID/tribler:/root/.Tribler
+      - /DATA/AppData/$AppID/config:/config
       - /DATA/Downloads:/downloads
-      - /DATA/Media:/media
     environment:
       - PUID=1000
       - PGID=1000
       - TZ=Asia/Seoul
+      - WEBUI_PORT=8080
     networks:
       pcs: null
 
@@ -30,100 +31,27 @@ x-casaos:
   author: self
   category: network
   description:
-    en_us: Tribler - A decentralized BitTorrent client with built-in search, streaming capabilities, and anonymous downloading through onion routing.
-    zh_cn: Tribler - 一个去中心化的BitTorrent客户端，具有内置搜索、流媒体播放功能和通过洋葱路由的匿名下载。
-    ko_kr: Tribler - 내장 검색, 스트리밍 기능 및 어니언 라우팅을 통한 익명 다운로드 기능을 갖춘 분산형 BitTorrent 클라이언트입니다.
-  icon: https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Tribler/icons.png
+    en_us: qBittorrent - Reliable BitTorrent client with advanced web interface and search capabilities
+    zh_cn: qBittorrent - 可靠的BitTorrent客户端，具有高级网页界面和搜索功能
+    ko_kr: qBittorrent - 고급 웹 인터페이스와 검색 기능을 갖춘 안정적인 BitTorrent 클라이언트
+  icon: https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/qBittorrent/icons.png
   screenshot_link:
-    - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Tribler/screenshots1.png
-    - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Tribler/screenshots2.png
-    - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Tribler/screenshots3.png
+    - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/qBittorrent/screenshots1.png
+    - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/qBittorrent/screenshots2.png
+    - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/qBittorrent/screenshots3.png
   index: /
   tagline:
-    en_us: Privacy-first BitTorrent client with built-in search and streaming
-    zh_cn: 隐私优先的BitTorrent客户端，具有内置搜索和流媒体功能
-    ko_kr: 내장 검색 및 스트리밍 기능을 갖춘 프라이버시 우선 BitTorrent 클라이언트
+    en_us: Advanced BitTorrent client with built-in search and RSS support
+    zh_cn: 具有内置搜索和RSS支持的高级BitTorrent客户端
+    ko_kr: 내장 검색 및 RSS 지원을 갖춘 고급 BitTorrent 클라이언트
   port_map: "8085"
-  store_app_id: tribler
+  store_app_id: qbittorrent
   title:
-    en_us: Tribler
-    zh_cn: Tribler
-    ko_kr: Tribler
+    en_us: qBittorrent
+    zh_cn: qBittorrent
+    ko_kr: qBittorrent
   main: app
   is_uncontrolled: false
-  tips:
-    en_us: |
-      🔒 Privacy-Focused Features:
-      • Anonymous downloading via onion routing
-      • Decentralized architecture (no central server)
-      • Built-in Tor-like anonymity network
-      • No registration or accounts needed
-      
-      📁 Folder Structure:
-      • Downloads: /DATA/Downloads
-      • Media Library: /DATA/Media (auto-organize)
-      • Config: /DATA/AppData/tribler/config (Do not modify)
-      
-      🚀 Getting Started:
-      • Web Interface: http://YourServerIP:8085
-      • Built-in Search: Find content without external sites
-      • Stream while downloading: Watch before completion
-      • Share bandwidth: Contribute to the network
-      
-      ⚠️ Important Notes:
-      • First startup may take 5-10 minutes
-      • Anonymity mode affects download speed
-      • Legal content only - respect copyright laws
-      • Configure firewall for ports 20000-20010
-
-    zh_cn: |
-      🔒 隐私优先功能：
-      • 通过洋葱路由匿名下载
-      • 去中心化架构（无中央服务器）
-      • 内置类似Tor的匿名网络
-      • 无需注册或账户
-      
-      📁 文件夹结构：
-      • 下载：/DATA/Downloads
-      • 媒体库：/DATA/Media（自动整理）
-      • 配置：/DATA/AppData/tribler/config（请勿修改）
-      
-      🚀 入门指南：
-      • 网页界面：http://您的服务器IP:8085
-      • 内置搜索：无需外部网站即可查找内容
-      • 边下边播：下载完成前即可观看
-      • 共享带宽：为网络做贡献
-      
-      ⚠️ 重要提示：
-      • 首次启动可能需要5-10分钟
-      • 匿名模式会影响下载速度
-      • 仅限合法内容 - 尊重版权法
-      • 为端口20000-20010配置防火墙
-
-    ko_kr: |
-      🔒 프라이버시 우선 기능:
-      • 어니언 라우팅을 통한 익명 다운로드
-      • 분산형 아키텍처 (중앙 서버 없음)
-      • 내장 Tor 유사 익명 네트워크
-      • 등록이나 계정 불필요
-      
-      📁 폴더 구조:
-      • 다운로드: /DATA/Downloads
-      • 미디어 라이브러리: /DATA/Media (자동 정리)
-      • 설정: /DATA/AppData/tribler/config (수정 금지)
-      
-      🚀 시작하기:
-      • 웹 인터페이스: http://서버IP:8085
-      • 내장 검색: 외부 사이트 없이 콘텐츠 검색
-      • 스트리밍 다운로드: 완료 전에 시청 가능
-      • 대역폭 공유: 네트워크에 기여
-      
-      ⚠️ 중요 사항:
-      • 첫 시작 시 5-10분 소요될 수 있음
-      • 익명 모드는 다운로드 속도에 영향
-      • 합법적 콘텐츠만 - 저작권법 준수
-      • 포트 20000-20010에 대한 방화벽 설정
   volumes:
     - /DATA/AppData/$AppID/config
     - /DATA/Downloads
-    - /DATA/Media

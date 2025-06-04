@@ -17,7 +17,6 @@ services:
       - PUID=1000
       - PGID=1000
       - TZ=Asia/Seoul
-      - TRANSMISSION_WEB_HOME=/flood-for-transmission/
       - USER=admin
       - PASS=transmission
     networks:
@@ -34,9 +33,9 @@ x-casaos:
   author: self
   category: network
   description:
-    en_us: Transmission - Fast, easy, and free BitTorrent client with web interface. Downloads to /DATA/Downloads, login admin/transmission
-    zh_cn: Transmission - 快速、简单、免费的BitTorrent客户端，带有网页界面。下载到 /DATA/Downloads，登录 admin/transmission
-    ko_kr: Transmission - 웹 인터페이스를 갖춘 빠르고 쉬운 무료 BitTorrent 클라이언트. /DATA/Downloads에 다운로드, 로그인 admin/transmission
+    en_us: Transmission - Fast and lightweight BitTorrent client with web interface
+    zh_cn: Transmission - 快速轻量的BitTorrent客户端，带有网页界面
+    ko_kr: Transmission - 웹 인터페이스를 갖춘 빠르고 가벼운 BitTorrent 클라이언트
   icon: https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Transmission/icons.png
   screenshot_link:
     - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Transmission/screenshots1.png
@@ -44,9 +43,9 @@ x-casaos:
     - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Transmission/screenshots3.png
   index: /
   tagline:
-    en_us: Simple, lightweight BitTorrent client with modern web interface
-    zh_cn: 简单轻量的BitTorrent客户端，配备现代化网页界面
-    ko_kr: 현대적인 웹 인터페이스를 갖춘 간단하고 가벼운 BitTorrent 클라이언트
+    en_us: Simple BitTorrent client with web interface
+    zh_cn: 简单的BitTorrent客户端，带有网页界面
+    ko_kr: 웹 인터페이스를 갖춘 간단한 BitTorrent 클라이언트
   port_map: "9091"
   store_app_id: transmission
   title:
@@ -55,75 +54,6 @@ x-casaos:
     ko_kr: Transmission
   main: app
   is_uncontrolled: false
-  tips:
-    en_us: |
-      🌐 Web Access:
-      • Interface: http://YourServerIP:9091
-      • Login: admin / transmission
-      • Modern UI: Flood interface included
-      
-      📁 File Management:
-      • Downloads: /DATA/Downloads
-      • Watch Folder: /DATA/Downloads/watch
-      • Completed: Auto-organized in Downloads folder
-      
-      💡 Usage Tips:
-      • Drop .torrent files in /DATA/Downloads/watch for auto-add
-      • Change default password in settings
-      • Supports magnet links and .torrent files
-      • Lightweight and resource-efficient
-      
-      ⚠️ Security:
-      • Change default login (admin/transmission)
-      • Enable encryption in settings
-      • Configure port forwarding for better speeds
-      • Use VPN for privacy if needed
-
-    zh_cn: |
-      🌐 网页访问：
-      • 界面：http://您的服务器IP:9091
-      • 登录：admin / transmission
-      • 现代界面：包含Flood界面
-      
-      📁 文件管理：
-      • 下载位置：/DATA/Downloads
-      • 监控文件夹：/DATA/Downloads/watch
-      • 完成文件：在Downloads文件夹中自动整理
-      
-      💡 使用技巧：
-      • 将.torrent文件放入 /DATA/Downloads/watch 自动添加
-      • 在设置中更改默认密码
-      • 支持磁力链接和.torrent文件
-      • 轻量化且资源效率高
-      
-      ⚠️ 安全设置：
-      • 更改默认登录（admin/transmission）
-      • 在设置中启用加密
-      • 配置端口转发以获得更好速度
-      • 如需隐私保护请使用VPN
-
-    ko_kr: |
-      🌐 웹 접속:
-      • 인터페이스: http://서버IP:9091
-      • 로그인: admin / transmission
-      • 현대적 UI: Flood 인터페이스 포함
-      
-      📁 파일 관리:
-      • 다운로드: /DATA/Downloads
-      • 감시 폴더: /DATA/Downloads/watch
-      • 완료 파일: Downloads 폴더에서 자동 정리
-      
-      💡 사용 팁:
-      • .torrent 파일을 /DATA/Downloads/watch에 넣으면 자동 추가
-      • 설정에서 기본 비밀번호 변경
-      • 마그넷 링크 및 .torrent 파일 지원
-      • 가볍고 리소스 효율적
-      
-      ⚠️ 보안 설정:
-      • 기본 로그인 변경 (admin/transmission)
-      • 설정에서 암호화 활성화
-      • 더 나은 속도를 위한 포트 포워딩 설정
-      • 프라이버시 필요시 VPN 사용
   volumes:
     - /DATA/AppData/$AppID/config
     - /DATA/Downloads
