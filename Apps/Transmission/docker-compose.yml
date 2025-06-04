@@ -2,7 +2,7 @@ name: transmission
 
 services:
   app:
-    image: linuxserver/transmission:version-3.00-r5
+    image: linuxserver/transmission:latest
     container_name: transmission
     restart: unless-stopped
     ports:
@@ -12,10 +12,14 @@ services:
     volumes:
       - /DATA/AppData/$AppID/config:/config
       - /DATA/Downloads:/downloads
+      - /DATA/AppData/$AppID/watch:/watch
     environment:
       - PUID=1000
       - PGID=1000
       - TZ=Asia/Seoul
+      - TRANSMISSION_WEB_HOME=/combustion-release/
+      - USER=admin
+      - PASS=transmission123
     networks:
       pcs: null
 
@@ -28,19 +32,21 @@ x-casaos:
     - amd64
     - arm64
   author: self
-  category: network
+  category: downloader
   description:
-    en_us: Transmission BitTorrent client with web interface
-    zh_cn: Transmission BitTorrent客户端，带有网页界面
-    ko_kr: 웹 인터페이스를 갖춘 Transmission BitTorrent 클라이언트
+    en_us: Transmission - A fast, easy, and free BitTorrent client with a clean web interface for managing torrents and downloads remotely.
+    zh_cn: Transmission - 快速、简单、免费的BitTorrent客户端，具有简洁的网页界面，可远程管理种子和下载。
+    ko_kr: Transmission - 깔끔한 웹 인터페이스로 토렌트와 다운로드를 원격으로 관리할 수 있는 빠르고 쉬우며 무료인 BitTorrent 클라이언트입니다.
   icon: https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Transmission/icons.png
   screenshot_link:
     - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Transmission/screenshots1.png
+    - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Transmission/screenshots2.png
+    - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Transmission/screenshots3.png
   index: /
   tagline:
-    en_us: Simple BitTorrent client
-    zh_cn: 简单的BitTorrent客户端
-    ko_kr: 간단한 BitTorrent 클라이언트
+    en_us: Fast and lightweight BitTorrent client with web interface
+    zh_cn: 具有网页界面的快速轻量级BitTorrent客户端
+    ko_kr: 웹 인터페이스가 있는 빠르고 가벼운 BitTorrent 클라이언트
   port_map: "9091"
   store_app_id: transmission
   title:
@@ -52,3 +58,4 @@ x-casaos:
   volumes:
     - /DATA/AppData/$AppID/config
     - /DATA/Downloads
+    - /DATA/AppData/$AppID/watch
