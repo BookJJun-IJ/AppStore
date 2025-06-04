@@ -2,7 +2,7 @@ name: transmission
 
 services:
   app:
-    image: linuxserver/transmission:latest
+    image: linuxserver/transmission:version-3.00-r5
     container_name: transmission
     restart: unless-stopped
     ports:
