@@ -1,23 +1,25 @@
-name: tribler
+name: transmission
 
 services:
   app:
-    image: triblerteam/tribler:latest
-    container_name: tribler
+    image: linuxserver/transmission:latest
+    container_name: transmission
     restart: unless-stopped
     ports:
-      - "8085:8085"
-      - "8086:8086"
-      - "20000-20010:20000-20010"
+      - "9091:9091"
+      - "51413:51413"
+      - "51413:51413/udp"
     volumes:
-      - /DATA/AppData/$AppID/config:/root/.Tribler
+      - /DATA/AppData/$AppID/config:/config
       - /DATA/Downloads:/downloads
-      - /DATA/Media:/media
+      - /DATA/Downloads/watch:/watch
     environment:
       - PUID=1000
       - PGID=1000
       - TZ=Asia/Seoul
-      - DISPLAY=:0
+      - TRANSMISSION_WEB_HOME=/flood-for-transmission/
+      - USER=admin
+      - PASS=transmission
     networks:
       pcs: null
 
@@ -32,100 +34,97 @@ x-casaos:
   author: self
   category: network
   description:
-    en_us: Tribler - A decentralized BitTorrent client with built-in search, streaming capabilities, and anonymous downloading through onion routing.
-    zh_cn: Tribler - 一个去中心化的BitTorrent客户端，具有内置搜索、流媒体播放功能和通过洋葱路由的匿名下载。
-    ko_kr: Tribler - 내장 검색, 스트리밍 기능 및 어니언 라우팅을 통한 익명 다운로드 기능을 갖춘 분산형 BitTorrent 클라이언트입니다.
-  icon: https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Tribler/icons.png
+    en_us: Transmission - Fast, easy, and free BitTorrent client with web interface. Downloads to /DATA/Downloads, login admin/transmission
+    zh_cn: Transmission - 快速、简单、免费的BitTorrent客户端，带有网页界面。下载到 /DATA/Downloads，登录 admin/transmission
+    ko_kr: Transmission - 웹 인터페이스를 갖춘 빠르고 쉬운 무료 BitTorrent 클라이언트. /DATA/Downloads에 다운로드, 로그인 admin/transmission
+  icon: https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Transmission/icons.png
   screenshot_link:
-    - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Tribler/screenshots1.png
-    - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Tribler/screenshots2.png
-    - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Tribler/screenshots3.png
+    - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Transmission/screenshots1.png
+    - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Transmission/screenshots2.png
+    - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Transmission/screenshots3.png
   index: /
   tagline:
-    en_us: Privacy-first BitTorrent client with built-in search and streaming
-    zh_cn: 隐私优先的BitTorrent客户端，具有内置搜索和流媒体功能
-    ko_kr: 내장 검색 및 스트리밍 기능을 갖춘 프라이버시 우선 BitTorrent 클라이언트
-  port_map: "8085"
-  store_app_id: tribler
+    en_us: Simple, lightweight BitTorrent client with modern web interface
+    zh_cn: 简单轻量的BitTorrent客户端，配备现代化网页界面
+    ko_kr: 현대적인 웹 인터페이스를 갖춘 간단하고 가벼운 BitTorrent 클라이언트
+  port_map: "9091"
+  store_app_id: transmission
   title:
-    en_us: Tribler
-    zh_cn: Tribler
-    ko_kr: Tribler
+    en_us: Transmission
+    zh_cn: Transmission
+    ko_kr: Transmission
   main: app
   is_uncontrolled: false
   tips:
     en_us: |
-      🔒 Privacy-Focused Features:
-      • Anonymous downloading via onion routing
-      • Decentralized architecture (no central server)
-      • Built-in Tor-like anonymity network
-      • No registration or accounts needed
+      🌐 Web Access:
+      • Interface: http://YourServerIP:9091
+      • Login: admin / transmission
+      • Modern UI: Flood interface included
       
-      📁 Folder Structure:
+      📁 File Management:
       • Downloads: /DATA/Downloads
-      • Media Library: /DATA/Media (auto-organize)
-      • Config: /DATA/AppData/tribler/config (Do not modify)
+      • Watch Folder: /DATA/Downloads/watch
+      • Completed: Auto-organized in Downloads folder
       
-      🚀 Getting Started:
-      • Web Interface: http://YourServerIP:8085
-      • Built-in Search: Find content without external sites
-      • Stream while downloading: Watch before completion
-      • Share bandwidth: Contribute to the network
+      💡 Usage Tips:
+      • Drop .torrent files in /DATA/Downloads/watch for auto-add
+      • Change default password in settings
+      • Supports magnet links and .torrent files
+      • Lightweight and resource-efficient
       
-      ⚠️ Important Notes:
-      • First startup may take 5-10 minutes
-      • Anonymity mode affects download speed
-      • Legal content only - respect copyright laws
-      • Configure firewall for ports 20000-20010
+      ⚠️ Security:
+      • Change default login (admin/transmission)
+      • Enable encryption in settings
+      • Configure port forwarding for better speeds
+      • Use VPN for privacy if needed
 
     zh_cn: |
-      🔒 隐私优先功能：
-      • 通过洋葱路由匿名下载
-      • 去中心化架构（无中央服务器）
-      • 内置类似Tor的匿名网络
-      • 无需注册或账户
+      🌐 网页访问：
+      • 界面：http://您的服务器IP:9091
+      • 登录：admin / transmission
+      • 现代界面：包含Flood界面
       
-      📁 文件夹结构：
-      • 下载：/DATA/Downloads
-      • 媒体库：/DATA/Media（自动整理）
-      • 配置：/DATA/AppData/tribler/config（请勿修改）
+      📁 文件管理：
+      • 下载位置：/DATA/Downloads
+      • 监控文件夹：/DATA/Downloads/watch
+      • 完成文件：在Downloads文件夹中自动整理
       
-      🚀 入门指南：
-      • 网页界面：http://您的服务器IP:8085
-      • 内置搜索：无需外部网站即可查找内容
-      • 边下边播：下载完成前即可观看
-      • 共享带宽：为网络做贡献
+      💡 使用技巧：
+      • 将.torrent文件放入 /DATA/Downloads/watch 自动添加
+      • 在设置中更改默认密码
+      • 支持磁力链接和.torrent文件
+      • 轻量化且资源效率高
       
-      ⚠️ 重要提示：
-      • 首次启动可能需要5-10分钟
-      • 匿名模式会影响下载速度
-      • 仅限合法内容 - 尊重版权法
-      • 为端口20000-20010配置防火墙
+      ⚠️ 安全设置：
+      • 更改默认登录（admin/transmission）
+      • 在设置中启用加密
+      • 配置端口转发以获得更好速度
+      • 如需隐私保护请使用VPN
 
     ko_kr: |
-      🔒 프라이버시 우선 기능:
-      • 어니언 라우팅을 통한 익명 다운로드
-      • 분산형 아키텍처 (중앙 서버 없음)
-      • 내장 Tor 유사 익명 네트워크
-      • 등록이나 계정 불필요
+      🌐 웹 접속:
+      • 인터페이스: http://서버IP:9091
+      • 로그인: admin / transmission
+      • 현대적 UI: Flood 인터페이스 포함
       
-      📁 폴더 구조:
+      📁 파일 관리:
       • 다운로드: /DATA/Downloads
-      • 미디어 라이브러리: /DATA/Media (자동 정리)
-      • 설정: /DATA/AppData/tribler/config (수정 금지)
+      • 감시 폴더: /DATA/Downloads/watch
+      • 완료 파일: Downloads 폴더에서 자동 정리
       
-      🚀 시작하기:
-      • 웹 인터페이스: http://서버IP:8085
-      • 내장 검색: 외부 사이트 없이 콘텐츠 검색
-      • 스트리밍 다운로드: 완료 전에 시청 가능
-      • 대역폭 공유: 네트워크에 기여
+      💡 사용 팁:
+      • .torrent 파일을 /DATA/Downloads/watch에 넣으면 자동 추가
+      • 설정에서 기본 비밀번호 변경
+      • 마그넷 링크 및 .torrent 파일 지원
+      • 가볍고 리소스 효율적
       
-      ⚠️ 중요 사항:
-      • 첫 시작 시 5-10분 소요될 수 있음
-      • 익명 모드는 다운로드 속도에 영향
-      • 합법적 콘텐츠만 - 저작권법 준수
-      • 포트 20000-20010에 대한 방화벽 설정
+      ⚠️ 보안 설정:
+      • 기본 로그인 변경 (admin/transmission)
+      • 설정에서 암호화 활성화
+      • 더 나은 속도를 위한 포트 포워딩 설정
+      • 프라이버시 필요시 VPN 사용
   volumes:
     - /DATA/AppData/$AppID/config
     - /DATA/Downloads
-    - /DATA/Media
+    - /DATA/Downloads/watch

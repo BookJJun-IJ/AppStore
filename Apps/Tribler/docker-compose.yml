@@ -2,22 +2,20 @@ name: tribler
 
 services:
   app:
-    image: triblerteam/tribler:latest
+    image: ghcr.io/tribler/tribler:latest
     container_name: tribler
     restart: unless-stopped
     ports:
       - "8085:8085"
       - "8086:8086"
-      - "20000-20010:20000-20010"
     volumes:
-      - /DATA/AppData/$AppID/config:/root/.Tribler
+      - /DATA/AppData/$AppID/tribler:/root/.Tribler
       - /DATA/Downloads:/downloads
       - /DATA/Media:/media
     environment:
       - PUID=1000
       - PGID=1000
       - TZ=Asia/Seoul
-      - DISPLAY=:0
     networks:
       pcs: null
 
