@@ -10,22 +10,20 @@ services:
       - /DATA/Downloads:/usr/src/app/external:ro
       - /etc/localtime:/etc/localtime:ro
     environment:
-      # 서비스명과 일치하도록 수정
-      DB_HOSTNAME: database
+      DB_HOSTNAME: immich-server-database
       DB_USERNAME: postgres
       DB_PASSWORD: postgres
       DB_DATABASE_NAME: immich
       REDIS_HOSTNAME: redis
-      # 머신러닝 비활성화
       IMMICH_MACHINE_LEARNING_ENABLED: false
-      LOG_LEVEL: warn
     ports:
       - "2283:2283"
     depends_on:
-      - database
       - redis
+      - database
+      - machine-learning
     networks:
-      - pcs
+      pcs: null
 
   database:
     container_name: immich-postgres
@@ -37,16 +35,48 @@ services:
       POSTGRES_DB: immich
       POSTGRES_INITDB_ARGS: '--data-checksums'
     volumes:
-      - /DATA/AppData/$AppID/postgres:/var/lib/postgresql/data
+      - /DATA/AppData/$AppID/database:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d ${POSTGRES_DB} -U ${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     networks:
-      - pcs
+      pcs: null
+
+  machine-learning:
+    container_name: immich-machine-learning
+    image: ghcr.io/immich-app/immich-server:release
+    restart: unless-stopped
+    volumes:
+      - /DATA/AppData/$AppID/model-cache:/cache
+    environment:
+      REDIS_HOSTNAME: redis
+      MACHINE_LEARNING_CACHE_FOLDER: /cache
+      IMMICH_MACHINE_LEARNING_WORKERS: "1"
+      IMMICH_MACHINE_LEARNING_REQUEST_THREADS: "1"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1G
+        reservations:
+          cpus: '0.1'
+          memory: 256M
+    networks:
+      pcs: null
 
   redis:
     container_name: immich-redis
     image: docker.io/valkey/valkey:7.2-alpine
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "valkey-cli ping || exit 1"]
+      interval: 30s
+      timeout: 3s
+      retries: 5
     networks:
-      - pcs
+      pcs: null
 
 networks:
   pcs:
@@ -82,4 +112,5 @@ x-casaos:
   volumes:
     - /DATA/Gallery
     - /DATA/Downloads
-    - /DATA/AppData/$AppID/postgres
+    - /DATA/AppData/$AppID/database
+    - /DATA/AppData/$AppID/model-cache
