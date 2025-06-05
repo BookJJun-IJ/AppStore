@@ -20,6 +20,7 @@ services:
     depends_on:
       - redis
       - database
+      - machine-learning
     networks:
       pcs: null
 
