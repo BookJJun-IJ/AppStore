@@ -10,30 +10,22 @@ services:
       - /DATA/Downloads:/usr/src/app/external:ro
       - /etc/localtime:/etc/localtime:ro
     environment:
+      # 서비스명과 일치하도록 수정
       DB_HOSTNAME: database
       DB_USERNAME: postgres
       DB_PASSWORD: postgres
       DB_DATABASE_NAME: immich
       REDIS_HOSTNAME: redis
-      IMMICH_WORKERS_INCLUDE: 'api'
-      IMMICH_ENV: production
-      LOG_LEVEL: warn
+      # 머신러닝 비활성화
       IMMICH_MACHINE_LEARNING_ENABLED: false
+      LOG_LEVEL: warn
     ports:
       - "2283:2283"
     depends_on:
-      - redis
       - database
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 2G
-        reservations:
-          cpus: '0.25'
-          memory: 512M
+      - redis
     networks:
-      pcs: null
+      - pcs
 
   database:
     container_name: immich-postgres
@@ -45,27 +37,16 @@ services:
       POSTGRES_DB: immich
       POSTGRES_INITDB_ARGS: '--data-checksums'
     volumes:
-      - /DATA/AppData/$AppID/database:/var/lib/postgresql/data
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 1G
+      - /DATA/AppData/$AppID/postgres:/var/lib/postgresql/data
     networks:
-      pcs: null
+      - pcs
 
   redis:
     container_name: immich-redis
     image: docker.io/valkey/valkey:7.2-alpine
     restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          cpus: '0.25'
-          memory: 256M
     networks:
-      pcs: null
-
+      - pcs
 
 networks:
   pcs:
@@ -101,4 +82,4 @@ x-casaos:
   volumes:
     - /DATA/Gallery
     - /DATA/Downloads
-    - /DATA/AppData/$AppID/database
+    - /DATA/AppData/$AppID/postgres
