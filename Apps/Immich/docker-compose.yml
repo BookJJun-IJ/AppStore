@@ -66,6 +66,7 @@ services:
     networks:
       pcs: null
 
+
 networks:
   pcs:
     name: pcs
@@ -77,9 +78,9 @@ x-casaos:
   author: self
   category: photos
   description:
-    en_us: Immich - CPU optimized photo backup solution. Machine learning disabled for better performance on low-spec systems.
-    zh_cn: Immich - CPU优化的照片备份解决方案。禁用机器学习以在低配置系统上获得更好性能。
-    ko_kr: Immich - CPU 최적화된 사진 백업 솔루션. 저사양 시스템에서 더 나은 성능을 위해 머신 러닝 비활성화.
+    en_us: Immich - A high-performance, self-hosted photo and video backup solution, featuring mobile apps and a beautiful web interface that feels like Google Photos.
+    zh_cn: Immich - 高性能的自托管照片和视频备份解决方案，具有移动应用程序和类似Google Photos的美观网页界面。
+    ko_kr: Immich - 모바일 앱 및 Google 포토와 같은 아름다운 웹 인터페이스를 갖춘 고성능 셀프 호스팅 사진 및 비디오 백업 솔루션입니다.
   icon: https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Immich/icons.png
   screenshot_link:
     - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Immich/screenshots1.png
@@ -87,15 +88,15 @@ x-casaos:
     - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Immich/screenshots3.png
   index: /
   tagline:
-    en_us: CPU-optimized photo backup with machine learning disabled
-    zh_cn: 禁用机器学习的CPU优化照片备份
-    ko_kr: 머신 러닝 비활성화로 CPU 최적화된 사진 백업
+    en_us: Self-hosted photo and video backup solution with Google Photos-like experience
+    zh_cn: 提供类似Google Photos体验的自托管照片和视频备份解决方案
+    ko_kr: Google 포토와 같은 경험을 제공하는 셀프 호스팅 사진 및 비디오 백업 솔루션
   port_map: "2283"
   store_app_id: immich
   title:
-    en_us: Immich (CPU Optimized)
-    zh_cn: Immich (CPU优化版)
-    ko_kr: Immich (CPU 최적화)
+    en_us: Immich
+    zh_cn: Immich
+    ko_kr: Immich
   main: app
   volumes:
     - /DATA/Gallery
