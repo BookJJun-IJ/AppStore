@@ -15,12 +15,12 @@ services:
     networks:
       pcs: null
 
-  frontend:
+  app:
     image: 4gray/iptvnator:latest
     container_name: iptvnator-frontend
     restart: unless-stopped
     ports:
-      - "4333:80"
+      - "4333:4333"
     environment:
       - BACKEND_URL=http://localhost:7333
       - TZ=Asia/Seoul
@@ -58,7 +58,7 @@ x-casaos:
     en_us: IPTVnator
     zh_cn: IPTVnator
     ko_kr: IPTVnator
-  main: frontend
+  main: app
   is_uncontrolled: false
   volumes:
     - /DATA/AppData/$AppID/backend
