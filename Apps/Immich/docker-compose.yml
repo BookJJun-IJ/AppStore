@@ -15,13 +15,11 @@ services:
       DB_PASSWORD: postgres
       DB_DATABASE_NAME: immich
       REDIS_HOSTNAME: redis
-      IMMICH_MACHINE_LEARNING_ENABLED: false
     ports:
       - "2283:2283"
     depends_on:
       - redis
       - database
-      - machine-learning
     networks:
       pcs: null
 
@@ -46,23 +44,13 @@ services:
 
   machine-learning:
     container_name: immich-machine-learning
-    image: ghcr.io/immich-app/immich-server:release
+    image: ghcr.io/immich-app/immich-machine-learning:release
     restart: unless-stopped
     volumes:
       - /DATA/AppData/$AppID/model-cache:/cache
     environment:
       REDIS_HOSTNAME: redis
       MACHINE_LEARNING_CACHE_FOLDER: /cache
-      IMMICH_MACHINE_LEARNING_WORKERS: "1"
-      IMMICH_MACHINE_LEARNING_REQUEST_THREADS: "1"
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 1G
-        reservations:
-          cpus: '0.1'
-          memory: 256M
     networks:
       pcs: null
 
@@ -89,9 +77,9 @@ x-casaos:
   author: self
   category: photos
   description:
-    en_us: Immich - A high-performance, self-hosted photo and video backup solution, featuring mobile apps and a beautiful web interface that feels like Google Photos.
-    zh_cn: Immich - 高性能的自托管照片和视频备份解决方案，具有移动应用程序和类似Google Photos的美观网页界面。
-    ko_kr: Immich - 모바일 앱 및 Google 포토와 같은 아름다운 웹 인터페이스를 갖춘 고성능 셀프 호스팅 사진 및 비디오 백업 솔루션입니다.
+    en_us: Immich - A high-performance, self-hosted photo and video backup solution, featuring on-device machine learning, mobile apps, and a beautiful web interface that feels like Google Photos.
+    zh_cn: Immich - 高性能的自托管照片和视频备份解决方案，具有设备上机器学习、移动应用程序和类似Google Photos的美观网页界面。
+    ko_kr: Immich - 기기 내 머신 러닝, 모바일 앱 및 Google 포토와 같은 아름다운 웹 인터페이스를 갖춘 고성능 셀프 호스팅 사진 및 비디오 백업 솔루션입니다.
   icon: https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Immich/icons.png
   screenshot_link:
     - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Immich/screenshots1.png
