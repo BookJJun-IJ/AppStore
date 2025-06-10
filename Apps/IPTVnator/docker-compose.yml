@@ -1,9 +1,6 @@
 name: iptvnator
 
 services:
-name: iptvnator
-
-services:
   backend:
     image: 4gray/iptvnator-backend:latest
     container_name: iptvnator-backend
