@@ -1,0 +1,64 @@
+name: iptvnator
+
+services:
+  backend:
+    image: 4gray/iptvnator-backend:latest
+    container_name: iptvnator-backend
+    restart: unless-stopped
+    ports:
+      - "7333:3000"
+    environment:
+      - CLIENT_URL=http://localhost:4333
+      - TZ=Asia/Seoul
+    volumes:
+      - /DATA/AppData/$AppID/backend:/app/data
+    networks:
+      pcs: null
+
+  frontend:
+    image: 4gray/iptvnator:latest
+    container_name: iptvnator-frontend
+    restart: unless-stopped
+    ports:
+      - "4333:80"
+    environment:
+      - BACKEND_URL=http://localhost:7333
+      - TZ=Asia/Seoul
+    depends_on:
+      - backend
+    networks:
+      pcs: null
+
+networks:
+  pcs:
+    name: pcs
+
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  author: self
+  category: media
+  description:
+    en_us: IPTVnator - Modern web-based IPTV player with beautiful interface, EPG support, favorites, and TV archive features. Perfect for streaming global TV channels.
+    zh_cn: IPTVnator - 现代化网页IPTV播放器，具有精美界面、EPG支持、收藏夹和电视存档功能。完美播放全球电视频道。
+    ko_kr: IPTVnator - 아름다운 인터페이스, EPG 지원, 즐겨찾기, TV 아카이브 기능을 갖춘 현대적인 웹 기반 IPTV 플레이어. 전 세계 TV 채널 스트리밍에 완벽함.
+  icon: https://raw.githubusercontent.com/4gray/iptvnator/electron/src/assets/icons/icon-512x512.png
+  screenshot_link:
+    - https://raw.githubusercontent.com/4gray/iptvnator/electron/screenshots/screenshot1.png
+    - https://raw.githubusercontent.com/4gray/iptvnator/electron/screenshots/screenshot2.png
+  index: /
+  tagline:
+    en_us: Modern IPTV player with beautiful web interface
+    zh_cn: 具有精美网页界面的现代IPTV播放器
+    ko_kr: 아름다운 웹 인터페이스를 가진 현대적인 IPTV 플레이어
+  port_map: "4333"
+  store_app_id: iptvnator
+  title:
+    en_us: IPTVnator
+    zh_cn: IPTVnator
+    ko_kr: IPTVnator
+  main: frontend
+  is_uncontrolled: false
+  volumes:
+    - /DATA/AppData/$AppID/backend
