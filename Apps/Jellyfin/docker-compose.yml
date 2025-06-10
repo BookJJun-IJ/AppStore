@@ -33,14 +33,6 @@ services:
       - /dev/dri:/dev/dri  # 하드웨어 가속 (Intel/AMD GPU)
     networks:
       pcs: null
-    # IPTV 스트리밍을 위한 추가 설정
-    sysctls:
-      - net.core.rmem_max=134217728
-      - net.core.rmem_default=131072
-      - net.core.wmem_max=134217728
-      - net.core.wmem_default=131072
-    ulimits:
-      memlock: -1
 
 networks:
   pcs:
