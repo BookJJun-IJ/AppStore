@@ -6,12 +6,10 @@ services:
     container_name: jellyfin
     restart: unless-stopped
     ports:
-      - "8096:8096"      # Jellyfin HTTP
-      - "8920:8920"      # Jellyfin HTTPS (optional)
-      - "7359:7359/udp"  # Jellyfin auto-discovery
-      - "1900:1900/udp"  # DLNA discovery
-      # IPTV 스트리밍 최적화를 위한 추가 포트
-      - "8097:8097"      # 대체 HTTP 포트 (IPTV 스트리밍용)
+      - "8096:8096"
+      - "8920:8920"
+      - "7359:7359/udp"
+      - "1900:1900/udp"
     volumes:
       - /DATA/AppData/$AppID/config:/config
       - /DATA/AppData/$AppID/cache:/cache
@@ -19,18 +17,13 @@ services:
       - /DATA/Media/TV Show:/media/tvshows:ro
       - /DATA/Media/Music:/media/music:ro
       - /DATA/Downloads:/media/downloads:ro
-      # IPTV 플레이리스트 및 EPG 데이터 저장용
-      - /DATA/AppData/$AppID/iptv:/config/iptv
     environment:
       - PUID=1000
       - PGID=1000
       - TZ=Asia/Seoul
       - JELLYFIN_PublishedServerUrl=http://localhost:8096
-      # IPTV 스트리밍 최적화 환경변수
-      - JELLYFIN_FFmpeg__probesize=50000000
-      - JELLYFIN_FFmpeg__analyzeduration=50000000
     devices:
-      - /dev/dri:/dev/dri  # 하드웨어 가속 (Intel/AMD GPU)
+      - /dev/dri:/dev/dri
     networks:
       pcs: null
 
@@ -45,9 +38,9 @@ x-casaos:
   author: self
   category: media
   description:
-    en_us: Jellyfin with IPTV - The Free Software Media System with Live TV streaming capabilities. Stream personal media and IPTV channels to any device from your own server.
-    zh_cn: 带IPTV的Jellyfin - 免费开源媒体系统，具备直播电视流媒体功能。从您自己的服务器将个人媒体和IPTV频道流式传输到任何设备。
-    ko_kr: IPTV가 포함된 Jellyfin - 라이브 TV 스트리밍 기능이 있는 무료 오픈소스 미디어 시스템입니다. 자체 서버에서 개인 미디어와 IPTV 채널을 모든 기기로 스트리밍하세요.
+    en_us: Jellyfin - The Free Software Media System that puts you in control of managing and streaming your media. Stream to any device from your own server.
+    zh_cn: Jellyfin - 免费开源媒体系统，让您完全控制媒体的管理和流媒体播放。从您自己的服务器流式传输到任何设备。
+    ko_kr: Jellyfin - 미디어 관리 및 스트리밍을 완전히 제어할 수 있는 무료 오픈소스 미디어 시스템입니다. 자체 서버에서 모든 기기로 스트리밍하세요.
   icon: https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Jellyfin/icons.png
   screenshot_link:
     - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Jellyfin/screenshots1.png
@@ -55,21 +48,20 @@ x-casaos:
     - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Jellyfin/screenshots3.png
   index: /
   tagline:
-    en_us: Your personal media streaming server with Live TV support
-    zh_cn: 支持直播电视的个人媒体流媒体服务器
-    ko_kr: 라이브 TV를 지원하는 개인 미디어 스트리밍 서버
+    en_us: Your personal media streaming server with no strings attached
+    zh_cn: 您的个人媒体流媒体服务器，完全自由
+    ko_kr: 완전히 자유로운 개인 미디어 스트리밍 서버
   port_map: "8096"
-  store_app_id: jellyfin-iptv
+  store_app_id: jellyfin
   title:
-    en_us: Jellyfin (IPTV Ready)
-    zh_cn: Jellyfin (IPTV就绪)
-    ko_kr: Jellyfin (IPTV 지원)
+    en_us: Jellyfin
+    zh_cn: Jellyfin
+    ko_kr: Jellyfin
   main: app
   is_uncontrolled: false
   volumes:
     - /DATA/AppData/$AppID/config
     - /DATA/AppData/$AppID/cache
-    - /DATA/AppData/$AppID/iptv
     - /DATA/Media/Movies
     - /DATA/Media/TV Show
     - /DATA/Media/Music
