@@ -22,30 +22,8 @@ services:
       - /DATA/Downloads:/downloads:rw
     environment:
       # 보안 설정 (기본값으로 보안 비활성화)
-      DOCKER_ENABLE_SECURITY: "false"
-      SECURITY_ENABLELOGIN: "false"
-      
-      # 리소스 최적화 설정
-      SYSTEM_MAXFILESIZE: "50"
-      METRICS_ENABLED: "false"
-      SYSTEM_GOOGLEVISIBILITY: "false"
-      SHOW_SURVEY: "false"
-      
-      # OCR 최적화 (메모리 사용량 감소)
-      OCR_PROCESSING_ENABLED: "true"
-      OCR_AUTO_DETECT_ENABLED: "false"
-      
-      # 언어 설정 (필요한 언어만)
-      LANGS: "en_US,ko_KR,zh_CN"
-      SYSTEM_DEFAULTLOCALE: ko-KR
-      
-      # UI 설정
-      UI_APPNAME: "Stirling-PDF"
-      UI_HOMEDESCRIPTION: "PDF 편집 도구"
-      UI_APPNAMENAVBAR: "Stirling-PDF"
-      
-      # JVM 메모리 최적화
-      JAVA_OPTS: "-Xms256m -Xmx1536m -XX:+UseG1GC -XX:MaxGCPauseMillis=200"
+      DISABLE_ADDITIONAL_FEATURES: false
+      SECURITY_ENABLELOGIN: true      
     networks:
       pcs: null
 
