@@ -21,15 +21,10 @@ services:
       - /DATA/AppData/$AppID/stirling/logs:/logs:rw
       - /DATA/Downloads:/downloads:rw
     environment:
-      # 보안 설정 (기본값으로 보안 비활성화)
       DISABLE_ADDITIONAL_FEATURES: false
-      SECURITY_ENABLELOGIN: true      
-    security:
-      enableLogin: 'true'
-      loginMethod: 'normal'
-      initialLogin:
-        username: ''
-        password: ''
+      SECURITY_ENABLELOGIN: true
+      SECURITY_INITIALLOGIN_USERNAME: admin
+      SECURITY_INITIALLOGIN_PASSWORD: admin      
     networks:
       pcs: null
 
