@@ -24,6 +24,12 @@ services:
       # 보안 설정 (기본값으로 보안 비활성화)
       DISABLE_ADDITIONAL_FEATURES: false
       SECURITY_ENABLELOGIN: true      
+    security:
+      enableLogin: 'true'
+      loginMethod: 'normal'
+      initialLogin:
+        username: ''
+        password: ''
     networks:
       pcs: null
 
