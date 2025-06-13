@@ -8,8 +8,7 @@ services:
     ports:
       - "80:80"
     volumes:
-      - /DATA/Websites/WordPress:/var/www/html
-      - /DATA/Downloads:/var/www/downloads
+      - /DATA/AppData/$AppID/WordPress:/var/www/html
     environment:
       - WORDPRESS_DB_HOST=database
       - WORDPRESS_DB_USER=wordpress
@@ -118,6 +117,5 @@ x-casaos:
         • /DATA/Downloads에 파일 업로드 후 /downloads URL로 접근
 
   volumes:
-    - /DATA/Websites/WordPress
-    - /DATA/Downloads
+    - /DATA/AppData/$AppID/WordPress
     - /DATA/AppData/$AppID/db
