@@ -83,62 +83,48 @@ x-casaos:
     - /DATA/Media/Music
     - /DATA/Downloadsname: navidrome
   tips:
-    en_us: |
-      📁 Folder Structure Guide:
-      • Music Library: /DATA/Media/Music
-      • Downloaded Music: /DATA/Downloads
-      • Database: /DATA/AppData/navidrome/data (Do not modify)
-      
-      🚀 Getting Started:
-      • First visit: Create admin account at http://YourServerIP:4533
-      • Supported Formats: MP3, FLAC, OGG, M4A, WMA, AIFF, WAV
-      • Mobile Apps: Search "Subsonic" compatible apps
-      
-      💡 Usage Tips:
-      • Add music to /DATA/Media/Music → Auto-scanned every 1 minute
-      • Download music to /DATA/Downloads → Move to Music folder
-      • Compatible Apps: DSub (Android), play:Sub (iOS), Ultrasonic
-      
-      ⚠️ Important:
-      • First user becomes admin automatically
-      • Supports Subsonic API for third-party apps
+    before_install:
+      en_us: |
+        📁 Folder Structure Guide:
+        • Music Library: /DATA/Media/Music
+        • Downloaded Music: /DATA/Downloads
+        • Database: /DATA/AppData/navidrome/data (Do not modify)
+        
+        💡 Usage Tips:
+        • Supported Formats: MP3, FLAC, OGG, M4A, WMA, AIFF, WAV
+        • Add music to /DATA/Media/Music → Auto-scanned every 1 minute
+        • Download music to /DATA/Downloads → Move to Music folder
+        
+        ⚠️ Important:
+        • First user becomes admin automatically
+        • Supports Subsonic API for third-party apps
 
-    zh_cn: |
-      📁 文件夹结构指南：
-      • 音乐库：/DATA/Media/Music
-      • 下载音乐：/DATA/Downloads
-      • 数据库：/DATA/AppData/navidrome/data（请勿修改）
-      
-      🚀 入门指南：
-      • 首次访问：在 http://您的服务器IP:4533 创建管理员账户
-      • 支持格式：MP3, FLAC, OGG, M4A, WMA, AIFF, WAV
-      • 手机应用：搜索"Subsonic"兼容应用
-      
-      💡 使用技巧：
-      • 将音乐添加到 /DATA/Media/Music → 每分钟自动扫描
-      • 下载音乐到 /DATA/Downloads → 移动到音乐文件夹
-      • 兼容应用：DSub (Android), play:Sub (iOS), Ultrasonic
-      
-      ⚠️ 重要提示：
-      • 第一个用户自动成为管理员
-      • 支持Subsonic API，可使用第三方应用
+      zh_cn: |
+        📁 文件夹结构指南：
+        • 音乐库：/DATA/Media/Music
+        • 下载音乐：/DATA/Downloads
+        • 数据库：/DATA/AppData/navidrome/data（请勿修改）
+        
+        💡 使用技巧：
+        • 支持格式：MP3, FLAC, OGG, M4A, WMA, AIFF, WAV
+        • 将音乐添加到 /DATA/Media/Music → 每分钟自动扫描
+        • 下载音乐到 /DATA/Downloads → 移动到音乐文件夹
+        
+        ⚠️ 重要提示：
+        • 第一个用户自动成为管理员
+        • 支持Subsonic API，可使用第三方应用
 
-    ko_kr: |
-      📁 폴더 구조 안내:
-      • 음악 라이브러리: /DATA/Media/Music
-      • 다운로드 음악: /DATA/Downloads
-      • 데이터베이스: /DATA/AppData/navidrome/data (수정 금지)
-      
-      🚀 시작하기:
-      • 첫 접속: http://서버IP:4533 에서 관리자 계정 생성
-      • 지원 포맷: MP3, FLAC, OGG, M4A, WMA, AIFF, WAV
-      • 모바일 앱: "Subsonic" 호환 앱 검색
-      
-      💡 사용 팁:
-      • /DATA/Media/Music에 음악 추가 → 1분마다 자동 스캔
-      • /DATA/Downloads에 음악 다운로드 → Music 폴더로 이동
-      • 호환 앱: DSub (Android), play:Sub (iOS), Ultrasonic
-      
-      ⚠️ 주의사항:
-      • 첫 번째 사용자가 자동으로 관리자가 됨
-      • Subsonic API 지원으로 다양한 앱 사용 가능
+      ko_kr: |
+        📁 폴더 구조 안내:
+        • 음악 라이브러리: /DATA/Media/Music
+        • 다운로드 음악: /DATA/Downloads
+        • 데이터베이스: /DATA/AppData/navidrome/data (수정 금지)
+        
+        💡 사용 팁:
+        • 지원 포맷: MP3, FLAC, OGG, M4A, WMA, AIFF, WAV
+        • /DATA/Media/Music에 음악 추가 → 1분마다 자동 스캔
+        • /DATA/Downloads에 음악 다운로드 → Music 폴더로 이동
+        
+        ⚠️ 주의사항:
+        • 첫 번째 사용자가 자동으로 관리자가 됨
+        • Subsonic API 지원으로 다양한 앱 사용 가능

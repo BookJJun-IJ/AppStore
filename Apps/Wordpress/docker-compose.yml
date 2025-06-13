@@ -68,74 +68,55 @@ x-casaos:
     ko_kr: Wordpress
   main: app
   tips:
-    en_us: |
-      🌐 Website Setup:
-      • Web Access: http://YourServerIP or http://localhost
-      • First visit: WordPress installation wizard
-      • Database: Pre-configured (wordpress/wordpress)
-      
-      📁 Folder Structure:
-      • Website Files: /DATA/Websites/WordPress
-      • Media Uploads: Access through /DATA/Downloads folder
-      • Database: /DATA/AppData/wordpress/db (Do not modify)
-      
-      💡 Getting Started:
-      • Complete 5-minute installation
-      • Choose site title, admin username, password
-      • Install themes and plugins from dashboard
-      • Upload media files via WordPress admin or /DATA/Downloads
-      
-      ⚠️ Security Tips:
-      • Change default admin password immediately
-      • Keep WordPress and plugins updated
-      • Backup database regularly
-      • Use strong passwords for all users
+    before_install:
+      en_us: |
+        🌐 Website Setup:
+        • First visit: WordPress installation wizard
+        • Database: Pre-configured (wordpress/wordpress)
+        
+        📁 Folder Structure:
+        • Website Files: /DATA/Websites/WordPress
+        • Media Uploads: Access through /DATA/Downloads folder
+        • Database: /DATA/AppData/wordpress/db (Do not modify)
+        
+        💡 Getting Started:
+        • Complete 5-minute installation
+        • Choose site title, admin username, password
+        • Install themes and plugins from dashboard
+        • Upload media files via WordPress admin or /DATA/Downloads
 
-    zh_cn: |
-      🌐 网站设置：
-      • 网页访问：http://您的服务器IP 或 http://localhost
-      • 首次访问：WordPress安装向导
-      • 数据库：预配置（wordpress/wordpress）
-      
-      📁 文件夹结构：
-      • 网站文件：/DATA/Websites/WordPress
-      • 媒体上传：通过 /DATA/Downloads 文件夹访问
-      • 数据库：/DATA/AppData/wordpress/db（请勿修改）
-      
-      💡 入门指南：
-      • 完成5分钟安装
-      • 选择网站标题、管理员用户名、密码
-      • 从仪表板安装主题和插件
-      • 通过WordPress管理后台或 /DATA/Downloads 上传媒体文件
-      
-      ⚠️ 安全提示：
-      • 立即更改默认管理员密码
-      • 保持WordPress和插件更新
-      • 定期备份数据库
-      • 为所有用户使用强密码
+      zh_cn: |
+        🌐 网站设置：
+        • 首次访问：WordPress安装向导
+        • 数据库：预配置（wordpress/wordpress）
+        
+        📁 文件夹结构：
+        • 网站文件：/DATA/Websites/WordPress
+        • 媒体上传：通过 /DATA/Downloads 文件夹访问
+        • 数据库：/DATA/AppData/wordpress/db（请勿修改）
+        
+        💡 入门指南：
+        • 完成5分钟安装
+        • 选择网站标题、管理员用户名、密码
+        • 从仪表板安装主题和插件
+        • 通过WordPress管理后台或 /DATA/Downloads 上传媒体文件
+        
+      ko_kr: |
+        🌐 웹사이트 설정:
+        • 첫 접속: WordPress 설치 마법사
+        • 데이터베이스: 사전 구성됨 (wordpress/wordpress)
+        
+        📁 폴더 구조:
+        • 웹사이트 파일: /DATA/Websites/WordPress
+        • 미디어 업로드: /DATA/Downloads 폴더를 통해 접근
+        • 데이터베이스: /DATA/AppData/wordpress/db (수정 금지)
+        
+        💡 시작하기:
+        • 5분 설치 완료하기
+        • 사이트 제목, 관리자 사용자명, 비밀번호 선택
+        • 대시보드에서 테마 및 플러그인 설치
+        • WordPress 관리자 페이지 또는 /DATA/Downloads를 통해 미디어 파일 업로드
 
-    ko_kr: |
-      🌐 웹사이트 설정:
-      • 웹 접속: http://서버IP 또는 http://localhost
-      • 첫 접속: WordPress 설치 마법사
-      • 데이터베이스: 사전 구성됨 (wordpress/wordpress)
-      
-      📁 폴더 구조:
-      • 웹사이트 파일: /DATA/Websites/WordPress
-      • 미디어 업로드: /DATA/Downloads 폴더를 통해 접근
-      • 데이터베이스: /DATA/AppData/wordpress/db (수정 금지)
-      
-      💡 시작하기:
-      • 5분 설치 완료하기
-      • 사이트 제목, 관리자 사용자명, 비밀번호 선택
-      • 대시보드에서 테마 및 플러그인 설치
-      • WordPress 관리자 페이지 또는 /DATA/Downloads를 통해 미디어 파일 업로드
-      
-      ⚠️ 보안 팁:
-      • 기본 관리자 비밀번호 즉시 변경
-      • WordPress 및 플러그인 업데이트 유지
-      • 정기적으로 데이터베이스 백업
-      • 모든 사용자에게 강력한 비밀번호 사용
   volumes:
     - /DATA/Websites/WordPress
     - /DATA/Downloads

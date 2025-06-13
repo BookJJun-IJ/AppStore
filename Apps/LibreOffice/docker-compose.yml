@@ -20,9 +20,8 @@ services:
     environment:
       - PUID=1000
       - PGID=1000
-      - TZ=Asia/Seoul
-      - ID=abc
-      - PASSWORD=libreoffice
+      - CUSTOM_USER=abc
+      - PASSWORD=abc
       - SECURE_CONNECTION=0
       - NOVNC_PORT=3000
     security_opt:
@@ -62,77 +61,81 @@ x-casaos:
     zh_cn: LibreOffice
     ko_kr: LibreOffice
   tips:
-    en_us: |
-      🔐 Access Settings:
-      • Web Access: http://YourServerIP:3000
-      • Default Password: libreoffice
-      • Browser-based desktop environment
-      
-      📁 Folder Structure:
-      • Documents: /DATA/Documents
-      • Downloads: /DATA/Downloads
-      • Config: /DATA/AppData/libreoffice/config (Do not modify)
-      
-      💡 Applications Included:
-      • Writer - Word processing (like MS Word)
-      • Calc - Spreadsheets (like MS Excel)
-      • Impress - Presentations (like MS PowerPoint)
-      • Draw - Vector graphics and diagrams
-      • Base - Database management
-      • Math - Formula editor
-      
-      ⚠️ Usage Tips:
-      • Save files to /DATA/Documents for easy access
-      • Downloads from web go to /DATA/Downloads
-      • Works best with modern browsers (Chrome, Firefox)
+   before_install:
+     en_us: |
+       🔐 **ACCESS CREDENTIALS (IMPORTANT)**:
+       • Username: abc
+       • Password: abc
+       • To change credentials: Desktop → App Settings → Environment Variables (CUSTOM_USER & PASSWORD)
+       • Browser-based desktop environment
+       
+       📁 Folder Structure:
+       • Documents: /DATA/Documents
+       • Downloads: /DATA/Downloads
+       • Config: /DATA/AppData/libreoffice/config (Do not modify)
+       
+       💡 Applications Included:
+       • Writer - Word processing (like MS Word)
+       • Calc - Spreadsheets (like MS Excel)
+       • Impress - Presentations (like MS PowerPoint)
+       • Draw - Vector graphics and diagrams
+       • Base - Database management
+       • Math - Formula editor
+       
+       ⚠️ Usage Tips:
+       • Save files to /DATA/Documents for easy access
+       • Downloads from web go to /DATA/Downloads
+       • Works best with modern browsers (Chrome, Firefox)
 
-    zh_cn: |
-      🔐 访问设置：
-      • 网页访问：http://您的服务器IP:3000
-      • 默认密码：libreoffice
-      • 基于浏览器的桌面环境
-      
-      📁 文件夹结构：
-      • 文档：/DATA/Documents
-      • 下载：/DATA/Downloads
-      • 配置：/DATA/AppData/libreoffice/config（请勿修改）
-      
-      💡 包含应用：
-      • Writer - 文字处理（类似MS Word）
-      • Calc - 电子表格（类似MS Excel）
-      • Impress - 演示文稿（类似MS PowerPoint）
-      • Draw - 矢量图形和图表
-      • Base - 数据库管理
-      • Math - 公式编辑器
-      
-      ⚠️ 使用技巧：
-      • 将文件保存到 /DATA/Documents 便于访问
-      • 网页下载的文件存放在 /DATA/Downloads
-      • 建议使用现代浏览器（Chrome, Firefox）
+     zh_cn: |
+       🔐 **访问凭据（重要）**：
+       • 用户名：abc
+       • 密码：abc
+       • 更改凭据：桌面 → 应用设置 → 环境变量（CUSTOM_USER 和 PASSWORD）
+       • 基于浏览器的桌面环境
+       
+       📁 文件夹结构：
+       • 文档：/DATA/Documents
+       • 下载：/DATA/Downloads
+       • 配置：/DATA/AppData/libreoffice/config（请勿修改）
+       
+       💡 包含应用：
+       • Writer - 文字处理（类似MS Word）
+       • Calc - 电子表格（类似MS Excel）
+       • Impress - 演示文稿（类似MS PowerPoint）
+       • Draw - 矢量图形和图表
+       • Base - 数据库管理
+       • Math - 公式编辑器
+       
+       ⚠️ 使用技巧：
+       • 将文件保存到 /DATA/Documents 便于访问
+       • 网页下载的文件存放在 /DATA/Downloads
+       • 建议使用现代浏览器（Chrome, Firefox）
 
-    ko_kr: |
-      🔐 접속 설정:
-      • 웹 접속: http://서버IP:3000
-      • 기본 비밀번호: libreoffice
-      • 브라우저 기반 데스크톱 환경
-      
-      📁 폴더 구조:
-      • 문서: /DATA/Documents
-      • 다운로드: /DATA/Downloads
-      • 설정: /DATA/AppData/libreoffice/config (수정 금지)
-      
-      💡 포함된 애플리케이션:
-      • Writer - 문서 작성 (MS Word와 유사)
-      • Calc - 스프레드시트 (MS Excel과 유사)
-      • Impress - 프레젠테이션 (MS PowerPoint와 유사)
-      • Draw - 벡터 그래픽 및 다이어그램
-      • Base - 데이터베이스 관리
-      • Math - 수식 편집기
-      
-      ⚠️ 사용 팁:
-      • 파일을 /DATA/Documents에 저장하면 쉽게 접근 가능
-      • 웹에서 다운로드한 파일은 /DATA/Downloads에 저장
-      • 최신 브라우저(Chrome, Firefox) 사용 권장
+     ko_kr: |
+       🔐 **접속 계정 정보 (중요)**:
+       • 사용자명: abc
+       • 비밀번호: abc
+       • 계정 변경 방법: 바탕화면 → 앱 설정 → 환경변수 (CUSTOM_USER와 PASSWORD 수정)
+       • 브라우저 기반 데스크톱 환경
+       
+       📁 폴더 구조:
+       • 문서: /DATA/Documents
+       • 다운로드: /DATA/Downloads
+       • 설정: /DATA/AppData/libreoffice/config (수정 금지)
+       
+       💡 포함된 애플리케이션:
+       • Writer - 문서 작성 (MS Word와 유사)
+       • Calc - 스프레드시트 (MS Excel과 유사)
+       • Impress - 프레젠테이션 (MS PowerPoint와 유사)
+       • Draw - 벡터 그래픽 및 다이어그램
+       • Base - 데이터베이스 관리
+       • Math - 수식 편집기
+       
+       ⚠️ 사용 팁:
+       • 파일을 /DATA/Documents에 저장하면 쉽게 접근 가능
+       • 웹에서 다운로드한 파일은 /DATA/Downloads에 저장
+       • 최신 브라우저(Chrome, Firefox) 사용 권장
   volumes:
     - /DATA/Documents
     - /DATA/Downloads
