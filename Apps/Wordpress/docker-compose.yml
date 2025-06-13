@@ -9,7 +9,7 @@ services:
       - "80:80"
     volumes:
       - /DATA/Websites/WordPress:/var/www/html
-      - /DATA/Downloads:/var/www/html/wp-content/uploads/downloads
+      - /DATA/Downloads:/var/www/downloads
     environment:
       - WORDPRESS_DB_HOST=database
       - WORDPRESS_DB_USER=wordpress
@@ -76,14 +76,14 @@ x-casaos:
         
         📁 Folder Structure:
         • Website Files: /DATA/Websites/WordPress
-        • Media Uploads: Access through /DATA/Downloads folder
+        • Downloads: /DATA/Downloads (accessible at /downloads URL)
         • Database: /DATA/AppData/wordpress/db (Do not modify)
         
         💡 Getting Started:
         • Complete 5-minute installation
         • Choose site title, admin username, password
         • Install themes and plugins from dashboard
-        • Upload media files via WordPress admin or /DATA/Downloads
+        • Upload files to /DATA/Downloads and access via /downloads URL
 
       zh_cn: |
         🌐 网站设置：
@@ -92,14 +92,14 @@ x-casaos:
         
         📁 文件夹结构：
         • 网站文件：/DATA/Websites/WordPress
-        • 媒体上传：通过 /DATA/Downloads 文件夹访问
+        • 下载文件：/DATA/Downloads（通过 /downloads URL访问）
         • 数据库：/DATA/AppData/wordpress/db（请勿修改）
         
         💡 入门指南：
         • 完成5分钟安装
         • 选择网站标题、管理员用户名、密码
         • 从仪表板安装主题和插件
-        • 通过WordPress管理后台或 /DATA/Downloads 上传媒体文件
+        • 上传文件到 /DATA/Downloads 并通过 /downloads URL访问
         
       ko_kr: |
         🌐 웹사이트 설정:
@@ -108,14 +108,14 @@ x-casaos:
         
         📁 폴더 구조:
         • 웹사이트 파일: /DATA/Websites/WordPress
-        • 미디어 업로드: /DATA/Downloads 폴더를 통해 접근
+        • 다운로드: /DATA/Downloads (/downloads URL로 접근)
         • 데이터베이스: /DATA/AppData/wordpress/db (수정 금지)
         
         💡 시작하기:
         • 5분 설치 완료하기
         • 사이트 제목, 관리자 사용자명, 비밀번호 선택
         • 대시보드에서 테마 및 플러그인 설치
-        • WordPress 관리자 페이지 또는 /DATA/Downloads를 통해 미디어 파일 업로드
+        • /DATA/Downloads에 파일 업로드 후 /downloads URL로 접근
 
   volumes:
     - /DATA/Websites/WordPress
