@@ -1,143 +1,81 @@
-name: wireguard-easy
-
-volumes:
-  etc_wireguard:
-
+name: wgeasy
 services:
-  app:
-    image: ghcr.io/wg-easy/wg-easy:15
-    container_name: wg-easy
+  wgeasy:
+    image: ghcr.io/wg-easy/wg-easy:13
     restart: unless-stopped
-    ports:
-      - "51820:51820/udp"
-      - "51821:51821/tcp"
-    volumes:
-      - /DATA/AppData/$AppID/wireguard:/etc/wireguard
-      - /lib/modules:/lib/modules:ro
+    network_mode: bridge
     environment:
-      PASSWORD: admin
-      WG_HOST: localhost
-      WG_PORT: 51820
-      WG_DEFAULT_DNS: 1.1.1.1
-      WG_DEFAULT_ADDRESS: 10.8.0.x
-      WG_ALLOWED_IPS: 192.168.0.0/16,172.16.0.0/12,10.0.0.0/8
+      PASSWORD: '$default_pwd'
+      WG_HOST: '$public_ip'
+      WG_PORT: '51820'
+      WG_DEFAULT_DNS: '9.9.9.9'
+    x-casaos:
+      volumes:
+        - container: /etc/wireguard
+          description:
+            en_us: Contains device VPN config files.
+      ports:
+        - container: '51820'
+          description:
+            en_us: Wireguard VPN port
+    expose:
+      - 51821
+    ports:
+      - target: 51820
+        published: 51820
+        protocol: udp
+    volumes:
+      - type: bind
+        source: /DATA/AppData/$AppID/wireguard
+        target: /etc/wireguard
     cap_add:
       - NET_ADMIN
       - SYS_MODULE
     sysctls:
       - net.ipv4.ip_forward=1
       - net.ipv4.conf.all.src_valid_mark=1
-      - net.ipv6.conf.all.disable_ipv6=0
-      - net.ipv6.conf.all.forwarding=1
-      - net.ipv6.conf.default.forwarding=1
-    networks:
-      wg:
-        ipv4_address: 10.42.42.42
-        ipv6_address: fdcc:ad94:bacf:61a3::2a
-
-networks:
-  wg:
-    driver: bridge
-    enable_ipv6: true
-    ipam:
-      driver: default
-      config:
-        - subnet: 10.42.42.0/24
-        - subnet: fdcc:ad94:bacf:61a3::/64
-
+    container_name: wgeasy
 x-casaos:
   architectures:
     - amd64
+    - arm
     - arm64
-  author: self
-  category: network
+  main: wgeasy
+  tagline:
+    en_us: WEB UI to manage WireGuard VPN.
+    zh_cn: 管理 WireGuard VPN 的 WEB UI。
+    de_de: WEB UI zur Verwaltung von WireGuard VPN.
+    es_es: WEB UI para gestionar WireGuard VPN.
+    fr_fr: WEB UI pour gérer WireGuard VPN.
+    hu_hu: WEB felhasználói felület a WireGuard VPN kezeléséhez.
+    it_it: Interfaccia WEB per la gestione di WireGuard VPN.
+    ru_ru: WEB-интерфейс для управления WireGuard VPN.
+    pl_pl: WEB UI do zarządzania WireGuard VPN.
+    pt_br: WEB UI para gerenciar o WireGuard VPN.
+    sv_se: WEB UI för att hantera WireGuard VPN.
+    uk_ua: WEB інтерфейс для керування WireGuard VPN.
   description:
-    en_us: WireGuard Easy - The easiest way to install & manage WireGuard VPN with a beautiful web interface. Based on official configuration.
-    zh_cn: WireGuard Easy - 使用美观网页界面安装和管理 WireGuard VPN 的最简单方法。基于官方配置。
-    ko_kr: WireGuard Easy - 아름다운 웹 인터페이스로 WireGuard VPN을 설치하고 관리하는 가장 쉬운 방법입니다. 공식 설정 기반.
-  icon: https://cdn.jsdelivr.net/gh/Worph/AppStore@main/Apps/WireGuardEasy/icon.png
+    en_us: You have found the easiest way to install & manage WireGuard on any Linux host!
+    zh_cn: 您已经找到了在任何 Linux 主机上安装和管理 WireGuard 的最简单方法！
+    de_de: Sie haben den einfachsten Weg gefunden, WireGuard auf jedem Linux-Host zu installieren und zu verwalten!
+    es_es: Ha encontrado la forma más sencilla de instalar y gestionar WireGuard en cualquier host Linux.
+    fr_fr: Vous avez trouvé le moyen le plus simple d'installer et de gérer WireGuard sur n'importe quel hôte Linux !
+    hu_hu: Megtalálta a WireGuard telepítésének és kezelésének legegyszerűbb módját bármely Linux hoszton!
+    it_it: Avete trovato il modo più semplice per installare e gestire WireGuard su qualsiasi host Linux!
+    ru_ru: Вы нашли самый простой способ установки и управления WireGuard на любом Linux-хосте!
+    pl_pl: Znalazłeś najłatwiejszy sposób instalacji i zarządzania WireGuard na dowolnym hoście z systemem Linux!
+    pt_br: Você encontrou a maneira mais fácil de instalar e gerenciar o WireGuard em qualquer host Linux!
+    sv_se: Du har hittat det enklaste sättet att installera och hantera WireGuard på en Linux-värd!
+    uk_ua: Ви знайшли найпростіший спосіб встановити WireGuard та керувати ним на будь-якому комп'ютері з Linux!
+  developer: WeejeWel
+  author: Sawy
   screenshot_link:
     - https://cdn.jsdelivr.net/gh/Worph/AppStore@main/Apps/WireGuardEasy/screenshot-1.png
     - https://cdn.jsdelivr.net/gh/Worph/AppStore@main/Apps/WireGuardEasy/screenshot-2.png
     - https://cdn.jsdelivr.net/gh/Worph/AppStore@main/Apps/WireGuardEasy/screenshot-3.png
-  index: /
-  tagline:
-    en_us: Easy WireGuard VPN management with official stability
-    zh_cn: 基于官方稳定性的简易 WireGuard VPN 管理
-    ko_kr: 공식 안정성을 기반으로 한 쉬운 WireGuard VPN 관리
-  port_map: "51821"
-  store_app_id: wireguard-easy
+  icon: https://cdn.jsdelivr.net/gh/Worph/AppStore@main/Apps/WireGuardEasy/icon.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Worph/AppStore@main/Apps/WireGuardEasy/icon.png
+  category: Network
   title:
     en_us: WireGuard Easy
-    zh_cn: WireGuard Easy
-    ko_kr: WireGuard Easy
-  main: app
-  is_uncontrolled: false
-  tips:
-    before_install:
-      en_us: |
-        🔐 **Default Login**:
-        • Password: admin
-        • Change: Environment Variables → PASSWORD
-        
-        🌐 **Network Setup**:
-        • Set WG_HOST to your public IP/domain
-        • VPN Port: 51820/UDP (open in firewall)
-        • Web UI: 51821/TCP
-        
-        📋 **Features**:
-        • IPv4 and IPv6 support
-        • QR code generation for mobile clients
-        • Real-time client management
-        • Based on official Docker Compose
-        
-        ⚠️ **Requirements**:
-        • Kernel modules access (/lib/modules)
-        • Network admin capabilities
-        • Open UDP port 51820 in router/firewall
-
-      zh_cn: |
-        🔐 **默认登录**：
-        • 密码：admin
-        • 修改：环境变量 → PASSWORD
-        
-        🌐 **网络设置**：
-        • 将 WG_HOST 设置为公网IP/域名
-        • VPN端口：51820/UDP（防火墙开放）
-        • 网页界面：51821/TCP
-        
-        📋 **功能特性**：
-        • 支持 IPv4 和 IPv6
-        • 移动客户端二维码生成
-        • 实时客户端管理
-        • 基于官方 Docker Compose
-        
-        ⚠️ **系统要求**：
-        • 内核模块访问权限 (/lib/modules)
-        • 网络管理权限
-        • 路由器/防火墙开放 UDP 51820 端口
-
-      ko_kr: |
-        🔐 **기본 로그인**:
-        • 비밀번호: admin
-        • 변경: 환경변수 → PASSWORD
-        
-        🌐 **네트워크 설정**:
-        • WG_HOST를 공인IP/도메인으로 설정
-        • VPN 포트: 51820/UDP (방화벽 개방)
-        • 웹 UI: 51821/TCP
-        
-        📋 **주요 기능**:
-        • IPv4 및 IPv6 지원
-        • 모바일 클라이언트용 QR 코드 생성
-        • 실시간 클라이언트 관리
-        • 공식 Docker Compose 기반
-        
-        ⚠️ **시스템 요구사항**:
-        • 커널 모듈 접근 권한 (/lib/modules)
-        • 네트워크 관리자 권한
-        • 라우터/방화벽에서 UDP 51820 포트 개방
-
-  volumes:
-    - /DATA/AppData/$AppID/wireguard
-    - /lib/modules
+  webui_port: 51821
