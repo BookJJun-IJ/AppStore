@@ -53,7 +53,7 @@ x-casaos:
     - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Wordpress/screenshots1.png
     - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Wordpress/screenshots2.png
     - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Wordpress/screenshots3.png
-  index: /
+  index: /wp-admin
   is_uncontrolled: false
   tagline:
     en_us: Create beautiful websites and blogs with ease
