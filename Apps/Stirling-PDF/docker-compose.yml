@@ -18,13 +18,11 @@ services:
     volumes:
       - /DATA/AppData/$AppID/stirling/data:/usr/share/tessdata:rw
       - /DATA/AppData/$AppID/stirling/config:/configs:rw
-      - /DATA/AppData/$AppID/stirling/logs:/logs:rw
-      - /DATA/Downloads:/downloads:rw
     environment:
-      DOCKER_ENABLE_SECURITY: true
-      SECURITY_ENABLE_LOGIN: true
-      SECURITY_INITIALLOGIN_USERNAME: admin
-      SECURITY_INITIALLOGIN_PASSWORD: admin
+      - DOCKER_ENABLE_SECURITY = true
+      - SECURITY_ENABLE_LOGIN = true
+      - SECURITY_INITIALLOGIN_USERNAME = admin
+      - SECURITY_INITIALLOGIN_PASSWORD = admin
     networks:
       pcs: null
 
@@ -104,5 +102,3 @@ x-casaos:
   volumes:
     - /DATA/AppData/$AppID/stirling/data
     - /DATA/AppData/$AppID/stirling/config
-    - /DATA/AppData/$AppID/stirling/logs
-    - /DATA/Downloads
