@@ -13,7 +13,6 @@ services:
           memory: 512M
           cpus: "0.25"
     restart: unless-stopped
-    user:1000:0100
     ports:
       - "8080:8080"
     volumes:
