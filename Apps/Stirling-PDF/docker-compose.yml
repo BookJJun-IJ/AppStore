@@ -21,11 +21,12 @@ services:
       - /DATA/AppData/$AppID/stirling/logs:/logs:rw
       - /DATA/Downloads:/downloads:rw
     environment:
-      DISABLE_ADDITIONAL_FEATURES: false
-      DOCKER_ENABLE_SECURITY: true
+      DISABLE_ADDITIONAL_FEATURES: false      
       SECURITY_ENABLELOGIN: true
       SECURITY_INITIALLOGIN_USERNAME: admin
-      SECURITY_INITIALLOGIN_PASSWORD: admin  
+      SECURITY_INITIALLOGIN_PASSWORD: admin
+      SECURITY_CSRFDISABLED: false      
+      SYSTEM_ENABLEANALYTICS: false
     networks:
       pcs: null
 
