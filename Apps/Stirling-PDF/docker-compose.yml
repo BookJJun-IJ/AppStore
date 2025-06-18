@@ -13,6 +13,7 @@ services:
           memory: 512M
           cpus: "0.25"
     restart: unless-stopped
+    user:1000:0100
     ports:
       - "8080:8080"
     volumes:
@@ -21,10 +22,10 @@ services:
       - /DATA/AppData/$AppID/stirling/logs:/logs:rw
       - /DATA/Downloads:/downloads:rw
     environment:
-      - PUID=1000
-      - PGID=1000
       DOCKER_ENABLE_SECURITY: true    
       SECURITY_ENABLELOGIN: true
+      PUID: 1000
+      PGID: 1000
       SECURITY_INITIALLOGIN_USERNAME: admin
       SECURITY_INITIALLOGIN_PASSWORD: admin      
     networks:
