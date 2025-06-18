@@ -18,6 +18,8 @@ services:
     volumes:
       - /DATA/AppData/$AppID/stirling/data:/usr/share/tessdata:rw
       - /DATA/AppData/$AppID/stirling/config:/configs:rw
+      - /DATA/AppData/$AppID/stirling/logs:/logs:rw
+      - /DATA/Downloads:/downloads:rw
     environment:
       DISABLE_ADDITIONAL_FEATURES: false
       DOCKER_ENABLE_SECURITY: true
@@ -103,3 +105,5 @@ x-casaos:
   volumes:
     - /DATA/AppData/$AppID/stirling/data
     - /DATA/AppData/$AppID/stirling/config
+    - /DATA/AppData/$AppID/stirling/logs
+    - /DATA/Downloads
