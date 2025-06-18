@@ -21,12 +21,13 @@ services:
       - /DATA/AppData/$AppID/stirling/logs:/logs:rw
       - /DATA/Downloads:/downloads:rw
     environment:
+      DISABLE_ADDITIONAL_FEATURES: "false"
       PUID: 1002
       PGID: 1002
-      DOCKER_ENABLE_SECURITY: true    
-      SECURITY_ENABLELOGIN: true      
-      SECURITY_INITIALLOGIN_USERNAME: admin
-      SECURITY_INITIALLOGIN_PASSWORD: admin      
+      DOCKER_ENABLE_SECURITY: "true"
+      SECURITY_ENABLELOGIN: "true"      
+      SECURITY_INITIALLOGIN_USERNAME: "admin"
+      SECURITY_INITIALLOGIN_PASSWORD: "admin"      
     networks:
       pcs: null
 
