@@ -21,13 +21,10 @@ services:
       - /DATA/AppData/$AppID/stirling/logs:/logs:rw
       - /DATA/Downloads:/downloads:rw
     environment:
-      DOCKER_ENABLE_SECURITY: true
-      DISABLE_ADDITIONAL_FEATURES: false      
+      DOCKER_ENABLE_SECURITY: true    
       SECURITY_ENABLELOGIN: true
       SECURITY_INITIALLOGIN_USERNAME: admin
       SECURITY_INITIALLOGIN_PASSWORD: admin
-      SECURITY_CSRFDISABLED: false      
-      SYSTEM_ENABLEANALYTICS: false
     networks:
       pcs: null
 
@@ -40,6 +37,7 @@ x-casaos:
     - amd64
     - arm64
   author: self
+
   category: office
   description:
     en_us: Stirling-PDF is an optimized open-source local web-based tool that allows you to easily edit, convert, merge and split PDF files with reduced resource usage.
