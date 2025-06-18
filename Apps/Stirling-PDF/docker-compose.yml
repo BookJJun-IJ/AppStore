@@ -19,10 +19,11 @@ services:
       - /DATA/AppData/$AppID/stirling/data:/usr/share/tessdata:rw
       - /DATA/AppData/$AppID/stirling/config:/configs:rw
     environment:
-      - DOCKER_ENABLE_SECURITY = true
-      - SECURITY_ENABLE_LOGIN = true
-      - SECURITY_INITIALLOGIN_USERNAME = admin
-      - SECURITY_INITIALLOGIN_PASSWORD = admin
+      DISABLE_ADDITIONAL_FEATURES: false
+      DOCKER_ENABLE_SECURITY: true
+      SECURITY_ENABLELOGIN: true
+      SECURITY_INITIALLOGIN_USERNAME: admin
+      SECURITY_INITIALLOGIN_PASSWORD: admin  
     networks:
       pcs: null
 
