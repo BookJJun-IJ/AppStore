@@ -1,130 +1,154 @@
 name: navidrome
 
 services:
-  app:
+  navidrome:
+    image: deluan/navidrome:0.50.2
     container_name: navidrome
-    image: deluan/navidrome:latest
     restart: unless-stopped
-    user: 1000:1000 
-    ports:
-      - "4533:4533"
+    expose:
+      - 4533
+    volumes:
+      - /DATA/AppData/$AppID/data:/data
+      - /DATA/Media/Music:/music
+      - /DATA/Downloads:/downloads
+    user: $PUID:$PGID
     environment:
+      PGID: $PGID
+      PUID: $PUID
+      TZ: $TZ
       ND_MUSICFOLDER: /music
       ND_DATAFOLDER: /data
       ND_LOGLEVEL: info
-      ND_BASEURL: ""
-      
-      ND_ENABLETRANSCODINGCONFIG: "true"
-      ND_ENABLEDOWNLOADS: "true"
-      ND_ENABLEEXTERNALSERVICES: "false"
-      ND_ENABLESHARING: "true"
-      ND_ENABLESTARRATING: "true"
-      ND_ENABLEUSEREDITING: "false"
-      
-      ND_TRANSCODINGCACHESIZE: "100MB"
-      ND_IMAGECACHESIZE: "100MB"
-      ND_SCANNER_INTERVAL: "1m"
-      ND_SESSIONTIMEOUT: "24h"
-      
-      ND_UILOGINBACKGROUNDURL: ""
-      ND_UIWELCOMEMESSAGE: "Welcome to Navidrome!"
-      ND_DEFAULTLANGUAGE: "en"
-      ND_DEFAULTTHEME: "Dark"
-      
-      ND_LASTFM_ENABLED: "true"
-      ND_SPOTIFY_ID: ""
-      ND_LISTENBRAINZ_ENABLED: "false"
-    volumes:
-      - /DATA/AppData/$AppID/data:/data
-      - /DATA/Media/Music:/music:ro
-      - /DATA/Downloads:/downloads:ro
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:4533/app"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    networks:
-      pcs: null
+    cpu_shares: 50
+    deploy:
+      resources:
+        limits:
+          memory: 512M 
 
-networks:
-  pcs:
-    name: pcs
+# 서비스 레벨 x-casaos 섹션 (필요시 주석 해제)
+# 환경변수, 포트, 볼륨에 대한 설명을 추가할 수 있습니다
+#    x-casaos:
+#      envs:
+#        - container: TZ
+#          description:
+#            en_us: Timezone for the Navidrome service
+#            ko_kr: Navidrome 서비스의 시간대 설정
+#        - container: ND_MUSICFOLDER
+#          description:
+#            en_us: Path to your music library inside the container
+#            ko_kr: 컨테이너 내 음악 라이브러리 경로
+#        - container: ND_DATAFOLDER
+#          description:
+#            en_us: Path to store Navidrome database and configuration
+#            ko_kr: Navidrome 데이터베이스와 설정을 저장할 경로
+#        - container: ND_LOGLEVEL
+#          description:
+#            en_us: Log level (debug, info, warn, error)
+#            ko_kr: 로그 레벨 (debug, info, warn, error)
+#      ports:
+#        - container: "4533"
+#          description:
+#            en_us: Navidrome Web UI Port
+#            ko_kr: Navidrome 웹 UI 포트
+#      volumes:
+#        - container: /data
+#          description:
+#            en_us: Navidrome database and configuration directory
+#            ko_kr: Navidrome 데이터베이스 및 설정 디렉토리
+#        - container: /music
+#          description:
+#            en_us: Music library directory (read-only)
+#            ko_kr: 음악 라이브러리 디렉토리 (읽기 전용)
+#        - container: /downloads
+#          description:
+#            en_us: Downloads directory for temporary music files
+#            ko_kr: 임시 음악 파일용 다운로드 디렉토리
 
 x-casaos:
   architectures:
     - amd64
     - arm64
-  author: self
-  category: media
+  author: CasaOS Team
+  category: Media
+  developer: Deluan Quintão
   description:
     en_us: Navidrome - Modern Music Server and Streamer compatible with Subsonic/Airsonic clients, featuring a beautiful web interface, mobile apps support, and smart playlists
     zh_cn: Navidrome - 现代音乐服务器和流媒体播放器，兼容Subsonic/Airsonic客户端，具有美观的网页界面、移动应用支持和智能播放列表
     ko_kr: Navidrome - Subsonic/Airsonic 클라이언트와 호환되는 현대적인 음악 서버 및 스트리머로, 아름다운 웹 인터페이스, 모바일 앱 지원, 스마트 플레이리스트 기능 제공
-  icon: https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Navidrome/icons.png
+  icon: https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Navidrome/icon.png
   screenshot_link:
-    - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Navidrome/screenshots1.png
-    - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Navidrome/screenshots2.png
-    - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Navidrome/screenshots3.png
+    - https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Navidrome/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Navidrome/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Navidrome/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Navidrome/thumbnail.png
   index: /
   tagline:
     en_us: Your personal music streaming server with modern web interface
     zh_cn: 具有现代网页界面的个人音乐流媒体服务器
     ko_kr: 현대적인 웹 인터페이스를 갖춘 개인 음악 스트리밍 서버
-  port_map: "4533"
-  store_app_id: navidrome
   title:
     en_us: Navidrome
     zh_cn: Navidrome
     ko_kr: Navidrome
-  main: app
+  store_app_id: navidrome
+  main: navidrome
   is_uncontrolled: false
-  volumes:
-    - /DATA/AppData/$AppID/data
-    - /DATA/Media/Music
-    - /DATA/Downloadsname: navidrome
+  webui_port: 4533
   tips:
     before_install:
       en_us: |
-        📁 Folder Structure Guide:
-        • Music Library: /DATA/Media/Music
-        • Downloaded Music: /DATA/Downloads
-        • Database: /DATA/AppData/navidrome/data (Do not modify)
+        📁 **Folder Structure Guide:**
+        • Music Library: `/DATA/Media/Music`
+        • Downloaded Music: `/DATA/Downloads` 
+        • App Data: `/DATA/AppData/navidrome/data` (Auto-created)
         
-        💡 Usage Tips:
-        • Supported Formats: MP3, FLAC, OGG, M4A, WMA, AIFF, WAV
-        • Add music to /DATA/Media/Music → Auto-scanned every 1 minute
-        • Download music to /DATA/Downloads → Move to Music folder
+        💡 **Usage Tips:**
+        • Supported formats: MP3, FLAC, OGG, M4A, WMA, AIFF, WAV
+        • Music files are auto-scanned every 1 minute
+        • First user registration becomes admin automatically
         
-        ⚠️ Important:
-        • First user becomes admin automatically
-        • Supports Subsonic API for third-party apps
+        🔌 **Third-party Apps:**
+        • Compatible with Subsonic API clients
+        • Popular apps: DSub, Ultrasonic, Play:Sub, Jamstash
+        
+        ⚠️ **Important Notes:**
+        • Ensure music files have proper read permissions
+        • Default login: Create your account on first visit
 
       zh_cn: |
-        📁 文件夹结构指南：
-        • 音乐库：/DATA/Media/Music
-        • 下载音乐：/DATA/Downloads
-        • 数据库：/DATA/AppData/navidrome/data（请勿修改）
+        📁 **文件夹结构指南：**
+        • 音乐库：`/DATA/Media/Music`
+        • 下载音乐：`/DATA/Downloads`
+        • 应用数据：`/DATA/AppData/navidrome/data`（自动创建）
         
-        💡 使用技巧：
+        💡 **使用技巧：**
         • 支持格式：MP3, FLAC, OGG, M4A, WMA, AIFF, WAV
-        • 将音乐添加到 /DATA/Media/Music → 每分钟自动扫描
-        • 下载音乐到 /DATA/Downloads → 移动到音乐文件夹
+        • 音乐文件每分钟自动扫描
+        • 首个注册用户自动成为管理员
         
-        ⚠️ 重要提示：
-        • 第一个用户自动成为管理员
-        • 支持Subsonic API，可使用第三方应用
+        🔌 **第三方应用：**
+        • 兼容Subsonic API客户端
+        • 热门应用：DSub, Ultrasonic, Play:Sub, Jamstash
+        
+        ⚠️ **重要提示：**
+        • 确保音乐文件具有适当的读取权限
+        • 默认登录：首次访问时创建账户
 
       ko_kr: |
-        📁 폴더 구조 안내:
-        • 음악 라이브러리: /DATA/Media/Music
-        • 다운로드 음악: /DATA/Downloads
-        • 데이터베이스: /DATA/AppData/navidrome/data (수정 금지)
+        📁 **폴더 구조 안내:**
+        • 음악 라이브러리: `/DATA/Media/Music`
+        • 다운로드 음악: `/DATA/Downloads`
+        • 앱 데이터: `/DATA/AppData/navidrome/data` (자동 생성)
         
-        💡 사용 팁:
+        💡 **사용 팁:**
         • 지원 포맷: MP3, FLAC, OGG, M4A, WMA, AIFF, WAV
-        • /DATA/Media/Music에 음악 추가 → 1분마다 자동 스캔
-        • /DATA/Downloads에 음악 다운로드 → Music 폴더로 이동
+        • 음악 파일은 1분마다 자동 스캔됩니다
+        • 첫 번째 등록 사용자가 자동으로 관리자가 됩니다
         
-        ⚠️ 주의사항:
-        • 첫 번째 사용자가 자동으로 관리자가 됨
-        • Subsonic API 지원으로 다양한 앱 사용 가능
+        🔌 **서드파티 앱:**
+        • Subsonic API 클라이언트와 호환
+        • 인기 앱: DSub, Ultrasonic, Play:Sub, Jamstash
+        
+        ⚠️ **주의사항:**
+        • 음악 파일에 적절한 읽기 권한이 있는지 확인하세요
+        • 기본 로그인: 첫 방문 시 계정을 생성하세요
