@@ -12,14 +12,15 @@ services:
       - /DATA/AppData/$AppID/configs:/configs
       - /DATA/AppData/$AppID/logs:/logs
       - /DATA/Downloads:/downloads
+    user: $PUID:$PGID
     environment:
-      PGID: $PGID                               # Group ID for file permissions
-      PUID: $PUID                               # User ID for file permissions
-      TZ: $TZ                                   # Timezone setting
-      DOCKER_ENABLE_SECURITY: "true"           # Enable security features
-      SECURITY_ENABLELOGIN: "true"             # Enable login authentication
-      SECURITY_INITIALLOGIN_USERNAME: "admin"  # Default admin username
-      SECURITY_INITIALLOGIN_PASSWORD: "admin"  # Default admin password (change after first login)
+      PGID: $PGID                            # Group ID for file permissions
+      PUID: $PUID                            # User ID for file permissions
+      TZ: $TZ                                # Timezone setting
+      DOCKER_ENABLE_SECURITY: true           # Enable security features
+      SECURITY_ENABLELOGIN: true             # Enable login authentication
+      SECURITY_INITIALLOGIN_USERNAME: admin  # Default admin username
+      SECURITY_INITIALLOGIN_PASSWORD: admin  # Default admin password (change after first login)
     cpu_shares: 100
     deploy:
       resources:
