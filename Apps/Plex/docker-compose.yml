@@ -37,7 +37,6 @@ services:
       resources:
         limits:
           memory: 1G
-    network_mode: plex
 
 x-casaos:
   architectures:
