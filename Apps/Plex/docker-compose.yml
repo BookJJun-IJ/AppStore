@@ -42,20 +42,20 @@ x-casaos:
   architectures:
     - amd64
     - arm64
-  author: CasaOS Team
+  author: Yundera Team
   category: Media
   developer: Plex Inc.
   description:
     en_us: Plex - Stream your personal media collection anywhere. Organize your movies, TV shows, music, and photos with powerful media server that transcodes and streams to any device.
     zh_cn: Plex - 随时随地流式传输您的个人媒体收藏。使用强大的媒体服务器整理您的电影、电视节目、音乐和照片，可转码并流式传输到任何设备。
     ko_kr: Plex - 개인 미디어 컬렉션을 어디서나 스트리밍하세요. 영화, TV 프로그램, 음악, 사진을 정리하고 모든 기기로 트랜스코딩 및 스트리밍할 수 있는 강력한 미디어 서버입니다.
-  icon: https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Plex/icon.png
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Plex/icon.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Plex/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Plex/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Plex/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Plex/thumbnail.png
-  index: /
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Plex/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Plex/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Plex/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Plex/thumbnail.png
+  index: /web
   tagline:
     en_us: Your personal streaming service for all your media
     zh_cn: 您的个人媒体流媒体服务
@@ -72,7 +72,6 @@ x-casaos:
     before_install:
       en_us: |
         🔐 **Plex Account Setup:**
-        • Visit https://plex.tv/claim to get claim token (optional)
         • Add token to PLEX_CLAIM environment variable for automatic setup
         • Without token: Manual setup via web interface
 
@@ -97,7 +96,6 @@ x-casaos:
 
       zh_cn: |
         🔐 **Plex账户设置：**
-        • 访问 https://plex.tv/claim 获取声明令牌（可选）
         • 将令牌添加到 PLEX_CLAIM 环境变量以自动设置
         • 无令牌：通过网页界面手动设置
 
@@ -122,7 +120,6 @@ x-casaos:
 
       ko_kr: |
         🔐 **Plex 계정 설정:**
-        • https://plex.tv/claim 에서 클레임 토큰 획득 (선택사항)
         • PLEX_CLAIM 환경변수에 토큰 추가하여 자동 설정
         • 토큰 없이: 웹 인터페이스를 통한 수동 설정
 

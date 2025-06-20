@@ -1,109 +1,123 @@
 name: stirlingpdf
 
 services:
-  app:
-    container_name: Stirling-PDF
-    image: docker.stirlingpdf.com/stirlingtools/stirling-pdf:latest
+  stirlingpdf:
+    image: stirlingtools/s-pdf:0.46.2
+    container_name: stirling-pdf
+    restart: unless-stopped
+    expose:
+      - 8080
+    volumes:
+      - /DATA/AppData/$AppID/tessdata:/usr/share/tessdata
+      - /DATA/AppData/$AppID/configs:/configs
+      - /DATA/AppData/$AppID/logs:/logs
+      - /DATA/Downloads:/downloads
+    user: $PUID:$PGID
+    environment:
+      PGID: $PGID                               # Group ID for file permissions
+      PUID: $PUID                               # User ID for file permissions
+      TZ: $TZ                                   # Timezone setting
+      DOCKER_ENABLE_SECURITY: "true"           # Enable security features
+      SECURITY_ENABLELOGIN: "true"             # Enable login authentication
+      SECURITY_INITIALLOGIN_USERNAME: "admin"  # Default admin username
+      SECURITY_INITIALLOGIN_PASSWORD: "admin"  # Default admin password (change after first login)
+    cpu_shares: 100
     deploy:
       resources:
         limits:
           memory: 2G
-          cpus: "1.0"
-        reservations:
-          memory: 512M
-          cpus: "0.25"
-    restart: unless-stopped
-    ports:
-      - "8080:8080"
-    volumes:
-      - /DATA/AppData/$AppID/stirling/data:/usr/share/tessdata:rw
-      - /DATA/AppData/$AppID/stirling/config:/configs:rw
-      - /DATA/AppData/$AppID/stirling/logs:/logs:rw
-      - /DATA/Downloads:/downloads:rw
-    environment:
-      DOCKER_ENABLE_SECURITY: true
-      DISABLE_ADDITIONAL_FEATURES: false
-      SECURITY_ENABLELOGIN: true
-      SECURITY_INITIALLOGIN_USERNAME: admin
-      SECURITY_INITIALLOGIN_PASSWORD: admin  
-    networks:
-      pcs: null
-
-networks:
-  pcs:
-    name: pcs
 
 x-casaos:
   architectures:
     - amd64
     - arm64
-  author: self
-  category: office
+  author: CasaOS Team
+  category: Office
+  developer: Stirling Tools
   description:
-    en_us: Stirling-PDF is an optimized open-source local web-based tool that allows you to easily edit, convert, merge and split PDF files with reduced resource usage.
-    zh_cn: Stirling-PDF 是一个优化的开源本地网页工具，可以让您以较低的资源使用量轻松地编辑、转换、合并和分割PDF文件。
-    ko_kr: Stirling-PDF는 리소스 사용량을 최적화한 PDF 파일 편집, 변환, 병합, 분할 도구입니다.
-  icon: https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Stirling-PDF/icons.png
+    en_us: Stirling-PDF is a powerful, locally hosted web-based PDF manipulation tool using Docker. It enables you to perform various operations on PDF files, such as splitting, merging, converting, reorganizing, adding images, rotating, compressing, and more.
+    zh_cn: Stirling-PDF 是一个强大的本地托管的基于网页的PDF处理工具。它使您能够对PDF文件执行各种操作，如分割、合并、转换、重新组织、添加图像、旋转、压缩等。
+    ko_kr: Stirling-PDF는 Docker를 사용하는 강력한 로컬 호스팅 웹 기반 PDF 조작 도구입니다. PDF 파일에 대해 분할, 병합, 변환, 재구성, 이미지 추가, 회전, 압축 등 다양한 작업을 수행할 수 있습니다.
+  icon: https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Stirling-PDF/icon.png
   screenshot_link:
-    - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Stirling-PDF/screenshots1.png
-    - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Stirling-PDF/screenshots2.png
-    - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Stirling-PDF/screenshots3.png
+    - https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Stirling-PDF/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Stirling-PDF/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Stirling-PDF/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Stirling-PDF/thumbnail.png
   index: /
   tagline:
-    en_us: Optimized PDF editing, conversion, and management tool
-    zh_cn: 优化的PDF编辑、转换和管理工具
-    ko_kr: 최적화된 PDF 파일 편집, 변환, 관리 도구
-  port_map: "8080"
-  store_app_id: stirlingpdf
+    en_us: Locally hosted web-based PDF manipulation tool
+    zh_cn: 本地托管的网页PDF处理工具
+    ko_kr: 로컬 호스팅 웹 기반 PDF 조작 도구
   title:
-    en_us: Stirling - PDF
-    zh_cn: Stirling - PDF
-    ko_kr: Stirling - PDF
-  main: app
+    en_us: Stirling-PDF
+    zh_cn: Stirling-PDF
+    ko_kr: Stirling-PDF
+  store_app_id: stirlingpdf
+  main: stirlingpdf
   is_uncontrolled: false
+  webui_port: 8080
   tips:
     before_install:
       en_us: |
-        ⚠️ **Installation Notice**: This app may take 2-5 minutes to complete setup after installation. Please wait for the configuration to finish before accessing.
-        
-        📁 File Processing:
-        • Upload files via web interface or /DATA/Downloads
-        • Supports: PDF, Images (JPG, PNG), Office documents
-        • No permanent file storage - process and download
-        
-        🔐 Default Login:
-        • Username: admin
-        • Password: admin
-        • To change credentials: Go to CasaOS desktop → App Settings → Environment Variables
+        ⚠️ **Installation Notice:**
+        • This app may take 2-5 minutes to complete setup after installation
+        • Please wait for the configuration to finish before accessing
+
+        📁 **File Processing:**
+        • Upload files via web interface or use `/DATA/Downloads` folder
+        • Supported formats: PDF, Images (JPG, PNG, TIFF), Office documents
+        • Files are processed temporarily - download results immediately
+        • No permanent file storage within the application
+
+        🔐 **Default Login Credentials:**
+        • Username: `admin`
+        • Password: `admin`
+        • **Important**: Change these credentials after first login for security
+
+        💡 **Usage Tips:**
+        • OCR functionality requires language data (automatically downloaded)
+        • Large PDF files may require additional processing time
+        • Use Downloads folder for easy file access from other CasaOS apps
 
       zh_cn: |
-        ⚠️ **安装提示**：此应用安装后可能需要2-5分钟完成设置配置，请等待配置完成后再访问。
-        
-        📁 文件处理：
-        • 通过网页界面或 /DATA/Downloads 上传文件
-        • 支持：PDF、图片(JPG, PNG)、Office文档
-        • 无永久文件存储 - 处理后下载
-        
-        🔐 默认登录：
-        • 用户名：admin
-        • 密码：admin
-        • 修改凭据：进入 CasaOS 桌面 → 应用设置 → 环境变量
+        ⚠️ **安装提示：**
+        • 此应用安装后可能需要2-5分钟完成设置配置
+        • 请等待配置完成后再访问
+
+        📁 **文件处理：**
+        • 通过网页界面上传文件或使用 `/DATA/Downloads` 文件夹
+        • 支持格式：PDF、图片(JPG, PNG, TIFF)、Office文档
+        • 文件临时处理 - 请立即下载结果
+        • 应用内无永久文件存储
+
+        🔐 **默认登录凭据：**
+        • 用户名：`admin`
+        • 密码：`admin`
+        • **重要**：首次登录后请更改这些凭据以确保安全
+
+        💡 **使用技巧：**
+        • OCR功能需要语言数据（自动下载）
+        • 大型PDF文件可能需要额外的处理时间
+        • 使用Downloads文件夹便于从其他CasaOS应用访问文件
 
       ko_kr: |
-        ⚠️ **설치 안내**: 이 앱은 설치 후 설정이 완료되기까지 2~5분 정도 소요될 수 있습니다. 설정이 완료될 때까지 기다린 후 접속해 주세요.
-        
-        📁 파일 처리:
-        • 웹 인터페이스 또는 /DATA/Downloads를 통해 파일 업로드
-        • 지원 포맷: PDF, 이미지(JPG, PNG), Office 문서
-        • 영구 파일 저장 없음 - 처리 후 다운로드
-        
-        🔐 기본 로그인:
-        • 아이디: admin
-        • 비밀번호: admin
-        • 로그인 정보 변경: CasaOS 바탕화면 → 앱 설정 → 환경변수에서 변경
+        ⚠️ **설치 안내:**
+        • 이 앱은 설치 후 설정이 완료되기까지 2-5분 정도 소요될 수 있습니다
+        • 설정이 완료될 때까지 기다린 후 접속해 주세요
 
-  volumes:
-    - /DATA/AppData/$AppID/stirling/data
-    - /DATA/AppData/$AppID/stirling/config
-    - /DATA/AppData/$AppID/stirling/logs
-    - /DATA/Downloads
+        📁 **파일 처리:**
+        • 웹 인터페이스를 통해 파일 업로드하거나 `/DATA/Downloads` 폴더 사용
+        • 지원 포맷: PDF, 이미지(JPG, PNG, TIFF), Office 문서
+        • 파일은 임시로 처리됩니다 - 결과를 즉시 다운로드하세요
+        • 애플리케이션 내 영구 파일 저장소 없음
+
+        🔐 **기본 로그인 정보:**
+        • 사용자명: `admin`
+        • 비밀번호: `admin`
+        • **중요**: 보안을 위해 첫 로그인 후 이 정보를 변경하세요
+
+        💡 **사용 팁:**
+        • OCR 기능은 언어 데이터가 필요합니다 (자동 다운로드)
+        • 큰 PDF 파일은 추가 처리 시간이 필요할 수 있습니다
+        • 다른 CasaOS 앱에서 쉽게 파일에 접근하려면 Downloads 폴더를 사용하세요
