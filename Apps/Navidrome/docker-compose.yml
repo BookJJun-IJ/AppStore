@@ -2,7 +2,7 @@ name: navidrome
 
 services:
   navidrome:
-    image: deluan/navidrome:0.50.2
+    image: deluan/navidrome:0.56.1
     container_name: navidrome
     restart: unless-stopped
     expose:
