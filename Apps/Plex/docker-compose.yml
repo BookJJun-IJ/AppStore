@@ -1,149 +1,146 @@
 name: plex
 
 services:
-  app:
-    image: plexinc/pms-docker:latest
+  plex:
+    image: plexinc/pms-docker:1.40.1.8227-c0dd5a73e
     container_name: plex
     restart: unless-stopped
-    ports:
-      - "32400:32400/tcp"
-      - "3005:3005/tcp"
-      - "8324:8324/tcp"
-      - "32469:32469/tcp"
-      - "1900:1900/udp"
-      - "32410:32410/udp"
-      - "32412:32412/udp"
-      - "32413:32413/udp"
-      - "32414:32414/udp"
+    expose:
+      - 32400
+    #ports:
+    # Additional ports can be uncommented if needed for specific Plex features
+    #  - "3005:3005/tcp"      # Plex Home Theater via Plex Companion
+    #  - "8324:8324/tcp"      # Plex for Roku via Plex Companion  
+    #  - "32469:32469/tcp"    # Plex DLNA Server
+    #  - "1900:1900/udp"      # Plex DLNA Server
+    #  - "32410:32410/udp"    # GDM network discovery
+    #  - "32412:32412/udp"    # GDM network discovery
+    #  - "32413:32413/udp"    # GDM network discovery
+    #  - "32414:32414/udp"    # GDM network discovery
     volumes:
       - /DATA/AppData/$AppID/config:/config
       - /DATA/AppData/$AppID/transcode:/transcode
-      - /DATA/Media/Movies:/data/movies:ro
-      - /DATA/Media/TV Show:/data/tvshows:ro
-      - /DATA/Media/Music:/data/music:ro
-      - /DATA/Downloads:/data/downloads:ro
+      - /DATA/Media/Movies:/data/movies
+      - /DATA/Media/TV Shows:/data/tvshows
+      - /DATA/Media/Music:/data/music
+      - /DATA/Downloads:/data/downloads
+    user: $PUID:$PGID
     environment:
-      - PUID=1000
-      - PGID=1000
-      - PLEX_CLAIM=
+      PGID: $PGID                    # Group ID for file permissions
+      PUID: $PUID                    # User ID for file permissions
+      TZ: $TZ                        # Timezone setting
+      PLEX_CLAIM: ""                 # Plex claim token for automatic setup (optional)
     devices:
-      - /dev/dri:/dev/dri
-    networks:
-      pcs: null
-
-networks:
-  pcs:
-    name: pcs
+      - /dev/dri:/dev/dri            # Hardware acceleration for transcoding
+    cpu_shares: 100
+    deploy:
+      resources:
+        limits:
+          memory: 1G
 
 x-casaos:
   architectures:
     - amd64
     - arm64
-  author: self
-  category: media
+  author: CasaOS Team
+  category: Media
+  developer: Plex Inc.
   description:
     en_us: Plex - Stream your personal media collection anywhere. Organize your movies, TV shows, music, and photos with powerful media server that transcodes and streams to any device.
     zh_cn: Plex - 随时随地流式传输您的个人媒体收藏。使用强大的媒体服务器整理您的电影、电视节目、音乐和照片，可转码并流式传输到任何设备。
     ko_kr: Plex - 개인 미디어 컬렉션을 어디서나 스트리밍하세요. 영화, TV 프로그램, 음악, 사진을 정리하고 모든 기기로 트랜스코딩 및 스트리밍할 수 있는 강력한 미디어 서버입니다.
-  icon: https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Plex/icons.png
+  icon: https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Plex/icon.png
   screenshot_link:
-    - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Plex/screenshots1.png
-    - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Plex/screenshots2.png
-    - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Plex/screenshots3.png
-  index: /
+    - https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Plex/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Plex/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Plex/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Plex/thumbnail.png
+  index: /web
   tagline:
     en_us: Your personal streaming service for all your media
     zh_cn: 您的个人媒体流媒体服务
     ko_kr: 모든 미디어를 위한 개인 스트리밍 서비스
-  port_map: "32400"
-  store_app_id: plex
   title:
     en_us: Plex
     zh_cn: Plex
     ko_kr: Plex
-  main: app
+  store_app_id: plex
+  main: plex
   is_uncontrolled: false
+  webui_port: 32400
   tips:
     before_install:
       en_us: |
-        🔐 **Plex Account Setup**:
+        🔐 **Plex Account Setup:**
         • Visit https://plex.tv/claim to get claim token (optional)
         • Add token to PLEX_CLAIM environment variable for automatic setup
         • Without token: Manual setup via web interface
 
-        📁 **Media Library Structure**:
-        • Movies: /DATA/Media/Movies
-        • TV Shows: /DATA/Media/TV Show
-        • Music: /DATA/Media/Music
-        • Downloads: /DATA/Downloads
-        • Config: /DATA/AppData/plex/config (Do not modify)
-        • Transcode: /DATA/AppData/plex/transcode (Temp files)
+        📁 **Media Library Structure:**
+        • Movies: `/DATA/Media/Movies`
+        • TV Shows: `/DATA/Media/TV Shows`
+        • Music: `/DATA/Media/Music`
+        • Downloads: `/DATA/Downloads`
+        • Config: `/DATA/AppData/plex/config` (Auto-created)
+        • Transcode: `/DATA/AppData/plex/transcode` (Temp files)
 
-        💡 **Getting Started**:
+        💡 **Getting Started:**
         • Access via web interface at :32400/web
         • Add media libraries pointing to /data folders
         • Install Plex apps on devices for streaming
         • Hardware transcoding requires Plex Pass subscription
 
-        ⚠️ **Performance Tips**:
-        • Enable hardware acceleration if supported
+        ⚠️ **Performance Tips:**
+        • Enable hardware acceleration if supported (/dev/dri device mapped)
         • Transcode folder uses temporary storage
         • Organize media with proper naming conventions
 
       zh_cn: |
-        🔐 **Plex账户设置**：
+        🔐 **Plex账户设置：**
         • 访问 https://plex.tv/claim 获取声明令牌（可选）
         • 将令牌添加到 PLEX_CLAIM 环境变量以自动设置
         • 无令牌：通过网页界面手动设置
 
-        📁 **媒体库结构**：
-        • 电影：/DATA/Media/Movies
-        • 电视节目：/DATA/Media/TV Show
-        • 音乐：/DATA/Media/Music
-        • 下载：/DATA/Downloads
-        • 配置：/DATA/AppData/plex/config（请勿修改）
-        • 转码：/DATA/AppData/plex/transcode（临时文件）
+        📁 **媒体库结构：**
+        • 电影：`/DATA/Media/Movies`
+        • 电视节目：`/DATA/Media/TV Shows`
+        • 音乐：`/DATA/Media/Music`
+        • 下载：`/DATA/Downloads`
+        • 配置：`/DATA/AppData/plex/config`（自动创建）
+        • 转码：`/DATA/AppData/plex/transcode`（临时文件）
 
-        💡 **入门指南**：
+        💡 **入门指南：**
         • 通过 :32400/web 访问网页界面
         • 添加指向 /data 文件夹的媒体库
         • 在设备上安装Plex应用进行流媒体播放
         • 硬件转码需要Plex Pass订阅
 
-        ⚠️ **性能提示**：
-        • 如果支持请启用硬件加速
+        ⚠️ **性能提示：**
+        • 如果支持请启用硬件加速（已映射/dev/dri设备）
         • 转码文件夹使用临时存储
         • 使用正确的命名规则整理媒体文件
 
       ko_kr: |
-        🔐 **Plex 계정 설정**:
+        🔐 **Plex 계정 설정:**
         • https://plex.tv/claim 에서 클레임 토큰 획득 (선택사항)
         • PLEX_CLAIM 환경변수에 토큰 추가하여 자동 설정
         • 토큰 없이: 웹 인터페이스를 통한 수동 설정
 
-        📁 **미디어 라이브러리 구조**:
-        • 영화: /DATA/Media/Movies
-        • TV 프로그램: /DATA/Media/TV Show
-        • 음악: /DATA/Media/Music
-        • 다운로드: /DATA/Downloads
-        • 설정: /DATA/AppData/plex/config (수정 금지)
-        • 트랜스코드: /DATA/AppData/plex/transcode (임시 파일)
+        📁 **미디어 라이브러리 구조:**
+        • 영화: `/DATA/Media/Movies`
+        • TV 프로그램: `/DATA/Media/TV Shows`
+        • 음악: `/DATA/Media/Music`
+        • 다운로드: `/DATA/Downloads`
+        • 설정: `/DATA/AppData/plex/config` (자동 생성)
+        • 트랜스코드: `/DATA/AppData/plex/transcode` (임시 파일)
 
-        💡 **시작하기**:
+        💡 **시작하기:**
         • :32400/web 에서 웹 인터페이스 접속
         • /data 폴더를 가리키는 미디어 라이브러리 추가
         • 스트리밍을 위해 기기에 Plex 앱 설치
         • 하드웨어 트랜스코딩은 Plex Pass 구독 필요
 
-        ⚠️ **성능 팁**:
-        • 지원되는 경우 하드웨어 가속 활성화
+        ⚠️ **성능 팁:**
+        • 지원되는 경우 하드웨어 가속 활성화 (/dev/dri 장치 매핑됨)
         • 트랜스코드 폴더는 임시 저장소 사용
         • 적절한 명명 규칙으로 미디어 정리
-
-  volumes:
-    - /DATA/AppData/$AppID/config
-    - /DATA/AppData/$AppID/transcode
-    - /DATA/Media/Movies
-    - /DATA/Media/TV Show
-    - /DATA/Media/Music
-    - /DATA/Downloads
