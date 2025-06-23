@@ -30,7 +30,7 @@ services:
       PGID: $PGID                    # Group ID for file permissions
       PUID: $PUID                    # User ID for file permissions
       TZ: $TZ                        # Timezone setting
-      PLEX_CLAIM:                    # Plex claim token for automatic setup (optional)
+      PLEX_CLAIM: ""                   # Plex claim token for automatic setup (optional)
     devices:
       - /dev/dri:/dev/dri            # Hardware acceleration for transcoding
     cpu_shares: 100
