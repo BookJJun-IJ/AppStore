@@ -73,90 +73,101 @@ x-casaos:
     before_install:
       en_us: |
         🎬 **What is Plex?**
-        Transform your computer into a Netflix-like streaming service for your home! Plex lets you watch your movies, TV shows, and music on any device - your TV, phone, tablet, or computer.
+        Transform your computer into a Netflix-like streaming service for your home! Plex lets you watch your movies, TV shows, and music on any device.
 
-        📱 **Getting Started:**
-        • After installation, visit the web address shown to set up your account
-        • Download the Plex app on your phone, TV, or streaming device
-        • Add your movie and TV show folders to create your personal library
-        • Start streaming immediately - it's that simple!
+        🔑 **IMPORTANT: Token Setup (Required for Personal Library!):**
+        ⚠️ **YOU MUST SET UP A CLAIM TOKEN TO USE YOUR PERSONAL LIBRARY**
+        • Visit https://plex.tv/claim to get your token (valid for 4 minutes)
+        • CasaOS → Apps → Plex → Settings → Environment Variables (PLEX_CLAIM) → Enter token
+        • Save settings and restart - your server will be registered to your account
+        • **Without this token, you can only access Plex's free content, not your personal media!**
 
-        📁 **Where to Put Your Media:**
-        • Movies: Create a "Movies" folder and put each movie in its own folder
-        • TV Shows: Create a "TV Shows" folder with separate folders for each series
-        • Music: Create a "Music" folder organized by artist
-        • Plex will automatically find cover art and descriptions for everything
+        📁 **Adding Libraries:**
+        • In Plex web: Left sidebar → More → "+" button next to your account name → Select library type
+        • Folder paths: Movies(`/data/movies`), TV Shows(`/data/tvshows`), Music(`/data/music`)
 
-        💡 **Pro Tips:**
-        • Give your movies clear names like "Avatar (2009)" for best results
-        • Organize TV shows by season: "Breaking Bad/Season 1/episode files"
-        • The first setup takes a few minutes - be patient while Plex scans your files
-        • Invite family members to share your library - they can use their own devices
+        📱 **Using Apps:**
+        • Install Plex app on iOS/Android/Smart TV/streaming devices
+        • Login with your Plex account - server will be automatically discovered
 
-        ⚡ **What You Can Do:**
-        • Stream to any device in your home
-        • Watch your content anywhere with internet access
-        • Share your library with friends and family
-        • Automatic subtitles and multiple quality options
+        💡 **File Organization Tips:**
+        • Movies: "Avatar (2009)/Avatar (2009).mp4"
+        • TV: "Breaking Bad/Season 01/S01E01.mp4"
+        • Music: "Artist/Album/Song.mp3"
+
+        💰 **Pricing:**
+        • Home network streaming: Free
+        • Remote streaming (outside home): Plex Pass subscription required
+        • Mobile app: One-time purchase or free with Plex Pass
+
+        ⚡ **Key Features:**
+        • Stream to any device • Share with friends/family • Automatic metadata • Remote access
 
       zh_cn: |
         🎬 **什么是Plex？**
-        将您的电脑变成家庭版Netflix！Plex让您在任何设备上观看电影、电视剧和音乐 - 电视、手机、平板或电脑都可以。
+        将您的电脑变成家庭版Netflix！Plex让您在任何设备上观看电影、电视剧和音乐。
 
-        📱 **快速开始：**
-        • 安装后，访问显示的网页地址设置账户
-        • 在手机、电视或流媒体设备上下载Plex应用
-        • 添加您的电影和电视剧文件夹来创建个人媒体库
-        • 立即开始流媒体播放 - 就是这么简单！
+        🔑 **重要：令牌设置（使用个人媒体库必需！）:**
+        ⚠️ **必须设置声明令牌才能使用您的个人媒体库**
+        • 访问 https://plex.tv/claim 获取令牌（4分钟内有效）
+        • CasaOS → 应用 → Plex → 设置 → 环境变量(PLEX_CLAIM) → 输入令牌
+        • 保存设置并重启 - 服务器将注册到您的账户
+        • **没有此令牌，您只能访问Plex的免费内容，无法使用个人媒体！**
 
-        📁 **媒体文件存放位置：**
-        • 电影：创建"电影"文件夹，每部电影放在单独的文件夹中
-        • 电视剧：创建"电视剧"文件夹，每个剧集有单独的文件夹
-        • 音乐：创建"音乐"文件夹，按艺术家整理
-        • Plex会自动查找所有内容的封面和简介
+        📁 **添加媒体库:**
+        • Plex网页版：左侧边栏 → 更多 → 账户名旁"+"按钮 → 选择媒体库类型
+        • 文件夹路径：电影(`/data/movies`)，电视剧(`/data/tvshows`)，音乐(`/data/music`)
 
-        💡 **使用技巧：**
-        • 给电影起清晰的名字，如"阿凡达 (2009)"，效果最佳
-        • 按季整理电视剧："绝命毒师/第1季/剧集文件"
-        • 首次设置需要几分钟 - 请耐心等待Plex扫描文件
-        • 邀请家人共享媒体库 - 他们可以用自己的设备观看
+        📱 **应用使用:**
+        • 在iOS/Android/智能电视/流媒体设备上安装Plex应用
+        • 用Plex账户登录 - 服务器将自动被发现
 
-        ⚡ **功能特色：**
-        • 在家中任何设备上流媒体播放
-        • 有网络就能随时随地观看内容
-        • 与朋友和家人分享媒体库
-        • 自动字幕和多种清晰度选项
+        💡 **文件整理技巧:**
+        • 电影："阿凡达 (2009)/阿凡达 (2009).mp4"
+        • 电视剧："绝命毒师/Season 01/S01E01.mp4"
+        • 音乐："艺术家/专辑/歌曲.mp3"
+
+        💰 **价格说明:**
+        • 家庭网络内流媒体：免费
+        • 远程流媒体（家外访问）：需要Plex Pass订阅
+        • 移动应用：一次性购买或Plex Pass订阅免费
+
+        ⚡ **主要功能:**
+        • 任意设备流媒体 • 与朋友/家人分享 • 自动元数据 • 远程访问
 
       ko_kr: |
         🎬 **Plex가 뭔가요?**
-        컴퓨터를 가정용 넷플릭스로 만들어보세요! Plex를 사용하면 영화, TV 프로그램, 음악을 어떤 기기에서든 시청할 수 있어요 - TV, 휴대폰, 태블릿, 컴퓨터 모두 가능합니다.
+        컴퓨터를 가정용 넷플릭스로 만들어보세요! Plex를 사용하면 영화, TV 프로그램, 음악을 어떤 기기에서든 시청할 수 있어요.
 
         ⚠️ **한국 사용자 주의사항:**
         • Plex는 한국에서 지역 제한이 있어 새 계정 생성이 어려울 수 있습니다
         • 새 계정 생성 시: VPN을 사용해 해외 IP로 우회 후 가입하세요
-        • 또는 미리 만들어진 계정을 사용하는 것을 권장합니다
         • 계정 생성 후에는 한국에서도 정상적으로 사용 가능합니다
 
-        📱 **시작하기:**
-        • 설치 후 표시된 웹 주소로 가서 계정을 설정하세요
-        • 휴대폰, TV, 스트리밍 기기에 Plex 앱을 다운로드하세요
-        • 영화와 TV 프로그램 폴더를 추가해서 개인 라이브러리를 만드세요
-        • 바로 스트리밍 시작 - 정말 간단해요!
+        🔑 **중요: 토큰 등록 (개인 라이브러리 사용 필수!):**
+        ⚠️ **개인 미디어 라이브러리를 사용하려면 반드시 클레임 토큰을 설정해야 합니다**
+        • https://plex.tv/claim 방문해서 토큰 복사 (4분간 유효)
+        • CasaOS → 앱 → Plex → 설정 → 환경변수(PLEX_CLAIM)에 토큰 입력
+        • 저장 후 재시작하면 계정에 서버 등록됨
+        • **토큰 없이는 Plex 무료 콘텐츠만 이용 가능하고, 개인 미디어는 사용할 수 없습니다!**
 
-        📁 **미디어 파일 정리법:**
-        • 영화: "영화" 폴더를 만들고 각 영화를 별도 폴더에 넣으세요
-        • TV 프로그램: "TV 프로그램" 폴더를 만들고 각 시리즈별로 폴더를 나누세요
-        • 음악: "음악" 폴더를 만들고 아티스트별로 정리하세요
-        • Plex가 자동으로 모든 콘텐츠의 포스터와 설명을 찾아줍니다
+        📁 **라이브러리 추가:**
+        • Plex 웹에서 좌측 더보기 → 계정명 옆 "+" 버튼 → 라이브러리 타입 선택
+        • 폴더 경로: 영화(`/data/movies`), TV(`/data/tvshows`), 음악(`/data/music`)
 
-        💡 **꿀팁:**
-        • 영화 이름을 "아바타 (2009)"처럼 명확하게 지으면 최상의 결과를 얻을 수 있어요
-        • TV 프로그램은 시즌별로 정리: "브레이킹 배드/시즌 1/에피소드 파일"
-        • 첫 설정은 몇 분 걸려요 - Plex가 파일을 스캔하는 동안 기다려주세요
-        • 가족들을 초대해서 라이브러리를 공유하세요 - 각자 기기에서 시청 가능해요
+        📱 **앱 사용:**
+        • iOS/Android/Smart TV/스트리밍 기기에 Plex 앱 설치
+        • Plex 계정으로 로그인하면 자동으로 서버 발견
 
-        ⚡ **이런 것들이 가능해요:**
-        • 집 안 어떤 기기에서든 스트리밍
-        • 인터넷만 있으면 어디서든 콘텐츠 시청
-        • 친구, 가족과 라이브러리 공유
-        • 자동 자막과 다양한 화질 옵션
+        💡 **파일 정리 팁:**
+        • 영화: "아바타 (2009)/아바타 (2009).mp4"
+        • TV: "드라마명/Season 01/S01E01.mp4"  
+        • 음악: "아티스트/앨범/곡명.mp3"
+
+        💰 **요금 안내:**
+        • 집 내부 네트워크: 무료 사용 가능
+        • 원격 스트리밍(외부 접속): Plex Pass 구독 필요
+        • 모바일 앱 일회성 구매 또는 Plex Pass 구독 시 무료
+
+        ⚡ **주요 기능:**
+        • 모든 기기에서 스트리밍 • 친구/가족 공유 • 자동 메타데이터 • 원격 접속
