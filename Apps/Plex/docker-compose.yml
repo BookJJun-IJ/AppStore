@@ -2,9 +2,10 @@ name: plex
 
 services:
   plex:
-    image: plexinc/pms-docker:1.41.8.9834-071366d65
+    image: lscr.io/linuxserver/plex:1.41.8.9834-071366D65-ls269
     container_name: plex
     restart: unless-stopped
+    network_mode: host
     expose:
       - 32400
     #ports:
