@@ -50,12 +50,12 @@ x-casaos:
     en_us: Plex - Stream your personal media collection anywhere. Organize your movies, TV shows, music, and photos with powerful media server that transcodes and streams to any device.
     zh_cn: Plex - 随时随地流式传输您的个人媒体收藏。使用强大的媒体服务器整理您的电影、电视节目、音乐和照片，可转码并流式传输到任何设备。
     ko_kr: Plex - 개인 미디어 컬렉션을 어디서나 스트리밍하세요. 영화, TV 프로그램, 음악, 사진을 정리하고 모든 기기로 트랜스코딩 및 스트리밍할 수 있는 강력한 미디어 서버입니다.
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Plex/icon.png
+  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Plex/icon.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Plex/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Plex/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Plex/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Plex/thumbnail.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Plex/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Plex/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Plex/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Plex/thumbnail.png
   index: /
   tagline:
     en_us: Your personal streaming service for all your media
