@@ -2,7 +2,7 @@ name: plex
 
 services:
   plex:
-    image: lscr.io/linuxserver/plex:1.41.8.9834-071366D65-ls269
+    image: plexinc/pms-docker:1.41.8.9834-071366d65
     container_name: plex
     restart: unless-stopped
     expose:
@@ -71,73 +71,91 @@ x-casaos:
   tips:
     before_install:
       en_us: |
-        🔐 **Plex Account Setup:**
-        • Add token to PLEX_CLAIM environment variable for automatic setup
-        • Without token: Manual setup via web interface
+        🎬 **What is Plex?**
+        Transform your computer into a Netflix-like streaming service for your home! Plex lets you watch your movies, TV shows, and music on any device - your TV, phone, tablet, or computer.
 
-        📁 **Media Library Structure:**
-        • Movies: `/DATA/Media/Movies`
-        • TV Shows: `/DATA/Media/TV Shows`
-        • Music: `/DATA/Media/Music`
-        • Downloads: `/DATA/Downloads`
-        • Config: `/DATA/AppData/plex/config` (Auto-created)
-        • Transcode: `/DATA/AppData/plex/transcode` (Temp files)
+        📱 **Getting Started:**
+        • After installation, visit the web address shown to set up your account
+        • Download the Plex app on your phone, TV, or streaming device
+        • Add your movie and TV show folders to create your personal library
+        • Start streaming immediately - it's that simple!
 
-        💡 **Getting Started:**
-        • Access via web interface at :32400/web
-        • Add media libraries pointing to /data folders
-        • Install Plex apps on devices for streaming
-        • Hardware transcoding requires Plex Pass subscription
+        📁 **Where to Put Your Media:**
+        • Movies: Create a "Movies" folder and put each movie in its own folder
+        • TV Shows: Create a "TV Shows" folder with separate folders for each series
+        • Music: Create a "Music" folder organized by artist
+        • Plex will automatically find cover art and descriptions for everything
 
-        ⚠️ **Performance Tips:**
-        • Enable hardware acceleration if supported (/dev/dri device mapped)
-        • Transcode folder uses temporary storage
-        • Organize media with proper naming conventions
+        💡 **Pro Tips:**
+        • Give your movies clear names like "Avatar (2009)" for best results
+        • Organize TV shows by season: "Breaking Bad/Season 1/episode files"
+        • The first setup takes a few minutes - be patient while Plex scans your files
+        • Invite family members to share your library - they can use their own devices
+
+        ⚡ **What You Can Do:**
+        • Stream to any device in your home
+        • Watch your content anywhere with internet access
+        • Share your library with friends and family
+        • Automatic subtitles and multiple quality options
 
       zh_cn: |
-        🔐 **Plex账户设置：**
-        • 将令牌添加到 PLEX_CLAIM 环境变量以自动设置
-        • 无令牌：通过网页界面手动设置
+        🎬 **什么是Plex？**
+        将您的电脑变成家庭版Netflix！Plex让您在任何设备上观看电影、电视剧和音乐 - 电视、手机、平板或电脑都可以。
 
-        📁 **媒体库结构：**
-        • 电影：`/DATA/Media/Movies`
-        • 电视节目：`/DATA/Media/TV Shows`
-        • 音乐：`/DATA/Media/Music`
-        • 下载：`/DATA/Downloads`
-        • 配置：`/DATA/AppData/plex/config`（自动创建）
-        • 转码：`/DATA/AppData/plex/transcode`（临时文件）
+        📱 **快速开始：**
+        • 安装后，访问显示的网页地址设置账户
+        • 在手机、电视或流媒体设备上下载Plex应用
+        • 添加您的电影和电视剧文件夹来创建个人媒体库
+        • 立即开始流媒体播放 - 就是这么简单！
 
-        💡 **入门指南：**
-        • 通过 :32400/web 访问网页界面
-        • 添加指向 /data 文件夹的媒体库
-        • 在设备上安装Plex应用进行流媒体播放
-        • 硬件转码需要Plex Pass订阅
+        📁 **媒体文件存放位置：**
+        • 电影：创建"电影"文件夹，每部电影放在单独的文件夹中
+        • 电视剧：创建"电视剧"文件夹，每个剧集有单独的文件夹
+        • 音乐：创建"音乐"文件夹，按艺术家整理
+        • Plex会自动查找所有内容的封面和简介
 
-        ⚠️ **性能提示：**
-        • 如果支持请启用硬件加速（已映射/dev/dri设备）
-        • 转码文件夹使用临时存储
-        • 使用正确的命名规则整理媒体文件
+        💡 **使用技巧：**
+        • 给电影起清晰的名字，如"阿凡达 (2009)"，效果最佳
+        • 按季整理电视剧："绝命毒师/第1季/剧集文件"
+        • 首次设置需要几分钟 - 请耐心等待Plex扫描文件
+        • 邀请家人共享媒体库 - 他们可以用自己的设备观看
+
+        ⚡ **功能特色：**
+        • 在家中任何设备上流媒体播放
+        • 有网络就能随时随地观看内容
+        • 与朋友和家人分享媒体库
+        • 自动字幕和多种清晰度选项
 
       ko_kr: |
-        🔐 **Plex 계정 설정:**
-        • PLEX_CLAIM 환경변수에 토큰 추가하여 자동 설정
-        • 토큰 없이: 웹 인터페이스를 통한 수동 설정
+        🎬 **Plex가 뭔가요?**
+        컴퓨터를 가정용 넷플릭스로 만들어보세요! Plex를 사용하면 영화, TV 프로그램, 음악을 어떤 기기에서든 시청할 수 있어요 - TV, 휴대폰, 태블릿, 컴퓨터 모두 가능합니다.
 
-        📁 **미디어 라이브러리 구조:**
-        • 영화: `/DATA/Media/Movies`
-        • TV 프로그램: `/DATA/Media/TV Shows`
-        • 음악: `/DATA/Media/Music`
-        • 다운로드: `/DATA/Downloads`
-        • 설정: `/DATA/AppData/plex/config` (자동 생성)
-        • 트랜스코드: `/DATA/AppData/plex/transcode` (임시 파일)
+        ⚠️ **한국 사용자 주의사항:**
+        • Plex는 한국에서 지역 제한이 있어 새 계정 생성이 어려울 수 있습니다
+        • 새 계정 생성 시: VPN을 사용해 해외 IP로 우회 후 가입하세요
+        • 또는 미리 만들어진 계정을 사용하는 것을 권장합니다
+        • 계정 생성 후에는 한국에서도 정상적으로 사용 가능합니다
 
-        💡 **시작하기:**
-        • :32400/web 에서 웹 인터페이스 접속
-        • /data 폴더를 가리키는 미디어 라이브러리 추가
-        • 스트리밍을 위해 기기에 Plex 앱 설치
-        • 하드웨어 트랜스코딩은 Plex Pass 구독 필요
+        📱 **시작하기:**
+        • 설치 후 표시된 웹 주소로 가서 계정을 설정하세요
+        • 휴대폰, TV, 스트리밍 기기에 Plex 앱을 다운로드하세요
+        • 영화와 TV 프로그램 폴더를 추가해서 개인 라이브러리를 만드세요
+        • 바로 스트리밍 시작 - 정말 간단해요!
 
-        ⚠️ **성능 팁:**
-        • 지원되는 경우 하드웨어 가속 활성화 (/dev/dri 장치 매핑됨)
-        • 트랜스코드 폴더는 임시 저장소 사용
-        • 적절한 명명 규칙으로 미디어 정리
+        📁 **미디어 파일 정리법:**
+        • 영화: "영화" 폴더를 만들고 각 영화를 별도 폴더에 넣으세요
+        • TV 프로그램: "TV 프로그램" 폴더를 만들고 각 시리즈별로 폴더를 나누세요
+        • 음악: "음악" 폴더를 만들고 아티스트별로 정리하세요
+        • Plex가 자동으로 모든 콘텐츠의 포스터와 설명을 찾아줍니다
+
+        💡 **꿀팁:**
+        • 영화 이름을 "아바타 (2009)"처럼 명확하게 지으면 최상의 결과를 얻을 수 있어요
+        • TV 프로그램은 시즌별로 정리: "브레이킹 배드/시즌 1/에피소드 파일"
+        • 첫 설정은 몇 분 걸려요 - Plex가 파일을 스캔하는 동안 기다려주세요
+        • 가족들을 초대해서 라이브러리를 공유하세요 - 각자 기기에서 시청 가능해요
+
+        ⚡ **이런 것들이 가능해요:**
+        • 집 안 어떤 기기에서든 스트리밍
+        • 인터넷만 있으면 어디서든 콘텐츠 시청
+        • 친구, 가족과 라이브러리 공유
+        • 자동 자막과 다양한 화질 옵션
