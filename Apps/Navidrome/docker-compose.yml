@@ -75,10 +75,11 @@ x-casaos:
     en_us: Navidrome - Modern Music Server and Streamer compatible with Subsonic/Airsonic clients, featuring a beautiful web interface, mobile apps support, and smart playlists
     zh_cn: Navidrome - 现代音乐服务器和流媒体播放器，兼容Subsonic/Airsonic客户端，具有美观的网页界面、移动应用支持和智能播放列表
     ko_kr: Navidrome - Subsonic/Airsonic 클라이언트와 호환되는 현대적인 음악 서버 및 스트리머로, 아름다운 웹 인터페이스, 모바일 앱 지원, 스마트 플레이리스트 기능 제공
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Navidrome/icon.png
+  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@main/Apps/Navidrome/icon.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Navidrome/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Navidrome/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@main/Apps/Navidrome/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@main/Apps/Navidrome/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@main/Apps/Navidrome/screenshot-3.png
   index: /
   tagline:
     en_us: Your personal music streaming server with modern web interface
