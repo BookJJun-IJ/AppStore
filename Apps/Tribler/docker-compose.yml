@@ -1,50 +1,132 @@
 name: tribler
 
 services:
-  app:
-    image: tribler/tribler:latest
+  tribler:
+    image: ghcr.io/tribler/tribler:8.0.0
     container_name: tribler
     restart: unless-stopped
-    ports:
-      - "8085:8085"
+    expose:
+      - 8085  # Tribler Web UI Port / Tribler 웹 UI 포트
     volumes:
-      - /DATA/AppData/$AppID/data:/root/.Tribler
-      - /DATA/Downloads:/downloads
+      - /DATA/AppData/$AppID/state:/root/.Tribler        # Tribler 상태 및 설정 디렉토리
+      - /DATA/Downloads:/downloads                       # 다운로드 디렉토리
+      - /DATA/Media:/media                              # 미디어 공유 디렉토리
+    user: $PUID:$PGID
     environment:
-      - DISPLAY=:0
-    networks:
-      pcs: null
-
-networks:
-  pcs:
-    name: pcs
+      PGID: $PGID
+      PUID: $PUID
+      TZ: $TZ                                          # 시간대 설정
+      TRIBLER_API_PORT: 8085                          # API 포트 설정
+      TRIBLER_DOWNLOAD_DIR: /downloads                 # 다운로드 디렉토리 설정
+    cpu_shares: 50
+    deploy:
+      resources:
+        limits:
+          memory: 1G
 
 x-casaos:
   architectures:
     - amd64
     - arm64
-  author: self
-  category: network
+  author: CasaOS Team
+  category: Download
+  developer: Tribler Team
   description:
-    en_us: Tribler - Decentralized BitTorrent client with anonymous downloading
-    zh_cn: Tribler - 具有匿名下载功能的去中心化BitTorrent客户端
-    ko_kr: Tribler - 익명 다운로드 기능을 갖춘 분산형 BitTorrent 클라이언트
-  icon: https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Tribler/icons.png
+    en_us: |
+      **Tribler - Decentralized BitTorrent Client**
+      
+      Tribler is a privacy-enhanced BitTorrent client that offers anonymous downloading and built-in search capabilities. Unlike traditional torrent clients, Tribler provides decentralized search and anonymous downloading through its innovative onion routing system.
+      
+      **Key Features:**
+      • Anonymous downloading with onion routing
+      • Built-in torrent search engine
+      • No central servers required
+      • Channel-based content discovery
+      • Token economy with TrustChain
+      • Credit-based system for fair sharing
+      • Web-based remote control interface
+      
+      **Privacy First:**
+      Tribler protects your privacy by routing traffic through multiple peers, making it extremely difficult to trace downloads back to individual users.
+      
+      **Important Note:**
+      Please ensure you comply with local laws regarding file sharing and downloading. Tribler is designed for sharing legal content and protecting user privacy.
+    zh_cn: |
+      **Tribler - 去中心化 BitTorrent 客户端**
+      
+      Tribler 是一个增强隐私的 BitTorrent 客户端，提供匿名下载和内置搜索功能。与传统种子客户端不同，Tribler 通过其创新的洋葱路由系统提供去中心化搜索和匿名下载。
+      
+      **主要功能：**
+      • 通过洋葱路由实现匿名下载
+      • 内置种子搜索引擎
+      • 无需中央服务器
+      • 基于频道的内容发现
+      • TrustChain 代币经济
+      • 基于信用的公平分享系统
+      • 基于网页的远程控制界面
+      
+      **隐私优先：**
+      Tribler 通过多个节点路由流量来保护您的隐私，使得追踪下载到个人用户变得极其困难。
+      
+      **重要提示：**
+      请确保您遵守当地关于文件共享和下载的法律。Tribler 专为分享合法内容和保护用户隐私而设计。
+    ko_kr: |
+      **Tribler - 탈중앙화 BitTorrent 클라이언트**
+      
+      Tribler는 익명 다운로드와 내장 검색 기능을 제공하는 개인정보 보호 강화 BitTorrent 클라이언트입니다. 기존 토렌트 클라이언트와 달리, Tribler은 혁신적인 어니언 라우팅 시스템을 통해 탈중앙화 검색과 익명 다운로드를 제공합니다.
+      
+      **주요 기능:**
+      • 어니언 라우팅을 통한 익명 다운로드
+      • 내장 토렌트 검색 엔진
+      • 중앙 서버 불필요
+      • 채널 기반 콘텐츠 발견
+      • TrustChain 토큰 경제
+      • 공정한 공유를 위한 크레딧 기반 시스템
+      • 웹 기반 원격 제어 인터페이스
+      
+      **개인정보 보호 우선:**
+      Tribler는 여러 피어를 통해 트래픽을 라우팅하여 개인정보를 보호하므로, 다운로드를 개별 사용자로 추적하기가 매우 어렵습니다.
+      
+      **중요 참고사항:**
+      파일 공유 및 다운로드에 관한 현지 법률을 준수하시기 바랍니다. Tribler는 합법적인 콘텐츠 공유와 사용자 개인정보 보호를 위해 설계되었습니다.
+  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Tribler/icon.png
   screenshot_link:
-    - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Tribler/screenshots1.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Tribler/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Tribler/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Tribler/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Tribler/thumbnail.png
   index: /
   tagline:
-    en_us: Anonymous BitTorrent client
-    zh_cn: 匿名BitTorrent客户端
-    ko_kr: 익명 BitTorrent 클라이언트
-  port_map: "8085"
-  store_app_id: tribler
+    en_us: Privacy-first decentralized BitTorrent client with anonymous downloading
+    zh_cn: 具有匿名下载功能的隐私优先去中心化 BitTorrent 客户端
+    ko_kr: 익명 다운로드 기능이 있는 개인정보 보호 우선 탈중앙화 BitTorrent 클라이언트
   title:
     en_us: Tribler
     zh_cn: Tribler
     ko_kr: Tribler
-  main: app
+  store_app_id: tribler
+  main: tribler
   is_uncontrolled: false
-  volumes:
-    - /DATA/AppData/$AppID/data
-    - /DATA/Downloads
+  webui_port: 8085
+  tips:
+    before_install:
+      en_us: |
+        🔐 **Important Notice:**
+        • Anonymous BitTorrent client with onion routing for privacy
+        • No login required - direct web interface access
+        • Downloads save to `/DATA/Downloads` directory
+        • Please comply with local laws regarding file sharing
+
+      zh_cn: |
+        🔐 **重要提示：**
+        • 具有洋葱路由隐私保护的匿名 BitTorrent 客户端
+        • 无需登录 - 直接访问网页界面
+        • 下载文件保存到 `/DATA/Downloads` 目录
+        • 请遵守当地文件共享相关法律
+
+      ko_kr: |
+        🔐 **중요 공지:**
+        • 개인정보 보호를 위한 어니언 라우팅 기능의 익명 BitTorrent 클라이언트
+        • 로그인 불필요 - 웹 인터페이스 직접 접속
+        • 다운로드 파일은 `/DATA/Downloads` 디렉토리에 저장
+        • 파일 공유 관련 현지 법률을 준수하시기 바랍니다
