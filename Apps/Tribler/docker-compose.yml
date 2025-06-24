@@ -8,16 +8,14 @@ services:
     expose:
       - 8085  # Tribler Web UI Port / Tribler 웹 UI 포트
     volumes:
-      - /DATA/AppData/$AppID/state:/root/.Tribler        # Tribler 상태 및 설정 디렉토리
-      - /DATA/Downloads:/downloads                       # 다운로드 디렉토리
-      - /DATA/Media:/media                              # 미디어 공유 디렉토리
-    user: $PUID:$PGID
+      - /DATA/AppData/$AppID/state:/home/ubuntu/.Tribler    # Tribler 상태 및 설정 디렉토리
+      - /DATA/Downloads:/home/ubuntu/Downloads              # 다운로드 디렉토리
     environment:
       PGID: $PGID
       PUID: $PUID
-      TZ: $TZ                                          # 시간대 설정
-      TRIBLER_API_PORT: 8085                          # API 포트 설정
-      TRIBLER_DOWNLOAD_DIR: /downloads                 # 다운로드 디렉토리 설정
+      TZ: $TZ                                              # 시간대 설정
+      CORE_API_PORT: 8085                                 # API 포트 설정
+      CORE_API_KEY: changeme                              # API 키 설정
     cpu_shares: 50
     deploy:
       resources:
