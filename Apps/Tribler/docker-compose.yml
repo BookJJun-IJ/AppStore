@@ -2,20 +2,20 @@ name: tribler
 
 services:
   tribler:
-    image: ghcr.io/tribler/tribler:8.0.0
+    image: triblercore/triblercore:7.14.0
     container_name: tribler
     restart: unless-stopped
     expose:
       - 8085  # Tribler Web UI Port / Tribler 웹 UI 포트
     volumes:
-      - /DATA/AppData/$AppID/state:/home/ubuntu/.Tribler    # Tribler 상태 및 설정 디렉토리
-      - /DATA/Downloads:/home/ubuntu/Downloads              # 다운로드 디렉토리
+      - /DATA/AppData/$AppID/state:/home/user/.Tribler       # Tribler 상태 및 설정 디렉토리
+      - /DATA/Downloads:/home/user/Downloads                 # 다운로드 디렉토리
     environment:
       PGID: $PGID
       PUID: $PUID
-      TZ: $TZ                                              # 시간대 설정
-      CORE_API_PORT: 8085                                 # API 포트 설정
-      CORE_API_KEY: changeme                              # API 키 설정
+      TZ: $TZ                                               # 시간대 설정
+      CORE_API_PORT: 8085                                  # API 포트 설정
+      CORE_API_KEY: casaos                                 # API 키 설정
     cpu_shares: 50
     deploy:
       resources:
@@ -29,18 +29,17 @@ x-casaos:
   author: CasaOS Team
   category: Download
   developer: Tribler Team
-  description:
+      description:
     en_us: |
-      **Tribler - Decentralized BitTorrent Client**
+      **Tribler - Decentralized BitTorrent Client (Stable Version)**
       
-      Tribler is a privacy-enhanced BitTorrent client that offers anonymous downloading and built-in search capabilities. Unlike traditional torrent clients, Tribler provides decentralized search and anonymous downloading through its innovative onion routing system.
+      Tribler is a privacy-enhanced BitTorrent client that offers anonymous downloading and built-in search capabilities. This version (7.14.0) is a stable release that works reliably in Docker environments.
       
       **Key Features:**
       • Anonymous downloading with onion routing
       • Built-in torrent search engine
       • No central servers required
       • Channel-based content discovery
-      • Token economy with TrustChain
       • Credit-based system for fair sharing
       • Web-based remote control interface
       
@@ -50,16 +49,15 @@ x-casaos:
       **Important Note:**
       Please ensure you comply with local laws regarding file sharing and downloading. Tribler is designed for sharing legal content and protecting user privacy.
     zh_cn: |
-      **Tribler - 去中心化 BitTorrent 客户端**
+      **Tribler - 去中心化 BitTorrent 客户端（稳定版本）**
       
-      Tribler 是一个增强隐私的 BitTorrent 客户端，提供匿名下载和内置搜索功能。与传统种子客户端不同，Tribler 通过其创新的洋葱路由系统提供去中心化搜索和匿名下载。
+      Tribler 是一个增强隐私的 BitTorrent 客户端，提供匿名下载和内置搜索功能。此版本（7.14.0）是在 Docker 环境中可靠运行的稳定版本。
       
       **主要功能：**
       • 通过洋葱路由实现匿名下载
       • 内置种子搜索引擎
       • 无需中央服务器
       • 基于频道的内容发现
-      • TrustChain 代币经济
       • 基于信用的公平分享系统
       • 基于网页的远程控制界面
       
@@ -69,16 +67,15 @@ x-casaos:
       **重要提示：**
       请确保您遵守当地关于文件共享和下载的法律。Tribler 专为分享合法内容和保护用户隐私而设计。
     ko_kr: |
-      **Tribler - 탈중앙화 BitTorrent 클라이언트**
+      **Tribler - 탈중앙화 BitTorrent 클라이언트（안정 버전）**
       
-      Tribler는 익명 다운로드와 내장 검색 기능을 제공하는 개인정보 보호 강화 BitTorrent 클라이언트입니다. 기존 토렌트 클라이언트와 달리, Tribler은 혁신적인 어니언 라우팅 시스템을 통해 탈중앙화 검색과 익명 다운로드를 제공합니다.
+      Tribler는 익명 다운로드와 내장 검색 기능을 제공하는 개인정보 보호 강화 BitTorrent 클라이언트입니다. 이 버전（7.14.0）은 Docker 환경에서 안정적으로 작동하는 안정 릴리스입니다.
       
       **주요 기능:**
       • 어니언 라우팅을 통한 익명 다운로드
       • 내장 토렌트 검색 엔진
       • 중앙 서버 불필요
       • 채널 기반 콘텐츠 발견
-      • TrustChain 토큰 경제
       • 공정한 공유를 위한 크레딧 기반 시스템
       • 웹 기반 원격 제어 인터페이스
       
