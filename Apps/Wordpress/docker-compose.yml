@@ -1,129 +1,89 @@
-name: navidrome
+name: wordpress
 
 services:
-  navidrome:
-    image: deluan/navidrome:0.56.1
-    container_name: navidrome
+  app:
+    image: wordpress:latest
+    container_name: wordpress
     restart: unless-stopped
-    expose:
-      - 4533  # Navidrome Web UI Port / Navidrome 웹 UI 포트
-    depends_on:
-      sample-music-downloader:
-        condition: service_completed_successfully
+    ports:
+      - "80:80"
     volumes:
-      - /DATA/AppData/$AppID/data:/data        # Navidrome database and configuration directory / Navidrome 데이터베이스 및 설정 디렉토리
-      - /DATA/Media/Music:/music               # Music library directory (read-only) / 음악 라이브러리 디렉토리 (읽기 전용)
-      - /DATA/Downloads:/downloads             # Downloads directory for temporary music files / 임시 음악 파일용 다운로드 디렉토리
-    user: $PUID:$PGID
+      - /DATA/AppData/$AppID/WordPress:/var/www/html
     environment:
-      PGID: $PGID
-      PUID: $PUID
-      TZ: $TZ                                  # Timezone for the Navidrome service / Navidrome 서비스의 시간대 설정
-      ND_MUSICFOLDER: /music                   # Path to your music library inside the container / 컨테이너 내 음악 라이브러리 경로
-      ND_DATAFOLDER: /data                     # Path to store Navidrome database and configuration / Navidrome 데이터베이스와 설정을 저장할 경로
-      ND_LOGLEVEL: info                        # Log level (debug, info, warn, error) / 로그 레벨 (debug, info, warn, error)
-    cpu_shares: 50
-    deploy:
-      resources:
-        limits:
-          memory: 512M
+      - WORDPRESS_DB_HOST=database
+      - WORDPRESS_DB_USER=wordpress
+      - WORDPRESS_DB_PASSWORD=wordpress
+      - WORDPRESS_DB_NAME=wordpress
+      - WORDPRESS_TABLE_PREFIX=wp_
+    depends_on:
+      - database
+    networks:
+      pcs: null
 
-  # Init container to download sample music
-  sample-music-downloader:
-    image: alpine:latest
-    container_name: navidrome-sample-music-downloader
+  database:
+    image: mariadb:10.6
+    container_name: wordpress_db
+    restart: unless-stopped
+    environment:
+      - MYSQL_DATABASE=wordpress
+      - MYSQL_USER=wordpress
+      - MYSQL_PASSWORD=wordpress
+      - MYSQL_ROOT_PASSWORD=wordpress
     volumes:
-      - /DATA/Media/Music:/music
-    command: |
-      sh -c "
-        apk add --no-cache curl wget &&
-        echo 'Downloading sample music files...' &&
-        mkdir -p /music/Sample\ Music &&
-        cd /music/Sample\ Music &&
-        
-        # Download from Jamendo (Creative Commons)
-        echo 'Downloading from Jamendo...' &&
-        wget -O 'Chill_Hop_Beat.mp3' 'https://prod-1.storage.jamendo.com/?trackid=1578250&format=mp31&from=app-97e50a68' &&
-        wget -O 'Electronic_Ambient.mp3' 'https://prod-1.storage.jamendo.com/?trackid=1565432&format=mp31&from=app-97e50a68' &&
-        
-        # Download from Free Music Archive
-        echo 'Downloading from Free Music Archive...' &&
-        wget -O 'Classical_Piano.mp3' 'https://files.freemusicarchive.org/storage-freemusicarchive-org/music/Music_for_Video/Kevin_MacLeod/Classical_Sampler/Kevin_MacLeod_-_04_-_Gymnopedie_No_1.mp3' &&
-        wget -O 'Upbeat_Rock.mp3' 'https://files.freemusicarchive.org/storage-freemusicarchive-org/music/Music_for_Video/Kevin_MacLeod/Rock/Kevin_MacLeod_-_01_-_Almost_New.mp3' &&
-        wget -O 'Acoustic_Folk.mp3' 'https://files.freemusicarchive.org/storage-freemusicarchive-org/music/Music_for_Video/Scott_Holmes/Indie_Acoustic/Scott_Holmes_-_01_-_Acoustic_Indie_Folk.mp3' &&
-        
-        echo 'Sample music download completed!' &&
-        ls -la /music/Sample\ Music/
-      "
-    restart: "no"
+      - /DATA/AppData/$AppID/db:/var/lib/mysql
+    networks:
+      pcs: null
+
+networks:
+  pcs:
+    name: pcs
 
 x-casaos:
   architectures:
     - amd64
     - arm64
-  author: CasaOS Team
-  category: Media
-  developer: Deluan Quintão
+  author: self
+  category: web
   description:
-    en_us: |
-      **Your Personal Music Streaming Server**
-      Navidrome is a modern music server and streamer compatible with Subsonic/Airsonic clients. Stream your music collection from anywhere with a beautiful web interface and mobile apps.
-      
-      **Key Features:**
-      • Beautiful, responsive web interface
-      • Compatible with Subsonic apps (iOS/Android)
-      • Automatic music library scanning
-      • Transcoding and streaming optimization
-      • Multi-user support with playlists
-      • Last.fm scrobbling support
-      
-      **Sample Music Included:**
-      This installation includes 5 free Creative Commons licensed sample tracks to get you started immediately.
-    zh_cn: |
-      **您的个人音乐流媒体服务器**
-      Navidrome是一个现代音乐服务器和流媒体播放器，兼容Subsonic/Airsonic客户端。通过漂亮的网页界面和移动应用程序从任何地方播放您的音乐收藏。
-      
-      **主要功能：**
-      • 漂亮、响应式的网页界面
-      • 兼容Subsonic应用程序（iOS/Android）
-      • 自动音乐库扫描
-      • 转码和流媒体优化
-      • 多用户支持与播放列表
-      • Last.fm记录支持
-      
-      **包含示例音乐：**
-      此安装包含5首免费Creative Commons授权的示例曲目，让您立即开始使用。
-    ko_kr: |
-      **개인 음악 스트리밍 서버**
-      Navidrome은 Subsonic/Airsonic 클라이언트와 호환되는 현대적인 음악 서버이자 스트리머입니다. 아름다운 웹 인터페이스와 모바일 앱으로 어디서나 음악 컬렉션을 스트리밍하세요.
-      
-      **주요 기능:**
-      • 아름답고 반응형 웹 인터페이스
-      • Subsonic 앱 호환 (iOS/Android)
-      • 자동 음악 라이브러리 스캔
-      • 트랜스코딩 및 스트리밍 최적화
-      • 플레이리스트가 있는 다중 사용자 지원
-      • Last.fm 스크로블링 지원
-      
-      **샘플 음악 포함:**
-      이 설치에는 즉시 시작할 수 있도록 5개의 무료 Creative Commons 라이센스 샘플 트랙이 포함되어 있습니다.
-  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Navidrome/icon.png
+    en_us: WordPress - A flexible content management system powering millions of websites worldwide, with customizable themes, plugins, and a user-friendly interface.
+    zh_cn: WordPress - 一个灵活的内容管理系统，为全球数百万网站提供支持，具有可定制的主题、插件和用户友好的界面
+    ko_kr: WordPress - 전 세계 수백만 개의 웹사이트를 운영하는 유연한 콘텐츠 관리 시스템으로, 맞춤형 테마, 플러그인 및 사용자 친화적인 인터페이스 제공합니다.
+  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Wordpress/icon.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Navidrome/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Navidrome/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Navidrome/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Navidrome/thumbnail.png
-  index: /
-  
-  tagline:
-    en_us: Your personal music streaming server with modern web interface
-    zh_cn: 具有现代网页界面的个人音乐流媒体服务器
-    ko_kr: 현대적인 웹 인터페이스를 갖춘 개인 음악 스트리밍 서버
-  title:
-    en_us: Navidrome
-    zh_cn: Navidrome
-    ko_kr: Navidrome
-  store_app_id: navidrome
-  main: navidrome
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Wordpress/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Wordpress/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Wordpress/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Wordpress/thumbnail.png
+  index: /wp-admin
   is_uncontrolled: false
-  webui_port: 4533
+  tagline:
+    en_us: Create beautiful websites and blogs with ease
+    zh_cn: 轻松创建精美网站和博客
+    ko_kr: 아름다운 웹사이트와 블로그를 손쉽게 만들기
+  port_map: "80"
+  store_app_id: wordpress
+  title:
+    en_us: Wordpress
+    zh_cn: Wordpress
+    ko_kr: Wordpress
+  main: app
+  tips:
+    before_install:
+      en_us: |
+        🌍** WordPress (Website Builder)**
+        **Create your own website with WordPress.**
+        ⚠️ *Custom domains (like youchoose.com) are not yet supported. Your site will use a subdomain (e.g. wordpress.yourname.nsl.sh) for now. Full domain support coming soon.*
+
+      zh_cn: |
+        🌍** WordPress (网站构建器)**
+        **使用WordPress创建您自己的网站。**
+        ⚠️ *暂不支持自定义域名（如youchoose.com）。您的网站将使用子域名（如wordpress.yourname.nsl.sh）。完整域名支持即将推出。*
+
+      ko_kr: |
+        🌍** WordPress (웹사이트 빌더)**
+        **WordPress로 나만의 웹사이트를 만드세요.**
+        ⚠️ *사용자 정의 도메인(예: youchoose.com)은 아직 지원되지 않습니다. 현재는 서브도메인(예: wordpress.yourname.nsl.sh)을 사용합니다. 전체 도메인 지원이 곧 제공될 예정입니다.*
+
+  volumes:
+    - /DATA/AppData/$AppID/WordPress
+    - /DATA/AppData/$AppID/db
