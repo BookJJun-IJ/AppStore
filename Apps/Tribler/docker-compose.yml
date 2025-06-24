@@ -16,6 +16,7 @@ services:
       TZ: $TZ
       CORE_API_PORT: 8085
       CORE_API_KEY: casaos
+    network_mode: bridge
     command: ["-s"]
     cpu_shares: 50
     deploy:
