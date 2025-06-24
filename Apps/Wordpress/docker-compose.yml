@@ -48,11 +48,12 @@ x-casaos:
     en_us: WordPress - A flexible content management system powering millions of websites worldwide, with customizable themes, plugins, and a user-friendly interface.
     zh_cn: WordPress - 一个灵活的内容管理系统，为全球数百万网站提供支持，具有可定制的主题、插件和用户友好的界面
     ko_kr: WordPress - 전 세계 수백만 개의 웹사이트를 운영하는 유연한 콘텐츠 관리 시스템으로, 맞춤형 테마, 플러그인 및 사용자 친화적인 인터페이스 제공합니다.
-  icon: https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Wordpress/icons.png
+  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Wordpress/icon.png
   screenshot_link:
-    - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Wordpress/screenshots1.png
-    - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Wordpress/screenshots2.png
-    - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Wordpress/screenshots3.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Wordpress/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Wordpress/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Wordpress/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Wordpress/thumbnail.png
   index: /wp-admin
   is_uncontrolled: false
   tagline:
