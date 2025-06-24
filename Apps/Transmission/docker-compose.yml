@@ -1,149 +1,101 @@
 name: transmission
 
 services:
-  app:
-    image: lscr.io/linuxserver/transmission:latest
+  transmission:
+    image: lscr.io/linuxserver/transmission:4.0.6
     container_name: transmission
     restart: unless-stopped
-    ports:
-      - "9091:9091"
-      - "51413:51413"
-      - "51413:51413/udp"
+    expose:
+      - 9091
     volumes:
       - /DATA/AppData/$AppID/config:/config
       - /DATA/Downloads:/downloads
-      - /DATA/AppData/$AppID/watch:/watch
-      - /DATA/Downloads/complete:/downloads/complete
-      - /DATA/Downloads/incomplete:/downloads/incomplete
+      - /DATA/Downloads/watch:/watch
+    user: $PUID:$PGID
     environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Asia/Seoul
-      - TRANSMISSION_WEB_HOME=/flood-for-transmission/
-      - USER=admin
-      - PASS=transmission123
-      - WHITELIST=*
-      - PEERPORT=51413
-      - HOST_WHITELIST=*
-    networks:
-      pcs: null
-
-networks:
-  pcs:
-    name: pcs
+      PGID: $PGID
+      PUID: $PUID
+      TZ: $TZ
+      TRANSMISSION_WEB_HOME: /flood-for-transmission/
+      USER: admin
+      PASS: $default_pwd
+    cpu_shares: 50
+    deploy:
+      resources:
+        limits:
+          memory: 512M
 
 x-casaos:
   architectures:
     - amd64
     - arm64
-  author: self
-  category: downloader
+  author: CasaOS Team
+  category: Network
+  developer: Transmission Project
   description:
-    en_us: Transmission - A fast, easy, and free BitTorrent client with a clean web interface for managing torrents and downloads remotely.
-    zh_cn: Transmission - 快速、简单、免费的BitTorrent客户端，具有简洁的网页界面，可远程管理种子和下载。
-    ko_kr: Transmission - 깔끔한 웹 인터페이스로 토렌트와 다운로드를 원격으로 관리할 수 있는 빠르고 쉬우며 무료인 BitTorrent 클라이언트입니다.
-  icon: https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Transmission/icons.png
+    en_us: |
+      **Fast, Easy, and Free BitTorrent Client**
+      Transmission is a lightweight, cross-platform BitTorrent client that is easy to use and configure. It features a web-based interface for remote management and supports encryption, bandwidth limiting, and selective downloading.
+      
+      **Key Features:**
+      • Simple and intuitive web interface
+      • Low resource usage and high performance
+      • Built-in encryption and security features
+      • Bandwidth control and scheduling
+      • Remote access from any device
+      • Watch folder for automatic torrent loading
+      
+      **Perfect for downloading:**
+      • Linux distributions and open-source software
+      • Creative Commons licensed content
+      • Public domain media and educational materials
+    fr_fr: |
+      **Client BitTorrent rapide, facile et gratuit**
+      Transmission est un client BitTorrent léger et multiplateforme, facile à utiliser et à configurer. Il dispose d'une interface web pour la gestion à distance et prend en charge le chiffrement, la limitation de bande passante et le téléchargement sélectif.
+    es_es: |
+      **Cliente BitTorrent rápido, fácil y gratuito**
+      Transmission es un cliente BitTorrent ligero y multiplataforma que es fácil de usar y configurar. Cuenta con una interfaz web para gestión remota y admite cifrado, limitación de ancho de banda y descarga selectiva.
+    zh_cn: |
+      **快速、简单、免费的BitTorrent客户端**
+      Transmission是一个轻量级、跨平台的BitTorrent客户端，易于使用和配置。它具有基于网页的界面用于远程管理，支持加密、带宽限制和选择性下载。
+    ko_kr: |
+      **빠르고 쉬우며 무료인 BitTorrent 클라이언트**
+      Transmission은 사용과 구성이 쉬운 가벼운 크로스플랫폼 BitTorrent 클라이언트입니다. 원격 관리를 위한 웹 기반 인터페이스를 제공하며 암호화, 대역폭 제한, 선택적 다운로드를 지원합니다.
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Transmission/icon.png
   screenshot_link:
-    - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Transmission/screenshots1.png
-    - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Transmission/screenshots2.png
-    - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Transmission/screenshots3.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Transmission/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Transmission/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Transmission/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Transmission/thumbnail.png
   index: /
   tagline:
     en_us: Fast and lightweight BitTorrent client with web interface
+    fr_fr: Client BitTorrent rapide et léger avec interface web
+    es_es: Cliente BitTorrent rápido y ligero con interfaz web
     zh_cn: 具有网页界面的快速轻量级BitTorrent客户端
-    ko_kr: 웹 인터페이스가 있는 빠르고 가벼운 BitTorrent 클라이언트
-  port_map: "9091"
-  store_app_id: transmission
+    ko_kr: 웹 인터페이스를 갖춘 빠르고 가벼운 BitTorrent 클라이언트
   title:
     en_us: Transmission
-    zh_cn: Transmission
-    ko_kr: Transmission
-  main: app
+  store_app_id: transmission
+  main: transmission
   is_uncontrolled: false
-  attention:
-    en_us: |
-      ⚠️ **ATTENTION**: Change default password immediately after first login!
-      
-      🔐 **Access Settings:**
-      • Default Username: admin
-      • Default Password: transmission123
-      
-      📁 **Folder Structure:**
-      • Downloads: /DATA/Downloads
-      • Config: /DATA/AppData/transmission/config (Do not modify)
-      • Watch folder: /DATA/AppData/transmission/watch
-      
-      💡 **Usage Tips:**
-      • Drop .torrent files in watch folder for auto-download
-      • Completed downloads: /DATA/Downloads/complete
-      • In-progress downloads: /DATA/Downloads/incomplete
-      • Web UI supports drag & drop torrent files
-      • Set download/upload speed limits in settings
-      • Enable blocklist for better security
-      • Use VPN for privacy protection
-      
-      ⚠️ **Important Notes:**
-      • Port 51413 must be open for best performance
-      • Check your local laws regarding torrenting
-      • Always use legitimate content sources
-      • Monitor disk space in downloads folder
+  webui_port: 9091
+  tips:
+    before_install:
+      en_us: |
+        🔐 **Login:** Username: `admin`, Password: `$default_pwd`
+        📁 **Downloads:** Files saved to `/DATA/Downloads`
+        📂 **Watch Folder:** Drop .torrent files in `/DATA/Downloads/watch` for auto-loading
+        ⚡ **Ports:** 51413 (TCP/UDP) opened for peer connections
 
-    zh_cn: |
-      ⚠️ **注意**: 首次登录后请立即更改默认密码！
-      
-      🔐 **访问设置：**
-      • 默认用户名：admin
-      • 默认密码：transmission123
-      
-      📁 **文件夹结构：**
-      • 下载：/DATA/Downloads
-      • 配置：/DATA/AppData/transmission/config（请勿修改）
-      • 监视文件夹：/DATA/AppData/transmission/watch
-      
-      💡 **使用技巧：**
-      • 将.torrent文件放入监视文件夹即可自动下载
-      • 完成的下载：/DATA/Downloads/complete
-      • 进行中的下载：/DATA/Downloads/incomplete
-      • 网页界面支持拖放种子文件
-      • 在设置中设置下载/上传速度限制
-      • 启用阻止列表以提高安全性
-      • 使用VPN保护隐私
-      
-      ⚠️ **重要提示：**
-      • 端口51413必须开放以获得最佳性能
-      • 请检查当地关于种子下载的法律
-      • 始终使用合法内容源
-      • 监控下载文件夹的磁盘空间
+      zh_cn: |
+        🔐 **登录:** 用户名: `admin`, 密码: `$default_pwd`
+        📁 **下载:** 文件保存到 `/DATA/Downloads`
+        📂 **监视文件夹:** 将.torrent文件放入 `/DATA/Downloads/watch` 自动加载
+        ⚡ **端口:** 51413 (TCP/UDP) 已开放用于对等连接
 
-    ko_kr: |
-      ⚠️ **주의사항**: 첫 로그인 후 기본 비밀번호를 즉시 변경하세요！
-      
-      🔐 **접속 설정:**
-      • 기본 사용자명: admin
-      • 기본 비밀번호: transmission123
-      
-      📁 **폴더 구조:**
-      • 다운로드: /DATA/Downloads
-      • 설정: /DATA/AppData/transmission/config (수정 금지)
-      • 감시 폴더: /DATA/AppData/transmission/watch
-      
-      💡 **사용 팁:**
-      • 감시 폴더에 .torrent 파일을 넣으면 자동 다운로드
-      • 완료된 다운로드: /DATA/Downloads/complete
-      • 진행 중인 다운로드: /DATA/Downloads/incomplete
-      • 웹 UI에서 토렌트 파일 드래그 앤 드롭 지원
-      • 설정에서 다운로드/업로드 속도 제한 설정
-      • 보안 향상을 위해 차단 목록 활성화
-      • 프라이버시 보호를 위해 VPN 사용
-      
-      ⚠️ **중요사항:**
-      • 최적 성능을 위해 포트 51413 개방 필요
-      • 토렌트 관련 현지 법률 확인
-      • 항상 합법적인 콘텐츠 소스 사용
-      • 다운로드 폴더의 디스크 공간 모니터링
-  volumes:
-    - /DATA/AppData/$AppID/config
-    - /DATA/Downloads
-    - /DATA/AppData/$AppID/watch
-    - /DATA/Downloads/complete
-    - /DATA/Downloads/incomplete
+      ko_kr: |
+        🔐 **로그인:** 사용자명: `admin`, 비밀번호: `$default_pwd`
+        📁 **다운로드:** 파일이 `/DATA/Downloads`에 저장됩니다
+        📂 **감시 폴더:** .torrent 파일을 `/DATA/Downloads/watch`에 놓으면 자동 로드
+        ⚡ **포트:** 51413 (TCP/UDP) 피어 연결용으로 열림
