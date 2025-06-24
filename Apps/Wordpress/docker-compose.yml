@@ -70,52 +70,19 @@ x-casaos:
   tips:
     before_install:
       en_us: |
-        🌐 Website Setup:
-        • First visit: WordPress installation wizard
-        • Database: Pre-configured (wordpress/wordpress)
-        
-        📁 Folder Structure:
-        • Website Files: /DATA/Websites/WordPress
-        • Downloads: /DATA/Downloads (accessible at /downloads URL)
-        • Database: /DATA/AppData/wordpress/db (Do not modify)
-        
-        💡 Getting Started:
-        • Complete 5-minute installation
-        • Choose site title, admin username, password
-        • Install themes and plugins from dashboard
-        • Upload files to /DATA/Downloads and access via /downloads URL
+        🌍** WordPress (Website Builder)**
+        **Create your own website with WordPress.**
+        ⚠️ *Custom domains (like youchoose.com) are not yet supported. Your site will use a subdomain (e.g. wordpress.yourname.nsl.sh) for now. Full domain support coming soon.*
 
       zh_cn: |
-        🌐 网站设置：
-        • 首次访问：WordPress安装向导
-        • 数据库：预配置（wordpress/wordpress）
-        
-        📁 文件夹结构：
-        • 网站文件：/DATA/Websites/WordPress
-        • 下载文件：/DATA/Downloads（通过 /downloads URL访问）
-        • 数据库：/DATA/AppData/wordpress/db（请勿修改）
-        
-        💡 入门指南：
-        • 完成5分钟安装
-        • 选择网站标题、管理员用户名、密码
-        • 从仪表板安装主题和插件
-        • 上传文件到 /DATA/Downloads 并通过 /downloads URL访问
-        
+        🌍** WordPress (网站构建器)**
+        **使用WordPress创建您自己的网站。**
+        ⚠️ *暂不支持自定义域名（如youchoose.com）。您的网站将使用子域名（如wordpress.yourname.nsl.sh）。完整域名支持即将推出。*
+
       ko_kr: |
-        🌐 웹사이트 설정:
-        • 첫 접속: WordPress 설치 마법사
-        • 데이터베이스: 사전 구성됨 (wordpress/wordpress)
-        
-        📁 폴더 구조:
-        • 웹사이트 파일: /DATA/Websites/WordPress
-        • 다운로드: /DATA/Downloads (/downloads URL로 접근)
-        • 데이터베이스: /DATA/AppData/wordpress/db (수정 금지)
-        
-        💡 시작하기:
-        • 5분 설치 완료하기
-        • 사이트 제목, 관리자 사용자명, 비밀번호 선택
-        • 대시보드에서 테마 및 플러그인 설치
-        • /DATA/Downloads에 파일 업로드 후 /downloads URL로 접근
+        🌍** WordPress (웹사이트 빌더)**
+        **WordPress로 나만의 웹사이트를 만드세요.**
+        ⚠️ *사용자 정의 도메인(예: youchoose.com)은 아직 지원되지 않습니다. 현재는 서브도메인(예: wordpress.yourname.nsl.sh)을 사용합니다. 전체 도메인 지원이 곧 제공될 예정입니다.*
 
   volumes:
     - /DATA/AppData/$AppID/WordPress
