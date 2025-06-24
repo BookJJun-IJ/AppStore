@@ -16,13 +16,14 @@ services:
       TZ: $TZ
       CORE_API_PORT: 8085
       CORE_API_KEY: casaos
-      CORE_API_HOST: 0.0.0.0
     command: ["-s"]
     cpu_shares: 50
     deploy:
       resources:
         limits:
           memory: 1G
+    labels:
+      - "casaos.icon=https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Tribler/icon.png"
 
 x-casaos:
   architectures:
