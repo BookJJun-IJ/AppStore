@@ -17,10 +17,12 @@ services:
       PGID: $PGID                              # Group ID for file permissions
       PUID: $PUID                              # User ID for file permissions
       TZ: $TZ                                  # Timezone setting
-      DOCKER_ENABLE_SECURITY: false           # Disable security jar (required for login to work)
+      DOCKER_ENABLE_SECURITY: true            # Enable security jar download (required for login)
       SECURITY_ENABLE_LOGIN: true             # Enable login authentication
       SECURITY_INITIALLOGIN_USERNAME: admin   # Default admin username
       SECURITY_INITIALLOGIN_PASSWORD: admin   # Default admin password (change after first login)
+      UMASK: "022"                            # File permission mask
+    privileged: true                           # Required for proper file permissions
     cpu_shares: 100
     deploy:
       resources:
