@@ -12,7 +12,6 @@ services:
       - /DATA/AppData/$AppID/configs:/configs
       - /DATA/AppData/$AppID/logs:/logs
       - /DATA/Downloads:/downloads
-    user: $PUID:$PGID
     environment:
       PGID: $PGID                              # Group ID for file permissions
       PUID: $PUID                              # User ID for file permissions
@@ -21,9 +20,6 @@ services:
       SECURITY_ENABLE_LOGIN: true             # Enable login authentication
       SECURITY_INITIALLOGIN_USERNAME: admin   # Default admin username
       SECURITY_INITIALLOGIN_PASSWORD: admin   # Default admin password (change after first login)
-      SYSTEM_ROOTURIPATH: /                   # Root URI path
-      SYSTEM_CONNECTIONTIMEOUTMINUTES: 5      # Connection timeout
-    network_mode: bridge                      # Use bridge network to avoid firewall issues
     cpu_shares: 100
     deploy:
       resources:

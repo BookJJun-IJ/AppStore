@@ -43,14 +43,11 @@ services:
         mkdir -p "/music/Sample Music"
         cd "/music/Sample Music"
         
-        echo 'Downloading from Jamendo...'
-        wget -O 'Chill_Hop_Beat.mp3' 'https://prod-1.storage.jamendo.com/?trackid=1578250&format=mp31&from=app-97e50a68' || true
-        wget -O 'Electronic_Ambient.mp3' 'https://prod-1.storage.jamendo.com/?trackid=1565432&format=mp31&from=app-97e50a68' || true
+        echo 'Downloading from Learning Container (Test Files)...'
+        wget -O 'Chill_Hop_Beat.mp3' 'https://www.learningcontainer.com/wp-content/uploads/2020/02/Kalimba.mp3' || true
         
-        echo 'Downloading from Free Music Archive...'
-        wget -O 'Classical_Piano.mp3' 'https://files.freemusicarchive.org/storage-freemusicarchive-org/music/Music_for_Video/Kevin_MacLeod/Classical_Sampler/Kevin_MacLeod_-_04_-_Gymnopedie_No_1.mp3' || true
-        wget -O 'Upbeat_Rock.mp3' 'https://files.freemusicarchive.org/storage-freemusicarchive-org/music/Music_for_Video/Kevin_MacLeod/Rock/Kevin_MacLeod_-_01_-_Almost_New.mp3' || true
-        wget -O 'Acoustic_Folk.mp3' 'https://files.freemusicarchive.org/storage-freemusicarchive-org/music/Music_for_Video/Scott_Holmes/Indie_Acoustic/Scott_Holmes_-_01_-_Acoustic_Indie_Folk.mp3' || true
+        echo 'Downloading additional test samples...'
+        wget -O 'Acoustic_Folk.mp3' 'https://codeskulptor-demos.commondatastorage.googleapis.com/GalaxyInvaders/theme_01.mp3' || true
         
         echo 'Sample music download completed!'
         ls -la "/music/Sample Music/" || true
