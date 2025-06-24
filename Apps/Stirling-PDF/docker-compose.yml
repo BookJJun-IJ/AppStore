@@ -14,13 +14,13 @@ services:
       - /DATA/Downloads:/downloads
     user: $PUID:$PGID
     environment:
-      PGID: $PGID                            # Group ID for file permissions
-      PUID: $PUID                            # User ID for file permissions
-      TZ: $TZ                                # Timezone setting
-      DOCKER_ENABLE_SECURITY: true           # Enable security features
-      SECURITY_ENABLELOGIN: true             # Enable login authentication
-      SECURITY_INITIALLOGIN_USERNAME: admin  # Default admin username
-      SECURITY_INITIALLOGIN_PASSWORD: admin  # Default admin password (change after first login)
+      PGID: $PGID                              # Group ID for file permissions
+      PUID: $PUID                              # User ID for file permissions
+      TZ: $TZ                                  # Timezone setting
+      DOCKER_ENABLE_SECURITY: false           # Disable security jar (required for login to work)
+      SECURITY_ENABLE_LOGIN: true             # Enable login authentication
+      SECURITY_INITIALLOGIN_USERNAME: admin   # Default admin username
+      SECURITY_INITIALLOGIN_PASSWORD: admin   # Default admin password (change after first login)
     cpu_shares: 100
     deploy:
       resources:
@@ -46,9 +46,9 @@ x-casaos:
   thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Stirling-PDF/thumbnail.png
   index: /
   tagline:
-    en_us: Locally hosted web-based PDF manipulation tool
-    zh_cn: 本地托管的网页PDF处理工具
-    ko_kr: 로컬 호스팅 웹 기반 PDF 조작 도구
+    en_us: Your best free PDF manipulation tool
+    zh_cn: 您最好的免费PDF处理工具
+    ko_kr: 최고의 무료 PDF 조작 도구
   title:
     en_us: Stirling-PDF
     zh_cn: Stirling-PDF
@@ -61,63 +61,30 @@ x-casaos:
     before_install:
       en_us: |
         ⚠️ **Installation Notice:**
-        • This app may take 2-5 minutes to complete setup after installation
+        • This app may take 5-10 minutes to complete setup after installation
         • Please wait for the configuration to finish before accessing
-
-        📁 **File Processing:**
-        • Upload files via web interface or use `/DATA/Downloads` folder
-        • Supported formats: PDF, Images (JPG, PNG, TIFF), Office documents
-        • Files are processed temporarily - download results immediately
-        • No permanent file storage within the application
 
         🔐 **Default Login Credentials:**
         • Username: `admin`
         • Password: `admin`
         • **Important**: Change these credentials after first login for security
 
-        💡 **Usage Tips:**
-        • OCR functionality requires language data (automatically downloaded)
-        • Large PDF files may require additional processing time
-        • Use Downloads folder for easy file access from other CasaOS apps
-
       zh_cn: |
         ⚠️ **安装提示：**
-        • 此应用安装后可能需要2-5分钟完成设置配置
+        • 此应用安装后可能需要5-10分钟完成设置配置
         • 请等待配置完成后再访问
-
-        📁 **文件处理：**
-        • 通过网页界面上传文件或使用 `/DATA/Downloads` 文件夹
-        • 支持格式：PDF、图片(JPG, PNG, TIFF)、Office文档
-        • 文件临时处理 - 请立即下载结果
-        • 应用内无永久文件存储
 
         🔐 **默认登录凭据：**
         • 用户名：`admin`
         • 密码：`admin`
         • **重要**：首次登录后请更改这些凭据以确保安全
 
-        💡 **使用技巧：**
-        • OCR功能需要语言数据（自动下载）
-        • 大型PDF文件可能需要额外的处理时间
-        • 使用Downloads文件夹便于从其他CasaOS应用访问文件
-
       ko_kr: |
         ⚠️ **설치 안내:**
-        • 이 앱은 설치 후 설정이 완료되기까지 2-5분 정도 소요될 수 있습니다
+        • 이 앱은 설치 후 설정이 완료되기까지 5-10분 정도 소요될 수 있습니다
         • 설정이 완료될 때까지 기다린 후 접속해 주세요
-
-        📁 **파일 처리:**
-        • 웹 인터페이스를 통해 파일 업로드하거나 `/DATA/Downloads` 폴더 사용
-        • 지원 포맷: PDF, 이미지(JPG, PNG, TIFF), Office 문서
-        • 파일은 임시로 처리됩니다 - 결과를 즉시 다운로드하세요
-        • 애플리케이션 내 영구 파일 저장소 없음
 
         🔐 **기본 로그인 정보:**
         • 사용자명: `admin`
         • 비밀번호: `admin`
         • **중요**: 보안을 위해 첫 로그인 후 이 정보를 변경하세요
-
-        💡 **사용 팁:**
-        • OCR 기능은 언어 데이터가 필요합니다 (자동 다운로드)
-        • 큰 PDF 파일은 추가 처리 시간이 필요할 수 있습니다
-        • 다른 CasaOS 앱에서 쉽게 파일에 접근하려면 Downloads 폴더를 사용하세요
