@@ -21,6 +21,7 @@ services:
       TZ: $TZ
       USER: admin
       PASS: $default_pwd
+      TRANSMISSION_WEB_UI: combustion
     cpu_shares: 30
     deploy:
       resources:
@@ -44,8 +45,9 @@ services:
       PUID: $PGID
       TZ: $TZ
       FLOOD_OPTION_RUNDIR: /config
-      FLOOD_OPTION_AUTH: none
-      FLOOD_OPTION_TRURL: http://transmission:9091/transmission/
+      FLOOD_OPTION_AUTH: file
+      FLOOD_OPTION_ALLOWEDPATH: /downloads
+      FLOOD_OPTION_TRURL: http://transmission:9091/transmission/rpc
       FLOOD_OPTION_TRUSER: admin
       FLOOD_OPTION_TRPASS: $default_pwd
     depends_on:
@@ -117,22 +119,3 @@ x-casaos:
   main: flood
   is_uncontrolled: false
   webui_port: 3000
-  tips:
-    before_install:
-      en_us: |
-        🔐 **Initial Setup:** First visit creates your admin account (no default login)
-        📁 **Downloads:** Files saved to `/DATA/Downloads`
-        📂 **Watch Folder:** Drop .torrent files in `/DATA/Downloads/watch`
-        ⚡ **Ports:** 51413 (TCP/UDP) opened for peer connections
-
-      zh_cn: |
-        🔐 **初始设置:** 首次访问时创建管理员账户（无默认登录）
-        📁 **下载:** 文件保存到 `/DATA/Downloads`
-        📂 **监视文件夹:** 将.torrent文件放入 `/DATA/Downloads/watch`
-        ⚡ **端口:** 51413 (TCP/UDP) 已开放用于对等连接
-
-      ko_kr: |
-        🔐 **초기 설정:** 첫 방문 시 관리자 계정 생성 (기본 로그인 없음)
-        📁 **다운로드:** 파일이 `/DATA/Downloads`에 저장됩니다
-        📂 **감시 폴더:** .torrent 파일을 `/DATA/Downloads/watch`에 놓으면 자동 로드
-        ⚡ **포트:** 51413 (TCP/UDP) 피어 연결용으로 열림
