@@ -7,6 +7,9 @@ services:
     restart: unless-stopped
     expose:
       - 9091
+    ports:
+      - "51413:51413"
+      - "51413:51413/udp"
     volumes:
       - /DATA/AppData/$AppID/config:/config
       - /DATA/Downloads:/downloads
@@ -16,7 +19,6 @@ services:
       PGID: $PGID
       PUID: $PUID
       TZ: $TZ
-      TRANSMISSION_WEB_HOME: /flood-for-transmission/
       USER: admin
       PASS: $default_pwd
     cpu_shares: 50
