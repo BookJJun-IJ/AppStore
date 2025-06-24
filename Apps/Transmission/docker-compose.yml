@@ -45,7 +45,7 @@ services:
       PUID: $PGID
       TZ: $TZ
       FLOOD_OPTION_RUNDIR: /config
-      FLOOD_OPTION_AUTH: file
+      FLOOD_OPTION_AUTH: default
       FLOOD_OPTION_ALLOWEDPATH: /downloads
       FLOOD_OPTION_TRURL: http://transmission:9091/transmission/rpc
       FLOOD_OPTION_TRUSER: admin
