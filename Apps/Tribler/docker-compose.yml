@@ -2,7 +2,7 @@ name: tribler
 
 services:
   tribler:
-    image: triblercore/triblercore:7.14.0
+    image: triblercore/triblercore:latest
     container_name: tribler
     restart: unless-stopped
     expose:
@@ -31,9 +31,9 @@ x-casaos:
   developer: Tribler Team
   description:
     en_us: |
-      **Tribler - Decentralized BitTorrent Client (Stable Version)**
+      **Tribler - Decentralized BitTorrent Client (Stable Docker Version)**
       
-      Tribler is a privacy-enhanced BitTorrent client that offers anonymous downloading and built-in search capabilities. This version (7.14.0) is a stable release that works reliably in Docker environments.
+      Tribler is a privacy-enhanced BitTorrent client that offers anonymous downloading and built-in search capabilities. This Docker version provides reliable web-based access to Tribler's core functionality.
       
       **Key Features:**
       • Anonymous downloading with onion routing
@@ -107,19 +107,19 @@ x-casaos:
     before_install:
       en_us: |
         🔐 **Important Notice:**
-        • Stable version (7.14.0) with proven Docker compatibility
+        • Stable Docker version with proven compatibility
         • No login required - direct web interface access
         • Downloads save to `/DATA/Downloads` directory  
         • Please comply with local laws regarding file sharing
       zh_cn: |
         🔐 **重要提示：**
-        • 稳定版本（7.14.0），经过Docker兼容性验证
+        • 稳定的Docker版本，经过兼容性验证
         • 无需登录 - 直接访问网页界面
         • 下载文件保存到 `/DATA/Downloads` 目录
         • 请遵守当地文件共享相关法律
       ko_kr: |
         🔐 **중요 공지:**
-        • Docker 호환성이 검증된 안정 버전 (7.14.0)
+        • Docker 호환성이 검증된 안정 버전
         • 로그인 불필요 - 웹 인터페이스 직접 접속
         • 다운로드 파일은 `/DATA/Downloads` 디렉토리에 저장
         • 파일 공유 관련 현지 법률을 준수하시기 바랍니다
