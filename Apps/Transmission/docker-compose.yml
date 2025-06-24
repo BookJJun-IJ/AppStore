@@ -22,6 +22,7 @@ services:
       USER: admin
       PASS: $default_pwd
       TRANSMISSION_WEB_UI: combustion
+      TRANSMISSION_RPC_AUTHENTICATION_REQUIRED: false
     cpu_shares: 30
     deploy:
       resources:
@@ -45,11 +46,12 @@ services:
       PUID: $PGID
       TZ: $TZ
       FLOOD_OPTION_RUNDIR: /config
-      FLOOD_OPTION_AUTH: default
+      FLOOD_OPTION_AUTH: none
       FLOOD_OPTION_ALLOWEDPATH: /downloads
-      FLOOD_OPTION_TRURL: http://transmission:9091/transmission/rpc
+      FLOOD_OPTION_TRURL: http://transmission:9091/transmission/
       FLOOD_OPTION_TRUSER: admin
       FLOOD_OPTION_TRPASS: $default_pwd
+      FLOOD_OPTION_HOST: 0.0.0.0
     depends_on:
       - transmission
     cpu_shares: 20
