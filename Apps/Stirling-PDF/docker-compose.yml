@@ -38,12 +38,12 @@ x-casaos:
     en_us: Stirling-PDF is a powerful, locally hosted web-based PDF manipulation tool using Docker. It enables you to perform various operations on PDF files, such as splitting, merging, converting, reorganizing, adding images, rotating, compressing, and more.
     zh_cn: Stirling-PDF 是一个强大的本地托管的基于网页的PDF处理工具。它使您能够对PDF文件执行各种操作，如分割、合并、转换、重新组织、添加图像、旋转、压缩等。
     ko_kr: Stirling-PDF는 Docker를 사용하는 강력한 로컬 호스팅 웹 기반 PDF 조작 도구입니다. PDF 파일에 대해 분할, 병합, 변환, 재구성, 이미지 추가, 회전, 압축 등 다양한 작업을 수행할 수 있습니다.
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Stirling-PDF/icon.png
+  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Stirling-PDF/icon.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Stirling-PDF/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Stirling-PDF/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Stirling-PDF/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Stirling-PDF/thumbnail.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Stirling-PDF/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Stirling-PDF/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Stirling-PDF/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Stirling-PDF/thumbnail.png
   index: /
   tagline:
     en_us: Locally hosted web-based PDF manipulation tool
