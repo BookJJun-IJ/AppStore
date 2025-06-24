@@ -5,8 +5,8 @@ services:
     image: ghcr.io/tribler/tribler:latest
     container_name: tribler
     restart: unless-stopped
-    ports:
-      - "8085:8085"
+    expose:
+      - 8085
     volumes:
       - /DATA/AppData/$AppID/state:/home/ubuntu/.Tribler
       - /DATA/Downloads:/home/ubuntu/Downloads
@@ -16,7 +16,6 @@ services:
       TZ: $TZ
       CORE_API_PORT: 8085
       CORE_API_KEY: casaos
-    network_mode: bridge
     command: ["-s"]
     cpu_shares: 50
     deploy:
