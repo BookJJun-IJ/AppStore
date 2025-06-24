@@ -6,16 +6,16 @@ services:
     container_name: tribler
     restart: unless-stopped
     expose:
-      - 8085  # Tribler Web UI Port / Tribler 웹 UI 포트
+      - 8085
     volumes:
-      - /DATA/AppData/$AppID/state:/home/user/.Tribler       # Tribler 상태 및 설정 디렉토리
-      - /DATA/Downloads:/home/user/Downloads                 # 다운로드 디렉토리
+      - /DATA/AppData/$AppID/state:/home/user/.Tribler
+      - /DATA/Downloads:/home/user/Downloads
     environment:
       PGID: $PGID
       PUID: $PUID
-      TZ: $TZ                                               # 시간대 설정
-      CORE_API_PORT: 8085                                  # API 포트 설정
-      CORE_API_KEY: casaos                                 # API 키 설정
+      TZ: $TZ
+      CORE_API_PORT: 8085
+      CORE_API_KEY: casaos
     cpu_shares: 50
     deploy:
       resources:
@@ -29,7 +29,7 @@ x-casaos:
   author: CasaOS Team
   category: Download
   developer: Tribler Team
-      description:
+  description:
     en_us: |
       **Tribler - Decentralized BitTorrent Client (Stable Version)**
       
@@ -107,21 +107,19 @@ x-casaos:
     before_install:
       en_us: |
         🔐 **Important Notice:**
-        • Anonymous BitTorrent client with onion routing for privacy
+        • Stable version (7.14.0) with proven Docker compatibility
         • No login required - direct web interface access
-        • Downloads save to `/DATA/Downloads` directory
+        • Downloads save to `/DATA/Downloads` directory  
         • Please comply with local laws regarding file sharing
-
       zh_cn: |
         🔐 **重要提示：**
-        • 具有洋葱路由隐私保护的匿名 BitTorrent 客户端
+        • 稳定版本（7.14.0），经过Docker兼容性验证
         • 无需登录 - 直接访问网页界面
         • 下载文件保存到 `/DATA/Downloads` 目录
         • 请遵守当地文件共享相关法律
-
       ko_kr: |
         🔐 **중요 공지:**
-        • 개인정보 보호를 위한 어니언 라우팅 기능의 익명 BitTorrent 클라이언트
+        • Docker 호환성이 검증된 안정 버전 (7.14.0)
         • 로그인 불필요 - 웹 인터페이스 직접 접속
         • 다운로드 파일은 `/DATA/Downloads` 디렉토리에 저장
         • 파일 공유 관련 현지 법률을 준수하시기 바랍니다
