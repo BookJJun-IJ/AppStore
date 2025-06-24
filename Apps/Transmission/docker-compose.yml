@@ -20,7 +20,7 @@ services:
       PUID: $PUID
       TZ: $TZ
       USER: admin
-      PASS: transmission
+      PASS: $default_pwd
     cpu_shares: 30
     deploy:
       resources:
@@ -47,7 +47,7 @@ services:
       FLOOD_OPTION_AUTH: none
       FLOOD_OPTION_TRURL: http://transmission:9091/transmission/
       FLOOD_OPTION_TRUSER: admin
-      FLOOD_OPTION_TRPASS: transmission
+      FLOOD_OPTION_TRPASS: $default_pwd
     depends_on:
       - transmission
     cpu_shares: 20
@@ -71,33 +71,33 @@ x-casaos:
   developer: Transmission Project
   description:
     en_us: |
-      **Fast BitTorrent Client with Modern Flood UI**
-      Transmission with Flood provides a beautiful, modern web interface for managing your torrent downloads. Flood offers advanced features like detailed statistics, torrent management, and a responsive design that works great on all devices.
+      **Modern BitTorrent Client with Beautiful Flood UI**
+      Transmission with Flood provides a secure, feature-rich torrent management experience. This dual-container setup combines the reliability of Transmission backend with the modern, intuitive Flood web interface for optimal performance and usability.
       
       **Key Features:**
-      • Modern, intuitive Flood web interface
-      • Real-time download statistics and graphs
-      • Advanced torrent filtering and sorting
-      • Responsive design for mobile and desktop
-      • Low resource usage and high performance
-      • Built-in security and bandwidth control
+      • Beautiful, responsive Flood web interface  
+      • Secure authentication and user management
+      • Real-time download statistics and monitoring
+      • Advanced torrent filtering and organization
+      • Watch folder for automatic torrent loading
+      • Mobile-friendly responsive design
       
       **Perfect for downloading:**
       • Linux distributions and open-source software
       • Creative Commons licensed content
       • Public domain media and educational materials
     fr_fr: |
-      **Client BitTorrent rapide avec interface Flood moderne**
-      Transmission avec Flood fournit une interface web belle et moderne pour gérer vos téléchargements de torrents. Flood offre des fonctionnalités avancées comme des statistiques détaillées, la gestion des torrents et un design responsive.
+      **Client BitTorrent moderne avec belle interface Flood**
+      Transmission avec Flood fournit une expérience de gestion de torrents sécurisée et riche en fonctionnalités. Cette configuration à double conteneur combine la fiabilité du backend Transmission avec l'interface web Flood moderne et intuitive.
     es_es: |
-      **Cliente BitTorrent rápido con interfaz Flood moderna**
-      Transmission con Flood proporciona una interfaz web hermosa y moderna para gestionar tus descargas de torrents. Flood ofrece características avanzadas como estadísticas detalladas y gestión de torrents.
+      **Cliente BitTorrent moderno con hermosa interfaz Flood**
+      Transmission con Flood proporciona una experiencia segura y rica en características para la gestión de torrents. Esta configuración de doble contenedor combina la fiabilidad del backend Transmission con la interfaz web Flood moderna e intuitiva.
     zh_cn: |
-      **具有现代Flood界面的快速BitTorrent客户端**
-      带有Flood界面的Transmission为管理种子下载提供了美观现代的网页界面。Flood提供详细统计、种子管理和响应式设计等高级功能。
+      **具有美观Flood界面的现代BitTorrent客户端**
+      带有Flood的Transmission提供安全、功能丰富的种子管理体验。这种双容器设置结合了Transmission后端的可靠性和现代直观的Flood网页界面。
     ko_kr: |
-      **현대적인 Flood UI를 갖춘 빠른 BitTorrent 클라이언트**
-      Flood와 함께하는 Transmission은 토렌트 다운로드 관리를 위한 아름답고 현대적인 웹 인터페이스를 제공합니다. Flood는 상세한 통계, 토렌트 관리, 반응형 디자인 등의 고급 기능을 제공합니다.
+      **아름다운 Flood UI를 갖춘 현대적인 BitTorrent 클라이언트**
+      Flood와 함께하는 Transmission은 안전하고 기능이 풍부한 토렌트 관리 경험을 제공합니다. 이 이중 컨테이너 설정은 Transmission 백엔드의 안정성과 현대적이고 직관적인 Flood 웹 인터페이스를 결합합니다.
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Transmission/icon.png
   screenshot_link:
     - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Transmission/screenshot-1.png
@@ -106,11 +106,11 @@ x-casaos:
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Transmission/thumbnail.png
   index: /
   tagline:
-    en_us: Modern BitTorrent client with beautiful Flood web interface
-    fr_fr: Client BitTorrent moderne avec belle interface web Flood
-    es_es: Cliente BitTorrent moderno con hermosa interfaz web Flood
-    zh_cn: 具有美观Flood网页界面的现代BitTorrent客户端
-    ko_kr: 아름다운 Flood 웹 인터페이스를 갖춘 현대적인 BitTorrent 클라이언트
+    en_us: Modern BitTorrent client with secure Flood web interface
+    fr_fr: Client BitTorrent moderne avec interface web Flood sécurisée
+    es_es: Cliente BitTorrent moderno con interfaz web Flood segura
+    zh_cn: 具有安全Flood网页界面的现代BitTorrent客户端
+    ko_kr: 안전한 Flood 웹 인터페이스를 갖춘 현대적인 BitTorrent 클라이언트
   title:
     en_us: Transmission
   store_app_id: transmission
@@ -120,19 +120,19 @@ x-casaos:
   tips:
     before_install:
       en_us: |
-        🎨 **Modern UI:** Access via beautiful Flood interface (no login required)
+        🔐 **Initial Setup:** First visit creates your admin account (no default login)
         📁 **Downloads:** Files saved to `/DATA/Downloads`
         📂 **Watch Folder:** Drop .torrent files in `/DATA/Downloads/watch`
         ⚡ **Ports:** 51413 (TCP/UDP) opened for peer connections
 
       zh_cn: |
-        🎨 **现代界面:** 通过美观的Flood界面访问（无需登录）
+        🔐 **初始设置:** 首次访问时创建管理员账户（无默认登录）
         📁 **下载:** 文件保存到 `/DATA/Downloads`
         📂 **监视文件夹:** 将.torrent文件放入 `/DATA/Downloads/watch`
         ⚡ **端口:** 51413 (TCP/UDP) 已开放用于对等连接
 
       ko_kr: |
-        🎨 **현대적 UI:** 아름다운 Flood 인터페이스로 접속 (로그인 불필요)
+        🔐 **초기 설정:** 첫 방문 시 관리자 계정 생성 (기본 로그인 없음)
         📁 **다운로드:** 파일이 `/DATA/Downloads`에 저장됩니다
         📂 **감시 폴더:** .torrent 파일을 `/DATA/Downloads/watch`에 놓으면 자동 로드
         ⚡ **포트:** 51413 (TCP/UDP) 피어 연결용으로 열림
