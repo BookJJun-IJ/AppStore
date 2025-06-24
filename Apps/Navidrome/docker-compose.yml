@@ -6,63 +6,55 @@ services:
     container_name: navidrome
     restart: unless-stopped
     expose:
-      - 4533
+      - 4533  # Navidrome Web UI Port / Navidrome 웹 UI 포트
+    depends_on:
+      sample-music-downloader:
+        condition: service_completed_successfully
     volumes:
-      - /DATA/AppData/$AppID/data:/data
-      - /DATA/Media/Music:/music
-      - /DATA/Downloads:/downloads
+      - /DATA/AppData/$AppID/data:/data        # Navidrome database and configuration directory / Navidrome 데이터베이스 및 설정 디렉토리
+      - /DATA/Media/Music:/music               # Music library directory (read-only) / 음악 라이브러리 디렉토리 (읽기 전용)
+      - /DATA/Downloads:/downloads             # Downloads directory for temporary music files / 임시 음악 파일용 다운로드 디렉토리
     user: $PUID:$PGID
     environment:
       PGID: $PGID
       PUID: $PUID
-      TZ: $TZ
-      ND_MUSICFOLDER: /music
-      ND_DATAFOLDER: /data
-      ND_LOGLEVEL: info
+      TZ: $TZ                                  # Timezone for the Navidrome service / Navidrome 서비스의 시간대 설정
+      ND_MUSICFOLDER: /music                   # Path to your music library inside the container / 컨테이너 내 음악 라이브러리 경로
+      ND_DATAFOLDER: /data                     # Path to store Navidrome database and configuration / Navidrome 데이터베이스와 설정을 저장할 경로
+      ND_LOGLEVEL: info                        # Log level (debug, info, warn, error) / 로그 레벨 (debug, info, warn, error)
     cpu_shares: 50
     deploy:
       resources:
         limits:
-          memory: 512M 
+          memory: 512M
 
-# 서비스 레벨 x-casaos 섹션 (필요시 주석 해제)
-# 환경변수, 포트, 볼륨에 대한 설명을 추가할 수 있습니다
-#    x-casaos:
-#      envs:
-#        - container: TZ
-#          description:
-#            en_us: Timezone for the Navidrome service
-#            ko_kr: Navidrome 서비스의 시간대 설정
-#        - container: ND_MUSICFOLDER
-#          description:
-#            en_us: Path to your music library inside the container
-#            ko_kr: 컨테이너 내 음악 라이브러리 경로
-#        - container: ND_DATAFOLDER
-#          description:
-#            en_us: Path to store Navidrome database and configuration
-#            ko_kr: Navidrome 데이터베이스와 설정을 저장할 경로
-#        - container: ND_LOGLEVEL
-#          description:
-#            en_us: Log level (debug, info, warn, error)
-#            ko_kr: 로그 레벨 (debug, info, warn, error)
-#      ports:
-#        - container: "4533"
-#          description:
-#            en_us: Navidrome Web UI Port
-#            ko_kr: Navidrome 웹 UI 포트
-#      volumes:
-#        - container: /data
-#          description:
-#            en_us: Navidrome database and configuration directory
-#            ko_kr: Navidrome 데이터베이스 및 설정 디렉토리
-#        - container: /music
-#          description:
-#            en_us: Music library directory (read-only)
-#            ko_kr: 음악 라이브러리 디렉토리 (읽기 전용)
-#        - container: /downloads
-#          description:
-#            en_us: Downloads directory for temporary music files
-#            ko_kr: 임시 음악 파일용 다운로드 디렉토리
+  # Init container to download sample music
+  sample-music-downloader:
+    image: alpine:latest
+    container_name: navidrome-sample-music-downloader
+    volumes:
+      - /DATA/Media/Music:/music
+    entrypoint: ["/bin/sh"]
+    command: 
+      - -c
+      - |
+        apk add --no-cache curl wget
+        echo 'Downloading sample music files...'
+        mkdir -p "/music/Sample Music"
+        cd "/music/Sample Music"
+        
+        echo 'Downloading from Jamendo...'
+        wget -O 'Chill_Hop_Beat.mp3' 'https://prod-1.storage.jamendo.com/?trackid=1578250&format=mp31&from=app-97e50a68' || true
+        wget -O 'Electronic_Ambient.mp3' 'https://prod-1.storage.jamendo.com/?trackid=1565432&format=mp31&from=app-97e50a68' || true
+        
+        echo 'Downloading from Free Music Archive...'
+        wget -O 'Classical_Piano.mp3' 'https://files.freemusicarchive.org/storage-freemusicarchive-org/music/Music_for_Video/Kevin_MacLeod/Classical_Sampler/Kevin_MacLeod_-_04_-_Gymnopedie_No_1.mp3' || true
+        wget -O 'Upbeat_Rock.mp3' 'https://files.freemusicarchive.org/storage-freemusicarchive-org/music/Music_for_Video/Kevin_MacLeod/Rock/Kevin_MacLeod_-_01_-_Almost_New.mp3' || true
+        wget -O 'Acoustic_Folk.mp3' 'https://files.freemusicarchive.org/storage-freemusicarchive-org/music/Music_for_Video/Scott_Holmes/Indie_Acoustic/Scott_Holmes_-_01_-_Acoustic_Indie_Folk.mp3' || true
+        
+        echo 'Sample music download completed!'
+        ls -la "/music/Sample Music/" || true
+    restart: "no"
 
 x-casaos:
   architectures:
@@ -72,9 +64,48 @@ x-casaos:
   category: Media
   developer: Deluan Quintão
   description:
-    en_us: Navidrome - Modern Music Server and Streamer compatible with Subsonic/Airsonic clients, featuring a beautiful web interface, mobile apps support, and smart playlists
-    zh_cn: Navidrome - 现代音乐服务器和流媒体播放器，兼容Subsonic/Airsonic客户端，具有美观的网页界面、移动应用支持和智能播放列表
-    ko_kr: Navidrome - Subsonic/Airsonic 클라이언트와 호환되는 현대적인 음악 서버 및 스트리머로, 아름다운 웹 인터페이스, 모바일 앱 지원, 스마트 플레이리스트 기능 제공
+    en_us: |
+      **Your Personal Music Streaming Server**
+      Navidrome is a modern music server and streamer compatible with Subsonic/Airsonic clients. Stream your music collection from anywhere with a beautiful web interface and mobile apps.
+      
+      **Key Features:**
+      • Beautiful, responsive web interface
+      • Compatible with Subsonic apps (iOS/Android)
+      • Automatic music library scanning
+      • Transcoding and streaming optimization
+      • Multi-user support with playlists
+      • Last.fm scrobbling support
+      
+      **Sample Music Included:**
+      This installation includes 5 free Creative Commons licensed sample tracks to get you started immediately.
+    zh_cn: |
+      **您的个人音乐流媒体服务器**
+      Navidrome是一个现代音乐服务器和流媒体播放器，兼容Subsonic/Airsonic客户端。通过漂亮的网页界面和移动应用程序从任何地方播放您的音乐收藏。
+      
+      **主要功能：**
+      • 漂亮、响应式的网页界面
+      • 兼容Subsonic应用程序（iOS/Android）
+      • 自动音乐库扫描
+      • 转码和流媒体优化
+      • 多用户支持与播放列表
+      • Last.fm记录支持
+      
+      **包含示例音乐：**
+      此安装包含5首免费Creative Commons授权的示例曲目，让您立即开始使用。
+    ko_kr: |
+      **개인 음악 스트리밍 서버**
+      Navidrome은 Subsonic/Airsonic 클라이언트와 호환되는 현대적인 음악 서버이자 스트리머입니다. 아름다운 웹 인터페이스와 모바일 앱으로 어디서나 음악 컬렉션을 스트리밍하세요.
+      
+      **주요 기능:**
+      • 아름답고 반응형 웹 인터페이스
+      • Subsonic 앱 호환 (iOS/Android)
+      • 자동 음악 라이브러리 스캔
+      • 트랜스코딩 및 스트리밍 최적화
+      • 플레이리스트가 있는 다중 사용자 지원
+      • Last.fm 스크로블링 지원
+      
+      **샘플 음악 포함:**
+      이 설치에는 즉시 시작할 수 있도록 5개의 무료 Creative Commons 라이센스 샘플 트랙이 포함되어 있습니다.
   icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Navidrome/icon.png
   screenshot_link:
     - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Navidrome/screenshot-1.png
@@ -95,61 +126,3 @@ x-casaos:
   main: navidrome
   is_uncontrolled: false
   webui_port: 4533
-  tips:
-    before_install:
-      en_us: |
-        📁 **Folder Structure Guide:**
-        • Music Library: `/DATA/Media/Music`
-        • Downloaded Music: `/DATA/Downloads` 
-        • App Data: `/DATA/AppData/navidrome/data` (Auto-created)
-        
-        💡 **Usage Tips:**
-        • Supported formats: MP3, FLAC, OGG, M4A, WMA, AIFF, WAV
-        • Music files are auto-scanned every 1 minute
-        • First user registration becomes admin automatically
-        
-        🔌 **Third-party Apps:**
-        • Compatible with Subsonic API clients
-        • Popular apps: DSub, Ultrasonic, Play:Sub, Jamstash
-        
-        ⚠️ **Important Notes:**
-        • Ensure music files have proper read permissions
-        • Default login: Create your account on first visit
-
-      zh_cn: |
-        📁 **文件夹结构指南：**
-        • 音乐库：`/DATA/Media/Music`
-        • 下载音乐：`/DATA/Downloads`
-        • 应用数据：`/DATA/AppData/navidrome/data`（自动创建）
-        
-        💡 **使用技巧：**
-        • 支持格式：MP3, FLAC, OGG, M4A, WMA, AIFF, WAV
-        • 音乐文件每分钟自动扫描
-        • 首个注册用户自动成为管理员
-        
-        🔌 **第三方应用：**
-        • 兼容Subsonic API客户端
-        • 热门应用：DSub, Ultrasonic, Play:Sub, Jamstash
-        
-        ⚠️ **重要提示：**
-        • 确保音乐文件具有适当的读取权限
-        • 默认登录：首次访问时创建账户
-
-      ko_kr: |
-        📁 **폴더 구조 안내:**
-        • 음악 라이브러리: `/DATA/Media/Music`
-        • 다운로드 음악: `/DATA/Downloads`
-        • 앱 데이터: `/DATA/AppData/navidrome/data` (자동 생성)
-        
-        💡 **사용 팁:**
-        • 지원 포맷: MP3, FLAC, OGG, M4A, WMA, AIFF, WAV
-        • 음악 파일은 1분마다 자동 스캔됩니다
-        • 첫 번째 등록 사용자가 자동으로 관리자가 됩니다
-        
-        🔌 **서드파티 앱:**
-        • Subsonic API 클라이언트와 호환
-        • 인기 앱: DSub, Ultrasonic, Play:Sub, Jamstash
-        
-        ⚠️ **주의사항:**
-        • 음악 파일에 적절한 읽기 권한이 있는지 확인하세요
-        • 기본 로그인: 첫 방문 시 계정을 생성하세요

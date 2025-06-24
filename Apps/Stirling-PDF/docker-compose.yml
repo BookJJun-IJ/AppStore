@@ -21,8 +21,9 @@ services:
       SECURITY_ENABLE_LOGIN: true             # Enable login authentication
       SECURITY_INITIALLOGIN_USERNAME: admin   # Default admin username
       SECURITY_INITIALLOGIN_PASSWORD: admin   # Default admin password (change after first login)
-      UMASK: "022"                            # File permission mask
-    privileged: true                           # Required for proper file permissions
+      SYSTEM_ROOTURIPATH: /                   # Root URI path
+      SYSTEM_CONNECTIONTIMEOUTMINUTES: 5      # Connection timeout
+    network_mode: bridge                      # Use bridge network to avoid firewall issues
     cpu_shares: 100
     deploy:
       resources:
