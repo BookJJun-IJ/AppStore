@@ -12,6 +12,7 @@ services:
       - /DATA/AppData/$AppID/configs:/configs
       - /DATA/AppData/$AppID/logs:/logs
       - /DATA/Downloads:/downloads
+    user: $PUID:$PGID
     environment:
       PGID: $PGID                              # Group ID for file permissions
       PUID: $PUID                              # User ID for file permissions
