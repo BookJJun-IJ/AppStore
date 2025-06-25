@@ -2,88 +2,185 @@ name: wordpress
 
 services:
   app:
-    image: wordpress:latest
+    image: wordpress:6.4.2
     container_name: wordpress
     restart: unless-stopped
-    ports:
-      - "80:80"
+    expose:
+      - 80
     volumes:
       - /DATA/AppData/$AppID/WordPress:/var/www/html
+      - /DATA/Downloads:/downloads
+    user: $PUID:$PGID
     environment:
-      - WORDPRESS_DB_HOST=database
-      - WORDPRESS_DB_USER=wordpress
-      - WORDPRESS_DB_PASSWORD=wordpress
-      - WORDPRESS_DB_NAME=wordpress
-      - WORDPRESS_TABLE_PREFIX=wp_
+      PGID: $PGID
+      PUID: $PUID
+      TZ: $TZ
+      WORDPRESS_DB_HOST: database
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_TABLE_PREFIX: wp_
+      WORDPRESS_CONFIG_EXTRA: |
+        define('FS_METHOD', 'direct');
+        define('WP_MEMORY_LIMIT', '256M');
     depends_on:
       - database
-    networks:
-      pcs: null
+    cpu_shares: 100
+    deploy:
+      resources:
+        limits:
+          memory: 1G
 
   database:
-    image: mariadb:10.6
+    image: mariadb:10.6.16
     container_name: wordpress_db
     restart: unless-stopped
-    environment:
-      - MYSQL_DATABASE=wordpress
-      - MYSQL_USER=wordpress
-      - MYSQL_PASSWORD=wordpress
-      - MYSQL_ROOT_PASSWORD=wordpress
     volumes:
       - /DATA/AppData/$AppID/db:/var/lib/mysql
-    networks:
-      pcs: null
-
-networks:
-  pcs:
-    name: pcs
+    user: $PUID:$PGID
+    environment:
+      PGID: $PGID
+      PUID: $PUID
+      TZ: $TZ
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD: wordpress
+      MYSQL_ROOT_PASSWORD: wordpress
+      MYSQL_INITDB_SKIP_TZINFO: 1
+    command: --default-authentication-plugin=mysql_native_password
+    cpu_shares: 50
+    deploy:
+      resources:
+        limits:
+          memory: 512M
 
 x-casaos:
   architectures:
     - amd64
     - arm64
-  author: self
+  author: CasaOS Team
   category: web
+  developer: WordPress Foundation
   description:
-    en_us: WordPress - A flexible content management system powering millions of websites worldwide, with customizable themes, plugins, and a user-friendly interface.
-    zh_cn: WordPress - 一个灵活的内容管理系统，为全球数百万网站提供支持，具有可定制的主题、插件和用户友好的界面
-    ko_kr: WordPress - 전 세계 수백만 개의 웹사이트를 운영하는 유연한 콘텐츠 관리 시스템으로, 맞춤형 테마, 플러그인 및 사용자 친화적인 인터페이스 제공합니다.
+    en_us: |
+      **The world's most popular website builder and content management system.**
+      WordPress powers over 40% of all websites on the internet. Create beautiful websites, blogs, and online stores with thousands of themes and plugins available.
+      
+      **Key Features:**
+      • Easy-to-use visual editor and block-based content creation
+      • Thousands of free and premium themes
+      • Extensive plugin ecosystem for unlimited functionality
+      • Built-in SEO optimization tools
+      • Multi-user support with role management
+      • Mobile-responsive designs
+      • E-commerce ready with WooCommerce
+      
+      **Perfect for:**
+      • Personal blogs and portfolios
+      • Business websites
+      • Online stores and marketplaces
+      • News and magazine sites
+      • Community forums
+    zh_cn: |
+      **世界上最受欢迎的网站构建器和内容管理系统。**
+      WordPress为互联网上超过40%的网站提供支持。使用数千种主题和插件创建美丽的网站、博客和在线商店。
+      
+      **主要功能：**
+      • 易于使用的可视化编辑器和基于块的内容创建
+      • 数千种免费和付费主题
+      • 广泛的插件生态系统，功能无限
+      • 内置SEO优化工具
+      • 多用户支持和角色管理
+      • 移动响应式设计
+      • 通过WooCommerce支持电子商务
+      
+      **适用于：**
+      • 个人博客和作品集
+      • 商业网站
+      • 在线商店和市场
+      • 新闻和杂志网站
+      • 社区论坛
+    ko_kr: |
+      **세계에서 가장 인기 있는 웹사이트 빌더이자 콘텐츠 관리 시스템.**
+      WordPress는 인터넷상의 모든 웹사이트 중 40% 이상을 지원합니다. 수천 가지 테마와 플러그인으로 아름다운 웹사이트, 블로그, 온라인 스토어를 만드세요.
+      
+      **주요 기능:**
+      • 사용하기 쉬운 시각적 편집기 및 블록 기반 콘텐츠 생성
+      • 수천 가지 무료 및 프리미엄 테마
+      • 무제한 기능을 위한 광범위한 플러그인 생태계
+      • 내장 SEO 최적화 도구
+      • 역할 관리가 포함된 다중 사용자 지원
+      • 모바일 반응형 디자인
+      • WooCommerce로 전자상거래 지원
+      
+      **다음 용도에 적합:**
+      • 개인 블로그 및 포트폴리오
+      • 비즈니스 웹사이트
+      • 온라인 스토어 및 마켓플레이스
+      • 뉴스 및 매거진 사이트
+      • 커뮤니티 포럼
   icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Wordpress/icon.png
   screenshot_link:
     - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Wordpress/screenshot-1.png
     - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Wordpress/screenshot-2.png
     - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Wordpress/screenshot-3.png
   thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Wordpress/thumbnail.png
-  index: /wp-admin
-  is_uncontrolled: false
+  index: /
   tagline:
     en_us: Create beautiful websites and blogs with ease
     zh_cn: 轻松创建精美网站和博客
     ko_kr: 아름다운 웹사이트와 블로그를 손쉽게 만들기
-  port_map: "80"
-  store_app_id: wordpress
   title:
-    en_us: Wordpress
-    zh_cn: Wordpress
-    ko_kr: Wordpress
+    en_us: WordPress
+    zh_cn: WordPress
+    ko_kr: WordPress
+  store_app_id: wordpress
   main: app
+  is_uncontrolled: false
+  webui_port: 80
   tips:
     before_install:
       en_us: |
-        🌍** WordPress (Website Builder)**
+        🌍 **WordPress (Website Builder)**
+        
         **Create your own website with WordPress.**
+        
+        **Default Login:** Admin setup required during first installation
+        
         ⚠️ *Custom domains (like youchoose.com) are not yet supported. Your site will use a subdomain (e.g. wordpress.yourname.nsl.sh) for now. Full domain support coming soon.*
+        
+        **After Installation:**
+        1. Access the setup wizard at /wp-admin/install.php
+        2. Follow the installation steps
+        3. Create your admin account
+        4. Start building your website!
 
       zh_cn: |
-        🌍** WordPress (网站构建器)**
+        🌍 **WordPress (网站构建器)**
+        
         **使用WordPress创建您自己的网站。**
+        
+        **默认登录：** 首次安装时需要设置管理员
+        
         ⚠️ *暂不支持自定义域名（如youchoose.com）。您的网站将使用子域名（如wordpress.yourname.nsl.sh）。完整域名支持即将推出。*
+        
+        **安装后：**
+        1. 在 /wp-admin/install.php 访问设置向导
+        2. 按照安装步骤操作
+        3. 创建您的管理员账户
+        4. 开始构建您的网站！
 
       ko_kr: |
-        🌍** WordPress (웹사이트 빌더)**
+        🌍 **WordPress (웹사이트 빌더)**
+        
         **WordPress로 나만의 웹사이트를 만드세요.**
+        
+        **기본 로그인:** 첫 설치 시 관리자 계정 설정 필요
+        
         ⚠️ *사용자 정의 도메인(예: youchoose.com)은 아직 지원되지 않습니다. 현재는 서브도메인(예: wordpress.yourname.nsl.sh)을 사용합니다. 전체 도메인 지원이 곧 제공될 예정입니다.*
-
-  volumes:
-    - /DATA/AppData/$AppID/WordPress
-    - /DATA/AppData/$AppID/db
+        
+        **설치 후:**
+        1. /wp-admin/install.php에서 설정 마법사 접속
+        2. 설치 단계를 따라 진행
+        3. 관리자 계정 생성
+        4. 웹사이트 구축 시작!
