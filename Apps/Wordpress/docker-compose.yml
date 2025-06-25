@@ -2,7 +2,7 @@ name: wordpress
 
 services:
   app:
-    image: wordpress:6.4.2
+    image: wordpress:6.8.1
     container_name: wordpress
     restart: unless-stopped
     expose:
