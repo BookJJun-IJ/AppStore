@@ -32,7 +32,7 @@ services:
           memory: 1G
 
   database:
-    image: mariadb:10.6.16
+    image: mariadb:11.4.7
     container_name: wordpress_db
     restart: unless-stopped
     volumes:
