@@ -48,9 +48,9 @@ x-casaos:
   developer: Vaultwarden Community
   icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Bitwarden/icon.png
   screenshot: 
-  - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Bitwarden/screenshot-1.png
-  - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Bitwarden/screenshot-2.png
-  - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Bitwarden/screenshot-3.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Bitwarden/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Bitwarden/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Bitwarden/screenshot-3.png
   tagline:
     en_us: Self-hosted password manager with Bitwarden compatibility
     ko_kr: Bitwarden 호환 셀프 호스팅 비밀번호 관리자
