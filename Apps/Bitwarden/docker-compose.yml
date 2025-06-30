@@ -1,0 +1,104 @@
+name: bitwarden
+
+services:
+  vaultwarden:
+    image: vaultwarden/server:1.32.1
+    user: $PUID:$PGID
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+    expose:
+      - 80
+    environment:
+      PUID: $PUID
+      PGID: $PGID
+      TZ: $TZ
+      DOMAIN: https://$domain
+      ADMIN_TOKEN: $default_pwd
+      ROCKET_PORT: 80
+      SIGNUPS_ALLOWED: "true"
+      INVITATIONS_ALLOWED: "true"
+      WEBSOCKET_ENABLED: "true"
+      LOG_LEVEL: warn
+      EXTENDED_LOGGING: "true"
+      SHOW_PASSWORD_HINT: "false"
+      WEB_VAULT_ENABLED: "true"
+    volumes:
+      - /DATA/AppData/$AppID/data:/data
+    restart: unless-stopped
+
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  main: vaultwarden
+  author: CasaOS Team
+  category: Utilities
+  description:
+    en_us: Vaultwarden is an unofficial Bitwarden compatible server written in Rust, formerly known as bitwarden_rs. It's perfect for self-hosted deployment where running the official resource-heavy service might not be ideal. Sync your passwords across all devices with this lightweight alternative.
+    ko_kr: Vaultwarden은 Rust로 작성된 비공식 Bitwarden 호환 서버입니다. 리소스가 많이 필요한 공식 서비스를 실행하기 어려운 셀프 호스팅 환경에 완벽합니다. 이 경량 대안으로 모든 기기에서 비밀번호를 동기화하세요.
+    zh_cn: Vaultwarden 是一个用 Rust 编写的非官方 Bitwarden 兼容服务器。它非常适合自托管部署，特别是在运行官方资源密集型服务可能不理想的情况下。使用这个轻量级替代方案在所有设备上同步您的密码。
+    fr_fr: Vaultwarden est un serveur compatible Bitwarden non officiel écrit en Rust. Il est parfait pour un déploiement auto-hébergé où l'exécution du service officiel gourmand en ressources pourrait ne pas être idéale. Synchronisez vos mots de passe sur tous les appareils avec cette alternative légère.
+    es_es: Vaultwarden es un servidor compatible con Bitwarden no oficial escrito en Rust. Es perfecto para implementación auto-hospedada donde ejecutar el servicio oficial que consume muchos recursos podría no ser ideal. Sincroniza tus contraseñas en todos los dispositivos con esta alternativa ligera.
+  developer: Vaultwarden Community
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Bitwarden/icon.png
+  screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Bitwarden/screenshot-1.png
+  tagline:
+    en_us: Self-hosted password manager with Bitwarden compatibility
+    ko_kr: Bitwarden 호환 셀프 호스팅 비밀번호 관리자
+    zh_cn: 与 Bitwarden 兼容的自托管密码管理器
+    fr_fr: Gestionnaire de mots de passe auto-hébergé compatible Bitwarden
+    es_es: Gestor de contraseñas auto-hospedado compatible con Bitwarden
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Bitwarden/thumbnail.png
+  title:
+    en_us: Bitwarden (Vaultwarden)
+    ko_kr: Bitwarden (Vaultwarden)
+    zh_cn: Bitwarden (Vaultwarden)
+    fr_fr: Bitwarden (Vaultwarden)
+    es_es: Bitwarden (Vaultwarden)
+  tips:
+    before_install:
+      en_us: |
+        **Default Admin Configuration**
+        
+        | Setting | Value |
+        |---------|-------|
+        | Admin Panel | `/admin` |
+        | Admin Token | `$default_pwd` |
+        | Initial Signups | Enabled |
+        
+        **First Steps After Installation:**
+        1. Visit your Bitwarden instance
+        2. Create your first user account via signup
+        3. Access admin panel at `/admin` with the admin token
+        4. Consider disabling signups after creating accounts
+        5. Configure email settings for invitations (optional)
+        
+        **Security Notes:**
+        - Change admin token after setup if needed
+        - Consider enabling two-factor authentication
+        - Regular backups are recommended for vault data
+      ko_kr: |
+        **기본 관리자 설정**
+        
+        | 설정 | 값 |
+        |------|-----|
+        | 관리자 패널 | `/admin` |
+        | 관리자 토큰 | `$default_pwd` |
+        | 초기 가입 | 활성화 |
+        
+        **설치 후 첫 단계:**
+        1. Bitwarden 인스턴스 방문
+        2. 가입을 통해 첫 번째 사용자 계정 생성
+        3. 관리자 토큰으로 `/admin`에서 관리자 패널 접근
+        4. 계정 생성 후 가입 비활성화 고려
+        5. 초대용 이메일 설정 구성 (선택사항)
+        
+        **보안 주의사항:**
+        - 설정 후 필요시 관리자 토큰 변경
+        - 이중 인증 활성화 고려
+        - 볼트 데이터의 정기 백업 권장
+  index: /
+  webui_port: 80
