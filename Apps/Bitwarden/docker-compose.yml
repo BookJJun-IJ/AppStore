@@ -37,8 +37,12 @@ x-casaos:
     fr_fr: Vaultwarden est un serveur compatible Bitwarden non officiel écrit en Rust. Il est parfait pour un déploiement auto-hébergé où l'exécution du service officiel gourmand en ressources pourrait ne pas être idéale. Synchronisez vos mots de passe sur tous les appareils avec cette alternative légère.
     es_es: Vaultwarden es un servidor compatible con Bitwarden no oficial escrito en Rust. Es perfecto para implementación auto-hospedada donde ejecutar el servicio oficial que consume muchos recursos podría no ser ideal. Sincroniza tus contraseñas en todos los dispositivos con esta alternativa ligera.
   developer: Vaultwarden Community
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Bitwarden/icon.png
-  screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Bitwarden/screenshot-1.png
+  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Bitwarden/icon.png
+  screenshot: 
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Bitwarden/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Bitwarden/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Bitwarden/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Bitwarden/screenshot-1.png
   tagline:
     en_us: Self-hosted password manager with Bitwarden compatibility
     ko_kr: Bitwarden 호환 셀프 호스팅 비밀번호 관리자
