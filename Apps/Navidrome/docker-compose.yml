@@ -41,9 +41,9 @@ x-casaos:
     mkdir -p '/music/Sample Music' &&                                   # Create sample music directory / 샘플 음악 디렉토리 생성
     cd '/music/Sample Music' &&
     
-    wget -O 'Amos Ever Hadani - Dancing with My Baby.mp3' 'https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Navidrome/Amos Ever Hadani - Dancing with My Baby.mp3' || true &&        
-    wget -O 'Out of Flux - CHONKLAP.mp3' 'https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Navidrome/Out of Flux - CHONKLAP.mp3' || true &&        
-    wget -O 'Randy Sharp - Strike a Pose.mp3' 'https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Navidrome/Randy Sharp - Strike a Pose.mp3' || true &&        
+    wget -O 'Amos Ever Hadani - Dancing with My Baby.mp3' 'https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Navidrome/SampleMusic/Amos Ever Hadani - Dancing with My Baby.mp3' || true &&        
+    wget -O 'Out of Flux - CHONKLAP.mp3' 'https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Navidrome/SampleMusic/Out of Flux - CHONKLAP.mp3' || true &&        
+    wget -O 'Randy Sharp - Strike a Pose.mp3' 'https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Navidrome/SampleMusic/Randy Sharp - Strike a Pose.mp3' || true &&        
     
     echo 'Sample music download completed!' &&                          # Log completion message / 완료 메시지 로그
     ls -la '/music/Sample Music/' || true                               # List downloaded files / 다운로드된 파일 목록 표시
