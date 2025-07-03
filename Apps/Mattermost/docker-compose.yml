@@ -1,30 +1,20 @@
-name: mattermost
+name: mattermost-simple
 services:
   postgres:
     image: postgres:15-alpine
     restart: unless-stopped
-    security_opt:
-      - no-new-privileges:true
-    pids_limit: 100
-    read_only: false  # 권한 문제 해결을 위해 false로 변경
-    tmpfs:
-      - /tmp
     volumes:
-      - /DATA/AppData/$AppID/postgres:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data  # Named volume 사용
     environment:
-      # timezone inside container
-      - TZ=$TZ
-      # necessary Postgres options/variables
       - POSTGRES_USER=mmuser
-      - POSTGRES_PASSWORD=$default_pwd
+      - POSTGRES_PASSWORD=defaultpassword123
       - POSTGRES_DB=mattermost
-      - PGDATA=/var/lib/postgresql/data/pgdata  # 권한 문제 해결
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U mmuser -d mattermost"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 60s  # 시작 대기시간 증가
+      start_period: 60s
     networks:
       - mattermost-internal
 
@@ -34,67 +24,53 @@ services:
         condition: service_healthy
     image: mattermost/mattermost-team-edition:10.9.1
     restart: unless-stopped
-    security_opt:
-      - no-new-privileges:true
-    pids_limit: 200
-    read_only: false  # Mattermost needs write access
-    tmpfs:
-      - /tmp
     expose:
       - 80
+    ports:
+      - "8065:8065"  # 직접 접근용
     volumes:
-      - /DATA/AppData/$AppID/config:/mattermost/config:rw
-      - /DATA/AppData/$AppID/data:/mattermost/data:rw
-      - /DATA/AppData/$AppID/logs:/mattermost/logs:rw
-      - /DATA/AppData/$AppID/plugins:/mattermost/plugins:rw
-      - /DATA/AppData/$AppID/client-plugins:/mattermost/client/plugins:rw
-      - /DATA/AppData/$AppID/bleve-indexes:/mattermost/bleve-indexes:rw
+      # Docker가 자동으로 디렉토리 생성하고 권한 설정
+      - mattermost_config:/mattermost/config
+      - mattermost_data:/mattermost/data
+      - mattermost_logs:/mattermost/logs
+      - mattermost_plugins:/mattermost/plugins
+      - mattermost_client_plugins:/mattermost/client/plugins
+      - mattermost_bleve:/mattermost/bleve-indexes
     environment:
-      # timezone inside container
-      - TZ=$TZ
+      - TZ=Asia/Seoul
       
-      # necessary Mattermost options/variables
+      # 데이터베이스 연결
       - MM_SQLSETTINGS_DRIVERNAME=postgres
-      - MM_SQLSETTINGS_DATASOURCE=postgres://mmuser:$default_pwd@postgres:5432/mattermost?sslmode=disable&connect_timeout=10
+      - MM_SQLSETTINGS_DATASOURCE=postgres://mmuser:defaultpassword123@postgres:5432/mattermost?sslmode=disable&connect_timeout=10
       
-      # necessary for bleve
+      # 기본 설정
       - MM_BLEVESETTINGS_INDEXDIR=/mattermost/bleve-indexes
-      
-      # additional settings - NSL 라우터 호환
       - MM_SERVICESETTINGS_SITEURL=https://mattermost-ikjunyundera.nsl.sh
       - MM_SERVICESETTINGS_LISTENADDRESS=:80
       - MM_SERVICESETTINGS_ENABLEOPENSERVER=true
       
-      # 파일 설정
-      - MM_FILESETTINGS_MAXFILESIZE=52428800
-      
       # 로그 설정
       - MM_LOGSETTINGS_ENABLECONSOLE=true
       - MM_LOGSETTINGS_CONSOLELEVEL=INFO
-      - MM_LOGSETTINGS_ENABLEFILE=true
-      - MM_LOGSETTINGS_FILELEVEL=INFO
-      
-      # 플러그인 설정
-      - MM_PLUGINSETTINGS_ENABLE=true
-      - MM_PLUGINSETTINGS_ENABLEUPLOADS=false
-      - MM_PLUGINSETTINGS_AUTOMATICPREPACKAGEDPLUGINS=false
-      
-      # 보안 설정
-      - MM_SERVICESETTINGS_ENABLESECURITYFIXALERT=true
-      - MM_SERVICESETTINGS_ENABLEINSECUREOUTGOINGCONNECTIONS=false
-      
-      # 팀 설정
-      - MM_TEAMSETTINGS_ENABLETEAMCREATION=true
-      - MM_TEAMSETTINGS_ENABLEUSERCREATION=true
       
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:80/api/v4/system/ping"]
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 90s
+      start_period: 120s
     networks:
       - mattermost-internal
+
+# Named volumes - Docker가 자동 관리
+volumes:
+  postgres_data:
+  mattermost_config:
+  mattermost_data:
+  mattermost_logs:
+  mattermost_plugins:
+  mattermost_client_plugins:
+  mattermost_bleve:
 
 networks:
   mattermost-internal:
@@ -109,74 +85,13 @@ x-casaos:
   author: CasaOS Team
   category: Chat
   description:
-    en_us: Mattermost is an open-source, self-hostable online chat service with file sharing, search, and integrations. Based on official Mattermost Docker configuration.
-    ko_kr: 공식 Mattermost Docker 설정을 기반으로 한 오픈 소스 팀 커뮤니케이션 플랫폼입니다.
+    ko_kr: Pre Install Command 없이 실행되는 간단한 Mattermost 설정
   developer: Mattermost, Inc.
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mattermost/icon.png
-  screenshot_link:
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mattermost/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mattermost/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mattermost/screenshot-3.png
   tagline:
-    en_us: Official configuration based team communication platform
-    ko_kr: 공식 설정 기반 팀 커뮤니케이션 플랫폼
-  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mattermost/thumbnail.png
-  tips:
-    before_install:
-      en_us: |
-        **Official Mattermost Docker Configuration**
-
-        This configuration is based on the official Mattermost Docker setup with enhanced security:
-        
-        **Security Features:**
-        - Based on official Mattermost Docker repository
-        - Container hardening with no-new-privileges
-        - Process limits and read-only containers where possible
-        - Minimal environment variables for stability
-        
-        **First Setup:**
-        1. Access the web interface: https://mattermost-ikjunyundera.nsl.sh
-        2. Create your admin account (first user becomes admin)
-        3. Create your team
-        4. Configure settings in System Console
-        
-        **Default Database:** PostgreSQL with secure password
-      ko_kr: |
-        **공식 Mattermost Docker 설정**
-
-        이 설정은 보안이 강화된 공식 Mattermost Docker 설정을 기반으로 합니다:
-        
-        **보안 기능:**
-        - 공식 Mattermost Docker 저장소 기반
-        - no-new-privileges로 컨테이너 강화
-        - 프로세스 제한 및 가능한 경우 읽기 전용 컨테이너
-        - 안정성을 위한 최소 환경 변수
-        
-        **첫 설정:**
-        1. 웹 인터페이스 접속: https://mattermost-ikjunyundera.nsl.sh
-        2. 관리자 계정 생성 (첫 번째 사용자가 관리자가 됨)
-        3. 팀 생성
-        4. 시스템 콘솔에서 설정 구성
-        
-        **기본 데이터베이스:** 보안 비밀번호가 있는 PostgreSQL
+    ko_kr: 간단하고 안정적인 Mattermost
   title:
-    en_us: Mattermost (Official Config)
-    ko_kr: Mattermost (공식 설정)
+    ko_kr: Mattermost Simple
   index: /
   port_map: "80"
   scheme: https
-  store_app_id: mattermost
-  pre_install_cmd: |
-    # 기존 데이터 정리 및 디렉토리 생성
-    rm -rf /DATA/AppData/$AppID/* &&
-    mkdir -p /DATA/AppData/$AppID/{config,data,logs,plugins,client-plugins,bleve-indexes,postgres} &&
-    
-    # PostgreSQL 전용 권한 설정 (중요!)
-    chown -R 70:70 /DATA/AppData/$AppID/postgres &&
-    chmod -R 700 /DATA/AppData/$AppID/postgres &&
-    
-    # Mattermost 권한 설정
-    chown -R $PUID:$PGID /DATA/AppData/$AppID/config /DATA/AppData/$AppID/data /DATA/AppData/$AppID/logs /DATA/AppData/$AppID/plugins /DATA/AppData/$AppID/client-plugins /DATA/AppData/$AppID/bleve-indexes &&
-    chmod -R 755 /DATA/AppData/$AppID/config /DATA/AppData/$AppID/data /DATA/AppData/$AppID/logs /DATA/AppData/$AppID/plugins /DATA/AppData/$AppID/client-plugins /DATA/AppData/$AppID/bleve-indexes &&
-    
-    echo "PostgreSQL and Mattermost setup completed with correct permissions"
+  store_app_id: mattermost-simple
