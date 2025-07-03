@@ -14,12 +14,19 @@ services:
       POSTGRES_USER: mmuser
       POSTGRES_PASSWORD: $default_pwd
       POSTGRES_DB: mattermost
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mmuser -d mattermost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   mattermost:
     image: mattermost/mattermost-team-edition:10.9.1
     restart: unless-stopped
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     user: $PUID:$PGID
     deploy:
       resources:
@@ -45,6 +52,19 @@ services:
       MM_SERVICESETTINGS_ENABLELOCALMODE: false
       MM_SERVICESETTINGS_ENABLEOPENSERVER: true
       MM_EMAILSETTINGS_SENDEMAILNOTIFICATIONS: false
+      # 플러그인 관련 설정 - AI 플러그인 비활성화
+      MM_PLUGINSETTINGS_ENABLE: true
+      MM_PLUGINSETTINGS_ENABLEUPLOADS: true
+      MM_PLUGINSETTINGS_AUTOMATICPREPACKAGEDPLUGINS: false
+      # 시스템 콘솔 접근 허용
+      MM_SERVICESETTINGS_ENABLEAPIUSERLOOKUPBYLASTNAME: true
+      MM_SERVICESETTINGS_ENABLEAPIUSERLOOKUPBYFIRSTNAME: true
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/api/v4/system/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
 
 x-casaos:
   architectures:
@@ -78,12 +98,16 @@ x-casaos:
         - Database: PostgreSQL with secure password
         - Open server registration: Enabled (can be disabled after setup)
         - Email notifications: Disabled by default
+        - Automatic plugin installation: Disabled to prevent conflicts
 
         **First Steps:**
-        1. Create your admin account
+        1. Create your admin account (first user becomes admin)
         2. Set up your team and channels
         3. Configure email settings (optional)
         4. Invite team members
+        5. Enable/disable plugins as needed in System Console
+
+        **Note:** Some plugins are disabled by default to prevent license conflicts in Team Edition.
 
         For more information, visit the [Mattermost Documentation](https://docs.mattermost.com/).
       ko_kr: |
@@ -95,12 +119,16 @@ x-casaos:
         - 데이터베이스: 보안 비밀번호가 있는 PostgreSQL
         - 공개 서버 등록: 활성화됨 (설정 후 비활성화 가능)
         - 이메일 알림: 기본적으로 비활성화됨
+        - 자동 플러그인 설치: 충돌 방지를 위해 비활성화됨
 
         **첫 번째 단계:**
-        1. 관리자 계정 생성
+        1. 관리자 계정 생성 (첫 번째 사용자가 관리자가 됨)
         2. 팀 및 채널 설정
         3. 이메일 설정 구성 (선택사항)
         4. 팀 멤버 초대
+        5. 시스템 콘솔에서 필요에 따라 플러그인 활성화/비활성화
+
+        **참고:** Team Edition에서 라이선스 충돌을 방지하기 위해 일부 플러그인이 기본적으로 비활성화되어 있습니다.
 
         더 많은 정보는 [Mattermost 문서](https://docs.mattermost.com/)를 참조하세요.
   title:
@@ -114,4 +142,5 @@ x-casaos:
     rm -rf /DATA/AppData/$AppID/* &&
     mkdir -p /DATA/AppData/$AppID/{config,data,logs,plugins,client-plugins,bleve-indexes,postgres} &&
     chown -R 70:70 /DATA/AppData/$AppID/postgres &&
-    chown -R $PUID:$PGID /DATA/AppData/$AppID/config /DATA/AppData/$AppID/data /DATA/AppData/$AppID/logs /DATA/AppData/$AppID/plugins /DATA/AppData/$AppID/client-plugins /DATA/AppData/$AppID/bleve-indexes
+    chown -R $PUID:$PGID /DATA/AppData/$AppID/config /DATA/AppData/$AppID/data /DATA/AppData/$AppID/logs /DATA/AppData/$AppID/plugins /DATA/AppData/$AppID/client-plugins /DATA/AppData/$AppID/bleve-indexes &&
+    echo "Pre-installation setup completed"
