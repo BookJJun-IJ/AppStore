@@ -42,7 +42,6 @@ services:
       - /DATA/AppData/$AppID/plugins:/mattermost/plugins:rw
       - /DATA/AppData/$AppID/client-plugins:/mattermost/client/plugins:rw
       - /DATA/AppData/$AppID/bleve-indexes:/mattermost/bleve-indexes:rw
-      - /DATA/AppData/$AppID/client:/mattermost/client:rw
     environment:
       TZ: $TZ
       MM_SERVICESETTINGS_SITEURL: https://$domain
@@ -142,7 +141,7 @@ x-casaos:
   store_app_id: mattermost
   pre_install_cmd: |
     rm -rf /DATA/AppData/$AppID/* &&
-    mkdir -p /DATA/AppData/$AppID/{config,data,logs,plugins,client-plugins,bleve-indexes,postgres,client} &&
+    mkdir -p /DATA/AppData/$AppID/{config,data,logs,plugins,client-plugins,bleve-indexes,postgres} &&
     chown -R 70:70 /DATA/AppData/$AppID/postgres &&
-    chown -R $PUID:$PGID /DATA/AppData/$AppID/config /DATA/AppData/$AppID/data /DATA/AppData/$AppID/logs /DATA/AppData/$AppID/plugins /DATA/AppData/$AppID/client-plugins /DATA/AppData/$AppID/bleve-indexes /DATA/AppData/$AppID/client &&
+    chown -R $PUID:$PGID /DATA/AppData/$AppID/config /DATA/AppData/$AppID/data /DATA/AppData/$AppID/logs /DATA/AppData/$AppID/plugins /DATA/AppData/$AppID/client-plugins /DATA/AppData/$AppID/bleve-indexes &&
     echo "Pre-installation setup completed"
