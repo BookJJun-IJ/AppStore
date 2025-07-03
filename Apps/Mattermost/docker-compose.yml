@@ -11,16 +11,17 @@ services:
     volumes:
       - /DATA/AppData/$AppID/postgres:/var/lib/postgresql/data
     environment:
+      TZ: $TZ
       POSTGRES_USER: mmuser
       POSTGRES_PASSWORD: $default_pwd
       POSTGRES_DB: mattermost
-      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
+      PGDATA: /var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U mmuser -d mattermost"]
-      interval: 15s
+      interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 30s
+      start_period: 60s
 
   mattermost:
     image: mattermost/mattermost-team-edition:10.9.1
@@ -119,11 +120,6 @@ x-casaos:
   scheme: https
   store_app_id: mattermost
   pre_install_cmd: |
-    docker run --rm -v /DATA/AppData/$AppID:/setup alpine:3.19 sh -c "
-      rm -rf /setup/postgres/* &&
-      mkdir -p /setup/{config,data,logs,plugins,client-plugins,bleve-indexes,postgres} &&
-      addgroup -g $PGID appgroup &&
-      adduser -u $PUID -G appgroup -D -s /bin/sh appuser &&
-      chown -R 70:70 /setup/postgres &&
-      chown -R appuser:appgroup /setup/config /setup/data /setup/logs /setup/plugins /setup/client-plugins /setup/bleve-indexes
-    "
+    mkdir -p /DATA/AppData/$AppID/{config,data,logs,plugins,client-plugins,bleve-indexes,postgres} &&
+    chown -R 70:70 /DATA/AppData/$AppID/postgres &&
+    chown -R $PUID:$PGID /DATA/AppData/$AppID/config /DATA/AppData/$AppID/data /DATA/AppData/$AppID/logs /DATA/AppData/$AppID/plugins /DATA/AppData/$AppID/client-plugins /DATA/AppData/$AppID/bleve-indexes
