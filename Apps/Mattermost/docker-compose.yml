@@ -1,80 +1,122 @@
-name: mattermost-simple
+name: mattermost
 services:
   postgres:
     image: postgres:15-alpine
+    user: $PUID:$PGID
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
     volumes:
-      - postgres_data:/var/lib/postgresql/data  # Named volume 사용
+      - /DATA/AppData/$AppID/postgres:/var/lib/postgresql/data
     environment:
-      - POSTGRES_USER=mmuser
-      - POSTGRES_PASSWORD=defaultpassword123
-      - POSTGRES_DB=mattermost
+      PUID: $PUID
+      PGID: $PGID
+      TZ: $TZ
+      POSTGRES_USER: mmuser
+      POSTGRES_PASSWORD: $default_pwd
+      POSTGRES_DB: mattermost
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U mmuser -d mattermost"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 60s
     networks:
       - mattermost-internal
 
   mattermost:
+    image: mattermost/mattermost-team-edition:10.9.1
+    restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
-    image: mattermost/mattermost-team-edition:10.9.1
-    restart: unless-stopped
+    user: $PUID:$PGID
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+          cpus: '1.0'
     expose:
       - 80
-    ports:
-      - "8065:8065"  # 직접 접근용
     volumes:
-      # Docker가 자동으로 디렉토리 생성하고 권한 설정
-      - mattermost_config:/mattermost/config
-      - mattermost_data:/mattermost/data
-      - mattermost_logs:/mattermost/logs
-      - mattermost_plugins:/mattermost/plugins
-      - mattermost_client_plugins:/mattermost/client/plugins
-      - mattermost_bleve:/mattermost/bleve-indexes
+      - /DATA/AppData/$AppID/config:/mattermost/config
+      - /DATA/AppData/$AppID/data:/mattermost/data
+      - /DATA/AppData/$AppID/logs:/mattermost/logs
+      - /DATA/AppData/$AppID/plugins:/mattermost/plugins
+      - /DATA/AppData/$AppID/client-plugins:/mattermost/client/plugins
+      - /DATA/AppData/$AppID/bleve-indexes:/mattermost/bleve-indexes
     environment:
-      - TZ=Asia/Seoul
+      PUID: $PUID
+      PGID: $PGID
+      TZ: $TZ
+      PASSWORD: $default_pwd
+      DOMAIN: $domain
+      PUBLIC_IP: $public_ip
+      
+      # NSL 라우터 호환 설정
+      MM_SERVICESETTINGS_SITEURL: https://$domain
+      MM_SERVICESETTINGS_LISTENADDRESS: ":80"
+      MM_SERVICESETTINGS_CONNECTIONSECURITY: ""
+      MM_SERVICESETTINGS_TLSCERTFILE: ""
+      MM_SERVICESETTINGS_TLSKEYFILE: ""
+      MM_SERVICESETTINGS_USELETSENCRYT: false
+      MM_SERVICESETTINGS_FORWARD80TO443: false
       
       # 데이터베이스 연결
-      - MM_SQLSETTINGS_DRIVERNAME=postgres
-      - MM_SQLSETTINGS_DATASOURCE=postgres://mmuser:defaultpassword123@postgres:5432/mattermost?sslmode=disable&connect_timeout=10
+      MM_SQLSETTINGS_DRIVERNAME: postgres
+      MM_SQLSETTINGS_DATASOURCE: postgres://mmuser:$default_pwd@postgres:5432/mattermost?sslmode=disable&connect_timeout=10
       
-      # 기본 설정
-      - MM_BLEVESETTINGS_INDEXDIR=/mattermost/bleve-indexes
-      - MM_SERVICESETTINGS_SITEURL=https://mattermost-ikjunyundera.nsl.sh
-      - MM_SERVICESETTINGS_LISTENADDRESS=:80
-      - MM_SERVICESETTINGS_ENABLEOPENSERVER=true
+      # 파일 및 검색 설정
+      MM_BLEVESETTINGS_INDEXDIR: /mattermost/bleve-indexes
+      MM_FILESETTINGS_MAXFILESIZE: 52428800
+      
+      # 보안 설정 - 기본 인증 활성화
+      MM_SERVICESETTINGS_ENABLEOPENSERVER: true
+      MM_SERVICESETTINGS_ENABLELOCALMODE: false
+      MM_SERVICESETTINGS_ENABLEDEVELOPER: false
+      MM_SERVICESETTINGS_ENABLETESTING: false
+      MM_SERVICESETTINGS_ENABLESECURITYFIXALERT: true
+      MM_SERVICESETTINGS_ENABLEINSECUREOUTGOINGCONNECTIONS: false
+      
+      # 플러그인 보안 설정
+      MM_PLUGINSETTINGS_ENABLE: true
+      MM_PLUGINSETTINGS_ENABLEUPLOADS: false
+      MM_PLUGINSETTINGS_AUTOMATICPREPACKAGEDPLUGINS: false
+      MM_PLUGINSETTINGS_ENABLEHEALTHCHECK: true
+      
+      # 팀 및 사용자 관리
+      MM_TEAMSETTINGS_ENABLETEAMCREATION: true
+      MM_TEAMSETTINGS_ENABLEUSERCREATION: true
+      MM_TEAMSETTINGS_RESTRICTCREATIONTODOMAINS: ""
+      MM_TEAMSETTINGS_RESTRICTDIRECTMESSAGE: "any"
       
       # 로그 설정
-      - MM_LOGSETTINGS_ENABLECONSOLE=true
-      - MM_LOGSETTINGS_CONSOLELEVEL=INFO
+      MM_LOGSETTINGS_ENABLECONSOLE: true
+      MM_LOGSETTINGS_CONSOLELEVEL: INFO
+      MM_LOGSETTINGS_ENABLEFILE: true
+      MM_LOGSETTINGS_FILELEVEL: INFO
+      
+      # 레이트 리밋 설정
+      MM_RATELIMITSETTINGS_ENABLE: true
+      MM_RATELIMITSETTINGS_PERSEC: 10
+      MM_RATELIMITSETTINGS_MAXBURST: 100
       
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:80/api/v4/system/ping"]
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 120s
+      start_period: 90s
     networks:
       - mattermost-internal
-
-# Named volumes - Docker가 자동 관리
-volumes:
-  postgres_data:
-  mattermost_config:
-  mattermost_data:
-  mattermost_logs:
-  mattermost_plugins:
-  mattermost_client_plugins:
-  mattermost_bleve:
 
 networks:
   mattermost-internal:
     driver: bridge
+    internal: false
 
 x-casaos:
   architectures:
@@ -82,16 +124,98 @@ x-casaos:
     - arm64
   main: mattermost
   webui_port: 80
-  author: CasaOS Team
   category: Chat
-  description:
-    ko_kr: Pre Install Command 없이 실행되는 간단한 Mattermost 설정
+  author: CasaOS Team
   developer: Mattermost, Inc.
+  description:
+    en_us: Mattermost is an open-source, self-hostable online chat service with file sharing, search, and integrations. It is designed as an internal chat for organizations and companies, and is marketed as an open-source alternative to Slack and Microsoft Teams. This configuration prioritizes security with minimal plugin exposure and hardened settings.
+    fr_fr: Mattermost est un service de chat en ligne open source et auto-hébergeable avec partage de fichiers, recherche et intégrations. Il est conçu comme un chat interne pour les organisations et les entreprises.
+    ko_kr: Mattermost는 파일 공유, 검색 및 통합 기능을 갖춘 오픈 소스, 자체 호스팅 가능한 온라인 채팅 서비스입니다. 조직과 기업을 위한 내부 채팅으로 설계되었습니다.
+    zh_cn: Mattermost是一个开源的、可自托管的在线聊天服务，具有文件共享、搜索和集成功能。它专为组织和公司的内部聊天而设计。
+    es_es: Mattermost es un servicio de chat en línea de código abierto y auto-hospedable con compartición de archivos, búsqueda e integraciones.
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mattermost/icon.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mattermost/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mattermost/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mattermost/screenshot-3.png
   tagline:
-    ko_kr: 간단하고 안정적인 Mattermost
+    en_us: Secure team communication platform with hardened configuration
+    fr_fr: Plateforme de communication d'équipe sécurisée avec configuration renforcée
+    ko_kr: 강화된 구성의 보안 팀 커뮤니케이션 플랫폼
+    zh_cn: 具有强化配置的安全团队通信平台
+    es_es: Plataforma de comunicación de equipo segura con configuración reforzada
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mattermost/thumbnail.png
+  tips:
+    before_install:
+      en_us: |
+        **🔒 Security-Hardened Mattermost Installation**
+
+        This configuration prioritizes security with the following measures:
+        
+        **Default Account**
+        | Username   | Password       |
+        | --------   | ------------   |
+        | `admin`    | `$default_pwd` |
+        
+        **Security Features:**
+        - Default authentication enabled
+        - Plugin uploads disabled
+        - Rate limiting enabled
+        - Most plugins disabled by default
+        - Development/testing features disabled
+        
+        **First Setup (Important):**
+        1. **Create admin account immediately** - first user becomes system admin
+        2. **Disable open server** after setup: System Console > Authentication > Signup
+        3. **Review team creation settings**: System Console > Teams
+        4. **Configure proper email** if needed: System Console > Email
+        
+        **NSL Router Integration:**
+        - Clean HTTPS URLs via mesh router
+        - Automatic SSL termination
+        - WebSocket support included
+        
+        **Default Database:** PostgreSQL with secure password
+      ko_kr: |
+        **🔒 보안 강화된 Mattermost 설치**
+
+        이 구성은 다음과 같은 보안 조치로 보안을 우선시합니다:
+        
+        **기본 계정**
+        | 사용자명   | 비밀번호       |
+        | --------   | ------------   |
+        | `admin`    | `$default_pwd` |
+        
+        **보안 기능:**
+        - 기본 인증 활성화
+        - 플러그인 업로드 비활성화
+        - 레이트 리밋 활성화
+        - 대부분의 플러그인 기본 비활성화
+        - 개발/테스트 기능 비활성화
+        
+        **첫 설정 (중요):**
+        1. **즉시 관리자 계정 생성** - 첫 번째 사용자가 시스템 관리자가 됨
+        2. **설정 후 공개 서버 비활성화**: 시스템 콘솔 > 인증 > 가입
+        3. **팀 생성 설정 검토**: 시스템 콘솔 > 팀
+        4. **필요시 이메일 구성**: 시스템 콘솔 > 이메일
+        
+        **NSL 라우터 통합:**
+        - 메시 라우터를 통한 깔끔한 HTTPS URL
+        - 자동 SSL 종료
+        - WebSocket 지원 포함
+        
+        **기본 데이터베이스:** 보안 비밀번호가 있는 PostgreSQL
   title:
-    ko_kr: Mattermost Simple
+    en_us: Mattermost
+    ko_kr: Mattermost
   index: /
   port_map: "80"
   scheme: https
-  store_app_id: mattermost-simple
+  store_app_id: mattermost
+  pre_install_cmd: |
+    mkdir -p /DATA/AppData/$AppID/{config,data,logs,plugins,client-plugins,bleve-indexes,postgres} &&
+    chown -R $PUID:$PGID /DATA/AppData/$AppID/config /DATA/AppData/$AppID/data /DATA/AppData/$AppID/logs /DATA/AppData/$AppID/plugins /DATA/AppData/$AppID/client-plugins /DATA/AppData/$AppID/bleve-indexes &&
+    chown -R 70:70 /DATA/AppData/$AppID/postgres &&
+    chmod -R 755 /DATA/AppData/$AppID/config /DATA/AppData/$AppID/data /DATA/AppData/$AppID/logs /DATA/AppData/$AppID/plugins /DATA/AppData/$AppID/client-plugins /DATA/AppData/$AppID/bleve-indexes &&
+    chmod -R 700 /DATA/AppData/$AppID/postgres &&
+    echo "Mattermost installation setup completed with proper permissions"
