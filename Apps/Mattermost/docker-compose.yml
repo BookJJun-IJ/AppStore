@@ -15,6 +15,8 @@ services:
       POSTGRES_PASSWORD: $default_pwd
       POSTGRES_DB: mattermost
       POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+      # PostgreSQL 권한 문제 해결
+      PGDATA: /var/lib/postgresql/data/pgdata
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U mmuser -d mattermost"]
       interval: 30s
@@ -30,10 +32,11 @@ services:
       postgres:
         condition: service_healthy
     user: $PUID:$PGID
-    # 보안 설정
-    read_only: false  # Mattermost는 일부 파일 쓰기가 필요
+    # 파일 권한 문제 해결을 위한 수정
+    read_only: false
     tmpfs:
       - /tmp:noexec,nosuid,size=512m
+      - /mattermost/tmp:noexec,nosuid,size=256m  # Mattermost 전용 임시 디렉토리
     cap_drop:
       - ALL
     cap_add:
@@ -41,6 +44,7 @@ services:
       - SETUID
       - SETGID
       - NET_BIND_SERVICE
+      - DAC_OVERRIDE  # 파일 권한 오버라이드 추가
     security_opt:
       - no-new-privileges:true
     deploy:
@@ -59,6 +63,8 @@ services:
       - /DATA/AppData/$AppID/plugins:/mattermost/plugins:rw
       - /DATA/AppData/$AppID/client-plugins:/mattermost/client/plugins:rw
       - /DATA/AppData/$AppID/bleve-indexes:/mattermost/bleve-indexes:rw
+      # 클라이언트 파일 권한 문제 해결
+      - /DATA/AppData/$AppID/client:/mattermost/client:rw
     environment:
       TZ: $TZ
       # 보안 기본 설정
@@ -78,8 +84,8 @@ services:
       MM_BLEVESETTINGS_INDEXDIR: /mattermost/bleve-indexes
       MM_FILESETTINGS_MAXFILESIZE: 52428800  # 50MB
       
-      # 보안 설정
-      MM_SERVICESETTINGS_ENABLEOPENSERVER: true  # 첫 설치시만 true
+      # 보안 설정 - 첫 설치를 위해 수정
+      MM_SERVICESETTINGS_ENABLEOPENSERVER: true  # 첫 관리자 생성을 위해 true 유지
       MM_SERVICESETTINGS_ENABLELOCALMODE: false
       MM_SERVICESETTINGS_ENABLEDEVELOPER: false
       MM_SERVICESETTINGS_ENABLETESTING: false
@@ -97,27 +103,27 @@ services:
       
       # 플러그인 보안 설정
       MM_PLUGINSETTINGS_ENABLE: true
-      MM_PLUGINSETTINGS_ENABLEUPLOADS: false  # 보안상 업로드 비활성화
-      MM_PLUGINSETTINGS_AUTOMATICPREPACKAGEDPLUGINS: false  # 필요한 것만 수동 활성화
+      MM_PLUGINSETTINGS_ENABLEUPLOADS: false
+      MM_PLUGINSETTINGS_AUTOMATICPREPACKAGEDPLUGINS: false
       MM_PLUGINSETTINGS_ENABLEHEALTHCHECK: true
       MM_PLUGINSETTINGS_PLUGINSTATES: '{"mattermost-ai":{"Enable":false},"com.mattermost.nps":{"Enable":false}}'
       
-      # 팀 및 사용자 관리
-      MM_TEAMSETTINGS_ENABLETEAMCREATION: false  # 팀 생성 제한
-      MM_TEAMSETTINGS_ENABLEUSERCREATION: true   # 첫 설치시만 true
+      # 팀 및 사용자 관리 - 첫 설치를 위해 수정
+      MM_TEAMSETTINGS_ENABLETEAMCREATION: true   # 첫 팀 생성을 위해 true
+      MM_TEAMSETTINGS_ENABLEUSERCREATION: true   # 첫 사용자 생성을 위해 true
       MM_TEAMSETTINGS_RESTRICTCREATIONTODOMAINS: ""
       MM_TEAMSETTINGS_RESTRICTDIRECTMESSAGE: "any"
       
       # 서비스 보안
       MM_SERVICESETTINGS_ENABLECOMMANDS: true
-      MM_SERVICESETTINGS_ENABLEONLYAMININTEGRATIONS: true
+      MM_SERVICESETTINGS_ENABLEONLYAMININTEGRATIONS: false  # 첫 설정을 위해 false
       MM_SERVICESETTINGS_ENABLEPOSTUSERNAMEOVERRIDE: false
       MM_SERVICESETTINGS_ENABLEPOSTICONOVERRIDE: false
       MM_SERVICESETTINGS_ENABLECUSTOMEMOJI: true
       
       # 로그 설정
       MM_LOGSETTINGS_ENABLECONSOLE: true
-      MM_LOGSETTINGS_CONSOLELEVEL: WARN
+      MM_LOGSETTINGS_CONSOLELEVEL: INFO  # 디버깅을 위해 INFO로 변경
       MM_LOGSETTINGS_ENABLEFILE: true
       MM_LOGSETTINGS_FILELEVEL: INFO
       
@@ -125,24 +131,24 @@ services:
       MM_METRICSSETTINGS_ENABLE: false
       MM_ANALYTICSETTINGS_MAXIMIZERUSERS: 1000
       
-      # 레이트 리밋 설정
+      # 레이트 리밋 설정 - 초기 설정을 위해 완화
       MM_RATELIMITSETTINGS_ENABLE: true
-      MM_RATELIMITSETTINGS_PERSEC: 10
-      MM_RATELIMITSETTINGS_MAXBURST: 100
+      MM_RATELIMITSETTINGS_PERSEC: 30   # 초기 설정을 위해 증가
+      MM_RATELIMITSETTINGS_MAXBURST: 300 # 초기 설정을 위해 증가
       
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:80/api/v4/system/ping"]
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 90s
+      start_period: 120s  # 시작 시간 증가
     networks:
       - mattermost-internal
 
 networks:
   mattermost-internal:
     driver: bridge
-    internal: false  # NSL 라우터 접근을 위해 false
+    internal: false
 
 x-casaos:
   architectures:
@@ -170,59 +176,53 @@ x-casaos:
       en_us: |
         **🔒 Security-Hardened Mattermost Installation**
 
-        This configuration prioritizes security with the following measures:
-        
+        **IMPORTANT: First Setup Steps**
+        1. **Create admin account immediately** - Visit the web interface right after installation
+        2. **Create your first team** - You'll be prompted during initial setup  
+        3. **Secure the instance** - After setup, consider adjusting security settings
+
         **Security Features:**
-        - Container runs with minimal privileges (no-new-privileges)
-        - Dropped all capabilities except essential ones
-        - Plugin uploads disabled
-        - Rate limiting enabled
-        - Most plugins disabled by default
+        - Container runs with minimal privileges
+        - Plugin uploads disabled by default
+        - Rate limiting enabled (relaxed for initial setup)
         - Development/testing features disabled
         
-        **First Setup (Important):**
-        1. **Create admin account immediately** - first user becomes system admin
-        2. **Disable open server** after setup: System Console > Authentication > Signup
-        3. **Review team creation settings**: System Console > Teams
-        4. **Configure proper email** if needed: System Console > Email
-        
-        **Post-Installation Security:**
-        - Change `MM_SERVICESETTINGS_ENABLEOPENSERVER` to `false` after first user
+        **Post-Installation Security (Recommended):**
+        - Disable open server registration after first user
         - Review and enable only necessary plugins
+        - Adjust rate limiting settings if needed
         - Set up proper backup procedures
-        - Monitor logs in `/DATA/AppData/mattermost/logs/`
         
         **Default Database:** PostgreSQL with secure password
         
-        For more security guidance, visit [Mattermost Security Documentation](https://docs.mattermost.com/deploy/deployment-overview.html#security-features).
+        **Troubleshooting:**
+        - If you see "List of admins is empty" errors, create an admin account through the web interface
+        - Monitor logs in `/DATA/AppData/mattermost/logs/`
       ko_kr: |
         **🔒 보안 강화된 Mattermost 설치**
 
-        이 구성은 다음과 같은 보안 조치로 보안을 우선시합니다:
-        
+        **중요: 첫 설정 단계**
+        1. **즉시 관리자 계정 생성** - 설치 후 웹 인터페이스 방문
+        2. **첫 번째 팀 생성** - 초기 설정 중 안내됨
+        3. **인스턴스 보안** - 설정 후 보안 설정 조정 고려
+
         **보안 기능:**
-        - 최소 권한으로 컨테이너 실행 (no-new-privileges)
-        - 필수 권한을 제외한 모든 권한 제거
-        - 플러그인 업로드 비활성화
-        - 레이트 리밋 활성화
-        - 대부분의 플러그인 기본 비활성화
+        - 최소 권한으로 컨테이너 실행
+        - 플러그인 업로드 기본 비활성화
+        - 레이트 리밋 활성화 (초기 설정용으로 완화)
         - 개발/테스트 기능 비활성화
         
-        **첫 설정 (중요):**
-        1. **즉시 관리자 계정 생성** - 첫 번째 사용자가 시스템 관리자가 됨
-        2. **설정 후 공개 서버 비활성화**: 시스템 콘솔 > 인증 > 가입
-        3. **팀 생성 설정 검토**: 시스템 콘솔 > 팀
-        4. **필요시 이메일 구성**: 시스템 콘솔 > 이메일
-        
-        **설치 후 보안:**
-        - 첫 사용자 후 `MM_SERVICESETTINGS_ENABLEOPENSERVER`를 `false`로 변경
+        **설치 후 보안 (권장):**
+        - 첫 사용자 후 공개 서버 등록 비활성화
         - 필요한 플러그인만 검토 후 활성화
+        - 필요시 레이트 리밋 설정 조정
         - 적절한 백업 절차 설정
-        - `/DATA/AppData/mattermost/logs/`에서 로그 모니터링
         
         **기본 데이터베이스:** 보안 비밀번호가 있는 PostgreSQL
         
-        더 많은 보안 가이드는 [Mattermost 보안 문서](https://docs.mattermost.com/deploy/deployment-overview.html#security-features)를 참조하세요.
+        **문제 해결:**
+        - "관리자 목록이 비어있음" 오류 시 웹 인터페이스에서 관리자 계정 생성
+        - `/DATA/AppData/mattermost/logs/`에서 로그 모니터링
   title:
     en_us: Mattermost (Security Hardened)
     ko_kr: Mattermost (보안 강화)
@@ -232,8 +232,8 @@ x-casaos:
   store_app_id: mattermost
   pre_install_cmd: |
     rm -rf /DATA/AppData/$AppID/* &&
-    mkdir -p /DATA/AppData/$AppID/{config,data,logs,plugins,client-plugins,bleve-indexes,postgres} &&
+    mkdir -p /DATA/AppData/$AppID/{config,data,logs,plugins,client-plugins,bleve-indexes,postgres,client} &&
     chown -R 70:70 /DATA/AppData/$AppID/postgres &&
-    chown -R $PUID:$PGID /DATA/AppData/$AppID/config /DATA/AppData/$AppID/data /DATA/AppData/$AppID/logs /DATA/AppData/$AppID/plugins /DATA/AppData/$AppID/client-plugins /DATA/AppData/$AppID/bleve-indexes &&
-    chmod -R 750 /DATA/AppData/$AppID/config /DATA/AppData/$AppID/data /DATA/AppData/$AppID/logs /DATA/AppData/$AppID/plugins /DATA/AppData/$AppID/client-plugins /DATA/AppData/$AppID/bleve-indexes &&
+    chown -R $PUID:$PGID /DATA/AppData/$AppID/config /DATA/AppData/$AppID/data /DATA/AppData/$AppID/logs /DATA/AppData/$AppID/plugins /DATA/AppData/$AppID/client-plugins /DATA/AppData/$AppID/bleve-indexes /DATA/AppData/$AppID/client &&
+    chmod -R 755 /DATA/AppData/$AppID/config /DATA/AppData/$AppID/data /DATA/AppData/$AppID/logs /DATA/AppData/$AppID/plugins /DATA/AppData/$AppID/client-plugins /DATA/AppData/$AppID/bleve-indexes /DATA/AppData/$AppID/client &&
     echo "Secure Mattermost installation setup completed"
