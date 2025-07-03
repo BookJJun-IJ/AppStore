@@ -20,6 +20,8 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    networks:
+      - mattermost-internal
 
   mattermost:
     image: mattermost/mattermost-team-edition:10.9.1
@@ -28,11 +30,26 @@ services:
       postgres:
         condition: service_healthy
     user: $PUID:$PGID
+    # 보안 설정
+    read_only: false  # Mattermost는 일부 파일 쓰기가 필요
+    tmpfs:
+      - /tmp:noexec,nosuid,size=512m
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
     deploy:
       resources:
         limits:
           memory: 1024M
           cpus: '1.0'
+        reservations:
+          memory: 512M
     expose:
       - 80
     volumes:
@@ -44,28 +61,88 @@ services:
       - /DATA/AppData/$AppID/bleve-indexes:/mattermost/bleve-indexes:rw
     environment:
       TZ: $TZ
+      # 보안 기본 설정
       MM_SERVICESETTINGS_SITEURL: https://$domain
       MM_SERVICESETTINGS_LISTENADDRESS: ":80"
+      MM_SERVICESETTINGS_CONNECTIONSECURITY: ""
+      MM_SERVICESETTINGS_TLSCERTFILE: ""
+      MM_SERVICESETTINGS_TLSKEYFILE: ""
+      MM_SERVICESETTINGS_USELETSENCRYT: false
+      MM_SERVICESETTINGS_FORWARD80TO443: false
+      
+      # 데이터베이스 연결
       MM_SQLSETTINGS_DRIVERNAME: postgres
       MM_SQLSETTINGS_DATASOURCE: postgres://mmuser:$default_pwd@postgres:5432/mattermost?sslmode=disable&connect_timeout=10
+      
+      # 파일 및 검색 설정
       MM_BLEVESETTINGS_INDEXDIR: /mattermost/bleve-indexes
+      MM_FILESETTINGS_MAXFILESIZE: 52428800  # 50MB
+      
+      # 보안 설정
+      MM_SERVICESETTINGS_ENABLEOPENSERVER: true  # 첫 설치시만 true
       MM_SERVICESETTINGS_ENABLELOCALMODE: false
-      MM_SERVICESETTINGS_ENABLEOPENSERVER: true
+      MM_SERVICESETTINGS_ENABLEDEVELOPER: false
+      MM_SERVICESETTINGS_ENABLETESTING: false
+      MM_SERVICESETTINGS_ENABLESECURITYFIXALERT: true
+      MM_SERVICESETTINGS_ENABLEINSECUREOUTGOINGCONNECTIONS: false
+      MM_SERVICESETTINGS_ALLOWCORSFROM: ""
+      MM_SERVICESETTINGS_CORSEXPOSEDHEADERS: ""
+      MM_SERVICESETTINGS_CORSALLOWCREDENTIALS: false
+      MM_SERVICESETTINGS_CORSDEBUG: false
+      
+      # 이메일 설정 (비활성화)
       MM_EMAILSETTINGS_SENDEMAILNOTIFICATIONS: false
-      # 플러그인 관련 설정 - 필수 플러그인만 활성화
+      MM_EMAILSETTINGS_FEEDBACKEMAIL: ""
+      MM_EMAILSETTINGS_REPLYTOADDRESS: ""
+      
+      # 플러그인 보안 설정
       MM_PLUGINSETTINGS_ENABLE: true
-      MM_PLUGINSETTINGS_ENABLEUPLOADS: true
-      MM_PLUGINSETTINGS_AUTOMATICPREPACKAGEDPLUGINS: true
+      MM_PLUGINSETTINGS_ENABLEUPLOADS: false  # 보안상 업로드 비활성화
+      MM_PLUGINSETTINGS_AUTOMATICPREPACKAGEDPLUGINS: false  # 필요한 것만 수동 활성화
       MM_PLUGINSETTINGS_ENABLEHEALTHCHECK: true
-      # 시스템 콘솔 접근 허용
-      MM_SERVICESETTINGS_ENABLEAPIUSERLOOKUPBYLASTNAME: true
-      MM_SERVICESETTINGS_ENABLEAPIUSERLOOKUPBYFIRSTNAME: true
+      MM_PLUGINSETTINGS_PLUGINSTATES: '{"mattermost-ai":{"Enable":false},"com.mattermost.nps":{"Enable":false}}'
+      
+      # 팀 및 사용자 관리
+      MM_TEAMSETTINGS_ENABLETEAMCREATION: false  # 팀 생성 제한
+      MM_TEAMSETTINGS_ENABLEUSERCREATION: true   # 첫 설치시만 true
+      MM_TEAMSETTINGS_RESTRICTCREATIONTODOMAINS: ""
+      MM_TEAMSETTINGS_RESTRICTDIRECTMESSAGE: "any"
+      
+      # 서비스 보안
+      MM_SERVICESETTINGS_ENABLECOMMANDS: true
+      MM_SERVICESETTINGS_ENABLEONLYAMININTEGRATIONS: true
+      MM_SERVICESETTINGS_ENABLEPOSTUSERNAMEOVERRIDE: false
+      MM_SERVICESETTINGS_ENABLEPOSTICONOVERRIDE: false
+      MM_SERVICESETTINGS_ENABLECUSTOMEMOJI: true
+      
+      # 로그 설정
+      MM_LOGSETTINGS_ENABLECONSOLE: true
+      MM_LOGSETTINGS_CONSOLELEVEL: WARN
+      MM_LOGSETTINGS_ENABLEFILE: true
+      MM_LOGSETTINGS_FILELEVEL: INFO
+      
+      # 메트릭 및 분석 비활성화 (프라이버시)
+      MM_METRICSSETTINGS_ENABLE: false
+      MM_ANALYTICSETTINGS_MAXIMIZERUSERS: 1000
+      
+      # 레이트 리밋 설정
+      MM_RATELIMITSETTINGS_ENABLE: true
+      MM_RATELIMITSETTINGS_PERSEC: 10
+      MM_RATELIMITSETTINGS_MAXBURST: 100
+      
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:80/api/v4/system/ping"]
       interval: 30s
       timeout: 10s
       retries: 5
       start_period: 90s
+    networks:
+      - mattermost-internal
+
+networks:
+  mattermost-internal:
+    driver: bridge
+    internal: false  # NSL 라우터 접근을 위해 false
 
 x-casaos:
   architectures:
@@ -76,8 +153,8 @@ x-casaos:
   author: CasaOS Team
   category: Chat
   description:
-    en_us: Mattermost is an open-source, self-hostable online chat service with file sharing, search, and integrations. It is designed as an internal chat for organizations and companies, and is marketed as an open-source alternative to Slack and Microsoft Teams. Features secure messaging, file sharing, search capabilities, and extensive integrations for team collaboration.
-    ko_kr: Mattermost는 파일 공유, 검색 및 통합 기능을 갖춘 오픈 소스, 자체 호스팅 가능한 온라인 채팅 서비스입니다. 조직과 기업을 위한 내부 채팅으로 설계되었으며 Slack과 Microsoft Teams의 오픈 소스 대안으로 마케팅됩니다. 보안 메시징, 파일 공유, 검색 기능 및 팀 협업을 위한 광범위한 통합을 제공합니다.
+    en_us: Mattermost is an open-source, self-hostable online chat service with file sharing, search, and integrations. It is designed as an internal chat for organizations and companies, and is marketed as an open-source alternative to Slack and Microsoft Teams. This configuration prioritizes security with minimal plugin exposure and hardened settings.
+    ko_kr: Mattermost는 파일 공유, 검색 및 통합 기능을 갖춘 오픈 소스, 자체 호스팅 가능한 온라인 채팅 서비스입니다. 조직과 기업을 위한 내부 채팅으로 설계되었으며 Slack과 Microsoft Teams의 오픈 소스 대안으로 마케팅됩니다. 이 구성은 최소한의 플러그인 노출과 강화된 설정으로 보안을 우선시합니다.
   developer: Mattermost, Inc.
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mattermost/icon.png
   screenshot_link:
@@ -85,56 +162,70 @@ x-casaos:
     - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mattermost/screenshot-2.png
     - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mattermost/screenshot-3.png
   tagline:
-    en_us: Open-source team communication and collaboration platform
-    ko_kr: 오픈 소스 팀 커뮤니케이션 및 협업 플랫폼
+    en_us: Secure team communication platform with hardened configuration
+    ko_kr: 강화된 구성의 보안 팀 커뮤니케이션 플랫폼
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mattermost/thumbnail.png
   tips:
     before_install:
       en_us: |
-        **Getting Started with Mattermost**
+        **🔒 Security-Hardened Mattermost Installation**
 
-        After installation, you can access Mattermost via the web interface. The first user to register will become the system administrator.
-
-        **Default Configuration:**
-        - Database: PostgreSQL with secure password
-        - Open server registration: Enabled (can be disabled after setup)
-        - Email notifications: Disabled by default
-        - Automatic plugin installation: Disabled to prevent conflicts
-
-        **First Steps:**
-        1. Create your admin account (first user becomes admin)
-        2. Set up your team and channels
-        3. Configure email settings (optional)
-        4. Invite team members
-        5. Enable/disable plugins as needed in System Console
-
-        **Note:** Some plugins are disabled by default to prevent license conflicts in Team Edition.
-
-        For more information, visit the [Mattermost Documentation](https://docs.mattermost.com/).
+        This configuration prioritizes security with the following measures:
+        
+        **Security Features:**
+        - Container runs with minimal privileges (no-new-privileges)
+        - Dropped all capabilities except essential ones
+        - Plugin uploads disabled
+        - Rate limiting enabled
+        - Most plugins disabled by default
+        - Development/testing features disabled
+        
+        **First Setup (Important):**
+        1. **Create admin account immediately** - first user becomes system admin
+        2. **Disable open server** after setup: System Console > Authentication > Signup
+        3. **Review team creation settings**: System Console > Teams
+        4. **Configure proper email** if needed: System Console > Email
+        
+        **Post-Installation Security:**
+        - Change `MM_SERVICESETTINGS_ENABLEOPENSERVER` to `false` after first user
+        - Review and enable only necessary plugins
+        - Set up proper backup procedures
+        - Monitor logs in `/DATA/AppData/mattermost/logs/`
+        
+        **Default Database:** PostgreSQL with secure password
+        
+        For more security guidance, visit [Mattermost Security Documentation](https://docs.mattermost.com/deploy/deployment-overview.html#security-features).
       ko_kr: |
-        **Mattermost 시작하기**
+        **🔒 보안 강화된 Mattermost 설치**
 
-        설치 후 웹 인터페이스를 통해 Mattermost에 액세스할 수 있습니다. 가장 먼저 등록하는 사용자가 시스템 관리자가 됩니다.
-
-        **기본 구성:**
-        - 데이터베이스: 보안 비밀번호가 있는 PostgreSQL
-        - 공개 서버 등록: 활성화됨 (설정 후 비활성화 가능)
-        - 이메일 알림: 기본적으로 비활성화됨
-        - 자동 플러그인 설치: 충돌 방지를 위해 비활성화됨
-
-        **첫 번째 단계:**
-        1. 관리자 계정 생성 (첫 번째 사용자가 관리자가 됨)
-        2. 팀 및 채널 설정
-        3. 이메일 설정 구성 (선택사항)
-        4. 팀 멤버 초대
-        5. 시스템 콘솔에서 필요에 따라 플러그인 활성화/비활성화
-
-        **참고:** Team Edition에서 라이선스 충돌을 방지하기 위해 일부 플러그인이 기본적으로 비활성화되어 있습니다.
-
-        더 많은 정보는 [Mattermost 문서](https://docs.mattermost.com/)를 참조하세요.
+        이 구성은 다음과 같은 보안 조치로 보안을 우선시합니다:
+        
+        **보안 기능:**
+        - 최소 권한으로 컨테이너 실행 (no-new-privileges)
+        - 필수 권한을 제외한 모든 권한 제거
+        - 플러그인 업로드 비활성화
+        - 레이트 리밋 활성화
+        - 대부분의 플러그인 기본 비활성화
+        - 개발/테스트 기능 비활성화
+        
+        **첫 설정 (중요):**
+        1. **즉시 관리자 계정 생성** - 첫 번째 사용자가 시스템 관리자가 됨
+        2. **설정 후 공개 서버 비활성화**: 시스템 콘솔 > 인증 > 가입
+        3. **팀 생성 설정 검토**: 시스템 콘솔 > 팀
+        4. **필요시 이메일 구성**: 시스템 콘솔 > 이메일
+        
+        **설치 후 보안:**
+        - 첫 사용자 후 `MM_SERVICESETTINGS_ENABLEOPENSERVER`를 `false`로 변경
+        - 필요한 플러그인만 검토 후 활성화
+        - 적절한 백업 절차 설정
+        - `/DATA/AppData/mattermost/logs/`에서 로그 모니터링
+        
+        **기본 데이터베이스:** 보안 비밀번호가 있는 PostgreSQL
+        
+        더 많은 보안 가이드는 [Mattermost 보안 문서](https://docs.mattermost.com/deploy/deployment-overview.html#security-features)를 참조하세요.
   title:
-    en_us: Mattermost
-    ko_kr: Mattermost
+    en_us: Mattermost (Security Hardened)
+    ko_kr: Mattermost (보안 강화)
   index: /
   port_map: "80"
   scheme: https
@@ -144,4 +235,5 @@ x-casaos:
     mkdir -p /DATA/AppData/$AppID/{config,data,logs,plugins,client-plugins,bleve-indexes,postgres} &&
     chown -R 70:70 /DATA/AppData/$AppID/postgres &&
     chown -R $PUID:$PGID /DATA/AppData/$AppID/config /DATA/AppData/$AppID/data /DATA/AppData/$AppID/logs /DATA/AppData/$AppID/plugins /DATA/AppData/$AppID/client-plugins /DATA/AppData/$AppID/bleve-indexes &&
-    echo "Pre-installation setup completed"
+    chmod -R 750 /DATA/AppData/$AppID/config /DATA/AppData/$AppID/data /DATA/AppData/$AppID/logs /DATA/AppData/$AppID/plugins /DATA/AppData/$AppID/client-plugins /DATA/AppData/$AppID/bleve-indexes &&
+    echo "Secure Mattermost installation setup completed"
