@@ -2,7 +2,6 @@ name: mattermost
 services:
   postgres:
     image: postgres:15-alpine
-    user: $PUID:$PGID
     restart: unless-stopped
     deploy:
       resources:
@@ -12,18 +11,18 @@ services:
     volumes:
       - /DATA/AppData/$AppID/postgres:/var/lib/postgresql/data
     environment:
-      PUID: $PUID
-      PGID: $PGID
       TZ: $TZ
       POSTGRES_USER: mmuser
       POSTGRES_PASSWORD: $default_pwd
       POSTGRES_DB: mattermost
       POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+      PGDATA: /var/lib/postgresql/data/pgdata
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U mmuser -d mattermost"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 60s
     networks:
       - mattermost-internal
 
@@ -218,4 +217,4 @@ x-casaos:
     chown -R 70:70 /DATA/AppData/$AppID/postgres &&
     chmod -R 755 /DATA/AppData/$AppID/config /DATA/AppData/$AppID/data /DATA/AppData/$AppID/logs /DATA/AppData/$AppID/plugins /DATA/AppData/$AppID/client-plugins /DATA/AppData/$AppID/bleve-indexes &&
     chmod -R 700 /DATA/AppData/$AppID/postgres &&
-    echo "Mattermost installation setup completed with proper permissions"
+    echo "PostgreSQL UID 70 and Mattermost PUID permissions set correctly"
