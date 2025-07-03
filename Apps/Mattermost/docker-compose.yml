@@ -63,8 +63,7 @@ services:
       - /DATA/AppData/$AppID/plugins:/mattermost/plugins:rw
       - /DATA/AppData/$AppID/client-plugins:/mattermost/client/plugins:rw
       - /DATA/AppData/$AppID/bleve-indexes:/mattermost/bleve-indexes:rw
-      # 클라이언트 파일 권한 문제 해결
-      - /DATA/AppData/$AppID/client:/mattermost/client:rw
+      # 클라이언트 파일은 컨테이너 내부 파일을 사용하도록 제거
     environment:
       TZ: $TZ
       # 보안 기본 설정
@@ -232,8 +231,8 @@ x-casaos:
   store_app_id: mattermost
   pre_install_cmd: |
     rm -rf /DATA/AppData/$AppID/* &&
-    mkdir -p /DATA/AppData/$AppID/{config,data,logs,plugins,client-plugins,bleve-indexes,postgres,client} &&
+    mkdir -p /DATA/AppData/$AppID/{config,data,logs,plugins,client-plugins,bleve-indexes,postgres} &&
     chown -R 70:70 /DATA/AppData/$AppID/postgres &&
-    chown -R $PUID:$PGID /DATA/AppData/$AppID/config /DATA/AppData/$AppID/data /DATA/AppData/$AppID/logs /DATA/AppData/$AppID/plugins /DATA/AppData/$AppID/client-plugins /DATA/AppData/$AppID/bleve-indexes /DATA/AppData/$AppID/client &&
-    chmod -R 755 /DATA/AppData/$AppID/config /DATA/AppData/$AppID/data /DATA/AppData/$AppID/logs /DATA/AppData/$AppID/plugins /DATA/AppData/$AppID/client-plugins /DATA/AppData/$AppID/bleve-indexes /DATA/AppData/$AppID/client &&
+    chown -R $PUID:$PGID /DATA/AppData/$AppID/config /DATA/AppData/$AppID/data /DATA/AppData/$AppID/logs /DATA/AppData/$AppID/plugins /DATA/AppData/$AppID/client-plugins /DATA/AppData/$AppID/bleve-indexes &&
+    chmod -R 755 /DATA/AppData/$AppID/config /DATA/AppData/$AppID/data /DATA/AppData/$AppID/logs /DATA/AppData/$AppID/plugins /DATA/AppData/$AppID/client-plugins /DATA/AppData/$AppID/bleve-indexes &&
     echo "Secure Mattermost installation setup completed"
