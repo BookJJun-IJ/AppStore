@@ -15,221 +15,77 @@ services:
       POSTGRES_USER: mmuser
       POSTGRES_PASSWORD: $default_pwd
       POSTGRES_DB: mattermost
-      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
-      PGDATA: /var/lib/postgresql/data/pgdata
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U mmuser -d mattermost"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
     networks:
-      - mattermost-internal
+      - mattermost-net
 
   mattermost:
     image: mattermost/mattermost-team-edition:10.9.1
     restart: unless-stopped
     depends_on:
-      postgres:
-        condition: service_healthy
-    user: $PUID:$PGID
+      - postgres
     deploy:
       resources:
         limits:
-          memory: 1024M
+          memory: 1G
           cpus: '1.0'
-        reservations:
-          memory: 512M
     expose:
-      - 80
+      - 8065
     volumes:
-      - /DATA/AppData/$AppID/config:/mattermost/config:rw
-      - /DATA/AppData/$AppID/data:/mattermost/data:rw
-      - /DATA/AppData/$AppID/logs:/mattermost/logs:rw
-      - /DATA/AppData/$AppID/plugins:/mattermost/plugins:rw
-      - /DATA/AppData/$AppID/bleve-indexes:/mattermost/bleve-indexes:rw
+      - /DATA/AppData/$AppID/config:/mattermost/config
+      - /DATA/AppData/$AppID/data:/mattermost/data
+      - /DATA/AppData/$AppID/logs:/mattermost/logs
+      - /DATA/AppData/$AppID/plugins:/mattermost/plugins
     environment:
-      TZ: $TZ
-      PUID: $PUID
-      PGID: $PGID
-      
-      # Server Settings
-      MM_SERVICESETTINGS_SITEURL: https://$domain
-      MM_SERVICESETTINGS_LISTENADDRESS: ":80"
-      MM_SERVICESETTINGS_CONNECTIONSECURITY: ""
-      MM_SERVICESETTINGS_TLSCERTFILE: ""
-      MM_SERVICESETTINGS_TLSKEYFILE: ""
-      MM_SERVICESETTINGS_USELETSENCRYT: false
-      MM_SERVICESETTINGS_FORWARD80TO443: false
-      MM_SERVICESETTINGS_ENABLEOPENSERVER: true
-      MM_SERVICESETTINGS_ENABLELOCALMODE: false
-      MM_SERVICESETTINGS_ENABLEDEVELOPER: false
-      MM_SERVICESETTINGS_ENABLETESTING: false
-      MM_SERVICESETTINGS_ENABLESECURITYFIXALERT: true
-      MM_SERVICESETTINGS_ENABLEINSECUREOUTGOINGCONNECTIONS: false
-      
-      # Database Settings
       MM_SQLSETTINGS_DRIVERNAME: postgres
       MM_SQLSETTINGS_DATASOURCE: postgres://mmuser:$default_pwd@postgres:5432/mattermost?sslmode=disable&connect_timeout=10
-      
-      # File Settings
-      MM_FILESETTINGS_MAXFILESIZE: 52428800
-      MM_BLEVESETTINGS_INDEXDIR: /mattermost/bleve-indexes
-      
-      # Email Settings (disabled for initial setup)
-      MM_EMAILSETTINGS_SENDEMAILNOTIFICATIONS: false
-      MM_EMAILSETTINGS_FEEDBACKEMAIL: ""
-      MM_EMAILSETTINGS_REPLYTOADDRESS: ""
-      
-      # Plugin Settings
-      MM_PLUGINSETTINGS_ENABLE: true
-      MM_PLUGINSETTINGS_ENABLEUPLOADS: true
-      MM_PLUGINSETTINGS_AUTOMATICPREPACKAGEDPLUGINS: true
-      MM_PLUGINSETTINGS_ENABLEHEALTHCHECK: true
-      
-      # Team Settings
-      MM_TEAMSETTINGS_ENABLETEAMCREATION: true
-      MM_TEAMSETTINGS_ENABLEUSERCREATION: true
-      MM_TEAMSETTINGS_RESTRICTCREATIONTODOMAINS: ""
-      MM_TEAMSETTINGS_RESTRICTDIRECTMESSAGE: "any"
-      
-      # Service Settings
-      MM_SERVICESETTINGS_ENABLECOMMANDS: true
-      MM_SERVICESETTINGS_ENABLEONLYAMININTEGRATIONS: false
-      MM_SERVICESETTINGS_ENABLEPOSTUSERNAMEOVERRIDE: false
-      MM_SERVICESETTINGS_ENABLEPOSTICONOVERRIDE: false
-      MM_SERVICESETTINGS_ENABLECUSTOMEMOJI: true
-      
-      # Log Settings
-      MM_LOGSETTINGS_ENABLECONSOLE: true
-      MM_LOGSETTINGS_CONSOLELEVEL: INFO
-      MM_LOGSETTINGS_ENABLEFILE: true
-      MM_LOGSETTINGS_FILELEVEL: INFO
-      
-      # Rate Limit Settings
-      MM_RATELIMITSETTINGS_ENABLE: true
-      MM_RATELIMITSETTINGS_PERSEC: 50
-      MM_RATELIMITSETTINGS_MAXBURST: 500
-      
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80/api/v4/system/ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 120s
+      MM_SERVICESETTINGS_SITEURL: https://$domain
+      MM_SERVICESETTINGS_LISTENADDRESS: ":8065"
     networks:
-      - mattermost-internal
+      - mattermost-net
 
 networks:
-  mattermost-internal:
+  mattermost-net:
     driver: bridge
 
 x-casaos:
   architectures: [amd64, arm64]
   main: mattermost
-  webui_port: 80
+  webui_port: 8065
   author: Yundera Team
   category: Communication
   description:
-    en_us: |
-      Mattermost is an open-source, self-hostable online chat service with file sharing, search, and integrations. 
-      It is designed as an internal chat for organizations and companies, and is marketed as an open-source 
-      alternative to Slack and Microsoft Teams.
-      
-      **Key Features:**
-      - Secure team messaging and file sharing
-      - Voice calls and screen sharing  
-      - Custom integrations and bots
-      - Mobile and desktop applications
-      - Advanced search and archiving
-      - Plugin marketplace
-    ko_kr: |
-      Mattermost는 파일 공유, 검색 및 통합 기능을 갖춘 오픈소스 자체 호스팅 온라인 채팅 서비스입니다.
-      조직과 기업을 위한 내부 채팅으로 설계되었으며 Slack과 Microsoft Teams의 오픈소스 대안입니다.
-      
-      **주요 기능:**
-      - 안전한 팀 메시징 및 파일 공유
-      - 음성 통화 및 화면 공유
-      - 사용자 정의 통합 및 봇
-      - 모바일 및 데스크톱 애플리케이션
-      - 고급 검색 및 아카이빙
-      - 플러그인 마켓플레이스
+    en_us: Open-source team communication platform similar to Slack
+    ko_kr: Slack과 유사한 오픈소스 팀 커뮤니케이션 플랫폼
   developer: Mattermost, Inc.
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mattermost/icon.png
-  screenshot_link:
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mattermost/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mattermost/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mattermost/screenshot-3.png
   tagline:
-    en_us: Open-source team communication platform
-    ko_kr: 오픈소스 팀 커뮤니케이션 플랫폼
-  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mattermost/thumbnail.png
-  tips:
-    before_install:
-      en_us: |
-        **🚀 Mattermost Setup Guide**
-
-        **IMPORTANT: First Setup Steps**
-        1. **Access the web interface** - Visit your Mattermost URL after installation
-        2. **Create admin account** - The first user becomes the system administrator
-        3. **Create your team** - Set up your organization's workspace
-        
-        **Default Settings:**
-        - Team and user creation enabled
-        - Open server registration (disable after setup if needed)
-        - Plugins enabled with marketplace access
-        - File uploads enabled (50MB limit)
-        
-        **Security Notes:**
-        - Database password is auto-generated: `$default_pwd`
-        - Consider disabling open registration after initial setup
-        - Review plugin permissions before enabling
-        
-        **Troubleshooting:**
-        - If loading takes time, wait for database initialization
-        - Check logs at `/DATA/AppData/mattermost/logs/` if needed
-        - First user registration creates the admin account
-      ko_kr: |
-        **🚀 Mattermost 설정 가이드**
-
-        **중요: 첫 설정 단계**
-        1. **웹 인터페이스 접속** - 설치 후 Mattermost URL 방문
-        2. **관리자 계정 생성** - 첫 번째 사용자가 시스템 관리자가 됩니다
-        3. **팀 생성** - 조직의 워크스페이스 설정
-        
-        **기본 설정:**
-        - 팀 및 사용자 생성 활성화
-        - 공개 서버 등록 (설정 후 필요시 비활성화)
-        - 마켓플레이스 접근이 가능한 플러그인 활성화
-        - 파일 업로드 활성화 (50MB 제한)
-        
-        **보안 참고사항:**
-        - 데이터베이스 비밀번호 자동 생성: `$default_pwd`
-        - 초기 설정 후 공개 등록 비활성화 고려
-        - 플러그인 활성화 전 권한 검토
-        
-        **문제 해결:**
-        - 로딩이 오래 걸리면 데이터베이스 초기화 대기
-        - 필요시 `/DATA/AppData/mattermost/logs/`에서 로그 확인
-        - 첫 번째 사용자 등록이 관리자 계정을 생성
+    en_us: Team chat and collaboration
+    ko_kr: 팀 채팅 및 협업
   title:
     en_us: Mattermost
     ko_kr: Mattermost
+  tips:
+    before_install:
+      en_us: |
+        **Simple Mattermost Setup**
+        
+        1. Visit the web interface after installation
+        2. Create your first account (becomes admin)
+        3. Create a team and start chatting!
+        
+        Database password: `$default_pwd`
+      ko_kr: |
+        **간단한 Mattermost 설정**
+        
+        1. 설치 후 웹 인터페이스 방문
+        2. 첫 번째 계정 생성 (관리자가 됨)
+        3. 팀 생성하고 채팅 시작!
+        
+        데이터베이스 비밀번호: `$default_pwd`
   index: /
-  port_map: "80"
-  scheme: https
+  port_map: "8065"
   store_app_id: mattermost
   pre_install_cmd: |
-    # 기존 데이터 정리 및 디렉토리 생성
-    rm -rf /DATA/AppData/$AppID/* 2>/dev/null || true &&
-    mkdir -p /DATA/AppData/$AppID/{config,data,logs,plugins,bleve-indexes,postgres} &&
-    
-    # PostgreSQL 권한 설정 (postgres 사용자 ID: 70)
+    mkdir -p /DATA/AppData/$AppID/{config,data,logs,plugins,postgres} &&
     chown -R 70:70 /DATA/AppData/$AppID/postgres &&
-    chmod -R 700 /DATA/AppData/$AppID/postgres &&
-    
-    # Mattermost 권한 설정
-    chown -R $PUID:$PGID /DATA/AppData/$AppID/config /DATA/AppData/$AppID/data /DATA/AppData/$AppID/logs /DATA/AppData/$AppID/plugins /DATA/AppData/$AppID/bleve-indexes &&
-    chmod -R 755 /DATA/AppData/$AppID/config /DATA/AppData/$AppID/data /DATA/AppData/$AppID/logs /DATA/AppData/$AppID/plugins /DATA/AppData/$AppID/bleve-indexes &&
-    
-    echo "Mattermost installation setup completed successfully"
+    echo "Mattermost directories created"
