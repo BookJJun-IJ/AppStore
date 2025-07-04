@@ -32,7 +32,7 @@ services:
           memory: 1G
           cpus: '1.0'
     expose:
-      - 8065
+      - 80
     volumes:
       - /DATA/AppData/$AppID/config:/mattermost/config
       - /DATA/AppData/$AppID/data:/mattermost/data
@@ -45,9 +45,10 @@ services:
       
       MM_SQLSETTINGS_DRIVERNAME: postgres
       MM_SQLSETTINGS_DATASOURCE: postgres://mmuser:$default_pwd@postgres:5432/mattermost?sslmode=disable&connect_timeout=10
-      MM_SERVICESETTINGS_SITEURL: https://$domain
-      MM_SERVICESETTINGS_LISTENADDRESS: ":8065"
-      MM_SERVICESETTINGS_ENABLELOCALMODE: false
+      MM_SERVICESETTINGS_SITEURL: ""
+      MM_SERVICESETTINGS_LISTENADDRESS: ":80"
+      MM_SERVICESETTINGS_ENABLELOCALMODE: true
+      MM_SERVICESETTINGS_SUBPATH: ""
       
       # 간소화된 설정으로 안정성 우선
       MM_PLUGINSETTINGS_ENABLE: false
@@ -70,7 +71,7 @@ networks:
 x-casaos:
   architectures: [amd64, arm64]
   main: mattermost
-  webui_port: 8065
+  webui_port: 80
   author: Yundera Team
   category: Communication
   description:
