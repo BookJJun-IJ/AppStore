@@ -48,7 +48,6 @@ services:
       - /DATA/AppData/$AppID/logs:/mattermost/logs:rw
       - /DATA/AppData/$AppID/plugins:/mattermost/plugins:rw
       - /DATA/AppData/$AppID/bleve-indexes:/mattermost/bleve-indexes:rw
-      - /DATA/AppData/$AppID/client:/mattermost/client:rw
     environment:
       TZ: $TZ
       PUID: $PUID
@@ -223,23 +222,14 @@ x-casaos:
   pre_install_cmd: |
     # 기존 데이터 정리 및 디렉토리 생성
     rm -rf /DATA/AppData/$AppID/* 2>/dev/null || true &&
-    mkdir -p /DATA/AppData/$AppID/{config,data,logs,plugins,bleve-indexes,postgres,client} &&
+    mkdir -p /DATA/AppData/$AppID/{config,data,logs,plugins,bleve-indexes,postgres} &&
     
     # PostgreSQL 권한 설정 (postgres 사용자 ID: 70)
     chown -R 70:70 /DATA/AppData/$AppID/postgres &&
     chmod -R 700 /DATA/AppData/$AppID/postgres &&
     
     # Mattermost 권한 설정
-    chown -R $PUID:$PGID /DATA/AppData/$AppID/config /DATA/AppData/$AppID/data /DATA/AppData/$AppID/logs /DATA/AppData/$AppID/plugins /DATA/AppData/$AppID/bleve-indexes /DATA/AppData/$AppID/client &&
-    chmod -R 755 /DATA/AppData/$AppID/config /DATA/AppData/$AppID/data /DATA/AppData/$AppID/logs /DATA/AppData/$AppID/plugins /DATA/AppData/$AppID/bleve-indexes /DATA/AppData/$AppID/client &&
-    
-    # 기본 설정 파일 생성
-    docker run --rm -v /DATA/AppData/$AppID/config:/config mattermost/mattermost-team-edition:10.9.1 sh -c "
-      if [ ! -f /config/config.json ]; then
-        cp /mattermost/config/config.json /config/config.json || true
-      fi
-    " &&
-    
-    chown -R $PUID:$PGID /DATA/AppData/$AppID/config &&
+    chown -R $PUID:$PGID /DATA/AppData/$AppID/config /DATA/AppData/$AppID/data /DATA/AppData/$AppID/logs /DATA/AppData/$AppID/plugins /DATA/AppData/$AppID/bleve-indexes &&
+    chmod -R 755 /DATA/AppData/$AppID/config /DATA/AppData/$AppID/data /DATA/AppData/$AppID/logs /DATA/AppData/$AppID/plugins /DATA/AppData/$AppID/bleve-indexes &&
     
     echo "Mattermost installation setup completed successfully"
