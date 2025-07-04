@@ -22,7 +22,8 @@ services:
     image: mattermost/mattermost-team-edition:10.9.1
     restart: unless-stopped
     depends_on:
-      - postgres
+      postgres:
+        condition: service_started
     deploy:
       resources:
         limits:
@@ -40,6 +41,7 @@ services:
       MM_SQLSETTINGS_DATASOURCE: postgres://mmuser:$default_pwd@postgres:5432/mattermost?sslmode=disable&connect_timeout=10
       MM_SERVICESETTINGS_SITEURL: https://$domain
       MM_SERVICESETTINGS_LISTENADDRESS: ":8065"
+      MM_SERVICESETTINGS_ENABLELOCALMODE: true
     networks:
       - mattermost-net
 
@@ -88,4 +90,5 @@ x-casaos:
   pre_install_cmd: |
     mkdir -p /DATA/AppData/$AppID/{config,data,logs,plugins,postgres} &&
     chown -R 70:70 /DATA/AppData/$AppID/postgres &&
+    chmod -R 755 /DATA/AppData/$AppID/config /DATA/AppData/$AppID/data /DATA/AppData/$AppID/logs /DATA/AppData/$AppID/plugins &&
     echo "Mattermost directories created"
