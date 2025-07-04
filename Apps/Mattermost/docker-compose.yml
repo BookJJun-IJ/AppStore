@@ -24,6 +24,7 @@ services:
     depends_on:
       postgres:
         condition: service_started
+    user: "0:0"
     deploy:
       resources:
         limits:
@@ -39,7 +40,7 @@ services:
     environment:
       MM_SQLSETTINGS_DRIVERNAME: postgres
       MM_SQLSETTINGS_DATASOURCE: postgres://mmuser:$default_pwd@postgres:5432/mattermost?sslmode=disable&connect_timeout=10
-      MM_SERVICESETTINGS_SITEURL: https://$domain
+      MM_SERVICESETTINGS_SITEURL: ""
       MM_SERVICESETTINGS_LISTENADDRESS: ":8065"
       MM_SERVICESETTINGS_ENABLELOCALMODE: true
     networks:
@@ -90,5 +91,6 @@ x-casaos:
   pre_install_cmd: |
     mkdir -p /DATA/AppData/$AppID/{config,data,logs,plugins,postgres} &&
     chown -R 70:70 /DATA/AppData/$AppID/postgres &&
+    chown -R root:root /DATA/AppData/$AppID/config /DATA/AppData/$AppID/data /DATA/AppData/$AppID/logs /DATA/AppData/$AppID/plugins &&
     chmod -R 755 /DATA/AppData/$AppID/config /DATA/AppData/$AppID/data /DATA/AppData/$AppID/logs /DATA/AppData/$AppID/plugins &&
     echo "Mattermost directories created"
