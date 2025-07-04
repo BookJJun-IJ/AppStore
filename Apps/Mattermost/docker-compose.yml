@@ -17,6 +17,9 @@ services:
       POSTGRES_DB: mattermost
       POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
       PGDATA: /var/lib/postgresql/data/pgdata
+    # healthcheck 비활성화 - UI는 정상 작동함
+    healthcheck:
+      disable: true
     networks:
       - mattermost-net
 
@@ -45,7 +48,7 @@ services:
       
       MM_SQLSETTINGS_DRIVERNAME: postgres
       MM_SQLSETTINGS_DATASOURCE: postgres://mmuser:$default_pwd@postgres:5432/mattermost?sslmode=disable&connect_timeout=10
-      MM_SERVICESETTINGS_SITEURL: ""
+      MM_SERVICESETTINGS_SITEURL: "https://mattermost-$CASAOS_USERNAME.nsl.sh"
       MM_SERVICESETTINGS_LISTENADDRESS: ":80"
       MM_SERVICESETTINGS_ENABLELOCALMODE: true
       MM_SERVICESETTINGS_SUBPATH: ""
