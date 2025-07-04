@@ -24,12 +24,29 @@ services:
     networks:
       - mattermost-internal
 
+  # 권한 초기화를 위한 Init 컨테이너
+  mattermost-init:
+    image: mattermost/mattermost-team-edition:10.9.1
+    user: root
+    volumes:
+      - mattermost-client:/mattermost/client
+    command: >
+      sh -c "
+        echo 'Fixing client directory permissions...' &&
+        chown -R $PUID:$PGID /mattermost/client/ &&
+        chmod -R 755 /mattermost/client/ &&
+        echo 'Permissions fixed successfully'
+      "
+    restart: "no"
+
   mattermost:
     image: mattermost/mattermost-team-edition:10.9.1
     restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
+      mattermost-init:
+        condition: service_completed_successfully
     user: $PUID:$PGID
     read_only: false
     tmpfs:
@@ -59,9 +76,8 @@ services:
       - /DATA/AppData/$AppID/data:/mattermost/data:rw
       - /DATA/AppData/$AppID/logs:/mattermost/logs:rw
       - /DATA/AppData/$AppID/plugins:/mattermost/plugins:rw
-      # 문제가 되는 client-plugins 볼륨 제거
-      # - /DATA/AppData/$AppID/client-plugins:/mattermost/client/plugins:rw
       - /DATA/AppData/$AppID/bleve-indexes:/mattermost/bleve-indexes:rw
+      - mattermost-client:/mattermost/client:rw  # 공유 볼륨 사용
     environment:
       TZ: $TZ
       MM_SERVICESETTINGS_SITEURL: https://$domain
@@ -130,6 +146,9 @@ services:
       start_period: 120s
     networks:
       - mattermost-internal
+
+volumes:
+  mattermost-client:  # 공유 볼륨 정의
 
 networks:
   mattermost-internal:
