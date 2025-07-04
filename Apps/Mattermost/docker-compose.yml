@@ -15,7 +15,6 @@ services:
       POSTGRES_PASSWORD: $default_pwd
       POSTGRES_DB: mattermost
       POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
-      # PostgreSQL 권한 문제 해결
       PGDATA: /var/lib/postgresql/data/pgdata
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U mmuser -d mattermost"]
@@ -32,11 +31,10 @@ services:
       postgres:
         condition: service_healthy
     user: $PUID:$PGID
-    # 파일 권한 문제 해결을 위한 수정
     read_only: false
     tmpfs:
       - /tmp:noexec,nosuid,size=512m
-      - /mattermost/tmp:noexec,nosuid,size=256m  # Mattermost 전용 임시 디렉토리
+      - /mattermost/tmp:noexec,nosuid,size=256m
     cap_drop:
       - ALL
     cap_add:
@@ -44,7 +42,7 @@ services:
       - SETUID
       - SETGID
       - NET_BIND_SERVICE
-      - DAC_OVERRIDE  # 파일 권한 오버라이드 추가
+      - DAC_OVERRIDE
     security_opt:
       - no-new-privileges:true
     deploy:
@@ -61,12 +59,11 @@ services:
       - /DATA/AppData/$AppID/data:/mattermost/data:rw
       - /DATA/AppData/$AppID/logs:/mattermost/logs:rw
       - /DATA/AppData/$AppID/plugins:/mattermost/plugins:rw
-      - /DATA/AppData/$AppID/client-plugins:/mattermost/client/plugins:rw
+      # 문제가 되는 client-plugins 볼륨 제거
+      # - /DATA/AppData/$AppID/client-plugins:/mattermost/client/plugins:rw
       - /DATA/AppData/$AppID/bleve-indexes:/mattermost/bleve-indexes:rw
-      # 클라이언트 파일은 컨테이너 내부 파일을 사용하도록 제거
     environment:
       TZ: $TZ
-      # 보안 기본 설정
       MM_SERVICESETTINGS_SITEURL: https://$domain
       MM_SERVICESETTINGS_LISTENADDRESS: ":80"
       MM_SERVICESETTINGS_CONNECTIONSECURITY: ""
@@ -75,16 +72,13 @@ services:
       MM_SERVICESETTINGS_USELETSENCRYT: false
       MM_SERVICESETTINGS_FORWARD80TO443: false
       
-      # 데이터베이스 연결
       MM_SQLSETTINGS_DRIVERNAME: postgres
       MM_SQLSETTINGS_DATASOURCE: postgres://mmuser:$default_pwd@postgres:5432/mattermost?sslmode=disable&connect_timeout=10
       
-      # 파일 및 검색 설정
       MM_BLEVESETTINGS_INDEXDIR: /mattermost/bleve-indexes
-      MM_FILESETTINGS_MAXFILESIZE: 52428800  # 50MB
+      MM_FILESETTINGS_MAXFILESIZE: 52428800
       
-      # 보안 설정 - 첫 설치를 위해 수정
-      MM_SERVICESETTINGS_ENABLEOPENSERVER: true  # 첫 관리자 생성을 위해 true 유지
+      MM_SERVICESETTINGS_ENABLEOPENSERVER: true
       MM_SERVICESETTINGS_ENABLELOCALMODE: false
       MM_SERVICESETTINGS_ENABLEDEVELOPER: false
       MM_SERVICESETTINGS_ENABLETESTING: false
@@ -95,52 +89,45 @@ services:
       MM_SERVICESETTINGS_CORSALLOWCREDENTIALS: false
       MM_SERVICESETTINGS_CORSDEBUG: false
       
-      # 이메일 설정 (비활성화)
       MM_EMAILSETTINGS_SENDEMAILNOTIFICATIONS: false
       MM_EMAILSETTINGS_FEEDBACKEMAIL: ""
       MM_EMAILSETTINGS_REPLYTOADDRESS: ""
       
-      # 플러그인 보안 설정
       MM_PLUGINSETTINGS_ENABLE: true
       MM_PLUGINSETTINGS_ENABLEUPLOADS: false
       MM_PLUGINSETTINGS_AUTOMATICPREPACKAGEDPLUGINS: false
       MM_PLUGINSETTINGS_ENABLEHEALTHCHECK: true
       MM_PLUGINSETTINGS_PLUGINSTATES: '{"mattermost-ai":{"Enable":false},"com.mattermost.nps":{"Enable":false}}'
       
-      # 팀 및 사용자 관리 - 첫 설치를 위해 수정
-      MM_TEAMSETTINGS_ENABLETEAMCREATION: true   # 첫 팀 생성을 위해 true
-      MM_TEAMSETTINGS_ENABLEUSERCREATION: true   # 첫 사용자 생성을 위해 true
+      MM_TEAMSETTINGS_ENABLETEAMCREATION: true
+      MM_TEAMSETTINGS_ENABLEUSERCREATION: true
       MM_TEAMSETTINGS_RESTRICTCREATIONTODOMAINS: ""
       MM_TEAMSETTINGS_RESTRICTDIRECTMESSAGE: "any"
       
-      # 서비스 보안
       MM_SERVICESETTINGS_ENABLECOMMANDS: true
-      MM_SERVICESETTINGS_ENABLEONLYAMININTEGRATIONS: false  # 첫 설정을 위해 false
+      MM_SERVICESETTINGS_ENABLEONLYAMININTEGRATIONS: false
       MM_SERVICESETTINGS_ENABLEPOSTUSERNAMEOVERRIDE: false
       MM_SERVICESETTINGS_ENABLEPOSTICONOVERRIDE: false
       MM_SERVICESETTINGS_ENABLECUSTOMEMOJI: true
       
-      # 로그 설정
       MM_LOGSETTINGS_ENABLECONSOLE: true
-      MM_LOGSETTINGS_CONSOLELEVEL: INFO  # 디버깅을 위해 INFO로 변경
+      MM_LOGSETTINGS_CONSOLELEVEL: INFO
       MM_LOGSETTINGS_ENABLEFILE: true
       MM_LOGSETTINGS_FILELEVEL: INFO
       
-      # 메트릭 및 분석 비활성화 (프라이버시)
       MM_METRICSSETTINGS_ENABLE: false
       MM_ANALYTICSETTINGS_MAXIMIZERUSERS: 1000
       
-      # 레이트 리밋 설정 - 초기 설정을 위해 완화
       MM_RATELIMITSETTINGS_ENABLE: true
-      MM_RATELIMITSETTINGS_PERSEC: 30   # 초기 설정을 위해 증가
-      MM_RATELIMITSETTINGS_MAXBURST: 300 # 초기 설정을 위해 증가
+      MM_RATELIMITSETTINGS_PERSEC: 30
+      MM_RATELIMITSETTINGS_MAXBURST: 300
       
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:80/api/v4/system/ping"]
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 120s  # 시작 시간 증가
+      start_period: 120s
     networks:
       - mattermost-internal
 
@@ -231,8 +218,8 @@ x-casaos:
   store_app_id: mattermost
   pre_install_cmd: |
     rm -rf /DATA/AppData/$AppID/* &&
-    mkdir -p /DATA/AppData/$AppID/{config,data,logs,plugins,client-plugins,bleve-indexes,postgres} &&
+    mkdir -p /DATA/AppData/$AppID/{config,data,logs,plugins,bleve-indexes,postgres} &&
     chown -R 70:70 /DATA/AppData/$AppID/postgres &&
-    chown -R $PUID:$PGID /DATA/AppData/$AppID/config /DATA/AppData/$AppID/data /DATA/AppData/$AppID/logs /DATA/AppData/$AppID/plugins /DATA/AppData/$AppID/client-plugins /DATA/AppData/$AppID/bleve-indexes &&
-    chmod -R 755 /DATA/AppData/$AppID/config /DATA/AppData/$AppID/data /DATA/AppData/$AppID/logs /DATA/AppData/$AppID/plugins /DATA/AppData/$AppID/client-plugins /DATA/AppData/$AppID/bleve-indexes &&
+    chown -R $PUID:$PGID /DATA/AppData/$AppID/config /DATA/AppData/$AppID/data /DATA/AppData/$AppID/logs /DATA/AppData/$AppID/plugins /DATA/AppData/$AppID/bleve-indexes &&
+    chmod -R 755 /DATA/AppData/$AppID/config /DATA/AppData/$AppID/data /DATA/AppData/$AppID/logs /DATA/AppData/$AppID/plugins /DATA/AppData/$AppID/bleve-indexes &&
     echo "Secure Mattermost installation setup completed"
