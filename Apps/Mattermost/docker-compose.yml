@@ -3,6 +3,7 @@ name: mattermost
 services:
   postgres:
     image: postgres:13-alpine
+    user: $PUID:$PGID
     restart: unless-stopped
     deploy:
       resources:
@@ -15,16 +16,19 @@ services:
       POSTGRES_USER: mmuser
       POSTGRES_PASSWORD: $default_pwd
       POSTGRES_DB: mattermost
+      PUID: $PUID
+      PGID: $PGID
+      TZ: $TZ
     networks:
       - mattermost-net
 
   mattermost:
     image: mattermost/mattermost-team-edition:9.11.0
+    user: $PUID:$PGID
     restart: unless-stopped
     depends_on:
       postgres:
         condition: service_started
-    user: "0:0"
     deploy:
       resources:
         limits:
@@ -37,12 +41,86 @@ services:
       - /DATA/AppData/$AppID/data:/mattermost/data
       - /DATA/AppData/$AppID/logs:/mattermost/logs
       - /DATA/AppData/$AppID/plugins:/mattermost/plugins
+      - /DATA/AppData/$AppID/bleve-indexes:/mattermost/bleve-indexes
     environment:
+      PUID: $PUID
+      PGID: $PGID
+      TZ: $TZ
+      
       MM_SQLSETTINGS_DRIVERNAME: postgres
       MM_SQLSETTINGS_DATASOURCE: postgres://mmuser:$default_pwd@postgres:5432/mattermost?sslmode=disable&connect_timeout=10
-      MM_SERVICESETTINGS_SITEURL: ""
+      MM_SERVICESETTINGS_SITEURL: https://$domain
       MM_SERVICESETTINGS_LISTENADDRESS: ":8065"
-      MM_SERVICESETTINGS_ENABLELOCALMODE: true
+      MM_SERVICESETTINGS_ENABLELOCALMODE: false
+      
+      # 보안 설정
+      MM_SERVICESETTINGS_ENABLEDEVELOPER: false
+      MM_SERVICESETTINGS_ENABLETESTING: false
+      MM_SERVICESETTINGS_ENABLESECURITYFIXALERT: true
+      MM_SERVICESETTINGS_ENABLEINSECUREOUTGOINGCONNECTIONS: false
+      MM_SERVICESETTINGS_ALLOWCORSFROM: ""
+      MM_SERVICESETTINGS_CORSEXPOSEDHEADERS: ""
+      MM_SERVICESETTINGS_CORSALLOWCREDENTIALS: false
+      
+      # 플러그인 설정
+      MM_PLUGINSETTINGS_ENABLE: true
+      MM_PLUGINSETTINGS_ENABLEUPLOADS: true
+      MM_PLUGINSETTINGS_AUTOMATICPREPACKAGEDPLUGINS: true
+      MM_PLUGINSETTINGS_ENABLEHEALTHCHECK: true
+      
+      # 팀 및 사용자 관리
+      MM_TEAMSETTINGS_ENABLETEAMCREATION: true
+      MM_TEAMSETTINGS_ENABLEUSERCREATION: true
+      MM_TEAMSETTINGS_RESTRICTCREATIONTODOMAINS: ""
+      MM_TEAMSETTINGS_MAXUSERSPERTEAM: 1000
+      MM_TEAMSETTINGS_RESTRICTDIRECTMESSAGE: "any"
+      
+      # 파일 업로드 설정
+      MM_FILESETTINGS_MAXFILESIZE: 52428800
+      MM_FILESETTINGS_ENABLEFILEATTACHMENTS: true
+      MM_FILESETTINGS_ENABLEMOBILEUPLOAD: true
+      MM_FILESETTINGS_ENABLEMOBILEDOWNLOAD: true
+      
+      # 이메일 설정 (초기에는 비활성화)
+      MM_EMAILSETTINGS_SENDEMAILNOTIFICATIONS: false
+      MM_EMAILSETTINGS_FEEDBACKEMAIL: ""
+      MM_EMAILSETTINGS_REPLYTOADDRESS: ""
+      
+      # Rate Limiting (보안)
+      MM_RATELIMITSETTINGS_ENABLE: true
+      MM_RATELIMITSETTINGS_PERSEC: 10
+      MM_RATELIMITSETTINGS_MAXBURST: 100
+      MM_RATELIMITSETTINGS_MEMORYSTORE: 10000
+      MM_RATELIMITSETTINGS_VARYBYREMOTEADDR: true
+      MM_RATELIMITSETTINGS_VARYBYHEADER: ""
+      
+      # 패스워드 정책
+      MM_PASSWORDSETTINGS_MINIMUMLENGTH: 8
+      MM_PASSWORDSETTINGS_LOWERCASE: true
+      MM_PASSWORDSETTINGS_NUMBER: true
+      MM_PASSWORDSETTINGS_UPPERCASE: true
+      MM_PASSWORDSETTINGS_SYMBOL: false
+      
+      # 세션 보안
+      MM_SERVICESETTINGS_SESSIONLENGTHMOBILEINMINUTES: 43200
+      MM_SERVICESETTINGS_SESSIONLENGTHWEBINMINUTES: 43200
+      MM_SERVICESETTINGS_SESSIONLENGTHSSOINMINUTES: 43200
+      MM_SERVICESETTINGS_SESSIONCACHEINDMINUTES: 10
+      MM_SERVICESETTINGS_SESSIONIDLELENGTHGIVEN: 43200
+      
+      # 로그 설정
+      MM_LOGSETTINGS_ENABLECONSOLE: true
+      MM_LOGSETTINGS_CONSOLELEVEL: INFO
+      MM_LOGSETTINGS_ENABLEFILE: true
+      MM_LOGSETTINGS_FILELEVEL: INFO
+      MM_LOGSETTINGS_FILEFORMAT: ""
+      MM_LOGSETTINGS_FILELOCATION: ""
+      
+      # 검색 및 인덱싱
+      MM_BLEVESETTINGS_INDEXDIR: /mattermost/bleve-indexes
+      MM_BLEVESETTINGS_ENABLEINDEXING: true
+      MM_BLEVESETTINGS_ENABLESEARCHING: true
+      MM_BLEVESETTINGS_ENABLEAUTOCOMPLETE: true
     networks:
       - mattermost-net
 
@@ -89,9 +167,7 @@ x-casaos:
   port_map: "8065"
   store_app_id: mattermost
   pre_install_cmd: |
-    rm -rf /DATA/AppData/$AppID/* 2>/dev/null || true &&
-    mkdir -p /DATA/AppData/$AppID/{config,data,logs,plugins,postgres} &&
-    chown -R 999:999 /DATA/AppData/$AppID/postgres &&
-    chown -R root:root /DATA/AppData/$AppID/config /DATA/AppData/$AppID/data /DATA/AppData/$AppID/logs /DATA/AppData/$AppID/plugins &&
-    chmod -R 755 /DATA/AppData/$AppID/config /DATA/AppData/$AppID/data /DATA/AppData/$AppID/logs /DATA/AppData/$AppID/plugins &&
-    echo "Mattermost directories created"
+    mkdir -p /DATA/AppData/$AppID/{config,data,logs,plugins,postgres,bleve-indexes} &&
+    chown -R $PUID:$PGID /DATA/AppData/$AppID/config /DATA/AppData/$AppID/data /DATA/AppData/$AppID/logs /DATA/AppData/$AppID/plugins /DATA/AppData/$AppID/bleve-indexes &&
+    chown -R $PUID:$PGID /DATA/AppData/$AppID/postgres &&
+    echo "Mattermost directories created with proper PUID/PGID ownership"
