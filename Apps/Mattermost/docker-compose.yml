@@ -2,7 +2,7 @@ name: mattermost
 
 services:
   postgres:
-    image: postgres:15-alpine
+    image: postgres:13-alpine
     restart: unless-stopped
     deploy:
       resources:
@@ -19,7 +19,7 @@ services:
       - mattermost-net
 
   mattermost:
-    image: mattermost/mattermost-team-edition:10.9.1
+    image: mattermost/mattermost-team-edition:9.11.0
     restart: unless-stopped
     depends_on:
       postgres:
@@ -89,8 +89,9 @@ x-casaos:
   port_map: "8065"
   store_app_id: mattermost
   pre_install_cmd: |
+    rm -rf /DATA/AppData/$AppID/* 2>/dev/null || true &&
     mkdir -p /DATA/AppData/$AppID/{config,data,logs,plugins,postgres} &&
-    chown -R 70:70 /DATA/AppData/$AppID/postgres &&
+    chown -R 999:999 /DATA/AppData/$AppID/postgres &&
     chown -R root:root /DATA/AppData/$AppID/config /DATA/AppData/$AppID/data /DATA/AppData/$AppID/logs /DATA/AppData/$AppID/plugins &&
     chmod -R 755 /DATA/AppData/$AppID/config /DATA/AppData/$AppID/data /DATA/AppData/$AppID/logs /DATA/AppData/$AppID/plugins &&
     echo "Mattermost directories created"
