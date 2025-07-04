@@ -4,6 +4,7 @@ services:
   postgres:
     image: postgres:13-alpine
     restart: unless-stopped
+    user: $PUID:$PGID
     deploy:
       resources:
         limits:
@@ -15,14 +16,15 @@ services:
       POSTGRES_USER: mmuser
       POSTGRES_PASSWORD: $default_pwd
       POSTGRES_DB: mattermost
-      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
-      PGDATA: /var/lib/postgresql/data/pgdata
+      PUID: $PUID
+      PGID: $PGID
+      TZ: $TZ
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/api/v4/system/ping"]
+      test: ["CMD-SHELL", "pg_isready -U mmuser -d mattermost"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 120s
+      start_period: 60s
     networks:
       - mattermost-net
 
@@ -31,7 +33,8 @@ services:
     user: $PUID:$PGID
     restart: unless-stopped
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     deploy:
       resources:
         limits:
@@ -51,22 +54,52 @@ services:
       
       MM_SQLSETTINGS_DRIVERNAME: postgres
       MM_SQLSETTINGS_DATASOURCE: postgres://mmuser:$default_pwd@postgres:5432/mattermost?sslmode=disable&connect_timeout=10
-      MM_SERVICESETTINGS_SITEURL: "https://mattermost-$CASAOS_USERNAME.nsl.sh"
+      MM_SERVICESETTINGS_SITEURL: https://$domain
+      MM_SERVICESETTINGS_WEBSOCKETURL: wss://$domain
       MM_SERVICESETTINGS_LISTENADDRESS: ":80"
-      MM_SERVICESETTINGS_ENABLELOCALMODE: true
-      MM_SERVICESETTINGS_SUBPATH: ""
+      MM_SERVICESETTINGS_ENABLELOCALMODE: false
+      MM_SERVICESETTINGS_ALLOWCORSFROM: "https://$domain"
+      MM_SERVICESETTINGS_CORSEXPOSEDHEADERS: ""
+      MM_SERVICESETTINGS_CORSALLOWCREDENTIALS: false
+      MM_SERVICESETTINGS_CORSDEBUG: false
       
-      # 간소화된 설정으로 안정성 우선
-      MM_PLUGINSETTINGS_ENABLE: false
-      MM_PLUGINSETTINGS_ENABLEUPLOADS: false
-      MM_PLUGINSETTINGS_AUTOMATICPREPACKAGEDPLUGINS: false
+      MM_PLUGINSETTINGS_ENABLE: true
+      MM_PLUGINSETTINGS_ENABLEUPLOADS: true
+      MM_PLUGINSETTINGS_AUTOMATICPREPACKAGEDPLUGINS: true
+      
+      # Calls 플러그인 설정 (음성/화상 통화)
+      MM_PLUGINSETTINGS_ENABLEREMOTEMARKETPLACE: true
+      MM_PLUGINSETTINGS_ENABLEMARKETPLACE: true
       
       MM_TEAMSETTINGS_ENABLETEAMCREATION: true
       MM_TEAMSETTINGS_ENABLEUSERCREATION: true
       
       MM_FILESETTINGS_MAXFILESIZE: 52428800
       
+      # 이메일 설정 (필요시 활성화)
       MM_EMAILSETTINGS_SENDEMAILNOTIFICATIONS: false
+      MM_EMAILSETTINGS_SMTPSERVER: ""
+      MM_EMAILSETTINGS_SMTPPORT: "587"
+      MM_EMAILSETTINGS_SMTPUSERNAME: ""
+      MM_EMAILSETTINGS_SMTPPASSWORD: ""
+      MM_EMAILSETTINGS_ENABLESMTPAUTH: true
+      MM_EMAILSETTINGS_CONNECTIONSECURITY: "STARTTLS"
+      MM_EMAILSETTINGS_FEEDBACKNAME: "Mattermost"
+      MM_EMAILSETTINGS_FEEDBACKEMAIL: ""
+      MM_EMAILSETTINGS_REPLYTOADDRESS: ""
+      MM_EMAILSETTINGS_ENABLEPREVIEWMODEBANNER: true
+      
+      # WebSocket 및 실시간 설정
+      MM_SERVICESETTINGS_ENABLEDEVELOPER: false
+      MM_SERVICESETTINGS_ENABLETESTING: false
+      MM_SERVICESETTINGS_WEBSOCKETPORT: 80
+      MM_SERVICESETTINGS_WEBSOCKETSECUREPORT: 443
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:80/api/v4/system/ping || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 180s
     networks:
       - mattermost-net
 
@@ -80,9 +113,6 @@ x-casaos:
   webui_port: 80
   author: Yundera Team
   category: Communication
-  description:
-    en_us: Open-source team communication platform similar to Slack
-    ko_kr: Slack과 유사한 오픈소스 팀 커뮤니케이션 플랫폼
   developer: Mattermost, Inc.
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mattermost/icon.png
   tagline:
@@ -91,28 +121,10 @@ x-casaos:
   title:
     en_us: Mattermost
     ko_kr: Mattermost
-  tips:
-    before_install:
-      en_us: |
-        **Simple Mattermost Setup**
-        
-        1. Visit the web interface after installation
-        2. Create your first account (becomes admin)
-        3. Create a team and start chatting!
-        
-        Database password: `$default_pwd`
-      ko_kr: |
-        **간단한 Mattermost 설정**
-        
-        1. 설치 후 웹 인터페이스 방문
-        2. 첫 번째 계정 생성 (관리자가 됨)
-        3. 팀 생성하고 채팅 시작!
-        
-        데이터베이스 비밀번호: `$default_pwd`
   index: /
-  port_map: "8065"
+  port_map: "80"
   store_app_id: mattermost
   pre_install_cmd: |
     mkdir -p /DATA/AppData/$AppID/{config,data,logs,plugins,postgres} &&
     chown -R $PUID:$PGID /DATA/AppData/$AppID &&
-    echo "Mattermost basic setup completed"
+    echo "Mattermost setup completed"
