@@ -1,0 +1,87 @@
+name: suwayomi
+
+services:
+  suwayomi:
+    image: ghcr.io/suwayomi/suwayomi-server:v0.7.0
+    user: $PUID:$PGID
+    container_name: suwayomi
+    expose:
+      - 4567
+    environment:
+      PUID: $PUID
+      PGID: $PGID
+      TZ: $TZ
+      BIND_IP: 0.0.0.0
+      BIND_PORT: 4567
+      BASIC_AUTH_ENABLED: true
+      BASIC_AUTH_USERNAME: admin
+      BASIC_AUTH_PASSWORD: $default_pwd
+      DOWNLOAD_AS_CBZ: true
+      AUTO_DOWNLOAD_CHAPTERS: true
+    volumes:
+      - /DATA/AppData/$AppID/data:/home/suwayomi/.local/share/Tachidesk
+      - /DATA/Media/Manga:/home/suwayomi/.local/share/Tachidesk/downloads
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: suwayomi-flaresolverr
+    user: $PUID:$PGID
+    environment:
+      PUID: $PUID
+      PGID: $PGID
+      TZ: $TZ
+      LOG_LEVEL: info
+    volumes:
+      - /DATA/AppData/$AppID/flaresolverr:/app/data
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  main: suwayomi
+  author: Suwayomi Team
+  category: Media
+  description:
+    en_us: |
+      Suwayomi is a free and open source manga reader server that runs extensions built for Tachiyomi. 
+      
+      Features:
+      • 1200+ manga sources through Tachiyomi extensions
+      • Web-based reader with mobile optimization  
+      • Compatible with Mihon/Tachiyomi mobile apps
+      • Automatic chapter downloads and updates
+      • Multi-user support with authentication
+      • Cloudflare bypass with FlareSolverr
+      • OPDS support for external readers
+      • Tracking with MyAnimeList, AniList, etc.
+      
+      Mobile Setup: Install Mihon (Tachiyomi) on Android and add Suwayomi extension. Connect to your server URL. Downloads are saved to /DATA/Media/Manga/.
+  developer: Suwayomi Project
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Suwayomi/icon.png
+  screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Suwayomi/screenshot-1.png
+  tagline:
+    en_us: Self-hosted manga server with 1200+ sources and mobile app support
+  title:
+    en_us: Suwayomi
+  tips:
+    before_install:
+      en_us: |
+        **Default Account**
+        | Username | Password       |
+        | -------- | -------------- |
+        | `admin`  | `$default_pwd` |
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Suwayomi/thumbnail.png
+  index: /
+  webui_port: 4567
