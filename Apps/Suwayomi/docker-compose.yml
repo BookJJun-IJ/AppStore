@@ -18,6 +18,8 @@ services:
       BASIC_AUTH_PASSWORD: $default_pwd
       DOWNLOAD_AS_CBZ: true
       AUTO_DOWNLOAD_CHAPTERS: true
+      EXTENSION_REPOS: >-
+        ["https://raw.githubusercontent.com/keiyoushi/extensions/repo/index.min.json"]
     volumes:
       - /DATA/AppData/$AppID/data:/home/suwayomi/.local/share/Tachidesk
       - /DATA/Media/Manga:/home/suwayomi/.local/share/Tachidesk/downloads
@@ -58,7 +60,7 @@ x-casaos:
       Suwayomi is a free and open source manga reader server that runs extensions built for Tachiyomi. 
       
       Features:
-      • 1200+ manga sources through Tachiyomi extensions
+      • 1200+ manga sources through Tachiyomi extensions (pre-configured)
       • Web-based reader with mobile optimization  
       • Compatible with Mihon/Tachiyomi mobile apps
       • Automatic chapter downloads and updates
@@ -67,7 +69,9 @@ x-casaos:
       • OPDS support for external readers
       • Tracking with MyAnimeList, AniList, etc.
       
-      Mobile Setup: Install Mihon (Tachiyomi) on Android and add Suwayomi extension. Connect to your server URL. Downloads are saved to /DATA/Media/Manga/.
+      Pre-configured Sources: Keiyoushi extension repository is automatically added on startup, providing immediate access to MangaDx, MangaNelo, Mangakakalot, and 1200+ other sources. Adult content sources are available but can be filtered in Settings → Browse → Extension filters.
+      
+      Content Safety: After installation, go to Settings → Browse to configure content filters and hide adult-rated extensions if desired.
   developer: Suwayomi Project
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Suwayomi/icon.png
   screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Suwayomi/screenshot-1.png
@@ -82,6 +86,12 @@ x-casaos:
         | Username | Password       |
         | -------- | -------------- |
         | `admin`  | `$default_pwd` |
+        
+        **Content Safety Setup**
+        1. Extension repository pre-configured - ready to use!
+        2. After login: Settings → Browse → Extension filters
+        3. Toggle off "Show NSFW sources" to hide adult content
+        4. Install only family-friendly sources (MangaDx, MangaNelo, etc.)
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Suwayomi/thumbnail.png
   index: /
   webui_port: 80
