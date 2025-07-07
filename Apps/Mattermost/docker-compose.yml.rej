@@ -1,0 +1,16 @@
+diff a/Apps/Mattermost/docker-compose.yml b/Apps/Mattermost/docker-compose.yml	(rejected hunks)
+@@ -17,9 +17,12 @@
+       POSTGRES_DB: mattermost
+       POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+       PGDATA: /var/lib/postgresql/data/pgdata
+-    # healthcheck 비활성화 - UI는 정상 작동함
+     healthcheck:
+-      disable: true
++      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/api/v4/system/ping"]
++      interval: 30s
++      timeout: 10s
++      retries: 3
++      start_period: 120s
+     networks:
+       - mattermost-net
+ 
