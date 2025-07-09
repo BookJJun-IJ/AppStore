@@ -39,6 +39,8 @@ services:
       MYSQL_ROOT_PASSWORD: $default_pwd
       MYSQL_LOG_CONSOLE: true
       MARIADB_AUTO_UPGRADE: 1
+      PUID: $PUID
+      PGID: $PGID
     volumes:
       - /DATA/AppData/$AppID/mariadb:/var/lib/mysql
     networks:
