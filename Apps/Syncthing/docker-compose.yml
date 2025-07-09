@@ -16,6 +16,9 @@ services:
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
+      STGUIADDRESS: 0.0.0.0:8384
+      STGUIUSER: admin
+      STGUIPASSWORD: $default_pwd
     restart: unless-stopped
     deploy:
       resources:
@@ -46,6 +49,11 @@ x-casaos:
       en_us: |
         **Perfect Google Drive Alternative**
         
+        **Default Login Credentials**
+        | Username | Password |
+        |----------|----------|
+        | admin | `$default_pwd` |
+        
         **Features:**
         - **No Cloud Required**: Direct device-to-device sync
         - **Real-time Sync**: Files sync instantly between devices
@@ -61,10 +69,11 @@ x-casaos:
         
         **After installation:**
         1. Access web interface via CasaOS
-        2. Note your Device ID
-        3. Download Syncthing apps: [https://syncthing.net/downloads/](https://syncthing.net/downloads/)
-        4. Add devices and share folders
-        5. Start syncing!
+        2. **Login with admin / `$default_pwd`**
+        3. Note your Device ID in web interface
+        4. Download Syncthing apps: [https://syncthing.net/downloads/](https://syncthing.net/downloads/)
+        5. Add devices and share folders
+        6. Start syncing!
         
         **Mobile Apps:** Available on Google Play and App Store
       ko_kr: |
@@ -85,10 +94,11 @@ x-casaos:
         
         **설치 후:**
         1. CasaOS를 통해 웹 인터페이스 접속
-        2. 장치 ID 확인
-        3. Syncthing 앱 다운로드: [https://syncthing.net/downloads/](https://syncthing.net/downloads/)
-        4. 장치 추가 및 폴더 공유
-        5. 동기화 시작!
+        2. **admin / `$default_pwd`로 로그인**
+        3. 웹 인터페이스에서 장치 ID 확인
+        4. Syncthing 앱 다운로드: [https://syncthing.net/downloads/](https://syncthing.net/downloads/)
+        5. 장치 추가 및 폴더 공유
+        6. 동기화 시작!
         
         **모바일 앱:** Google Play와 App Store에서 사용 가능
   index: /
