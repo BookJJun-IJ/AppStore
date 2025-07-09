@@ -84,18 +84,16 @@ x-casaos:
     - amd64
     - arm64
   main: seafile
+  author: CasaOS Team
+  category: Cloud
   description:
     en_us: "Seafile 12.0 is an open source cloud storage system with privacy protection and teamwork features. Fast file sync with delta sync technology and client-side encryption."
     ko_kr: "Seafile 12.0은 프라이버시 보호와 팀워크 기능을 갖춘 오픈소스 클라우드 스토리지 시스템입니다. 델타 동기화 기술과 클라이언트 측 암호화로 빠른 파일 동기화를 제공합니다."
   developer: Seafile Ltd.
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Seafile/icon.png
-  screenshot_link:
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Seafile/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Seafile/screenshot-2.png
   tagline:
     en_us: "Latest Seafile 12.0 - Fast, secure private cloud storage with file sync"
     ko_kr: "최신 Seafile 12.0 - 빠르고 안전한 프라이빗 클라우드 스토리지와 파일 동기화"
-  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Seafile/thumbnail.png
   title:
     en_us: Seafile
     ko_kr: Seafile
@@ -109,12 +107,6 @@ x-casaos:
         |----------|----------|
         | admin@seafile.local | `$default_pwd` |
         
-        **New Features in 12.0:**
-        - Completely redesigned UI
-        - Enhanced performance and security
-        - Better integration with external services
-        - Improved file synchronization
-        
         **Desktop & Mobile Apps:**
         - Windows, Mac, Linux desktop clients
         - Android & iOS mobile apps
@@ -123,10 +115,9 @@ x-casaos:
         
         **After installation:**
         1. Wait 3-5 minutes for database initialization
-        2. Access via web interface: `https://seafile-username.nsl.sh/`
+        2. Access via web interface
         3. Login with admin account above
         4. Download clients: [https://seafile.com/download/](https://seafile.com/download/)
-        5. Configure desktop client to sync your folders
       ko_kr: |
         **Seafile 12.0 최신 버전**
         
@@ -134,12 +125,6 @@ x-casaos:
         | 사용자명 | 비밀번호 |
         |----------|----------|
         | admin@seafile.local | `$default_pwd` |
-        
-        **12.0 새로운 기능:**
-        - 완전히 새로워진 UI
-        - 향상된 성능과 보안
-        - 외부 서비스와의 더 나은 통합
-        - 개선된 파일 동기화
         
         **데스크톱 및 모바일 앱:**
         - Windows, Mac, Linux 데스크톱 클라이언트
@@ -149,12 +134,9 @@ x-casaos:
         
         **설치 후:**
         1. 데이터베이스 초기화를 위해 3-5분 대기
-        2. 웹 인터페이스 접속: `https://seafile-username.nsl.sh/`
+        2. 웹 인터페이스 접속
         3. 위 관리자 계정으로 로그인
         4. 클라이언트 다운로드: [https://seafile.com/download/](https://seafile.com/download/)
-        5. 데스크톱 클라이언트에서 폴더 동기화 설정
-  category: Cloud
-  port_map: "80"
-  scheme: https
-  webui_port: 80
   index: /
+  port_map: "80"
+  webui_port: 80
