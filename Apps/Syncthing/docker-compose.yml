@@ -3,6 +3,7 @@ name: syncthing
 services:
   syncthing:
     image: linuxserver/syncthing:latest
+    user: $PUID:$PGID
     expose:
       - 8384
     volumes:
