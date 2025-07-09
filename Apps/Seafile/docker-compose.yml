@@ -1,20 +1,37 @@
 name: seafile
 
 services:
-  memcached:
-    image: memcached:1.6.18-alpine
-    container_name: seafile-memcached
-    entrypoint: memcached -m 256
-    restart: unless-stopped
+  seafile:
+    image: seafileltd/seafile-mc:11.0-latest
+    container_name: seafile-server
+    user: $PUID:$PGID
+    expose:
+      - 80
+    volumes:
+      - /DATA/AppData/$AppID/seafile-data:/shared
+    environment:
+      DB_HOST: seafile-mariadb
+      DB_ROOT_PASSWD: $default_pwd
+      TIME_ZONE: $TZ
+      SEAFILE_ADMIN_EMAIL: admin@example.com
+      SEAFILE_ADMIN_PASSWORD: $default_pwd
+      SEAFILE_SERVER_LETSENCRYPT: false
+      SEAFILE_SERVER_HOSTNAME: $domain
+      PUID: $PUID
+      PGID: $PGID
+    depends_on:
+      - seafile-mariadb
+      - seafile-memcached
     networks:
       - seafile-net
+    restart: unless-stopped
     deploy:
       resources:
         limits:
-          memory: 256M
-          cpus: '0.25'
+          memory: 1G
+          cpus: '1.0'
 
-  mariadb:
+  seafile-mariadb:
     image: mariadb:10.11
     container_name: seafile-mariadb
     user: $PUID:$PGID
@@ -33,35 +50,18 @@ services:
           memory: 512M
           cpus: '0.5'
 
-  seafile:
-    image: seafileltd/seafile-mc:11.0-latest
-    container_name: seafile-server
-    user: $PUID:$PGID
-    expose:
-      - 80
-    volumes:
-      - /DATA/AppData/$AppID/seafile-data:/shared
-    environment:
-      DB_HOST: mariadb
-      DB_ROOT_PASSWD: $default_pwd
-      TIME_ZONE: $TZ
-      SEAFILE_ADMIN_EMAIL: admin@example.com
-      SEAFILE_ADMIN_PASSWORD: $default_pwd
-      SEAFILE_SERVER_LETSENCRYPT: false
-      SEAFILE_SERVER_HOSTNAME: $domain
-      PUID: $PUID
-      PGID: $PGID
-    depends_on:
-      - mariadb
-      - memcached
+  seafile-memcached:
+    image: memcached:1.6.18-alpine
+    container_name: seafile-memcached
+    entrypoint: memcached -m 256
+    restart: unless-stopped
     networks:
       - seafile-net
-    restart: unless-stopped
     deploy:
       resources:
         limits:
-          memory: 1G
-          cpus: '1.0'
+          memory: 256M
+          cpus: '0.25'
 
 networks:
   seafile-net:
