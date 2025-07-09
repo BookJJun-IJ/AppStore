@@ -7,64 +7,23 @@ services:
     expose:
       - 80
     volumes:
-      - /DATA/AppData/$AppID/seafile-data:/shared
+      - /DATA/AppData/$AppID/shared:/shared
     environment:
-      DB_HOST: seafile-mariadb
+      DB_HOST: 127.0.0.1
       DB_ROOT_PASSWD: $default_pwd
       TIME_ZONE: $TZ
-      SEAFILE_ADMIN_EMAIL: admin@example.com
+      SEAFILE_ADMIN_EMAIL: admin@seafile.local
       SEAFILE_ADMIN_PASSWORD: $default_pwd
       SEAFILE_SERVER_LETSENCRYPT: false
       SEAFILE_SERVER_HOSTNAME: $domain
       PUID: $PUID
       PGID: $PGID
-    depends_on:
-      - seafile-mariadb
-      - seafile-memcached
-    networks:
-      - seafile-net
     restart: unless-stopped
     deploy:
       resources:
         limits:
-          memory: 1G
-          cpus: '1.0'
-
-  seafile-mariadb:
-    image: mariadb:10.11
-    user: $PUID:$PGID
-    environment:
-      MYSQL_ROOT_PASSWORD: $default_pwd
-      MYSQL_LOG_CONSOLE: true
-      MARIADB_AUTO_UPGRADE: 1
-      PUID: $PUID
-      PGID: $PGID
-    volumes:
-      - /DATA/AppData/$AppID/mariadb:/var/lib/mysql
-    networks:
-      - seafile-net
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-          cpus: '0.5'
-
-  seafile-memcached:
-    image: memcached:1.6.18-alpine
-    entrypoint: memcached -m 256
-    restart: unless-stopped
-    networks:
-      - seafile-net
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-          cpus: '0.25'
-
-networks:
-  seafile-net:
-    driver: bridge
+          memory: 2G
+          cpus: '2.0'
 
 x-casaos:
   architectures:
@@ -72,8 +31,8 @@ x-casaos:
     - arm64
   main: seafile
   description:
-    en_us: "Seafile is an open source cloud storage system with privacy protection and teamwork features. It provides file sync, sharing, and collaboration with end-to-end encryption."
-    ko_kr: "Seafile은 프라이버시 보호와 팀워크 기능을 갖춘 오픈소스 클라우드 스토리지 시스템입니다. 엔드투엔드 암호화로 파일 동기화, 공유, 협업을 제공합니다."
+    en_us: "Seafile is an open source cloud storage system with privacy protection and teamwork features. Built-in database for easy deployment."
+    ko_kr: "Seafile은 프라이버시 보호와 팀워크 기능을 갖춘 오픈소스 클라우드 스토리지 시스템입니다. 내장 데이터베이스로 쉬운 배포가 가능합니다."
   developer: Seafile Ltd.
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Seafile/icon.png
   screenshot_link:
@@ -93,39 +52,37 @@ x-casaos:
         
         | Username | Password |
         |----------|----------|
-        | admin@example.com | `$default_pwd` |
+        | admin@seafile.local | `$default_pwd` |
         
         **Features:**
         - Fast file synchronization with delta sync
         - Client-side encryption support
         - Desktop and mobile apps available
-        - Group collaboration and sharing
-        - Version control and file history
+        - Built-in database for easy setup
         
         **After installation:**
-        1. Access Seafile via the web interface
-        2. Login with the admin account above
-        3. Download desktop client from [https://seafile.com/download/](https://seafile.com/download/)
-        4. Configure sync folders in the desktop client
+        1. Wait 2-3 minutes for initial setup to complete
+        2. Access Seafile via the web interface
+        3. Login with the admin account above
+        4. Download desktop client from [https://seafile.com/download/](https://seafile.com/download/)
       ko_kr: |
         **기본 관리자 계정**
         
         | 사용자명 | 비밀번호 |
         |----------|----------|
-        | admin@example.com | `$default_pwd` |
+        | admin@seafile.local | `$default_pwd` |
         
         **주요 기능:**
         - 델타 동기화를 통한 빠른 파일 동기화
         - 클라이언트 측 암호화 지원
         - 데스크톱 및 모바일 앱 지원
-        - 그룹 협업 및 공유
-        - 버전 관리 및 파일 이력
+        - 내장 데이터베이스로 쉬운 설정
         
         **설치 후:**
-        1. 웹 인터페이스로 Seafile 접속
-        2. 위 관리자 계정으로 로그인
-        3. [https://seafile.com/download/](https://seafile.com/download/)에서 데스크톱 클라이언트 다운로드
-        4. 데스크톱 클라이언트에서 동기화 폴더 설정
+        1. 초기 설정 완료까지 2-3분 대기
+        2. 웹 인터페이스로 Seafile 접속
+        3. 위 관리자 계정으로 로그인
+        4. [https://seafile.com/download/](https://seafile.com/download/)에서 데스크톱 클라이언트 다운로드
   category: Cloud
   port_map: "80"
   scheme: https
