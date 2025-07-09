@@ -8,6 +8,7 @@ services:
       - 8384
     volumes:
       - /DATA/AppData/$AppID/config:/var/syncthing/config
+      - /DATA/AppData/$AppID/sync:/var/syncthing/Sync
       - /DATA/Documents:/var/syncthing/Documents
       - /DATA/Downloads:/var/syncthing/Downloads
       - /DATA/Media:/var/syncthing/Media
@@ -17,8 +18,6 @@ services:
       PGID: $PGID
       TZ: $TZ
       STGUIADDRESS: 0.0.0.0:8384
-      STGUIUSER: admin
-      STGUIPASSWORD: $default_pwd
     restart: unless-stopped
     deploy:
       resources:
@@ -49,12 +48,16 @@ x-casaos:
       en_us: |
         **Perfect Google Drive Alternative**
         
-        **Default Login Credentials**
-        | Username | Password |
-        |----------|----------|
-        | admin | `$default_pwd` |
+        **Security Setup Required**
         
-        **Features:**
+        **After installation:**
+        1. Access web interface via CasaOS
+        2. **First time: No login required**
+        3. **Immediately go to "Actions" → "Settings"**
+        4. **Set Username/Password for Web UI**
+        5. **Save settings**
+        
+        **Important:** Set authentication immediately as Syncthing listens on 0.0.0.0!
         - **No Cloud Required**: Direct device-to-device sync
         - **Real-time Sync**: Files sync instantly between devices
         - **Cross-Platform**: Windows, Mac, Linux, Android, iOS
@@ -69,11 +72,12 @@ x-casaos:
         
         **After installation:**
         1. Access web interface via CasaOS
-        2. **Login with admin / `$default_pwd`**
-        3. Note your Device ID in web interface
-        4. Download Syncthing apps: [https://syncthing.net/downloads/](https://syncthing.net/downloads/)
-        5. Add devices and share folders
-        6. Start syncing!
+        2. **First time: No login required**
+        3. **Go to "Actions" → "Settings" → Set Username/Password**
+        4. Note your Device ID in web interface
+        5. Download Syncthing apps: [https://syncthing.net/downloads/](https://syncthing.net/downloads/)
+        6. Add devices and share folders
+        7. Start syncing!
         
         **Mobile Apps:** Available on Google Play and App Store
       ko_kr: |
@@ -92,15 +96,17 @@ x-casaos:
         - `/data3` → 미디어 폴더
         - `/data4` → 갤러리 폴더
         
+        **보안 설정 필요**
+        
         **설치 후:**
         1. CasaOS를 통해 웹 인터페이스 접속
-        2. **admin / `$default_pwd`로 로그인**
-        3. 웹 인터페이스에서 장치 ID 확인
-        4. Syncthing 앱 다운로드: [https://syncthing.net/downloads/](https://syncthing.net/downloads/)
-        5. 장치 추가 및 폴더 공유
-        6. 동기화 시작!
+        2. **첫 접속: 로그인 불필요**
+        3. **즉시 "Actions" → "Settings"로 이동**
+        4. **웹 UI용 사용자명/비밀번호 설정**
+        5. **설정 저장**
+        
+        **중요:** Syncthing이 0.0.0.0에서 수신하므로 즉시 인증을 설정하세요!
         
         **모바일 앱:** Google Play와 App Store에서 사용 가능
   index: /
-  port_map: "8384"
   webui_port: 8384
