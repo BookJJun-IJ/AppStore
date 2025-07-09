@@ -2,16 +2,16 @@ name: syncthing
 
 services:
   syncthing:
-    image: linuxserver/syncthing:latest
+    image: syncthing/syncthing:latest
     user: $PUID:$PGID
     expose:
       - 8384
     volumes:
-      - /DATA/AppData/$AppID/config:/config
-      - /DATA/Documents:/data1
-      - /DATA/Downloads:/data2
-      - /DATA/Media:/data3
-      - /DATA/Gallery:/data4
+      - /DATA/AppData/$AppID/config:/var/syncthing/config
+      - /DATA/Documents:/var/syncthing/Documents
+      - /DATA/Downloads:/var/syncthing/Downloads
+      - /DATA/Media:/var/syncthing/Media
+      - /DATA/Gallery:/var/syncthing/Gallery
     environment:
       PUID: $PUID
       PGID: $PGID
