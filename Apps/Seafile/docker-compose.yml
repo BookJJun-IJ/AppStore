@@ -2,22 +2,32 @@ name: seafile
 
 services:
   seafile:
-    image: seafileltd/seafile-mc:11.0-latest
+    image: seafileltd/seafile-mc:12.0-latest
     user: $PUID:$PGID
     expose:
       - 80
     volumes:
       - /DATA/AppData/$AppID/shared:/shared
     environment:
-      DB_HOST: 127.0.0.1
+      DB_HOST: seafile-mariadb
       DB_ROOT_PASSWD: $default_pwd
+      DB_USER: seafile
+      DB_PASSWORD: $default_pwd
       TIME_ZONE: $TZ
       SEAFILE_ADMIN_EMAIL: admin@seafile.local
       SEAFILE_ADMIN_PASSWORD: $default_pwd
       SEAFILE_SERVER_LETSENCRYPT: false
       SEAFILE_SERVER_HOSTNAME: $domain
+      SEAFILE_SERVER_PROTOCOL: https
+      FORCE_HTTPS_IN_CONF: true
       PUID: $PUID
       PGID: $PGID
+      JWT_PRIVATE_KEY: $default_pwd
+    depends_on:
+      - seafile-mariadb
+      - seafile-memcached
+    networks:
+      - seafile-net
     restart: unless-stopped
     deploy:
       resources:
@@ -25,22 +35,66 @@ services:
           memory: 1G
           cpus: '0.8'
 
+  seafile-mariadb:
+    image: mariadb:10.11
+    user: $PUID:$PGID
+    environment:
+      MYSQL_ROOT_PASSWORD: $default_pwd
+      MYSQL_USER: seafile
+      MYSQL_PASSWORD: $default_pwd
+      MYSQL_LOG_CONSOLE: true
+      MARIADB_AUTO_UPGRADE: 1
+      PUID: $PUID
+      PGID: $PGID
+    volumes:
+      - /DATA/AppData/$AppID/mariadb:/var/lib/mysql
+    networks:
+      - seafile-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/healthcheck.sh", "--connect", "--mariadbupgrade", "--innodb_initialized"]
+      interval: 20s
+      start_period: 30s
+      timeout: 5s
+      retries: 10
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.4'
+
+  seafile-memcached:
+    image: memcached:1.6.29
+    entrypoint: memcached -m 256
+    networks:
+      - seafile-net
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.2'
+
+networks:
+  seafile-net:
+    driver: bridge
+
 x-casaos:
   architectures:
     - amd64
     - arm64
   main: seafile
   description:
-    en_us: "Seafile is an open source cloud storage system with privacy protection and teamwork features. Built-in database for easy deployment."
-    ko_kr: "Seafile은 프라이버시 보호와 팀워크 기능을 갖춘 오픈소스 클라우드 스토리지 시스템입니다. 내장 데이터베이스로 쉬운 배포가 가능합니다."
+    en_us: "Seafile 12.0 is an open source cloud storage system with privacy protection and teamwork features. Fast file sync with delta sync technology and client-side encryption."
+    ko_kr: "Seafile 12.0은 프라이버시 보호와 팀워크 기능을 갖춘 오픈소스 클라우드 스토리지 시스템입니다. 델타 동기화 기술과 클라이언트 측 암호화로 빠른 파일 동기화를 제공합니다."
   developer: Seafile Ltd.
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Seafile/icon.png
   screenshot_link:
     - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Seafile/screenshot-1.png
     - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Seafile/screenshot-2.png
   tagline:
-    en_us: "Fast, secure, and private cloud storage with file sync"
-    ko_kr: "빠르고 안전한 프라이빗 클라우드 스토리지와 파일 동기화"
+    en_us: "Latest Seafile 12.0 - Fast, secure private cloud storage with file sync"
+    ko_kr: "최신 Seafile 12.0 - 빠르고 안전한 프라이빗 클라우드 스토리지와 파일 동기화"
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Seafile/thumbnail.png
   title:
     en_us: Seafile
@@ -48,41 +102,57 @@ x-casaos:
   tips:
     before_install:
       en_us: |
-        **Default Admin Account**
+        **Seafile 12.0 Latest Version**
         
+        **Default Admin Account**
         | Username | Password |
         |----------|----------|
         | admin@seafile.local | `$default_pwd` |
         
-        **Features:**
-        - Fast file synchronization with delta sync
-        - Client-side encryption support
-        - Desktop and mobile apps available
-        - Built-in database for easy setup
+        **New Features in 12.0:**
+        - Completely redesigned UI
+        - Enhanced performance and security
+        - Better integration with external services
+        - Improved file synchronization
+        
+        **Desktop & Mobile Apps:**
+        - Windows, Mac, Linux desktop clients
+        - Android & iOS mobile apps
+        - OnDemand sync (like OneDrive)
+        - Real-time file synchronization
         
         **After installation:**
-        1. Wait 2-3 minutes for initial setup to complete
-        2. Access Seafile via the web interface
-        3. Login with the admin account above
-        4. Download desktop client from [https://seafile.com/download/](https://seafile.com/download/)
+        1. Wait 3-5 minutes for database initialization
+        2. Access via web interface: `https://seafile-username.nsl.sh/`
+        3. Login with admin account above
+        4. Download clients: [https://seafile.com/download/](https://seafile.com/download/)
+        5. Configure desktop client to sync your folders
       ko_kr: |
-        **기본 관리자 계정**
+        **Seafile 12.0 최신 버전**
         
+        **기본 관리자 계정**
         | 사용자명 | 비밀번호 |
         |----------|----------|
         | admin@seafile.local | `$default_pwd` |
         
-        **주요 기능:**
-        - 델타 동기화를 통한 빠른 파일 동기화
-        - 클라이언트 측 암호화 지원
-        - 데스크톱 및 모바일 앱 지원
-        - 내장 데이터베이스로 쉬운 설정
+        **12.0 새로운 기능:**
+        - 완전히 새로워진 UI
+        - 향상된 성능과 보안
+        - 외부 서비스와의 더 나은 통합
+        - 개선된 파일 동기화
+        
+        **데스크톱 및 모바일 앱:**
+        - Windows, Mac, Linux 데스크톱 클라이언트
+        - Android & iOS 모바일 앱
+        - 온디맨드 동기화 (OneDrive처럼)
+        - 실시간 파일 동기화
         
         **설치 후:**
-        1. 초기 설정 완료까지 2-3분 대기
-        2. 웹 인터페이스로 Seafile 접속
+        1. 데이터베이스 초기화를 위해 3-5분 대기
+        2. 웹 인터페이스 접속: `https://seafile-username.nsl.sh/`
         3. 위 관리자 계정으로 로그인
-        4. [https://seafile.com/download/](https://seafile.com/download/)에서 데스크톱 클라이언트 다운로드
+        4. 클라이언트 다운로드: [https://seafile.com/download/](https://seafile.com/download/)
+        5. 데스크톱 클라이언트에서 폴더 동기화 설정
   category: Cloud
   port_map: "80"
   scheme: https
