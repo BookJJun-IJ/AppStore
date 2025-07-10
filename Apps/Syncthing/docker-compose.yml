@@ -1,112 +1,105 @@
-name: syncthing
+name: filebrowser
 
 services:
-  syncthing:
-    image: syncthing/syncthing:latest
+  filebrowser:
+    image: filebrowser/filebrowser:latest
     user: $PUID:$PGID
     expose:
-      - 8384
+      - 80
     volumes:
-      - /DATA/AppData/$AppID/config:/var/syncthing/config
-      - /DATA/AppData/$AppID/sync:/var/syncthing/Sync
-      - /DATA/Documents:/var/syncthing/Documents
-      - /DATA/Downloads:/var/syncthing/Downloads
-      - /DATA/Media:/var/syncthing/Media
-      - /DATA/Gallery:/var/syncthing/Gallery
+      - /DATA/AppData/$AppID/database:/database
+      - /DATA/AppData/$AppID/config:/config
+      - /DATA/Documents:/srv/Documents
+      - /DATA/Downloads:/srv/Downloads
+      - /DATA/Media:/srv/Media
+      - /DATA/Gallery:/srv/Gallery
+      - /DATA:/srv/DATA
     environment:
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
-      STGUIADDRESS: 0.0.0.0:8384
     restart: unless-stopped
     deploy:
       resources:
         limits:
-          memory: 512M
-          cpus: '0.5'
+          memory: 256M
+          cpus: '0.3'
 
 x-casaos:
   architectures:
     - amd64
     - arm64
-  main: syncthing
+  main: filebrowser
   author: CasaOS Team
   category: Cloud
   description:
-    en_us: "Syncthing is a continuous file synchronization program. It synchronizes files between two or more computers and mobile devices in real time, safely protected from prying eyes. Your data is your data alone."
-    ko_kr: "Syncthing은 연속 파일 동기화 프로그램입니다. 둘 이상의 컴퓨터와 모바일 기기 간에 실시간으로 파일을 동기화하며, 프라이버시가 안전하게 보호됩니다."
-  developer: Syncthing Foundation
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Syncthing/icon.png
+    en_us: "FileBrowser provides a file managing interface like Google Drive. Upload, download, preview, edit and manage your files through a beautiful web interface with drag & drop support."
+    ko_kr: "FileBrowser는 Google Drive 같은 파일 관리 인터페이스를 제공합니다. 드래그 앤 드롭과 아름다운 웹 인터페이스로 파일을 업로드, 다운로드, 미리보기, 편집할 수 있습니다."
+  developer: FileBrowser Team
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/FileBrowser/icon.png
   tagline:
-    en_us: "Decentralized file synchronization - no cloud needed"
-    ko_kr: "분산형 파일 동기화 - 클라우드 불필요"
+    en_us: "Web File Manager - Upload files like Google Drive"
+    ko_kr: "웹 파일 매니저 - Google Drive처럼 파일 업로드"
   title:
-    en_us: Syncthing
-    ko_kr: Syncthing
+    en_us: FileBrowser
+    ko_kr: FileBrowser
   tips:
     before_install:
       en_us: |
         **Perfect Google Drive Alternative**
         
-        **Security Setup Required**
+        **Default Login:**
+        | Username | Password |
+        |----------|----------|
+        | admin | admin |
+        
+        **Features:**
+        - **Drag & Drop Upload** - Just like Google Drive!
+        - **File Preview** - Images, videos, documents
+        - **File Editing** - Text files, code files
+        - **Download & Upload** - Easy file management
+        - **User Management** - Multiple users support
+        - **File Sharing** - Share files with links
+        
+        **Accessible Folders:**
+        - `/srv/Documents` → Your Documents
+        - `/srv/Downloads` → Your Downloads
+        - `/srv/Media` → Your Media files
+        - `/srv/Gallery` → Your Photos
+        - `/srv/DATA` → Full CasaOS data access
         
         **After installation:**
-        1. Access web interface via CasaOS
-        2. **First time: No login required**
-        3. **Immediately go to "Actions" → "Settings"**
-        4. **Set Username/Password for Web UI**
-        5. **Save settings**
-        
-        **Important:** Set authentication immediately as Syncthing listens on 0.0.0.0!
-        - **No Cloud Required**: Direct device-to-device sync
-        - **Real-time Sync**: Files sync instantly between devices
-        - **Cross-Platform**: Windows, Mac, Linux, Android, iOS
-        - **Private & Secure**: End-to-end encrypted, no third-party servers
-        - **Selective Sync**: Choose which folders to sync
-        
-        **Pre-configured Folders:**
-        - `/data1` → Documents folder
-        - `/data2` → Downloads folder  
-        - `/data3` → Media folder
-        - `/data4` → Gallery folder
-        
-        **After installation:**
-        1. Access web interface via CasaOS
-        2. **First time: No login required**
-        3. **Go to "Actions" → "Settings" → Set Username/Password**
-        4. Note your Device ID in web interface
-        5. Download Syncthing apps: [https://syncthing.net/downloads/](https://syncthing.net/downloads/)
-        6. Add devices and share folders
-        7. Start syncing!
-        
-        **Mobile Apps:** Available on Google Play and App Store
+        1. Access via web interface
+        2. Login with admin/admin
+        3. **Change password immediately!**
+        4. Start uploading files like Google Drive!
       ko_kr: |
         **완벽한 Google Drive 대체재**
         
+        **기본 로그인:**
+        | 사용자명 | 비밀번호 |
+        |----------|----------|
+        | admin | admin |
+        
         **주요 기능:**
-        - **클라우드 불필요**: 기기 간 직접 동기화
-        - **실시간 동기화**: 파일이 즉시 동기화됨
-        - **크로스 플랫폼**: Windows, Mac, Linux, Android, iOS
-        - **비공개 & 보안**: 엔드투엔드 암호화, 제3자 서버 없음
-        - **선택적 동기화**: 동기화할 폴더 선택 가능
+        - **드래그 앤 드롭 업로드** - Google Drive처럼!
+        - **파일 미리보기** - 이미지, 비디오, 문서
+        - **파일 편집** - 텍스트 파일, 코드 파일
+        - **다운로드 & 업로드** - 쉬운 파일 관리
+        - **사용자 관리** - 여러 사용자 지원
+        - **파일 공유** - 링크로 파일 공유
         
-        **사전 설정된 폴더:**
-        - `/data1` → 문서 폴더
-        - `/data2` → 다운로드 폴더
-        - `/data3` → 미디어 폴더
-        - `/data4` → 갤러리 폴더
-        
-        **보안 설정 필요**
+        **접근 가능한 폴더:**
+        - `/srv/Documents` → 문서 폴더
+        - `/srv/Downloads` → 다운로드 폴더
+        - `/srv/Media` → 미디어 파일
+        - `/srv/Gallery` → 사진 폴더
+        - `/srv/DATA` → 전체 CasaOS 데이터 접근
         
         **설치 후:**
-        1. CasaOS를 통해 웹 인터페이스 접속
-        2. **첫 접속: 로그인 불필요**
-        3. **즉시 "Actions" → "Settings"로 이동**
-        4. **웹 UI용 사용자명/비밀번호 설정**
-        5. **설정 저장**
-        
-        **중요:** Syncthing이 0.0.0.0에서 수신하므로 즉시 인증을 설정하세요!
-        
-        **모바일 앱:** Google Play와 App Store에서 사용 가능
+        1. 웹 인터페이스 접속
+        2. admin/admin으로 로그인
+        3. **즉시 비밀번호 변경!**
+        4. Google Drive처럼 파일 업로드 시작!
   index: /
-  webui_port: 8384
+  webui_port: 80
