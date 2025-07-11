@@ -126,8 +126,8 @@ x-casaos:
         | `admin`  | `$default_pwd` |
         
         **Top Manga Sources to Install**
-        MangaDX, MangaNelo, Mangakakalot, MangaPark, Batoto
-        AsuraScans, LeviatanScans, ReaperScans, MangaLife, Webtoons
+        MangaDex, Mangakakalot, Mangafire 
+        AsuraScans, Webtoons, Manga Plus 
         
         After login: Settings → Browse → Extension filters → Turn off "Show NSFW sources"
   index: /
