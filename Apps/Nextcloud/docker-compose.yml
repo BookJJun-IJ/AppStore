@@ -11,12 +11,6 @@ services:
         limits:
           memory: 1024M
           cpus: '1.0'
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/"]
-      interval: 60s
-      timeout: 10s
-      retries: 3
-      start_period: 180s
     expose:
       - 80
     environment:
