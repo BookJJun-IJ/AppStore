@@ -11,6 +11,12 @@ services:
         limits:
           memory: 1024M
           cpus: '1.0'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/status.php"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     expose:
       - 80
     environment:
@@ -49,6 +55,12 @@ services:
         limits:
           memory: 512M
           cpus: '0.5'
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     environment:
       - PUID=$PUID
       - PGID=$PGID
@@ -72,6 +84,12 @@ services:
         limits:
           memory: 256M
           cpus: '0.25'
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     environment:
       - PUID=$PUID
       - PGID=$PGID
@@ -145,3 +163,6 @@ x-casaos:
         - 앱 데이터: `/DATA/AppData/nextcloud/`
         - 사용자 파일: `/DATA/Documents/`, `/DATA/Media/`, `/DATA/Gallery/`
   index: /
+  pre-install-cmd: |
+    mkdir -p /DATA/AppData/nextcloud/{html,apps,config,data,db,redis} &&
+    chown -R $PUID:$PGID /DATA/AppData/nextcloud/
