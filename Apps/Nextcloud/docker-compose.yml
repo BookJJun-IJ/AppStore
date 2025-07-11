@@ -2,7 +2,7 @@ name: nextcloud
 
 services:
   nextcloud:
-    image: nextcloud:30.0.13
+    image: nextcloud:30.0.6
     user: $PUID:$PGID
     depends_on:
       - db
