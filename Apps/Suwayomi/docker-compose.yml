@@ -2,7 +2,7 @@ name: suwayomi
 
 services:
   suwayomi:
-    image: ghcr.io/suwayomi/tachidesk:stable
+    image: ghcr.io/suwayomi/tachidesk:v2.0.1727  # 공식 최신 이미지
     user: $PUID:$PGID
     container_name: suwayomi
     expose:
@@ -11,24 +11,66 @@ services:
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
+      # 공식 Docker 환경변수 사용 (포트 맵핑)
       BIND_IP: 0.0.0.0
       BIND_PORT: 80
+      
+      # 인증 설정
       BASIC_AUTH_ENABLED: true
       BASIC_AUTH_USERNAME: admin
       BASIC_AUTH_PASSWORD: $default_pwd
+      
+      # 다운로드 설정
       DOWNLOAD_AS_CBZ: true
-      AUTO_DOWNLOAD_CHAPTERS: true
+      AUTO_DOWNLOAD_CHAPTERS: false  # 수동 제어
+      AUTO_DOWNLOAD_EXCLUDE_UNREAD: true
+      AUTO_DOWNLOAD_NEW_CHAPTERS_LIMIT: 0
+      
+      # 업데이트 설정 (더 보수적)
+      UPDATE_EXCLUDE_UNREAD: true
+      UPDATE_EXCLUDE_STARTED: true
+      UPDATE_EXCLUDE_COMPLETED: true
+      UPDATE_INTERVAL: 0  # 자동 업데이트 비활성화
+      UPDATE_MANGA_INFO: false
+      
+      # WebUI 설정
+      WEB_UI_ENABLED: true
+      WEB_UI_FLAVOR: WebUI
+      WEB_UI_CHANNEL: stable
+      WEB_UI_UPDATE_INTERVAL: 23
+      
+      # 확장 저장소 (Keiyoushi만)
       EXTENSION_REPOS: >-
         ["https://raw.githubusercontent.com/keiyoushi/extensions/repo/index.min.json"]
+      
+      # 성능 설정
+      MAX_SOURCES_IN_PARALLEL: 3  # 더 보수적
+      
+      # 백업 설정
+      BACKUP_INTERVAL: 7  # 주간 백업
+      BACKUP_TTL: 30     # 30일 보관
+      
+      # FlareSolverr 연동
+      FLARESOLVERR_ENABLED: true
+      FLARESOLVERR_URL: http://suwayomi-flaresolverr:8191
+      FLARESOLVERR_TIMEOUT: 60
+      FLARESOLVERR_SESSION_NAME: suwayomi
+      FLARESOLVERR_SESSION_TTL: 15
+      
+      # 보안 설정
+      DEBUG: false
     volumes:
-      - /DATA/AppData/$AppID/data:/home/suwayomi/.local/share/Tachidesk
+      # 공식 권장 볼륨 순서 (downloads가 먼저!)
       - /DATA/Media/Manga:/home/suwayomi/.local/share/Tachidesk/downloads
+      - /DATA/AppData/$AppID/data:/home/suwayomi/.local/share/Tachidesk
     restart: unless-stopped
     deploy:
       resources:
         limits:
           memory: 1G
           cpus: '1.0'
+    depends_on:
+      - flaresolverr
 
   flaresolverr:
     image: ghcr.io/flaresolverr/flaresolverr:latest
@@ -39,6 +81,10 @@ services:
       PGID: $PGID
       TZ: $TZ
       LOG_LEVEL: info
+      CAPTCHA_SOLVER: none
+      # FlareSolverr 최적화
+      BROWSER_TIMEOUT: 40000
+      TEST_URL: https://www.google.com
     volumes:
       - /DATA/AppData/$AppID/flaresolverr:/app/data
     restart: unless-stopped
@@ -55,43 +101,34 @@ x-casaos:
   main: suwayomi
   author: Suwayomi Team
   category: Media
+  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Suwayomi/icon.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Suwayomi/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Suwayomi/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Suwayomi/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Suwayomi/screenshot-1.png
   description:
     en_us: |
-      Suwayomi is a free and open source manga reader server that runs extensions built for Tachiyomi. 
-      
-      Features:
-      • 1200+ manga sources through Tachiyomi extensions (pre-configured)
-      • Web-based reader with mobile optimization  
-      • Compatible with Mihon/Tachiyomi mobile apps
-      • Automatic chapter downloads and updates
-      • Multi-user support with authentication
-      • Cloudflare bypass with FlareSolverr
-      • OPDS support for external readers
-      • Tracking with MyAnimeList, AniList, etc.
-      
-      Pre-configured Sources: Keiyoushi extension repository is automatically added on startup, providing immediate access to MangaDx, MangaNelo, Mangakakalot, and 1200+ other sources. Adult content sources are available but can be filtered in Settings → Browse → Extension filters.
-      
-      Content Safety: After installation, go to Settings → Browse to configure content filters and hide adult-rated extensions if desired.
+      Self-hosted manga server that lets you read manga from 1200+ sources on any device. 
+      Access your manga library from web browsers, mobile apps, or any OPDS-compatible reader. 
+      Pre-configured with trusted manga sources and safe browsing settings.
   developer: Suwayomi Project
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Suwayomi/icon.png
-  screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Suwayomi/screenshot-1.png
   tagline:
-    en_us: Self-hosted manga server with 1200+ sources and mobile app support
+    en_us: Your personal manga server with 1200+ sources
   title:
     en_us: Suwayomi
   tips:
     before_install:
       en_us: |
-        **Default Account**
+        **Default Login**
         | Username | Password       |
         | -------- | -------------- |
         | `admin`  | `$default_pwd` |
         
-        **Content Safety Setup**
-        1. Extension repository pre-configured - ready to use!
-        2. After login: Settings → Browse → Extension filters
-        3. Toggle off "Show NSFW sources" to hide adult content
-        4. Install only family-friendly sources (MangaDx, MangaNelo, etc.)
-  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Suwayomi/thumbnail.png
+        **Top Manga Sources to Install**
+        MangaDX, MangaNelo, Mangakakalot, MangaPark, Batoto
+        AsuraScans, LeviatanScans, ReaperScans, MangaLife, Webtoons
+        
+        After login: Settings → Browse → Extension filters → Turn off "Show NSFW sources"
   index: /
   webui_port: 80
