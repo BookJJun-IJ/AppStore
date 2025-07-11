@@ -2,7 +2,7 @@ name: nextcloud
 
 services:
   nextcloud:
-    image: nextcloud:30.0.2
+    image: nextcloud:30.0.13
     user: $PUID:$PGID
     depends_on:
       - db
@@ -12,11 +12,11 @@ services:
           memory: 1024M
           cpus: '1.0'
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80/status.php"]
+      test: ["CMD", "curl", "-f", "http://localhost/status.php"]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 60s
+      retries: 5
+      start_period: 120s
     expose:
       - 80
     environment:
@@ -29,10 +29,12 @@ services:
       - MYSQL_PASSWORD=$default_pwd
       - NEXTCLOUD_ADMIN_USER=admin
       - NEXTCLOUD_ADMIN_PASSWORD=$default_pwd
-      - NEXTCLOUD_TRUSTED_DOMAINS=$domain
+      - NEXTCLOUD_TRUSTED_DOMAINS=localhost,$domain
       - OVERWRITEPROTOCOL=https
       - OVERWRITEHOST=$domain
       - OVERWRITECLIURL=https://$domain
+      - REDIS_HOST=redis
+      - REDIS_HOST_PORT=6379
       - APACHE_DISABLE_REWRITE_IP=1
       - TRUSTED_PROXIES=172.16.0.0/12
     volumes:
@@ -57,10 +59,10 @@ services:
           cpus: '0.5'
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
-      interval: 30s
+      interval: 60s
       timeout: 10s
-      retries: 3
-      start_period: 60s
+      retries: 5
+      start_period: 120s
     environment:
       - PUID=$PUID
       - PGID=$PGID
@@ -163,6 +165,3 @@ x-casaos:
         - 앱 데이터: `/DATA/AppData/nextcloud/`
         - 사용자 파일: `/DATA/Documents/`, `/DATA/Media/`, `/DATA/Gallery/`
   index: /
-  pre-install-cmd: |
-    mkdir -p /DATA/AppData/nextcloud/{html,apps,config,data,db,redis} &&
-    chown -R $PUID:$PGID /DATA/AppData/nextcloud/
