@@ -21,6 +21,12 @@ services:
       - MYSQL_DATABASE=nextcloud
       - MYSQL_USER=nextcloud
       - MYSQL_PASSWORD=$default_pwd
+      - NEXTCLOUD_TRUSTED_DOMAINS=localhost,$domain
+      - OVERWRITEPROTOCOL=https
+      - OVERWRITEHOST=$domain
+      - OVERWRITECLIURL=https://$domain
+      - APACHE_DISABLE_REWRITE_IP=1
+      - TRUSTED_PROXIES=172.16.0.0/12,10.0.0.0/8,192.168.0.0/16
     volumes:
       - /DATA/AppData/nextcloud/html:/var/www/html
       - /DATA/AppData/nextcloud/apps:/var/www/html/custom_apps
@@ -122,12 +128,18 @@ x-casaos:
         1. Access the web interface after installation
         2. Complete the setup wizard manually
         3. Database connection will be auto-configured
+        4. **Important**: After first setup, restart the app once to resolve connectivity issues
         
         **Database Info (auto-filled):**
         - Host: `db`
-        - Database: `nextcloud`
+        - Database: `nextcloud` 
         - User: `nextcloud`
         - Password: Auto-generated
+        
+        **Known Issues:**
+        - First setup may show "Bad Gateway" - restart the app
+        - Login may be slow initially - this improves after restart
+        - Use "Log in to your device" if normal login fails
         
         **Data Storage:**
         - App data: `/DATA/AppData/nextcloud/`
@@ -138,12 +150,18 @@ x-casaos:
         1. 설치 후 웹 인터페이스 접속
         2. 설정 마법사를 수동으로 완료
         3. 데이터베이스 연결은 자동 구성됨
+        4. **중요**: 첫 설정 후 앱을 한 번 재시작하여 연결 문제 해결
         
         **데이터베이스 정보 (자동 입력):**
         - 호스트: `db`
         - 데이터베이스: `nextcloud`
         - 사용자: `nextcloud`
         - 비밀번호: 자동 생성
+        
+        **알려진 문제:**
+        - 첫 설정 시 "Bad Gateway" 표시 가능 - 앱 재시작 필요
+        - 로그인이 처음에 느릴 수 있음 - 재시작 후 개선됨
+        - 일반 로그인 실패 시 "기기로 로그인" 사용
         
         **데이터 저장소:**
         - 앱 데이터: `/DATA/AppData/nextcloud/`
