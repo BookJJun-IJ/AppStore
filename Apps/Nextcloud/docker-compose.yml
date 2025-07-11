@@ -1,0 +1,147 @@
+name: nextcloud
+
+services:
+  nextcloud:
+    image: nextcloud:30.0.2
+    user: $PUID:$PGID
+    depends_on:
+      - db
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+          cpus: '1.0'
+    expose:
+      - 80
+    environment:
+      - PUID=$PUID
+      - PGID=$PGID
+      - TZ=$TZ
+      - MYSQL_HOST=db
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
+      - MYSQL_PASSWORD=$default_pwd
+      - NEXTCLOUD_ADMIN_USER=admin
+      - NEXTCLOUD_ADMIN_PASSWORD=$default_pwd
+      - NEXTCLOUD_TRUSTED_DOMAINS=$domain
+      - OVERWRITEPROTOCOL=https
+      - OVERWRITEHOST=$domain
+      - OVERWRITECLIURL=https://$domain
+      - APACHE_DISABLE_REWRITE_IP=1
+      - TRUSTED_PROXIES=172.16.0.0/12
+    volumes:
+      - /DATA/AppData/nextcloud/html:/var/www/html
+      - /DATA/AppData/nextcloud/apps:/var/www/html/custom_apps
+      - /DATA/AppData/nextcloud/config:/var/www/html/config
+      - /DATA/AppData/nextcloud/data:/var/www/html/data
+      - /DATA/Documents:/var/www/html/data/Documents
+      - /DATA/Media:/var/www/html/data/Media
+      - /DATA/Gallery:/var/www/html/data/Gallery
+    restart: unless-stopped
+    networks:
+      - nextcloud-network
+
+  db:
+    image: mariadb:11.2
+    user: $PUID:$PGID
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+    environment:
+      - PUID=$PUID
+      - PGID=$PGID
+      - TZ=$TZ
+      - MYSQL_ROOT_PASSWORD=$default_pwd
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
+      - MYSQL_PASSWORD=$default_pwd
+      - MARIADB_AUTO_UPGRADE=1
+    volumes:
+      - /DATA/AppData/nextcloud/db:/var/lib/mysql
+    restart: unless-stopped
+    networks:
+      - nextcloud-network
+
+  redis:
+    image: redis:7.2-alpine
+    user: $PUID:$PGID
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+    environment:
+      - PUID=$PUID
+      - PGID=$PGID
+      - TZ=$TZ
+    volumes:
+      - /DATA/AppData/nextcloud/redis:/data
+    restart: unless-stopped
+    networks:
+      - nextcloud-network
+
+networks:
+  nextcloud-network:
+    driver: bridge
+
+x-casaos:
+  main: nextcloud
+  webui_port: 80
+  category: Utilities
+  architectures: [amd64, arm64]
+  author: Yundera Team
+  developer: Nextcloud GmbH
+  description:
+    en_us: Nextcloud is a suite of client-server software for creating and using file hosting services. It offers functionality similar to Dropbox, Office 365 or Google Drive when used with integrated office suites.
+    ko_kr: Nextcloud는 파일 호스팅 서비스를 생성하고 사용하기 위한 클라이언트-서버 소프트웨어 제품군입니다. 통합 오피스 제품군과 함께 사용하면 Dropbox, Office 365 또는 Google Drive와 유사한 기능을 제공합니다.
+    zh_cn: Nextcloud是一套用于创建和使用文件托管服务的客户端-服务器软件。与集成的办公套件一起使用时，它提供类似于Dropbox、Office 365或Google Drive的功能。
+    fr_fr: Nextcloud est une suite de logiciels client-serveur pour créer et utiliser des services d'hébergement de fichiers. Elle offre des fonctionnalités similaires à Dropbox, Office 365 ou Google Drive lorsqu'elle est utilisée avec des suites bureautiques intégrées.
+    es_es: Nextcloud es un conjunto de software cliente-servidor para crear y usar servicios de alojamiento de archivos. Ofrece funcionalidades similares a Dropbox, Office 365 o Google Drive cuando se usa con suites de oficina integradas.
+  title:
+    en_us: Nextcloud
+  tagline:
+    en_us: A safe home for all your data
+    ko_kr: 모든 데이터를 위한 안전한 보금자리
+    zh_cn: 您所有数据的安全之家
+    fr_fr: Une maison sûre pour toutes vos données
+    es_es: Un hogar seguro para todos sus datos
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/icon.png
+  screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/screenshot-1.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/thumbnail.png
+  tips:
+    before_install:
+      en_us: |
+        **Default Account**
+        | Username | Password |
+        | -------- | -------- |
+        | `admin`  | `$default_pwd` |
+        
+        **Features:**
+        - File synchronization and sharing
+        - Calendar and contacts
+        - Online office suite
+        - Media streaming
+        - Secure file access from anywhere
+        
+        **Data Storage:**
+        - App data: `/DATA/AppData/nextcloud/`
+        - User files: `/DATA/Documents/`, `/DATA/Media/`, `/DATA/Gallery/`
+      ko_kr: |
+        **기본 계정**
+        | 사용자명 | 비밀번호 |
+        | -------- | -------- |
+        | `admin`  | `$default_pwd` |
+        
+        **기능:**
+        - 파일 동기화 및 공유
+        - 캘린더 및 연락처
+        - 온라인 오피스 제품군
+        - 미디어 스트리밍
+        - 어디서나 안전한 파일 액세스
+        
+        **데이터 저장소:**
+        - 앱 데이터: `/DATA/AppData/nextcloud/`
+        - 사용자 파일: `/DATA/Documents/`, `/DATA/Media/`, `/DATA/Gallery/`
+  index: /
