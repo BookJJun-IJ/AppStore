@@ -12,11 +12,11 @@ services:
           memory: 1024M
           cpus: '1.0'
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/status.php"]
-      interval: 30s
+      test: ["CMD", "curl", "-f", "http://localhost/"]
+      interval: 60s
       timeout: 10s
-      retries: 5
-      start_period: 120s
+      retries: 3
+      start_period: 180s
     expose:
       - 80
     environment:
@@ -27,16 +27,6 @@ services:
       - MYSQL_DATABASE=nextcloud
       - MYSQL_USER=nextcloud
       - MYSQL_PASSWORD=$default_pwd
-      - NEXTCLOUD_ADMIN_USER=admin
-      - NEXTCLOUD_ADMIN_PASSWORD=$default_pwd
-      - NEXTCLOUD_TRUSTED_DOMAINS=localhost,$domain
-      - OVERWRITEPROTOCOL=https
-      - OVERWRITEHOST=$domain
-      - OVERWRITECLIURL=https://$domain
-      - REDIS_HOST=redis
-      - REDIS_HOST_PORT=6379
-      - APACHE_DISABLE_REWRITE_IP=1
-      - TRUSTED_PROXIES=172.16.0.0/12
     volumes:
       - /DATA/AppData/nextcloud/html:/var/www/html
       - /DATA/AppData/nextcloud/apps:/var/www/html/custom_apps
@@ -133,33 +123,33 @@ x-casaos:
   tips:
     before_install:
       en_us: |
-        **Default Account**
-        | Username | Password |
-        | -------- | -------- |
-        | `admin`  | `$default_pwd` |
+        **Initial Setup Required**
         
-        **Features:**
-        - File synchronization and sharing
-        - Calendar and contacts
-        - Online office suite
-        - Media streaming
-        - Secure file access from anywhere
+        1. Access the web interface after installation
+        2. Complete the setup wizard manually
+        3. Database connection will be auto-configured
+        
+        **Database Info (auto-filled):**
+        - Host: `db`
+        - Database: `nextcloud`
+        - User: `nextcloud`
+        - Password: Auto-generated
         
         **Data Storage:**
         - App data: `/DATA/AppData/nextcloud/`
         - User files: `/DATA/Documents/`, `/DATA/Media/`, `/DATA/Gallery/`
       ko_kr: |
-        **기본 계정**
-        | 사용자명 | 비밀번호 |
-        | -------- | -------- |
-        | `admin`  | `$default_pwd` |
+        **초기 설정 필요**
         
-        **기능:**
-        - 파일 동기화 및 공유
-        - 캘린더 및 연락처
-        - 온라인 오피스 제품군
-        - 미디어 스트리밍
-        - 어디서나 안전한 파일 액세스
+        1. 설치 후 웹 인터페이스 접속
+        2. 설정 마법사를 수동으로 완료
+        3. 데이터베이스 연결은 자동 구성됨
+        
+        **데이터베이스 정보 (자동 입력):**
+        - 호스트: `db`
+        - 데이터베이스: `nextcloud`
+        - 사용자: `nextcloud`
+        - 비밀번호: 자동 생성
         
         **데이터 저장소:**
         - 앱 데이터: `/DATA/AppData/nextcloud/`
