@@ -1,3 +1,53 @@
+collabora:
+    image: collabora/code:24.04.9.1.1
+    depends_on:
+      - nextcloud
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+          cpus: '1.0'
+    expose:
+      - 9980
+    environment:
+      - TZ=$TZ
+      - domain=$domain
+      - DONT_GEN_SSL_CERT=true
+      - extra_params=--o:ssl.enable=false --o:ssl.termination=true --o:welcome.enable=false --o:user_interface.mode=notebookbar
+      - username=admin
+      - password=$default_pwd
+    volumes:
+      - /DATA/AppData/nextcloud/collabora:/tmp
+    restart: unless-stopped
+    networks:
+      - nextcloud-network
+
+  coturn:
+    image: coturn/coturn:4.6.2
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+    ports:
+      - "3478:3478/udp"
+      - "3478:3478/tcp"
+      - "49152-65535:49152-65535/udp"
+    environment:
+      - TZ=$TZ
+    command: 
+      - turnserver
+      - --listening-port=3478
+      - --fingerprint
+      - --lt-cred-mech
+      - --user=nextcloud:$default_pwd
+      - --realm=nextcloud
+      - --log-file=stdout
+      - --simple-log
+    restart: unless-stopped
+    networks:
+      - nextcloud-network
+
 name: nextcloud
 
 services:
@@ -6,6 +56,7 @@ services:
     user: $PUID:$PGID
     depends_on:
       - db
+      - redis
     deploy:
       resources:
         limits:
@@ -25,6 +76,12 @@ services:
       - OVERWRITEPROTOCOL=https
       - OVERWRITEHOST=$domain
       - TRUSTED_PROXIES=172.16.0.0/12,10.0.0.0/8,192.168.0.0/16
+      - REDIS_HOST=redis
+      - REDIS_HOST_PORT=6379
+      - PHP_MEMORY_LIMIT=512M
+      - PHP_UPLOAD_LIMIT=1024M
+      - APACHE_BODY_LIMIT=1073741824
+      - NEXTCLOUD_INIT_HTACCESS=true
     volumes:
       - /DATA/AppData/nextcloud/html:/var/www/html
       - /DATA/AppData/nextcloud/apps:/var/www/html/custom_apps
@@ -100,48 +157,4 @@ x-casaos:
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/icon.png
   screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/screenshot-1.png
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/thumbnail.png
-  tips:
-    before_install:
-      en_us: |
-        **Initial Setup Required**
-        
-        1. Access the web interface after installation
-        2. Complete the setup wizard manually
-        3. Database connection will be auto-configured
-        4. **If infinite loading occurs**: Close browser tab and reopen
-        
-        **Database Info (auto-filled):**
-        - Host: `db`
-        - Database: `nextcloud`
-        - User: `nextcloud`
-        - Password: Auto-generated
-        
-        **Troubleshooting:**
-        - Infinite loading after login: Refresh page or reopen browser
-        - Performance improves after initial setup
-        
-        **Data Storage:**
-        - App data: `/DATA/AppData/nextcloud/`
-        - User files: `/DATA/Documents/`, `/DATA/Media/`, `/DATA/Gallery/`
-      ko_kr: |
-        **초기 설정 필요**
-        
-        1. 설치 후 웹 인터페이스 접속
-        2. 설정 마법사를 수동으로 완료
-        3. 데이터베이스 연결은 자동 구성됨
-        4. **무한 로딩 발생 시**: 브라우저 탭을 닫고 다시 열기
-        
-        **데이터베이스 정보 (자동 입력):**
-        - 호스트: `db`
-        - 데이터베이스: `nextcloud`
-        - 사용자: `nextcloud`
-        - 비밀번호: 자동 생성
-        
-        **문제 해결:**
-        - 로그인 후 무한 로딩: 페이지 새로고침 또는 브라우저 재시작
-        - 초기 설정 후 성능 개선됨
-        
-        **데이터 저장소:**
-        - 앱 데이터: `/DATA/AppData/nextcloud/`
-        - 사용자 파일: `/DATA/Documents/`, `/DATA/Media/`, `/DATA/Gallery/`
-  index: /
+index: /
