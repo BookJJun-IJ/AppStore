@@ -2,7 +2,7 @@ name: nextcloud
 
 services:
   nextcloud:
-    image: ghcr.io/nextcloud-releases/all-in-one:v10.11.0  # 특정 버전 태그 사용 (최신 안정 버전)
+    image: ghcr.io/nextcloud-releases/all-in-one:latest  # Nextcloud AIO는 공식적으로 latest 태그 사용 권장
     user: $PUID:$PGID
     deploy:
       resources:
@@ -25,7 +25,7 @@ services:
       - NEXTCLOUD_ENABLE_DRI_DEVICE=true
     volumes:
       - /DATA/AppData/$AppID/config:/mnt/docker-aio-config
-      - /DATA/AppData/$AppID/rationale.md  # 특정 버전 사용에 대한 설명을 위한 rationale.md 추가
+      - /DATA/AppData/$AppID/data:/DATA/AppData/$AppID/data
       - /DATA/Documents:/DATA/Documents  # 사용자 문서 접근
       - /DATA/Media:/DATA/Media  # 미디어 파일 접근
       - /var/run/docker.sock:/var/run/docker.sock:ro
