@@ -57,28 +57,6 @@ services:
     networks:
       - nextcloud-network
 
-  collabora:
-    image: collabora/code:24.04.9.1.1
-    depends_on:
-      - nextcloud
-    deploy:
-      resources:
-        limits:
-          memory: 1024M
-          cpus: '1.0'
-    expose:
-      - 9980
-    environment:
-      - TZ=$TZ
-      - domain=localhost
-      - DONT_GEN_SSL_CERT=true
-      - extra_params=--o:ssl.enable=false --o:ssl.termination=true --o:welcome.enable=false
-    volumes:
-      - /DATA/AppData/nextcloud/collabora:/tmp
-    restart: unless-stopped
-    networks:
-      - nextcloud-network
-
 networks:
   nextcloud-network:
     driver: bridge
@@ -91,46 +69,96 @@ x-casaos:
   author: Yundera Team
   developer: Nextcloud GmbH
   description:
-    en_us: Nextcloud is a suite of client-server software for creating and using file hosting services. It offers functionality similar to Dropbox, Office 365 or Google Drive when used with integrated office suites.
-    ko_kr: Nextcloud는 파일 호스팅 서비스를 생성하고 사용하기 위한 클라이언트-서버 소프트웨어 제품군입니다. 통합 오피스 제품군과 함께 사용하면 Dropbox, Office 365 또는 Google Drive와 유사한 기능을 제공합니다.
+    en_us: Complete Microsoft Teams alternative with built-in Nextcloud Office, Talk video conferencing, Calendar, Contacts, and collaborative file sharing. All essential productivity apps are pre-enabled for immediate use.
+    ko_kr: 내장된 Nextcloud Office, Talk 화상회의, 캘린더, 연락처, 협업 파일 공유를 포함한 완전한 Microsoft Teams 대안. 모든 필수 생산성 앱이 사전 활성화되어 즉시 사용 가능합니다.
+    zh_cn: 完整的Microsoft Teams替代方案，内置Nextcloud Office、Talk视频会议、日历、联系人和协作文件共享。所有基本生产力应用程序都已预启用，可立即使用。
+    fr_fr: Alternative complete a Microsoft Teams avec Nextcloud Office integre, visioconference Talk, calendrier, contacts et partage de fichiers collaboratif. Toutes les applications de productivite essentielles sont pre-activees pour une utilisation immediate.
+    es_es: Alternativa completa a Microsoft Teams con Nextcloud Office integrado, videoconferencias Talk, calendario, contactos y comparticion colaborativa de archivos. Todas las aplicaciones de productividad esenciales estan prehabilitadas para uso inmediato.
   title:
-    en_us: Nextcloud
+    en_us: Nextcloud Teams
+    ko_kr: Nextcloud Teams
+    zh_cn: Nextcloud Teams
+    fr_fr: Nextcloud Teams
+    es_es: Nextcloud Teams
   tagline:
-    en_us: A safe home for all your data
-    ko_kr: 모든 데이터를 위한 안전한 보금자리
+    en_us: Complete collaboration suite with pre-enabled apps
+    ko_kr: 사전 활성화된 앱으로 완성된 협업 제품군
+    zh_cn: 预启用应用程序的完整协作套件
+    fr_fr: Suite de collaboration complete avec applications pre-activees
+    es_es: Suite de colaboracion completa con aplicaciones prehabilitadas
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/icon.png
   screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/screenshot-1.png
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/thumbnail.png
+  pre-install-cmd: |
+    mkdir -p /DATA/AppData/nextcloud/scripts &&
+    cat > /DATA/AppData/nextcloud/scripts/enable-apps.sh << 'EOF'
+    #!/bin/bash
+    sleep 60
+    docker exec nextcloud-nextcloud-1 php /var/www/html/occ app:enable calendar
+    docker exec nextcloud-nextcloud-1 php /var/www/html/occ app:enable contacts
+    docker exec nextcloud-nextcloud-1 php /var/www/html/occ app:enable mail
+    docker exec nextcloud-nextcloud-1 php /var/www/html/occ app:enable spreed
+    docker exec nextcloud-nextcloud-1 php /var/www/html/occ app:enable deck
+    docker exec nextcloud-nextcloud-1 php /var/www/html/occ app:enable tasks
+    docker exec nextcloud-nextcloud-1 php /var/www/html/occ app:install richdocuments
+    docker exec nextcloud-nextcloud-1 php /var/www/html/occ app:enable richdocuments
+    EOF
+    chmod +x /DATA/AppData/nextcloud/scripts/enable-apps.sh &&
+    nohup /DATA/AppData/nextcloud/scripts/enable-apps.sh > /DATA/AppData/nextcloud/scripts/enable-apps.log 2>&1 &
   tips:
     before_install:
       en_us: |
+        **Complete Teams Alternative - Pre-Enabled Apps**
+        
         Setup Steps:
         1. Access web interface after installation
         2. Complete setup wizard (create admin account)
         3. If infinite loading occurs, restart the app
-        4. Collabora Office included for document editing
+        4. All essential apps automatically enabled!
         
-        Features:
-        - File sharing and collaboration
-        - Calendar and contacts
-        - Real-time document editing
-        - NSL Router optimized
+        Pre-Enabled Apps (Ready to Use):
+        - Calendar: Team scheduling and meetings
+        - Contacts: Contact management
+        - Mail: Email integration
+        - Talk: Video calls and chat (spreed)
+        - Deck: Project management (Kanban boards)
+        - Tasks: Task and todo management
+        - Nextcloud Office: Document editing (richdocuments)
         
-        Database (auto-configured):
-        Host: db | Database: nextcloud | User: nextcloud
+        Features Ready Immediately:
+        - Real-time document collaboration
+        - Video conferencing and chat
+        - File sharing with version control
+        - Team calendars and scheduling
+        - Project and task management
+        - Email integration
+        
+        No manual app installation needed!
       ko_kr: |
+        **완전한 Teams 대안 - 사전 활성화된 앱**
+        
         설정 단계:
         1. 설치 후 웹 인터페이스 접속
         2. 설정 마법사 완료 (관리자 계정 생성)
         3. 무한 로딩 발생 시 앱 재시작
-        4. 문서 편집용 Collabora Office 포함
+        4. 모든 필수 앱이 자동으로 활성화됨!
         
-        기능:
-        - 파일 공유 및 협업
-        - 캘린더 및 연락처
-        - 실시간 문서 편집
-        - NSL Router 최적화
+        사전 활성화된 앱들 (즉시 사용 가능):
+        - Calendar: 팀 일정 관리 및 회의
+        - Contacts: 연락처 관리
+        - Mail: 이메일 통합
+        - Talk: 화상통화 및 채팅 (spreed)
+        - Deck: 프로젝트 관리 (칸반 보드)
+        - Tasks: 작업 및 할 일 관리
+        - Nextcloud Office: 문서 편집 (richdocuments)
         
-        데이터베이스 (자동 구성):
-        호스트: db | 데이터베이스: nextcloud | 사용자: nextcloud
+        즉시 사용 가능한 기능:
+        - 실시간 문서 협업
+        - 화상회의 및 채팅
+        - 버전 관리가 포함된 파일 공유
+        - 팀 캘린더 및 일정 관리
+        - 프로젝트 및 작업 관리
+        - 이메일 통합
+        
+        수동 앱 설치 불필요!
   index: /
