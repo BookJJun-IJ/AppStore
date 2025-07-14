@@ -34,7 +34,31 @@ services:
       - /DATA/Media:/var/www/html/data/Media
       - /DATA/Gallery:/var/www/html/data/Gallery
     restart: unless-stopped
+      collabora:
+    image: collabora/code:24.04.9.1.1
+    depends_on:
+      - nextcloud
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+          cpus: '1.0'
+    expose:
+      - 9980
+    environment:
+      - TZ=$TZ
+      - domain=$domain
+      - DONT_GEN_SSL_CERT=true
+      - extra_params=--o:ssl.enable=false --o:ssl.termination=true --o:welcome.enable=false
+      - username=admin
+      - password=$default_pwd
+    volumes:
+      - /DATA/AppData/nextcloud/collabora:/tmp
+    restart: unless-stopped
     networks:
+      - nextcloud-network
+
+networks:
       - nextcloud-network
 
   db:
@@ -87,12 +111,19 @@ x-casaos:
         1. Access web interface after installation
         2. Complete setup wizard (create admin account)
         3. If infinite loading occurs, restart the app
-        4. Enhanced with Redis caching for better performance
+        4. Collabora Office automatically integrates for document editing
+        
+        **Post-Setup:**
+        - Create/edit Word, Excel, PowerPoint files directly in browser
+        - Real-time collaboration on documents
+        - No additional Office software needed
         
         **Features:**
         - File sharing and collaboration
         - Calendar and contacts
-        - App store for extensions (Talk, Office, etc.)
+        - **Collabora Office**: Real-time Word/Excel/PowerPoint editing
+        - App store for extensions (Talk, etc.)
+        - NSL Router optimized for smooth access
         
         **Database (auto-configured):**
         Host: db | Database: nextcloud | User: nextcloud
@@ -105,12 +136,19 @@ x-casaos:
         1. 설치 후 웹 인터페이스 접속
         2. 설정 마법사 완료 (관리자 계정 생성)
         3. 무한 로딩 발생 시 앱 재시작
-        4. Redis 캐싱으로 성능 향상
+        4. Collabora Office가 문서 편집용으로 자동 통합됨
+        
+        **설치 후:**
+        - 브라우저에서 직접 워드, 엑셀, 파워포인트 파일 생성/편집
+        - 문서 실시간 협업
+        - 별도 오피스 소프트웨어 불필요
         
         **기능:**
         - 파일 공유 및 협업
         - 캘린더 및 연락처
-        - 확장 앱 스토어 (Talk, Office 등)
+        - **Collabora Office**: 실시간 워드/엑셀/파워포인트 편집
+        - 확장 앱 스토어 (Talk 등)
+        - NSL Router 최적화로 원활한 접속
         
         **데이터베이스 (자동 구성):**
         호스트: db | 데이터베이스: nextcloud | 사용자: nextcloud
