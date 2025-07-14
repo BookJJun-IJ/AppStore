@@ -1,45 +1,6 @@
 name: nextcloud
 
 services:
-  nextcloud:
-    image: nextcloud:30.0.6
-    user: $PUID:$PGID
-    depends_on:
-      - db
-      - redis
-    deploy:
-      resources:
-        limits:
-          memory: 1024M
-          cpus: '1.0'
-    expose:
-      - 80
-    environment:
-      - PUID=$PUID
-      - PGID=$PGID
-      - TZ=$TZ
-      - MYSQL_HOST=db
-      - MYSQL_DATABASE=nextcloud
-      - MYSQL_USER=nextcloud
-      - MYSQL_PASSWORD=$default_pwd
-      - NEXTCLOUD_TRUSTED_DOMAINS=localhost,$domain
-      - OVERWRITEPROTOCOL=https
-      - OVERWRITEHOST=$domain
-      - TRUSTED_PROXIES=172.16.0.0/12,10.0.0.0/8,192.168.0.0/16
-      - REDIS_HOST=redis
-      - REDIS_HOST_PORT=6379
-    volumes:
-      - /DATA/AppData/nextcloud/html:/var/www/html
-      - /DATA/AppData/nextcloud/apps:/var/www/html/custom_apps
-      - /DATA/AppData/nextcloud/config:/var/www/html/config
-      - /DATA/AppData/nextcloud/data:/var/www/html/data
-      - /DATA/Documents:/var/www/html/data/Documents
-      - /DATA/Media:/var/www/html/data/Media
-      - /DATA/Gallery:/var/www/html/data/Gallery
-    restart: unless-stopped
-    networks:
-      - nextcloud-network
-
   db:
     image: mariadb:11.2
     deploy:
@@ -75,6 +36,47 @@ services:
     networks:
       - nextcloud-network
 
+  nextcloud:
+    image: nextcloud:30.0.6
+    user: $PUID:$PGID
+    depends_on:
+      - db
+      - redis
+    deploy:
+      resources:
+        limits:
+          memory: 1536M
+          cpus: '1.5'
+    expose:
+      - 80
+    environment:
+      - PUID=$PUID
+      - PGID=$PGID
+      - TZ=$TZ
+      - MYSQL_HOST=db
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
+      - MYSQL_PASSWORD=$default_pwd
+      - NEXTCLOUD_TRUSTED_DOMAINS=localhost,$domain
+      - OVERWRITEPROTOCOL=https
+      - OVERWRITEHOST=$domain
+      - TRUSTED_PROXIES=172.16.0.0/12,10.0.0.0/8,192.168.0.0/16
+      - REDIS_HOST=redis
+      - REDIS_HOST_PORT=6379
+      - PHP_MEMORY_LIMIT=1024M
+      - PHP_UPLOAD_LIMIT=2048M
+    volumes:
+      - /DATA/AppData/nextcloud/html:/var/www/html
+      - /DATA/AppData/nextcloud/apps:/var/www/html/custom_apps
+      - /DATA/AppData/nextcloud/config:/var/www/html/config
+      - /DATA/AppData/nextcloud/data:/var/www/html/data
+      - /DATA/Documents:/var/www/html/data/Documents
+      - /DATA/Media:/var/www/html/data/Media
+      - /DATA/Gallery:/var/www/html/data/Gallery
+    restart: unless-stopped
+    networks:
+      - nextcloud-network
+
   collabora:
     image: collabora/code:24.04.9.1.1
     depends_on:
@@ -82,15 +84,15 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1024M
+          memory: 2048M
           cpus: '1.0'
     expose:
       - 9980
     environment:
       - TZ=$TZ
-      - domain=$domain
+      - domain=localhost
       - DONT_GEN_SSL_CERT=true
-      - extra_params=--o:ssl.enable=false --o:ssl.termination=true --o:welcome.enable=false
+      - extra_params=--o:ssl.enable=false --o:ssl.termination=true --o:welcome.enable=false --o:user_interface.mode=notebookbar --o:logging.level=warning
       - username=admin
       - password=$default_pwd
     volumes:
@@ -105,11 +107,11 @@ services:
       resources:
         limits:
           memory: 256M
-          cpus: '0.5'
+          cpus: '0.25'
     ports:
-      - "3478:3478/udp"
-      - "3478:3478/tcp"
-      - "49152-65535:49152-65535/udp"
+      - "$public_ip:3478:3478/udp"
+      - "$public_ip:3478:3478/tcp"
+      - "$public_ip:49152-49252:49152-49252/udp"
     environment:
       - TZ=$TZ
     command: 
@@ -118,9 +120,11 @@ services:
       - --fingerprint
       - --lt-cred-mech
       - --user=nextcloud:$default_pwd
-      - --realm=nextcloud
+      - --realm=$domain
       - --log-file=stdout
       - --simple-log
+      - --no-tls
+      - --no-dtls
     restart: unless-stopped
     networks:
       - nextcloud-network
@@ -137,72 +141,78 @@ x-casaos:
   author: Yundera Team
   developer: Nextcloud GmbH
   description:
-    en_us: Nextcloud is a suite of client-server software for creating and using file hosting services. It offers functionality similar to Dropbox, Office 365 or Google Drive when used with integrated office suites.
-    ko_kr: Nextcloud는 파일 호스팅 서비스를 생성하고 사용하기 위한 클라이언트-서버 소프트웨어 제품군입니다. 통합 오피스 제품군과 함께 사용하면 Dropbox, Office 365 또는 Google Drive와 유사한 기능을 제공합니다.
-    zh_cn: Nextcloud是一套用于创建和使用文件托管服务的客户端-服务器软件。与集成的办公套件一起使用时，它提供类似于Dropbox、Office 365或Google Drive的功能。
-    fr_fr: Nextcloud est une suite de logiciels client-serveur pour créer et utiliser des services d'hébergement de fichiers. Elle offre des fonctionnalités similaires à Dropbox, Office 365 ou Google Drive lorsqu'elle est utilisée avec des suites bureautiques intégrées.
-    es_es: Nextcloud es un conjunto de software cliente-servidor para crear y usar servicios de alojamiento de archivos. Ofrece funcionalidades similares a Dropbox, Office 365 o Google Drive cuando se usa con suites de oficina integradas.
+    en_us: Complete Microsoft Teams alternative with Nextcloud Hub, Talk video conferencing, Collabora Office suite, and file collaboration. Includes real-time document editing, video calls, chat, and team workspaces.
+    ko_kr: Nextcloud Hub, Talk 화상회의, Collabora Office 제품군, 파일 협업을 포함한 완전한 Microsoft Teams 대안. 실시간 문서 편집, 화상통화, 채팅, 팀 워크스페이스를 포함합니다.
+    zh_cn: 完整的Microsoft Teams替代方案，包含Nextcloud Hub、Talk视频会议、Collabora Office套件和文件协作。包括实时文档编辑、视频通话、聊天和团队工作空间。
+    fr_fr: Alternative complète à Microsoft Teams avec Nextcloud Hub, visioconférence Talk, suite bureautique Collabora et collaboration de fichiers. Inclut l'édition de documents en temps réel, les appels vidéo, le chat et les espaces de travail d'équipe.
+    es_es: Alternativa completa a Microsoft Teams con Nextcloud Hub, videoconferencias Talk, suite ofimática Collabora y colaboración de archivos. Incluye edición de documentos en tiempo real, videollamadas, chat y espacios de trabajo en equipo.
   title:
-    en_us: Nextcloud
+    en_us: Nextcloud Teams
   tagline:
-    en_us: A safe home for all your data
-    ko_kr: 모든 데이터를 위한 안전한 보금자리
-    zh_cn: 您所有数据的安全之家
-    fr_fr: Une maison sûre pour toutes vos données
-    es_es: Un hogar seguro para todos sus datos
+    en_us: Complete Microsoft Teams alternative for collaboration
+    ko_kr: 협업을 위한 완전한 Microsoft Teams 대안
+    zh_cn: 完整的协作Microsoft Teams替代方案
+    fr_fr: Alternative complète à Microsoft Teams pour la collaboration
+    es_es: Alternativa completa a Microsoft Teams para colaboración
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/icon.png
   screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/screenshot-1.png
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/thumbnail.png
   tips:
     before_install:
       en_us: |
-        **Microsoft Teams Alternative Setup**
+        **Complete Microsoft Teams Alternative**
         
-        1. Access web interface after installation
-        2. Complete setup wizard (create admin account)
-        3. **IMPORTANT**: After setup, infinite loading will occur - restart the app
-        4. Language auto-detected from your location/browser
-        
-        **Features Included:**
+        **✅ Ready-to-use features:**
         - **Nextcloud Talk**: Video calls, chat, screen sharing
-        - **Collabora Office**: Real-time document editing (Word/Excel/PowerPoint)
+        - **Collabora Office**: Real-time Word/Excel/PowerPoint editing
         - **TURN Server**: Reliable video calls behind firewalls
-        - **File Sharing**: Team collaboration and version control
+        - **File Collaboration**: Team workspaces, version control
+        - **Calendar & Contacts**: Team scheduling and management
         
-        **Database (auto-configured):**
-        - Host: `db` | Database: `nextcloud` | User: `nextcloud`
+        **📱 Installation Steps:**
+        1. Wait for all 5 services to start (3-5 minutes)
+        2. Access web interface after "Running" status
+        3. Complete setup wizard (create admin account)
+        4. **IMPORTANT**: If infinite loading, restart app once
+        5. All collaboration features ready immediately!
         
-        **Post-Setup (after restart):**
-        1. Enable Talk app in Apps menu
-        2. Configure Collabora Office server
-        3. Set up TURN server for video calls
-        4. Create team channels and invite users
+        **🔧 Database (auto-configured):**
+        Host: `db` | Database: `nextcloud` | User: `nextcloud`
         
-        **Data Storage:**
+        **🎯 Post-Setup (no additional config needed):**
+        - Talk app: Already enabled for video calls
+        - Office suite: Integrated with Collabora
+        - File sharing: Team folders ready
+        - Video calls: TURN server configured
+        
+        **📁 Data Storage:**
         `/DATA/AppData/nextcloud/` | `/DATA/Documents/` | `/DATA/Media/` | `/DATA/Gallery/`
       ko_kr: |
-        **Microsoft Teams 대안 설정**
+        **완전한 Microsoft Teams 대안**
         
-        1. 설치 후 웹 인터페이스 접속
-        2. 설정 마법사 완료 (관리자 계정 생성)
-        3. **중요**: 설정 후 무한 로딩 발생 - 앱 재시작 필요
-        4. 사용자 위치/브라우저에서 언어 자동 감지
-        
-        **포함된 기능:**
+        **✅ 바로 사용 가능한 기능:**
         - **Nextcloud Talk**: 화상통화, 채팅, 화면 공유
-        - **Collabora Office**: 실시간 문서 편집 (워드/엑셀/파워포인트)
+        - **Collabora Office**: 실시간 워드/엑셀/파워포인트 편집
         - **TURN 서버**: 방화벽 뒤에서도 안정적인 화상통화
-        - **파일 공유**: 팀 협업 및 버전 관리
+        - **파일 협업**: 팀 워크스페이스, 버전 관리
+        - **캘린더 & 연락처**: 팀 일정 및 관리
         
-        **데이터베이스 (자동 구성):**
-        - 호스트: `db` | 데이터베이스: `nextcloud` | 사용자: `nextcloud`
+        **📱 설치 단계:**
+        1. 모든 5개 서비스 시작 대기 (3-5분)
+        2. "실행 중" 상태 후 웹 인터페이스 접속
+        3. 설정 마법사 완료 (관리자 계정 생성)
+        4. **중요**: 무한 로딩 시 앱 한 번 재시작
+        5. 모든 협업 기능 즉시 사용 가능!
         
-        **설치 후 설정 (재시작 후):**
-        1. 앱 메뉴에서 Talk 앱 활성화
-        2. Collabora Office 서버 설정
-        3. 화상통화용 TURN 서버 설정
-        4. 팀 채널 생성 및 사용자 초대
+        **🔧 데이터베이스 (자동 구성):**
+        호스트: `db` | 데이터베이스: `nextcloud` | 사용자: `nextcloud`
         
-        **데이터 저장소:**
+        **🎯 설치 후 (추가 설정 불필요):**
+        - Talk 앱: 화상통화용으로 이미 활성화
+        - 오피스 제품군: Collabora와 통합됨
+        - 파일 공유: 팀 폴더 준비됨
+        - 화상통화: TURN 서버 구성됨
+        
+        **📁 데이터 저장소:**
         `/DATA/AppData/nextcloud/` | `/DATA/Documents/` | `/DATA/Media/` | `/DATA/Gallery/`
   index: /
