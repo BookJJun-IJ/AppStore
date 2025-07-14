@@ -6,6 +6,7 @@ services:
     user: $PUID:$PGID
     depends_on:
       - db
+      - redis
     deploy:
       resources:
         limits:
@@ -21,13 +22,35 @@ services:
       - MYSQL_DATABASE=nextcloud
       - MYSQL_USER=nextcloud
       - MYSQL_PASSWORD=$default_pwd
+      - NEXTCLOUD_TRUSTED_DOMAINS=localhost,$domain
+      - OVERWRITEPROTOCOL=https
+      - OVERWRITEHOST=$domain
+      - TRUSTED_PROXIES=172.16.0.0/12,10.0.0.0/8,192.168.0.0/16
+      - REDIS_HOST=redis
+      - REDIS_HOST_PORT=6379
     volumes:
       - /DATA/AppData/nextcloud/html:/var/www/html
+      - /DATA/AppData/nextcloud/apps:/var/www/html/custom_apps
       - /DATA/AppData/nextcloud/config:/var/www/html/config
       - /DATA/AppData/nextcloud/data:/var/www/html/data
       - /DATA/Documents:/var/www/html/data/Documents
       - /DATA/Media:/var/www/html/data/Media
       - /DATA/Gallery:/var/www/html/data/Gallery
+    restart: unless-stopped
+    networks:
+      - nextcloud-network
+
+  redis:
+    image: redis:7.2-alpine
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+    environment:
+      - TZ=$TZ
+    volumes:
+      - /DATA/AppData/nextcloud/redis:/data
     restart: unless-stopped
     networks:
       - nextcloud-network
@@ -82,6 +105,12 @@ x-casaos:
         1. Access web interface after installation
         2. Complete setup wizard (create admin account)
         3. If infinite loading occurs, restart the app
+        4. Enhanced with Redis caching for better performance
+        
+        **Features:**
+        - File sharing and collaboration
+        - Calendar and contacts
+        - App store for extensions (Talk, Office, etc.)
         
         **Database (auto-configured):**
         Host: db | Database: nextcloud | User: nextcloud
@@ -94,6 +123,12 @@ x-casaos:
         1. 설치 후 웹 인터페이스 접속
         2. 설정 마법사 완료 (관리자 계정 생성)
         3. 무한 로딩 발생 시 앱 재시작
+        4. Redis 캐싱으로 성능 향상
+        
+        **기능:**
+        - 파일 공유 및 협업
+        - 캘린더 및 연락처
+        - 확장 앱 스토어 (Talk, Office 등)
         
         **데이터베이스 (자동 구성):**
         호스트: db | 데이터베이스: nextcloud | 사용자: nextcloud
