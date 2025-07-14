@@ -6,7 +6,6 @@ services:
     user: $PUID:$PGID
     depends_on:
       - db
-      - redis
     deploy:
       resources:
         limits:
@@ -26,8 +25,6 @@ services:
       - OVERWRITEPROTOCOL=https
       - OVERWRITEHOST=$domain
       - TRUSTED_PROXIES=172.16.0.0/12,10.0.0.0/8,192.168.0.0/16
-      - REDIS_HOST=redis
-      - REDIS_HOST_PORT=6379
     volumes:
       - /DATA/AppData/nextcloud/html:/var/www/html
       - /DATA/AppData/nextcloud/apps:/var/www/html/custom_apps
@@ -36,21 +33,6 @@ services:
       - /DATA/Documents:/var/www/html/data/Documents
       - /DATA/Media:/var/www/html/data/Media
       - /DATA/Gallery:/var/www/html/data/Gallery
-    restart: unless-stopped
-    networks:
-      - nextcloud-network
-
-  redis:
-    image: redis:7.2-alpine
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-          cpus: '0.25'
-    environment:
-      - TZ=$TZ
-    volumes:
-      - /DATA/AppData/nextcloud/redis:/data
     restart: unless-stopped
     networks:
       - nextcloud-network
