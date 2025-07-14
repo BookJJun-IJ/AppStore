@@ -6,6 +6,7 @@ services:
     user: $PUID:$PGID
     depends_on:
       - db
+      - redis
     deploy:
       resources:
         limits:
@@ -27,6 +28,8 @@ services:
       - OVERWRITECLIURL=https://$domain
       - APACHE_DISABLE_REWRITE_IP=1
       - TRUSTED_PROXIES=172.16.0.0/12,10.0.0.0/8,192.168.0.0/16
+      - REDIS_HOST=redis
+      - REDIS_HOST_PORT=6379
     volumes:
       - /DATA/AppData/nextcloud/html:/var/www/html
       - /DATA/AppData/nextcloud/apps:/var/www/html/custom_apps
@@ -123,12 +126,12 @@ x-casaos:
   tips:
     before_install:
       en_us: |
-        **Initial Setup Required**
+        **Installation Steps**
         
-        1. Access the web interface after installation
-        2. Complete the setup wizard manually
-        3. Database connection will be auto-configured
-        4. **Important**: After first setup, restart the app once to resolve connectivity issues
+        1. Wait for all containers to start (DB, Redis, Nextcloud)
+        2. Access the web interface after installation
+        3. Complete the setup wizard manually
+        4. **Important**: Restart the app after first setup if issues occur
         
         **Database Info (auto-filled):**
         - Host: `db`
@@ -136,21 +139,21 @@ x-casaos:
         - User: `nextcloud`
         - Password: Auto-generated
         
-        **Known Issues:**
-        - First setup may show "Bad Gateway" - restart the app
-        - Login may be slow initially - this improves after restart
-        - Use "Log in to your device" if normal login fails
+        **Troubleshooting:**
+        - If app won't activate: Check container logs
+        - If Bad Gateway: Wait 2-3 minutes or restart app
+        - If login slow: Use "Log in to your device" option
         
         **Data Storage:**
         - App data: `/DATA/AppData/nextcloud/`
         - User files: `/DATA/Documents/`, `/DATA/Media/`, `/DATA/Gallery/`
       ko_kr: |
-        **초기 설정 필요**
+        **설치 단계**
         
-        1. 설치 후 웹 인터페이스 접속
-        2. 설정 마법사를 수동으로 완료
-        3. 데이터베이스 연결은 자동 구성됨
-        4. **중요**: 첫 설정 후 앱을 한 번 재시작하여 연결 문제 해결
+        1. 모든 컨테이너 시작 대기 (DB, Redis, Nextcloud)
+        2. 설치 후 웹 인터페이스 접속
+        3. 설정 마법사를 수동으로 완료
+        4. **중요**: 첫 설정 후 문제 발생 시 앱 재시작
         
         **데이터베이스 정보 (자동 입력):**
         - 호스트: `db`
@@ -158,10 +161,10 @@ x-casaos:
         - 사용자: `nextcloud`
         - 비밀번호: 자동 생성
         
-        **알려진 문제:**
-        - 첫 설정 시 "Bad Gateway" 표시 가능 - 앱 재시작 필요
-        - 로그인이 처음에 느릴 수 있음 - 재시작 후 개선됨
-        - 일반 로그인 실패 시 "기기로 로그인" 사용
+        **문제 해결:**
+        - 앱이 활성화되지 않으면: 컨테이너 로그 확인
+        - Bad Gateway 발생 시: 2-3분 대기 또는 앱 재시작
+        - 로그인 느림: "기기로 로그인" 옵션 사용
         
         **데이터 저장소:**
         - 앱 데이터: `/DATA/AppData/nextcloud/`
