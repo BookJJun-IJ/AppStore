@@ -1,53 +1,3 @@
-collabora:
-    image: collabora/code:24.04.9.1.1
-    depends_on:
-      - nextcloud
-    deploy:
-      resources:
-        limits:
-          memory: 1024M
-          cpus: '1.0'
-    expose:
-      - 9980
-    environment:
-      - TZ=$TZ
-      - domain=$domain
-      - DONT_GEN_SSL_CERT=true
-      - extra_params=--o:ssl.enable=false --o:ssl.termination=true --o:welcome.enable=false --o:user_interface.mode=notebookbar
-      - username=admin
-      - password=$default_pwd
-    volumes:
-      - /DATA/AppData/nextcloud/collabora:/tmp
-    restart: unless-stopped
-    networks:
-      - nextcloud-network
-
-coturn:
-  image: coturn/coturn:4.6.2
-  deploy:
-    resources:
-      limits:
-        memory: 256M
-        cpus: '0.5'
-  ports:
-    - "3478:3478/udp"
-    - "3478:3478/tcp"
-    - "49152-65535:49152-65535/udp"
-  environment:
-    - TZ=$TZ
-  command: 
-    - turnserver
-    - --listening-port=3478
-    - --fingerprint
-    - --lt-cred-mech
-    - --user=nextcloud:$default_pwd
-    - --realm=nextcloud
-    - --log-file=stdout
-    - --simple-log
-  restart: unless-stopped
-  networks:
-    - nextcloud-network
-
 name: nextcloud
 
 services:
@@ -78,10 +28,6 @@ services:
       - TRUSTED_PROXIES=172.16.0.0/12,10.0.0.0/8,192.168.0.0/16
       - REDIS_HOST=redis
       - REDIS_HOST_PORT=6379
-      - PHP_MEMORY_LIMIT=512M
-      - PHP_UPLOAD_LIMIT=1024M
-      - APACHE_BODY_LIMIT=1073741824
-      - NEXTCLOUD_INIT_HTACCESS=true
     volumes:
       - /DATA/AppData/nextcloud/html:/var/www/html
       - /DATA/AppData/nextcloud/apps:/var/www/html/custom_apps
@@ -129,6 +75,56 @@ services:
     networks:
       - nextcloud-network
 
+  collabora:
+    image: collabora/code:24.04.9.1.1
+    depends_on:
+      - nextcloud
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+          cpus: '1.0'
+    expose:
+      - 9980
+    environment:
+      - TZ=$TZ
+      - domain=$domain
+      - DONT_GEN_SSL_CERT=true
+      - extra_params=--o:ssl.enable=false --o:ssl.termination=true --o:welcome.enable=false
+      - username=admin
+      - password=$default_pwd
+    volumes:
+      - /DATA/AppData/nextcloud/collabora:/tmp
+    restart: unless-stopped
+    networks:
+      - nextcloud-network
+
+  coturn:
+    image: coturn/coturn:4.6.2
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+    ports:
+      - "3478:3478/udp"
+      - "3478:3478/tcp"
+      - "49152-65535:49152-65535/udp"
+    environment:
+      - TZ=$TZ
+    command: 
+      - turnserver
+      - --listening-port=3478
+      - --fingerprint
+      - --lt-cred-mech
+      - --user=nextcloud:$default_pwd
+      - --realm=nextcloud
+      - --log-file=stdout
+      - --simple-log
+    restart: unless-stopped
+    networks:
+      - nextcloud-network
+
 networks:
   nextcloud-network:
     driver: bridge
@@ -160,77 +156,53 @@ x-casaos:
   tips:
     before_install:
       en_us: |
-        **Installation Steps**
+        **Microsoft Teams Alternative Setup**
         
-        1. Access the web interface after installation
-        2. Complete the setup wizard (create admin account)
-        3. **IMPORTANT**: After setup completion, you will see infinite loading
-        4. **SOLUTION**: Stop and restart the app to access dashboard
-        5. Database connection will be auto-configured
+        1. Access web interface after installation
+        2. Complete setup wizard (create admin account)
+        3. **IMPORTANT**: After setup, infinite loading will occur - restart the app
+        4. Language auto-detected from your location/browser
         
-        **Microsoft Teams Alternative Features:**
+        **Features Included:**
         - **Nextcloud Talk**: Video calls, chat, screen sharing
         - **Collabora Office**: Real-time document editing (Word/Excel/PowerPoint)
-        - **Calendar & Contacts**: Team scheduling
-        - **Deck**: Project management (Kanban boards)
-        - **TURN Server**: For reliable video calls behind firewalls
+        - **TURN Server**: Reliable video calls behind firewalls
+        - **File Sharing**: Team collaboration and version control
         
-        **Post-Setup Configuration:**
-        1. Language will be auto-detected based on your location
-        2. Enable Talk app in Apps menu
-        3. Configure Collabora Office integration
-        4. Set up TURN server for video calls
-        5. Create team channels and invite users
+        **Database (auto-configured):**
+        - Host: `db` | Database: `nextcloud` | User: `nextcloud`
         
-        **Database Info (auto-filled):**
-        - Host: `db`
-        - Database: `nextcloud`
-        - User: `nextcloud`
-        - Password: Auto-generated
-        
-        **Known Behavior:**
-        - Setup completion → Infinite loading (normal)
-        - Restart app → Dashboard works perfectly
-        - This is a one-time setup issue
+        **Post-Setup (after restart):**
+        1. Enable Talk app in Apps menu
+        2. Configure Collabora Office server
+        3. Set up TURN server for video calls
+        4. Create team channels and invite users
         
         **Data Storage:**
-        - App data: `/DATA/AppData/nextcloud/`
-        - User files: `/DATA/Documents/`, `/DATA/Media/`, `/DATA/Gallery/`
+        `/DATA/AppData/nextcloud/` | `/DATA/Documents/` | `/DATA/Media/` | `/DATA/Gallery/`
       ko_kr: |
-        **설치 단계**
+        **Microsoft Teams 대안 설정**
         
         1. 설치 후 웹 인터페이스 접속
         2. 설정 마법사 완료 (관리자 계정 생성)
-        3. **중요**: 설정 완료 후 무한 로딩 화면이 나타남
-        4. **해결법**: 앱을 정지하고 재시작하면 대시보드 접근 가능
-        5. 데이터베이스 연결은 자동 구성됨
+        3. **중요**: 설정 후 무한 로딩 발생 - 앱 재시작 필요
+        4. 사용자 위치/브라우저에서 언어 자동 감지
         
-        **Microsoft Teams 대안 기능:**
+        **포함된 기능:**
         - **Nextcloud Talk**: 화상통화, 채팅, 화면 공유
         - **Collabora Office**: 실시간 문서 편집 (워드/엑셀/파워포인트)
-        - **캘린더 & 연락처**: 팀 일정 관리
-        - **Deck**: 프로젝트 관리 (칸반 보드)
         - **TURN 서버**: 방화벽 뒤에서도 안정적인 화상통화
+        - **파일 공유**: 팀 협업 및 버전 관리
         
-        **설치 후 설정:**
-        1. 사용자 위치에 따라 언어가 자동 감지됩니다
-        2. 앱 메뉴에서 Talk 앱 활성화
-        3. Collabora Office 통합 설정
-        4. 화상통화용 TURN 서버 설정
-        5. 팀 채널 생성 및 사용자 초대
+        **데이터베이스 (자동 구성):**
+        - 호스트: `db` | 데이터베이스: `nextcloud` | 사용자: `nextcloud`
         
-        **데이터베이스 정보 (자동 입력):**
-        - 호스트: `db`
-        - 데이터베이스: `nextcloud`
-        - 사용자: `nextcloud`
-        - 비밀번호: 자동 생성
-        
-        **알려진 동작:**
-        - 설정 완료 → 무한 로딩 (정상)
-        - 앱 재시작 → 대시보드 정상 작동
-        - 이는 일회성 설정 문제임
+        **설치 후 설정 (재시작 후):**
+        1. 앱 메뉴에서 Talk 앱 활성화
+        2. Collabora Office 서버 설정
+        3. 화상통화용 TURN 서버 설정
+        4. 팀 채널 생성 및 사용자 초대
         
         **데이터 저장소:**
-        - 앱 데이터: `/DATA/AppData/nextcloud/`
-        - 사용자 파일: `/DATA/Documents/`, `/DATA/Media/`, `/DATA/Gallery/`
+        `/DATA/AppData/nextcloud/` | `/DATA/Documents/` | `/DATA/Media/` | `/DATA/Gallery/`
   index: /
