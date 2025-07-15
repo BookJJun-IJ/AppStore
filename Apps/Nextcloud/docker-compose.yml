@@ -4,32 +4,30 @@ services:
   nextcloud:
     image: nextcloud:30.0.6
     container_name: nextcloud
-    restart: unless-stopped
+    user: $PUID:$PGID
     depends_on:
       - db
     deploy:
       resources:
         limits:
           memory: 1024M
-          cpus: "1.0"
+          cpus: '1.0'
     expose:
       - 80
     environment:
-      PUID: $PUID
-      PGID: $PGID
-      TZ: $TZ
-      MYSQL_HOST: db
-      MYSQL_DATABASE: nextcloud
-      MYSQL_USER: nextcloud
-      MYSQL_PASSWORD: $default_pwd
-      NEXTCLOUD_ADMIN_USER: admin
-      NEXTCLOUD_ADMIN_PASSWORD: $default_pwd
-      NEXTCLOUD_TRUSTED_DOMAINS: localhost,127.0.0.1,$domain,nextcloud-$HOSTNAME.nsl.sh
-      OVERWRITEPROTOCOL: https
-      OVERWRITEHOST: $domain
-      OVERWRITECONDADDR: ^172\..*$
-      TRUSTED_PROXIES: 172.16.0.0/12,10.0.0.0/8,192.168.0.0/16
-      APACHE_DISABLE_REWRITE_IP: 1
+      - PUID=$PUID
+      - PGID=$PGID
+      - TZ=$TZ
+      - MYSQL_HOST=db
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
+      - MYSQL_PASSWORD=$default_pwd
+      - NEXTCLOUD_ADMIN_USER=admin
+      - NEXTCLOUD_ADMIN_PASSWORD=$default_pwd
+      - NEXTCLOUD_TRUSTED_DOMAINS=localhost,$domain
+      - OVERWRITEPROTOCOL=https
+      - OVERWRITEHOST=$domain
+      - TRUSTED_PROXIES=172.16.0.0/12,10.0.0.0/8,192.168.0.0/16
     volumes:
       - /DATA/AppData/$AppID/html:/var/www/html
       - /DATA/AppData/$AppID/apps:/var/www/html/custom_apps
@@ -38,6 +36,7 @@ services:
       - /DATA/Documents:/var/www/html/data/Documents
       - /DATA/Media:/var/www/html/data/Media
       - /DATA/Gallery:/var/www/html/data/Gallery
+    restart: unless-stopped
     networks:
       - nextcloud-network
     cpu_shares: 100
@@ -45,21 +44,21 @@ services:
   db:
     image: mariadb:11.2
     container_name: nextcloud_db
-    restart: unless-stopped
     deploy:
       resources:
         limits:
           memory: 512M
-          cpus: "0.5"
+          cpus: '0.5'
     environment:
-      TZ: $TZ
-      MYSQL_ROOT_PASSWORD: $default_pwd
-      MYSQL_DATABASE: nextcloud
-      MYSQL_USER: nextcloud
-      MYSQL_PASSWORD: $default_pwd
-      MARIADB_AUTO_UPGRADE: 1
+      - TZ=$TZ
+      - MYSQL_ROOT_PASSWORD=$default_pwd
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
+      - MYSQL_PASSWORD=$default_pwd
+      - MARIADB_AUTO_UPGRADE=1
     volumes:
       - /DATA/AppData/$AppID/db:/var/lib/mysql
+    restart: unless-stopped
     networks:
       - nextcloud-network
     cpu_shares: 50
@@ -76,11 +75,11 @@ x-casaos:
   author: Yundera Team
   developer: Nextcloud GmbH
   description:
-    en_us: Complete Microsoft Teams alternative with built-in Nextcloud Office, Talk video conferencing, Calendar, Contacts, and collaborative file sharing. Follow the simple setup guide to enable all essential productivity apps in 30 seconds.
-    ko_kr: 내장된 Nextcloud Office, Talk 화상회의, 캘린더, 연락처, 협업 파일 공유를 포함한 완전한 Microsoft Teams 대안. 간단한 설정 가이드를 따라 30초 만에 모든 필수 생산성 앱을 활성화하세요.
-    zh_cn: 完整的Microsoft Teams替代方案，内置Nextcloud Office、Talk视频会议、日历、联系人和协作文件共享。按照简单的设置指南，在30秒内启用所有基本生产力应用程序。
-    fr_fr: Alternative complete a Microsoft Teams avec Nextcloud Office integre, visioconference Talk, calendrier, contacts et partage de fichiers collaboratif. Suivez le guide de configuration simple pour activer toutes les applications de productivite essentielles en 30 secondes.
-    es_es: Alternativa completa a Microsoft Teams con Nextcloud Office integrado, videoconferencias Talk, calendario, contactos y comparticion colaborativa de archivos. Siga la guia de configuracion simple para habilitar todas las aplicaciones de productividad esenciales en 30 segundos.
+    en_us: Complete Microsoft Teams alternative with Nextcloud Office, Talk video conferencing, Calendar, Contacts, and collaborative file sharing. Follow the simple 30-second setup guide to enable all essential productivity apps for immediate collaboration.
+    ko_kr: Nextcloud Office, Talk 화상회의, 캘린더, 연락처, 협업 파일 공유를 포함한 완전한 Microsoft Teams 대안. 간단한 30초 설정 가이드를 따라 즉시 협업할 수 있는 모든 필수 생산성 앱을 활성화하세요.
+    zh_cn: 完整的Microsoft Teams替代方案，包含Nextcloud Office、Talk视频会议、日历、联系人和协作文件共享。按照简单的30秒设置指南启用所有基本生产力应用程序，立即开始协作。
+    fr_fr: Alternative complete a Microsoft Teams avec Nextcloud Office, visioconference Talk, calendrier, contacts et partage de fichiers collaboratif. Suivez le guide de configuration simple de 30 secondes pour activer toutes les applications de productivite essentielles pour une collaboration immediate.
+    es_es: Alternativa completa a Microsoft Teams con Nextcloud Office, videoconferencias Talk, calendario, contactos y comparticion colaborativa de archivos. Siga la guia de configuracion simple de 30 segundos para habilitar todas las aplicaciones de productividad esenciales para colaboracion inmediata.
   title:
     en_us: Nextcloud Teams
     ko_kr: Nextcloud Teams
@@ -111,7 +110,7 @@ x-casaos:
         
         **1. After Installation:**
         - Login immediately with admin credentials above
-        - Complete the setup if prompted
+        - Complete the setup wizard if prompted
         
         **2. Enable Essential Apps (30 seconds):**
         - Click your profile icon (top-right) → "Apps"
@@ -151,7 +150,7 @@ x-casaos:
         
         **1. 설치 후:**
         - 위 관리자 자격증명으로 즉시 로그인
-        - 프롬프트가 나타나면 설정 완료
+        - 프롬프트가 나타나면 설정 마법사 완료
         
         **2. 필수 앱 활성화 (30초):**
         - 프로필 아이콘 클릭 (우측 상단) → "앱"
