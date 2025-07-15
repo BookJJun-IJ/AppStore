@@ -4,7 +4,6 @@ services:
   nextcloud:
     image: nextcloud:30.0.6
     container_name: nextcloud
-    user: $PUID:$PGID
     restart: unless-stopped
     depends_on:
       - db
@@ -46,7 +45,6 @@ services:
   db:
     image: mariadb:11.2
     container_name: nextcloud_db
-    user: $PUID:$PGID
     restart: unless-stopped
     deploy:
       resources:
@@ -54,8 +52,6 @@ services:
           memory: 512M
           cpus: "0.5"
     environment:
-      PUID: $PUID
-      PGID: $PGID
       TZ: $TZ
       MYSQL_ROOT_PASSWORD: $default_pwd
       MYSQL_DATABASE: nextcloud
