@@ -5,13 +5,14 @@ services:
     image: nextcloud:30.0.6
     container_name: nextcloud
     user: $PUID:$PGID
+    restart: unless-stopped
     depends_on:
       - db
     deploy:
       resources:
         limits:
           memory: 1024M
-          cpus: '1.0'
+          cpus: "1.0"
     expose:
       - 80
     environment:
@@ -28,8 +29,6 @@ services:
       OVERWRITEPROTOCOL: https
       OVERWRITEHOST: $domain
       TRUSTED_PROXIES: 172.16.0.0/12,10.0.0.0/8,192.168.0.0/16
-      # 자동 앱 설치를 위한 환경변수
-      NEXTCLOUD_INIT_HTACCESS: true
     volumes:
       - /DATA/AppData/$AppID/html:/var/www/html
       - /DATA/AppData/$AppID/apps:/var/www/html/custom_apps
@@ -38,8 +37,6 @@ services:
       - /DATA/Documents:/var/www/html/data/Documents
       - /DATA/Media:/var/www/html/data/Media
       - /DATA/Gallery:/var/www/html/data/Gallery
-      - /DATA/AppData/$AppID/scripts:/scripts:ro
-    restart: unless-stopped
     networks:
       - nextcloud-network
     cpu_shares: 100
@@ -48,11 +45,12 @@ services:
     image: mariadb:11.2
     container_name: nextcloud_db
     user: $PUID:$PGID
+    restart: unless-stopped
     deploy:
       resources:
         limits:
           memory: 512M
-          cpus: '0.5'
+          cpus: "0.5"
     environment:
       PUID: $PUID
       PGID: $PGID
@@ -64,79 +62,9 @@ services:
       MARIADB_AUTO_UPGRADE: 1
     volumes:
       - /DATA/AppData/$AppID/db:/var/lib/mysql
-    restart: unless-stopped
     networks:
       - nextcloud-network
     cpu_shares: 50
-
-  app-installer:
-    image: alpine:3.19
-    container_name: nextcloud-app-installer
-    user: $PUID:$PGID
-    environment:
-      PUID: $PUID
-      PGID: $PGID
-    depends_on:
-      - nextcloud
-    volumes:
-      - /DATA/AppData/$AppID/scripts:/scripts
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    command: |
-      sh -c '
-      echo "앱 설치 서비스 시작..."
-      apk add --no-cache docker-cli curl
-      
-      # Nextcloud가 완전히 준비될 때까지 대기
-      echo "Nextcloud 준비 상태 확인 중..."
-      for i in $$(seq 1 60); do
-        if docker exec nextcloud curl -f http://localhost/status.php 2>/dev/null | grep -q "installed"; then
-          echo "Nextcloud가 준비되었습니다!"
-          break
-        fi
-        echo "대기 중... ($$i/60)"
-        sleep 30
-      done
-      
-      # 관리자 계정 생성 확인
-      echo "관리자 계정 확인 중..."
-      sleep 30
-      
-      # 필수 앱들 설치 및 활성화
-      echo "필수 앱 설치 시작..."
-      
-      # 기본 제공 앱들 활성화
-      docker exec nextcloud php /var/www/html/occ app:enable calendar || echo "Calendar 활성화 실패"
-      docker exec nextcloud php /var/www/html/occ app:enable contacts || echo "Contacts 활성화 실패"
-      docker exec nextcloud php /var/www/html/occ app:enable mail || echo "Mail 활성화 실패"
-      docker exec nextcloud php /var/www/html/occ app:enable spreed || echo "Talk 활성화 실패"
-      docker exec nextcloud php /var/www/html/occ app:enable deck || echo "Deck 활성화 실패"
-      docker exec nextcloud php /var/www/html/occ app:enable tasks || echo "Tasks 활성화 실패"
-      
-      # 외부 앱 설치 (Nextcloud Office)
-      docker exec nextcloud php /var/www/html/occ app:install richdocuments || echo "Nextcloud Office 설치 실패"
-      docker exec nextcloud php /var/www/html/occ app:enable richdocuments || echo "Nextcloud Office 활성화 실패"
-      
-      # 권장 앱들 추가 설치
-      docker exec nextcloud php /var/www/html/occ app:install notes || echo "Notes 설치 실패"
-      docker exec nextcloud php /var/www/html/occ app:enable notes || echo "Notes 활성화 실패"
-      
-      docker exec nextcloud php /var/www/html/occ app:install files_pdfviewer || echo "PDF Viewer 설치 실패"
-      docker exec nextcloud php /var/www/html/occ app:enable files_pdfviewer || echo "PDF Viewer 활성화 실패"
-      
-      docker exec nextcloud php /var/www/html/occ app:install previewgenerator || echo "Preview Generator 설치 실패"
-      docker exec nextcloud php /var/www/html/occ app:enable previewgenerator || echo "Preview Generator 활성화 실패"
-      
-      echo "앱 설치 완료!"
-      
-      # 로그 저장
-      echo "$$(date): 모든 앱 설치 및 활성화 완료" > /scripts/install-complete.log
-      
-      # 컨테이너 종료 (일회성 작업)
-      exit 0
-      '
-    restart: "no"
-    networks:
-      - nextcloud-network
 
 networks:
   nextcloud-network:
@@ -150,34 +78,42 @@ x-casaos:
   author: Yundera Team
   developer: Nextcloud GmbH
   description:
-    en_us: Complete Microsoft Teams alternative with built-in Nextcloud Office, Talk video conferencing, Calendar, Contacts, and collaborative file sharing. All essential productivity apps are automatically installed and enabled.
-    ko_kr: 내장된 Nextcloud Office, Talk 화상회의, 캘린더, 연락처, 협업 파일 공유를 포함한 완전한 Microsoft Teams 대안. 모든 필수 생산성 앱이 자동으로 설치 및 활성화됩니다.
-    zh_cn: 完整的Microsoft Teams替代方案，内置Nextcloud Office、Talk视频会议、日历、联系人和协作文件共享。所有基本生产力应用程序都会自动安装和启用。
-    fr_fr: Alternative complete a Microsoft Teams avec Nextcloud Office integre, visioconference Talk, calendrier, contacts et partage de fichiers collaboratif. Toutes les applications de productivite essentielles sont automatiquement installees et activees.
-    es_es: Alternativa completa a Microsoft Teams con Nextcloud Office integrado, videoconferencias Talk, calendario, contactos y comparticion colaborativa de archivos. Todas las aplicaciones de productividad esenciales se instalan y habilitan automaticamente.
+    en_us: Nextcloud is a suite of client-server software for creating and using file hosting services. Access and sync your files, contacts, calendars and communicate and collaborate across your devices.
+    ko_kr: Nextcloud는 파일 호스팅 서비스를 만들고 사용하기 위한 클라이언트-서버 소프트웨어 제품군입니다. 모든 기기에서 파일, 연락처, 캘린더에 액세스하고 동기화하며 소통하고 협업하세요.
   title:
-    en_us: Nextcloud Teams
-    ko_kr: Nextcloud Teams
-    zh_cn: Nextcloud Teams
-    fr_fr: Nextcloud Teams
-    es_es: Nextcloud Teams
+    en_us: Nextcloud
+    ko_kr: Nextcloud
   tagline:
-    en_us: Complete collaboration suite with auto-installed apps
-    ko_kr: 자동 설치된 앱으로 완성된 협업 제품군
-    zh_cn: 自动安装应用程序的完整协作套件
-    fr_fr: Suite de collaboration complete avec applications auto-installees
-    es_es: Suite de colaboracion completa con aplicaciones autoinstaladas
+    en_us: Self-hosted file sync and share platform
+    ko_kr: 자체 호스팅 파일 동기화 및 공유 플랫폼
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/icon.png
   screenshot_link:
     - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/screenshot-3.png
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/thumbnail.png
+  pre-install-cmd: |
+    mkdir -p /DATA/AppData/nextcloud/scripts
+    cat > /DATA/AppData/nextcloud/scripts/install-apps.sh << 'EOF'
+    #!/bin/bash
+    echo "앱 설치 스크립트 시작..."
+    sleep 120
+    
+    docker exec nextcloud php /var/www/html/occ app:enable calendar || true
+    docker exec nextcloud php /var/www/html/occ app:enable contacts || true
+    docker exec nextcloud php /var/www/html/occ app:enable mail || true
+    docker exec nextcloud php /var/www/html/occ app:enable spreed || true
+    docker exec nextcloud php /var/www/html/occ app:enable deck || true
+    docker exec nextcloud php /var/www/html/occ app:enable tasks || true
+    docker exec nextcloud php /var/www/html/occ app:install richdocuments || true
+    docker exec nextcloud php /var/www/html/occ app:enable richdocuments || true
+    
+    echo "앱 설치 완료" > /DATA/AppData/nextcloud/scripts/install-complete.log
+    EOF
+    
+    chmod +x /DATA/AppData/nextcloud/scripts/install-apps.sh
+    nohup /DATA/AppData/nextcloud/scripts/install-apps.sh > /DATA/AppData/nextcloud/scripts/install.log 2>&1 &
   tips:
     before_install:
       en_us: |
-        **Complete Teams Alternative - Auto-Installed Apps**
-        
         **Default Account**
         | Username | Password       |
         | -------- | -------------- |
@@ -185,34 +121,16 @@ x-casaos:
         
         **Setup Steps:**
         1. Access web interface after installation
-        2. Complete setup wizard will be auto-filled
-        3. Wait for automatic app installation (2-3 minutes)
-        4. All essential apps ready to use!
+        2. Login with admin credentials above
+        3. Wait 2-3 minutes for automatic app installation
+        4. Essential collaboration apps will be enabled automatically
         
-        **Auto-Installed Apps:**
-        ✅ Calendar: Team scheduling and meetings
-        ✅ Contacts: Contact management  
-        ✅ Mail: Email integration
-        ✅ Talk: Video calls and chat
-        ✅ Deck: Project management (Kanban boards)
-        ✅ Tasks: Task and todo management
-        ✅ Nextcloud Office: Document editing
-        ✅ Notes: Note-taking app
-        ✅ PDF Viewer: View PDFs directly
-        ✅ Preview Generator: File previews
-        
-        **Features Ready Immediately:**
-        - Real-time document collaboration
-        - Video conferencing and chat  
-        - File sharing with version control
-        - Team calendars and scheduling
-        - Project and task management
-        - Email integration
-        
-        **No manual setup required!**
+        **Auto-Enabled Apps:**
+        - Calendar, Contacts, Mail
+        - Talk (Video conferencing)
+        - Deck (Project boards)
+        - Tasks, Nextcloud Office
       ko_kr: |
-        **완전한 Teams 대안 - 자동 설치된 앱**
-        
         **기본 계정**
         | 사용자명 | 비밀번호       |
         | -------- | -------------- |
@@ -220,29 +138,13 @@ x-casaos:
         
         **설정 단계:**
         1. 설치 후 웹 인터페이스 접속
-        2. 설정 마법사가 자동으로 채워짐
-        3. 자동 앱 설치 대기 (2-3분)
-        4. 모든 필수 앱 사용 준비 완료!
+        2. 위 관리자 자격증명으로 로그인
+        3. 자동 앱 설치를 위해 2-3분 대기
+        4. 필수 협업 앱이 자동으로 활성화됨
         
-        **자동 설치된 앱들:**
-        ✅ Calendar: 팀 일정 관리 및 회의
-        ✅ Contacts: 연락처 관리
-        ✅ Mail: 이메일 통합
-        ✅ Talk: 화상통화 및 채팅
-        ✅ Deck: 프로젝트 관리 (칸반 보드)
-        ✅ Tasks: 작업 및 할 일 관리
-        ✅ Nextcloud Office: 문서 편집
-        ✅ Notes: 노트 앱
-        ✅ PDF Viewer: PDF 직접 보기
-        ✅ Preview Generator: 파일 미리보기
-        
-        **즉시 사용 가능한 기능:**
-        - 실시간 문서 협업
-        - 화상회의 및 채팅
-        - 버전 관리가 포함된 파일 공유
-        - 팀 캘린더 및 일정 관리
-        - 프로젝트 및 작업 관리
-        - 이메일 통합
-        
-        **수동 설정 불필요!**
+        **자동 활성화 앱:**
+        - Calendar, Contacts, Mail
+        - Talk (화상회의)
+        - Deck (프로젝트 보드)
+        - Tasks, Nextcloud Office
   index: /
