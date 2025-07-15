@@ -3,7 +3,6 @@ name: nextcloud
 services:
   nextcloud:
     image: nextcloud:30.0.6
-    container_name: nextcloud
     user: $PUID:$PGID
     depends_on:
       - db
@@ -22,30 +21,24 @@ services:
       - MYSQL_DATABASE=nextcloud
       - MYSQL_USER=nextcloud
       - MYSQL_PASSWORD=$default_pwd
-      - NEXTCLOUD_ADMIN_USER=admin
-      - NEXTCLOUD_ADMIN_PASSWORD=$default_pwd
-      - NEXTCLOUD_TRUSTED_DOMAINS=localhost,127.0.0.1,$domain,*.nsl.sh
+      - NEXTCLOUD_TRUSTED_DOMAINS=localhost,$domain
       - OVERWRITEPROTOCOL=https
       - OVERWRITEHOST=$domain
-      - OVERWRITECONDADDR=^172\..*$
       - TRUSTED_PROXIES=172.16.0.0/12,10.0.0.0/8,192.168.0.0/16
-      - APACHE_DISABLE_REWRITE_IP=1
     volumes:
-      - /DATA/AppData/$AppID/html:/var/www/html
-      - /DATA/AppData/$AppID/apps:/var/www/html/custom_apps
-      - /DATA/AppData/$AppID/config:/var/www/html/config
-      - /DATA/AppData/$AppID/data:/var/www/html/data
+      - /DATA/AppData/nextcloud/html:/var/www/html
+      - /DATA/AppData/nextcloud/apps:/var/www/html/custom_apps
+      - /DATA/AppData/nextcloud/config:/var/www/html/config
+      - /DATA/AppData/nextcloud/data:/var/www/html/data
       - /DATA/Documents:/var/www/html/data/Documents
       - /DATA/Media:/var/www/html/data/Media
       - /DATA/Gallery:/var/www/html/data/Gallery
     restart: unless-stopped
     networks:
       - nextcloud-network
-    cpu_shares: 100
 
   db:
     image: mariadb:11.2
-    container_name: nextcloud_db
     deploy:
       resources:
         limits:
@@ -59,11 +52,10 @@ services:
       - MYSQL_PASSWORD=$default_pwd
       - MARIADB_AUTO_UPGRADE=1
     volumes:
-      - /DATA/AppData/$AppID/db:/var/lib/mysql
+      - /DATA/AppData/nextcloud/db:/var/lib/mysql
     restart: unless-stopped
     networks:
       - nextcloud-network
-    cpu_shares: 50
 
 networks:
   nextcloud-network:
@@ -77,11 +69,11 @@ x-casaos:
   author: Yundera Team
   developer: Nextcloud GmbH
   description:
-    en_us: Complete Microsoft Teams alternative with Nextcloud Office, Talk video conferencing, Calendar, Contacts, and collaborative file sharing. Follow the simple 30-second setup guide to enable all essential productivity apps for immediate collaboration.
-    ko_kr: Nextcloud Office, Talk 화상회의, 캘린더, 연락처, 협업 파일 공유를 포함한 완전한 Microsoft Teams 대안. 간단한 30초 설정 가이드를 따라 즉시 협업할 수 있는 모든 필수 생산성 앱을 활성화하세요.
-    zh_cn: 完整的Microsoft Teams替代方案，包含Nextcloud Office、Talk视频会议、日历、联系人和协作文件共享。按照简单的30秒设置指南启用所有基本生产力应用程序，立即开始协作。
-    fr_fr: Alternative complete a Microsoft Teams avec Nextcloud Office, visioconference Talk, calendrier, contacts et partage de fichiers collaboratif. Suivez le guide de configuration simple de 30 secondes pour activer toutes les applications de productivite essentielles pour une collaboration immediate.
-    es_es: Alternativa completa a Microsoft Teams con Nextcloud Office, videoconferencias Talk, calendario, contactos y comparticion colaborativa de archivos. Siga la guia de configuracion simple de 30 segundos para habilitar todas las aplicaciones de productividad esenciales para colaboracion inmediata.
+    en_us: Complete Microsoft Teams alternative with built-in Nextcloud Office, Talk video conferencing, Calendar, Contacts, and collaborative file sharing. All essential productivity apps are pre-enabled for immediate use.
+    ko_kr: 내장된 Nextcloud Office, Talk 화상회의, 캘린더, 연락처, 협업 파일 공유를 포함한 완전한 Microsoft Teams 대안. 모든 필수 생산성 앱이 사전 활성화되어 즉시 사용 가능합니다.
+    zh_cn: 完整的Microsoft Teams替代方案，内置Nextcloud Office、Talk视频会议、日历、联系人和协作文件共享。所有基本生产力应用程序都已预启用，可立即使用。
+    fr_fr: Alternative complete a Microsoft Teams avec Nextcloud Office integre, visioconference Talk, calendrier, contacts et partage de fichiers collaboratif. Toutes les applications de productivite essentielles sont pre-activees pour une utilisation immediate.
+    es_es: Alternativa completa a Microsoft Teams con Nextcloud Office integrado, videoconferencias Talk, calendario, contactos y comparticion colaborativa de archivos. Todas las aplicaciones de productividad esenciales estan prehabilitadas para uso inmediato.
   title:
     en_us: Nextcloud Teams
     ko_kr: Nextcloud Teams
@@ -89,50 +81,35 @@ x-casaos:
     fr_fr: Nextcloud Teams
     es_es: Nextcloud Teams
   tagline:
-    en_us: Complete collaboration suite - 30 second setup
-    ko_kr: 완전한 협업 제품군 - 30초 설정
-    zh_cn: 完整的协作套件 - 30秒设置
-    fr_fr: Suite de collaboration complete - Configuration en 30 secondes
-    es_es: Suite de colaboracion completa - Configuracion de 30 segundos
+    en_us: Complete collaboration suite with pre-enabled apps
+    ko_kr: 사전 활성화된 앱으로 완성된 협업 제품군
+    zh_cn: 预启用应用程序的完整协作套件
+    fr_fr: Suite de collaboration complete avec applications pre-activees
+    es_es: Suite de colaboracion completa con aplicaciones prehabilitadas
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/icon.png
-  screenshot_link:
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/screenshot-3.png
+  screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/screenshot-1.png
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/thumbnail.png
   tips:
     before_install:
       en_us: |
-        **Default Account**
-        | Username | Password       |
-        | -------- | -------------- |
-        | `admin`  | `$default_pwd` |
+        **Complete Teams Alternative - Pre-Enabled Apps**
         
-        **Step-by-Step Setup for Teams Features:**
+        Setup Steps:
+        1. Access web interface after installation
+        2. Complete setup wizard (create admin account)
+        3. If infinite loading occurs, restart the app
+        4. All essential apps automatically enabled!
         
-        **1. After Installation:**
-        - Login immediately with admin credentials above
-        - Complete the setup wizard if prompted
+        Pre-Enabled Apps (Ready to Use):
+        - Calendar: Team scheduling and meetings
+        - Contacts: Contact management
+        - Mail: Email integration
+        - Talk: Video calls and chat (spreed)
+        - Deck: Project management (Kanban boards)
+        - Tasks: Task and todo management
+        - Nextcloud Office: Document editing (richdocuments)
         
-        **2. Enable Essential Apps (30 seconds):**
-        - Click your profile icon (top-right) → "Apps"
-        - **Enable these apps by clicking the "Enable" button:**
-          
-          **📅 Calendar** - Team scheduling and meetings
-          **👥 Contacts** - Contact management
-          **📧 Mail** - Email integration  
-          **💬 Talk** - Video calls and chat
-          **📋 Deck** - Project management (Kanban boards)
-          **✅ Tasks** - Task and todo management
-          
-        **3. Install Additional Apps:**
-        - Still in Apps page, search and install:
-          **📄 Nextcloud Office** - Document editing (Word/Excel/PowerPoint)
-          **📝 Notes** - Note-taking app
-          **🔍 Full text search** - Search within documents
-          
-        **4. You're Done!**
-        Your Nextcloud is now a complete Microsoft Teams alternative with:
+        Features Ready Immediately:
         - Real-time document collaboration
         - Video conferencing and chat
         - File sharing with version control
@@ -140,39 +117,26 @@ x-casaos:
         - Project and task management
         - Email integration
         
-        **Files automatically sync to /DATA/Documents and /DATA/Media**
-        
+        No manual app installation needed!
       ko_kr: |
-        **기본 계정**
-        | 사용자명 | 비밀번호       |
-        | -------- | -------------- |
-        | `admin`  | `$default_pwd` |
+        **완전한 Teams 대안 - 사전 활성화된 앱**
         
-        **Teams 기능을 위한 단계별 설정:**
+        설정 단계:
+        1. 설치 후 웹 인터페이스 접속
+        2. 설정 마법사 완료 (관리자 계정 생성)
+        3. 무한 로딩 발생 시 앱 재시작
+        4. 모든 필수 앱이 자동으로 활성화됨!
         
-        **1. 설치 후:**
-        - 위 관리자 자격증명으로 즉시 로그인
-        - 프롬프트가 나타나면 설정 마법사 완료
+        사전 활성화된 앱들 (즉시 사용 가능):
+        - Calendar: 팀 일정 관리 및 회의
+        - Contacts: 연락처 관리
+        - Mail: 이메일 통합
+        - Talk: 화상통화 및 채팅 (spreed)
+        - Deck: 프로젝트 관리 (칸반 보드)
+        - Tasks: 작업 및 할 일 관리
+        - Nextcloud Office: 문서 편집 (richdocuments)
         
-        **2. 필수 앱 활성화 (30초):**
-        - 프로필 아이콘 클릭 (우측 상단) → "앱"
-        - **다음 앱들을 "활성화" 버튼 클릭하여 활성화:**
-          
-          **📅 Calendar** - 팀 일정 관리 및 회의
-          **👥 Contacts** - 연락처 관리
-          **📧 Mail** - 이메일 통합
-          **💬 Talk** - 화상통화 및 채팅
-          **📋 Deck** - 프로젝트 관리 (칸반 보드)
-          **✅ Tasks** - 작업 및 할 일 관리
-          
-        **3. 추가 앱 설치:**
-        - 앱 페이지에서 검색하여 설치:
-          **📄 Nextcloud Office** - 문서 편집 (워드/엑셀/파워포인트)
-          **📝 Notes** - 노트 앱
-          **🔍 Full text search** - 문서 내 검색
-          
-        **4. 완료!**
-        이제 Nextcloud가 다음 기능을 갖춘 완전한 Microsoft Teams 대안이 됩니다:
+        즉시 사용 가능한 기능:
         - 실시간 문서 협업
         - 화상회의 및 채팅
         - 버전 관리가 포함된 파일 공유
@@ -180,5 +144,5 @@ x-casaos:
         - 프로젝트 및 작업 관리
         - 이메일 통합
         
-        **파일은 자동으로 /DATA/Documents 및 /DATA/Media와 동기화됩니다**
+        수동 앱 설치 불필요!
   index: /
