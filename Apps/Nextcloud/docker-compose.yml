@@ -22,8 +22,6 @@ services:
       - MYSQL_DATABASE=nextcloud
       - MYSQL_USER=nextcloud
       - MYSQL_PASSWORD=$default_pwd
-      - NEXTCLOUD_ADMIN_USER=admin
-      - NEXTCLOUD_ADMIN_PASSWORD=$default_pwd
       - NEXTCLOUD_TRUSTED_DOMAINS=localhost,$domain
       - OVERWRITEPROTOCOL=https
       - OVERWRITEHOST=$domain
@@ -101,48 +99,52 @@ x-casaos:
   tips:
     before_install:
       en_us: |
-        **Default Account**
-        | Username | Password       |
-        | -------- | -------------- |
-        | `admin`  | `$default_pwd` |
+        **Quick Setup Guide**
         
-        **Setup Process:**
+        **1. Initial Setup:**
+        - Complete setup wizard (create admin account)
+        - Select MySQL database (pre-configured)
+        - ⚠️ **If infinite loading occurs → Restart the app**
         
-        **1. Wait for Setup (3-5 minutes):**
-        - Initial installation takes time
-        - Admin account created automatically
-        - ⚠️ **Don't access until setup complete**
-        
-        **2. First Access:**
-        - Login with credentials above
-        - Skip any setup wizard (auto-completed)
+        **2. After Restart:**
+        - Access web interface again
+        - **Skip setup wizard** (already completed)
+        - Login with your admin credentials
         
         **3. Add Team Apps (Profile → Apps):**
-        **Enable Built-in:** Calendar, Contacts, Mail
-        **Install from Store:** Talk, Deck, Tasks, Nextcloud Office
+        **Enable Built-in Apps:**
+        ✅ Calendar, Contacts, Mail
+        
+        **Install from App Store:**
+        🔍 Search & install: Talk, Deck, Tasks, Nextcloud Office
+        
+        **4. Done!**
+        Complete Microsoft Teams alternative ready.
         
         **Files sync to:** `/DATA/Documents` & `/DATA/Media`
         
       ko_kr: |
-        **기본 계정**
-        | 사용자명 | 비밀번호       |
-        | -------- | -------------- |
-        | `admin`  | `$default_pwd` |
+        **빠른 설정 가이드**
         
-        **설정 과정:**
+        **1. 초기 설정:**
+        - 설정 마법사 완료 (관리자 계정 생성)
+        - MySQL 데이터베이스 선택 (사전 구성됨)
+        - ⚠️ **무한 로딩 발생 시 → 앱 재시작**
         
-        **1. 설정 대기 (3-5분):**
-        - 초기 설치에 시간 소요
-        - 관리자 계정 자동 생성
-        - ⚠️ **설정 완료까지 접속 금지**
-        
-        **2. 첫 접속:**
-        - 위 자격증명으로 로그인
-        - 설정 마법사 건너뛰기 (자동 완료됨)
+        **2. 재시작 후:**
+        - 웹 인터페이스 다시 접속
+        - **설정 마법사 건너뛰기** (이미 완료됨)
+        - 관리자 자격증명으로 로그인
         
         **3. 팀 앱 추가 (프로필 → 앱):**
-        **내장 앱 활성화:** Calendar, Contacts, Mail
-        **스토어에서 설치:** Talk, Deck, Tasks, Nextcloud Office
+        **내장 앱 활성화:**
+        ✅ Calendar, Contacts, Mail
+        
+        **앱 스토어에서 설치:**
+        🔍 검색 후 설치: Talk, Deck, Tasks, Nextcloud Office
+        
+        **4. 완료!**
+        완전한 Microsoft Teams 대안 준비.
         
         **파일 동기화:** `/DATA/Documents` & `/DATA/Media`
   index: /
