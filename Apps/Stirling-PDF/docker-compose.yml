@@ -4,6 +4,7 @@ services:
   nextcloud:
     image: ghcr.io/nextcloud-releases/all-in-one:latest
     container_name: nextcloud
+    user: "0:0"  # 명시적으로 root 사용자 지정
     restart: unless-stopped
     deploy:
       resources:
