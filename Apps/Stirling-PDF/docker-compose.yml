@@ -25,10 +25,12 @@ services:
       MYSQL_PASSWORD: $default_pwd
       NEXTCLOUD_ADMIN_USER: admin
       NEXTCLOUD_ADMIN_PASSWORD: $default_pwd
-      NEXTCLOUD_TRUSTED_DOMAINS: localhost,$domain
+      NEXTCLOUD_TRUSTED_DOMAINS: localhost,127.0.0.1,$domain,nextcloud-$HOSTNAME.nsl.sh
       OVERWRITEPROTOCOL: https
       OVERWRITEHOST: $domain
+      OVERWRITECONDADDR: ^172\..*$
       TRUSTED_PROXIES: 172.16.0.0/12,10.0.0.0/8,192.168.0.0/16
+      APACHE_DISABLE_REWRITE_IP: 1
     volumes:
       - /DATA/AppData/$AppID/html:/var/www/html
       - /DATA/AppData/$AppID/apps:/var/www/html/custom_apps
@@ -92,11 +94,24 @@ x-casaos:
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/thumbnail.png
   pre-install-cmd: |
     mkdir -p /DATA/AppData/nextcloud/scripts
-    cat > /DATA/AppData/nextcloud/scripts/install-apps.sh << 'EOF'
+    cat > /DATA/AppData/nextcloud/scripts/setup-nextcloud.sh << 'EOF'
     #!/bin/bash
-    echo "앱 설치 스크립트 시작..."
-    sleep 120
+    echo "Nextcloud 설정 시작..."
+    sleep 90
     
+    # trusted_domains 설정
+    echo "trusted_domains 설정 중..."
+    docker exec nextcloud php /var/www/html/occ config:system:set trusted_domains 0 --value=localhost || true
+    docker exec nextcloud php /var/www/html/occ config:system:set trusted_domains 1 --value=127.0.0.1 || true
+    docker exec nextcloud php /var/www/html/occ config:system:set trusted_domains 2 --value=$HOSTNAME.nsl.sh || true
+    docker exec nextcloud php /var/www/html/occ config:system:set trusted_domains 3 --value=nextcloud-$HOSTNAME.nsl.sh || true
+    
+    # 프록시 설정
+    docker exec nextcloud php /var/www/html/occ config:system:set overwriteprotocol --value=https || true
+    docker exec nextcloud php /var/www/html/occ config:system:set overwrite.cli.url --value=https://nextcloud-$HOSTNAME.nsl.sh || true
+    
+    # 앱 설치 및 활성화
+    echo "앱 설치 중..."
     docker exec nextcloud php /var/www/html/occ app:enable calendar || true
     docker exec nextcloud php /var/www/html/occ app:enable contacts || true
     docker exec nextcloud php /var/www/html/occ app:enable mail || true
@@ -106,11 +121,11 @@ x-casaos:
     docker exec nextcloud php /var/www/html/occ app:install richdocuments || true
     docker exec nextcloud php /var/www/html/occ app:enable richdocuments || true
     
-    echo "앱 설치 완료" > /DATA/AppData/nextcloud/scripts/install-complete.log
+    echo "설정 완료" > /DATA/AppData/nextcloud/scripts/setup-complete.log
     EOF
     
-    chmod +x /DATA/AppData/nextcloud/scripts/install-apps.sh
-    nohup /DATA/AppData/nextcloud/scripts/install-apps.sh > /DATA/AppData/nextcloud/scripts/install.log 2>&1 &
+    chmod +x /DATA/AppData/nextcloud/scripts/setup-nextcloud.sh
+    nohup /DATA/AppData/nextcloud/scripts/setup-nextcloud.sh > /DATA/AppData/nextcloud/scripts/setup.log 2>&1 &
   tips:
     before_install:
       en_us: |
