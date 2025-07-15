@@ -1,187 +1,90 @@
-name: nextcloud
+name: stirlingpdf
 
 services:
-  nextcloud:
-    image: nextcloud:30.0.6
-    container_name: nextcloud
-    user: $PUID:$PGID
+  stirlingpdf:
+    image: docker.stirlingpdf.com/stirlingtools/stirling-pdf:0.46.2
+    container_name: stirling-pdf
     restart: unless-stopped
-    depends_on:
-      - db
-    deploy:
-      resources:
-        limits:
-          memory: 1024M
-          cpus: "1.0"
     expose:
-      - 80
-    environment:
-      PUID: $PUID
-      PGID: $PGID
-      TZ: $TZ
-      MYSQL_HOST: db
-      MYSQL_DATABASE: nextcloud
-      MYSQL_USER: nextcloud
-      MYSQL_PASSWORD: $default_pwd
-      NEXTCLOUD_ADMIN_USER: admin
-      NEXTCLOUD_ADMIN_PASSWORD: $default_pwd
-      NEXTCLOUD_TRUSTED_DOMAINS: localhost,127.0.0.1,$domain,nextcloud-$HOSTNAME.nsl.sh
-      OVERWRITEPROTOCOL: https
-      OVERWRITEHOST: $domain
-      OVERWRITECONDADDR: ^172\..*$
-      TRUSTED_PROXIES: 172.16.0.0/12,10.0.0.0/8,192.168.0.0/16
-      APACHE_DISABLE_REWRITE_IP: 1
+      - 8080
     volumes:
-      - /DATA/AppData/$AppID/html:/var/www/html
-      - /DATA/AppData/$AppID/apps:/var/www/html/custom_apps
-      - /DATA/AppData/$AppID/config:/var/www/html/config
-      - /DATA/AppData/$AppID/data:/var/www/html/data
-      - /DATA/Documents:/var/www/html/data/Documents
-      - /DATA/Media:/var/www/html/data/Media
-      - /DATA/Gallery:/var/www/html/data/Gallery
-    networks:
-      - nextcloud-network
-    cpu_shares: 100
-
-  db:
-    image: mariadb:11.2
-    container_name: nextcloud_db
+      - /DATA/AppData/$AppID/tessdata:/usr/share/tessdata
+      - /DATA/AppData/$AppID/configs:/configs
+      - /DATA/AppData/$AppID/logs:/logs
+      - /DATA/Downloads:/downloads
     user: $PUID:$PGID
-    restart: unless-stopped
+    environment:
+      PGID: $PGID                              # Group ID for file permissions
+      PUID: $PUID                              # User ID for file permissions
+      TZ: $TZ                                  # Timezone setting
+      DOCKER_ENABLE_SECURITY: true            # Enable security jar download (required for login)
+      SECURITY_ENABLE_LOGIN: true             # Enable login authentication
+      SECURITY_INITIALLOGIN_USERNAME: admin   # Default admin username
+      SECURITY_INITIALLOGIN_PASSWORD: admin   # Default admin password (change after first login)
+    cpu_shares: 100
     deploy:
       resources:
         limits:
-          memory: 512M
-          cpus: "0.5"
-    environment:
-      PUID: $PUID
-      PGID: $PGID
-      TZ: $TZ
-      MYSQL_ROOT_PASSWORD: $default_pwd
-      MYSQL_DATABASE: nextcloud
-      MYSQL_USER: nextcloud
-      MYSQL_PASSWORD: $default_pwd
-      MARIADB_AUTO_UPGRADE: 1
-    volumes:
-      - /DATA/AppData/$AppID/db:/var/lib/mysql
-    networks:
-      - nextcloud-network
-    cpu_shares: 50
-
-networks:
-  nextcloud-network:
-    driver: bridge
+          memory: 2G
 
 x-casaos:
-  main: nextcloud
-  webui_port: 80
-  category: Utilities
-  architectures: [amd64, arm64]
-  author: Yundera Team
-  developer: Nextcloud GmbH
+  architectures:
+    - amd64
+    - arm64
+  author: CasaOS Team
+  category: Office
+  developer: Stirling Tools
   description:
-    en_us: Complete Microsoft Teams alternative with built-in Nextcloud Office, Talk video conferencing, Calendar, Contacts, and collaborative file sharing. Follow the simple setup guide to enable all essential productivity apps in 30 seconds.
-    ko_kr: 내장된 Nextcloud Office, Talk 화상회의, 캘린더, 연락처, 협업 파일 공유를 포함한 완전한 Microsoft Teams 대안. 간단한 설정 가이드를 따라 30초 만에 모든 필수 생산성 앱을 활성화하세요.
-    zh_cn: 完整的Microsoft Teams替代方案，内置Nextcloud Office、Talk视频会议、日历、联系人和协作文件共享。按照简单的设置指南，在30秒内启用所有基本生产力应用程序。
-    fr_fr: Alternative complete a Microsoft Teams avec Nextcloud Office integre, visioconference Talk, calendrier, contacts et partage de fichiers collaboratif. Suivez le guide de configuration simple pour activer toutes les applications de productivite essentielles en 30 secondes.
-    es_es: Alternativa completa a Microsoft Teams con Nextcloud Office integrado, videoconferencias Talk, calendario, contactos y comparticion colaborativa de archivos. Siga la guia de configuracion simple para habilitar todas las aplicaciones de productividad esenciales en 30 segundos.
-  title:
-    en_us: Nextcloud Teams
-    ko_kr: Nextcloud Teams
-    zh_cn: Nextcloud Teams
-    fr_fr: Nextcloud Teams
-    es_es: Nextcloud Teams
-  tagline:
-    en_us: Complete collaboration suite - 30 second setup
-    ko_kr: 완전한 협업 제품군 - 30초 설정
-    zh_cn: 完整的协作套件 - 30秒设置
-    fr_fr: Suite de collaboration complete - Configuration en 30 secondes
-    es_es: Suite de colaboracion completa - Configuracion de 30 segundos
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/icon.png
+    en_us: Stirling-PDF is a powerful, locally hosted web-based PDF manipulation tool using Docker. It enables you to perform various operations on PDF files, such as splitting, merging, converting, reorganizing, adding images, rotating, compressing, and more.
+    zh_cn: Stirling-PDF 是一个强大的本地托管的基于网页的PDF处理工具。它使您能够对PDF文件执行各种操作，如分割、合并、转换、重新组织、添加图像、旋转、压缩等。
+    ko_kr: Stirling-PDF는 Docker를 사용하는 강력한 로컬 호스팅 웹 기반 PDF 조작 도구입니다. PDF 파일에 대해 분할, 병합, 변환, 재구성, 이미지 추가, 회전, 압축 등 다양한 작업을 수행할 수 있습니다.
+  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Stirling-PDF/icon.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/thumbnail.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Stirling-PDF/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Stirling-PDF/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Stirling-PDF/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Stirling-PDF/thumbnail.png
+  index: /
+  tagline:
+    en_us: Your best free PDF manipulation tool
+    zh_cn: 您最好的免费PDF处理工具
+    ko_kr: 최고의 무료 PDF 조작 도구
+  title:
+    en_us: Stirling-PDF
+    zh_cn: Stirling-PDF
+    ko_kr: Stirling-PDF
+  store_app_id: stirlingpdf
+  main: stirlingpdf
+  is_uncontrolled: false
+  webui_port: 8080
   tips:
     before_install:
       en_us: |
-        **Default Account**
-        | Username | Password       |
-        | -------- | -------------- |
-        | `admin`  | `$default_pwd` |
-        
-        **Step-by-Step Setup for Teams Features:**
-        
-        **1. After Installation:**
-        - Login immediately with admin credentials above
-        - Complete the setup if prompted
-        
-        **2. Enable Essential Apps (30 seconds):**
-        - Click your profile icon (top-right) → "Apps"
-        - **Enable these apps by clicking the "Enable" button:**
-          
-          **📅 Calendar** - Team scheduling and meetings
-          **👥 Contacts** - Contact management
-          **📧 Mail** - Email integration  
-          **💬 Talk** - Video calls and chat
-          **📋 Deck** - Project management (Kanban boards)
-          **✅ Tasks** - Task and todo management
-          
-        **3. Install Additional Apps:**
-        - Still in Apps page, search and install:
-          **📄 Nextcloud Office** - Document editing (Word/Excel/PowerPoint)
-          **📝 Notes** - Note-taking app
-          **🔍 Full text search** - Search within documents
-          
-        **4. You're Done!**
-        Your Nextcloud is now a complete Microsoft Teams alternative with:
-        - Real-time document collaboration
-        - Video conferencing and chat
-        - File sharing with version control
-        - Team calendars and scheduling
-        - Project and task management
-        - Email integration
-        
-        **Files automatically sync to /DATA/Documents and /DATA/Media**
-        
+        ⚠️ **Installation Notice:**
+        • This app may take 5-10 minutes to complete setup after installation
+        • Please wait for the configuration to finish before accessing
+
+        🔐 **Default Login Credentials:**
+        • Username: `admin`
+        • Password: `admin`
+        • **Important**: Change these credentials after first login for security
+
+      zh_cn: |
+        ⚠️ **安装提示：**
+        • 此应用安装后可能需要5-10分钟完成设置配置
+        • 请等待配置完成后再访问
+
+        🔐 **默认登录凭据：**
+        • 用户名：`admin`
+        • 密码：`admin`
+        • **重要**：首次登录后请更改这些凭据以确保安全
+
       ko_kr: |
-        **기본 계정**
-        | 사용자명 | 비밀번호       |
-        | -------- | -------------- |
-        | `admin`  | `$default_pwd` |
-        
-        **Teams 기능을 위한 단계별 설정:**
-        
-        **1. 설치 후:**
-        - 위 관리자 자격증명으로 즉시 로그인
-        - 프롬프트가 나타나면 설정 완료
-        
-        **2. 필수 앱 활성화 (30초):**
-        - 프로필 아이콘 클릭 (우측 상단) → "앱"
-        - **다음 앱들을 "활성화" 버튼 클릭하여 활성화:**
-          
-          **📅 Calendar** - 팀 일정 관리 및 회의
-          **👥 Contacts** - 연락처 관리
-          **📧 Mail** - 이메일 통합
-          **💬 Talk** - 화상통화 및 채팅
-          **📋 Deck** - 프로젝트 관리 (칸반 보드)
-          **✅ Tasks** - 작업 및 할 일 관리
-          
-        **3. 추가 앱 설치:**
-        - 앱 페이지에서 검색하여 설치:
-          **📄 Nextcloud Office** - 문서 편집 (워드/엑셀/파워포인트)
-          **📝 Notes** - 노트 앱
-          **🔍 Full text search** - 문서 내 검색
-          
-        **4. 완료!**
-        이제 Nextcloud가 다음 기능을 갖춘 완전한 Microsoft Teams 대안이 됩니다:
-        - 실시간 문서 협업
-        - 화상회의 및 채팅
-        - 버전 관리가 포함된 파일 공유
-        - 팀 캘린더 및 일정 관리
-        - 프로젝트 및 작업 관리
-        - 이메일 통합
-        
-        **파일은 자동으로 /DATA/Documents 및 /DATA/Media와 동기화됩니다**
-  index: /
+        ⚠️ **설치 안내:**
+        • 이 앱은 설치 후 설정이 완료되기까지 5-10분 정도 소요될 수 있습니다
+        • 설정이 완료될 때까지 기다린 후 접속해 주세요
+
+        🔐 **기본 로그인 정보:**
+        • 사용자명: `admin`
+        • 비밀번호: `admin`
+        • **중요**: 보안을 위해 첫 로그인 후 이 정보를 변경하세요
