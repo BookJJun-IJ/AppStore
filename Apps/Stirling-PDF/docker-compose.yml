@@ -4,7 +4,6 @@ services:
   nextcloud:
     image: ghcr.io/nextcloud-releases/all-in-one:latest
     container_name: nextcloud
-    user: $PUID:$PGID
     restart: unless-stopped
     deploy:
       resources:
