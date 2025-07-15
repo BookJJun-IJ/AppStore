@@ -3,6 +3,7 @@ name: nextcloud
 services:
   nextcloud:
     image: nextcloud:30.0.6
+    container_name: nextcloud
     user: $PUID:$PGID
     depends_on:
       - db
@@ -21,24 +22,28 @@ services:
       - MYSQL_DATABASE=nextcloud
       - MYSQL_USER=nextcloud
       - MYSQL_PASSWORD=$default_pwd
+      - NEXTCLOUD_ADMIN_USER=admin
+      - NEXTCLOUD_ADMIN_PASSWORD=$default_pwd
       - NEXTCLOUD_TRUSTED_DOMAINS=localhost,$domain
       - OVERWRITEPROTOCOL=https
       - OVERWRITEHOST=$domain
       - TRUSTED_PROXIES=172.16.0.0/12,10.0.0.0/8,192.168.0.0/16
     volumes:
-      - /DATA/AppData/nextcloud/html:/var/www/html
-      - /DATA/AppData/nextcloud/apps:/var/www/html/custom_apps
-      - /DATA/AppData/nextcloud/config:/var/www/html/config
-      - /DATA/AppData/nextcloud/data:/var/www/html/data
+      - /DATA/AppData/$AppID/html:/var/www/html
+      - /DATA/AppData/$AppID/apps:/var/www/html/custom_apps
+      - /DATA/AppData/$AppID/config:/var/www/html/config
+      - /DATA/AppData/$AppID/data:/var/www/html/data
       - /DATA/Documents:/var/www/html/data/Documents
       - /DATA/Media:/var/www/html/data/Media
       - /DATA/Gallery:/var/www/html/data/Gallery
     restart: unless-stopped
     networks:
       - nextcloud-network
+    cpu_shares: 100
 
   db:
     image: mariadb:11.2
+    container_name: nextcloud_db
     deploy:
       resources:
         limits:
@@ -52,10 +57,11 @@ services:
       - MYSQL_PASSWORD=$default_pwd
       - MARIADB_AUTO_UPGRADE=1
     volumes:
-      - /DATA/AppData/nextcloud/db:/var/lib/mysql
+      - /DATA/AppData/$AppID/db:/var/lib/mysql
     restart: unless-stopped
     networks:
       - nextcloud-network
+    cpu_shares: 50
 
 networks:
   nextcloud-network:
@@ -69,11 +75,11 @@ x-casaos:
   author: Yundera Team
   developer: Nextcloud GmbH
   description:
-    en_us: Complete Microsoft Teams alternative with built-in Nextcloud Office, Talk video conferencing, Calendar, Contacts, and collaborative file sharing. All essential productivity apps are pre-enabled for immediate use.
-    ko_kr: 내장된 Nextcloud Office, Talk 화상회의, 캘린더, 연락처, 협업 파일 공유를 포함한 완전한 Microsoft Teams 대안. 모든 필수 생산성 앱이 사전 활성화되어 즉시 사용 가능합니다.
-    zh_cn: 完整的Microsoft Teams替代方案，内置Nextcloud Office、Talk视频会议、日历、联系人和协作文件共享。所有基本生产力应用程序都已预启用，可立即使用。
-    fr_fr: Alternative complete a Microsoft Teams avec Nextcloud Office integre, visioconference Talk, calendrier, contacts et partage de fichiers collaboratif. Toutes les applications de productivite essentielles sont pre-activees pour une utilisation immediate.
-    es_es: Alternativa completa a Microsoft Teams con Nextcloud Office integrado, videoconferencias Talk, calendario, contactos y comparticion colaborativa de archivos. Todas las aplicaciones de productividad esenciales estan prehabilitadas para uso inmediato.
+    en_us: Self-hosted cloud storage and collaboration platform. Install and enable collaboration apps like Calendar, Contacts, Talk, Deck, and Nextcloud Office to create your complete Microsoft Teams alternative with step-by-step guidance.
+    ko_kr: 자체 호스팅 클라우드 스토리지 및 협업 플랫폼. Calendar, Contacts, Talk, Deck, Nextcloud Office 등의 협업 앱을 설치하고 활성화하여 단계별 가이드로 완전한 Microsoft Teams 대안을 만드세요.
+    zh_cn: 自托管云存储和协作平台。安装并启用Calendar、Contacts、Talk、Deck和Nextcloud Office等协作应用程序，通过分步指导创建完整的Microsoft Teams替代方案。
+    fr_fr: Plateforme de stockage cloud et de collaboration auto-hebergee. Installez et activez des applications de collaboration comme Calendar, Contacts, Talk, Deck et Nextcloud Office pour creer votre alternative complete a Microsoft Teams avec un guide etape par etape.
+    es_es: Plataforma de almacenamiento en la nube y colaboracion autohospedada. Instale y habilite aplicaciones de colaboracion como Calendar, Contacts, Talk, Deck y Nextcloud Office para crear su alternativa completa a Microsoft Teams con orientacion paso a paso.
   title:
     en_us: Nextcloud Teams
     ko_kr: Nextcloud Teams
@@ -81,68 +87,62 @@ x-casaos:
     fr_fr: Nextcloud Teams
     es_es: Nextcloud Teams
   tagline:
-    en_us: Complete collaboration suite with pre-enabled apps
-    ko_kr: 사전 활성화된 앱으로 완성된 협업 제품군
-    zh_cn: 预启用应用程序的完整协作套件
-    fr_fr: Suite de collaboration complete avec applications pre-activees
-    es_es: Suite de colaboracion completa con aplicaciones prehabilitadas
+    en_us: Build your Teams alternative with guided app installation
+    ko_kr: 가이드된 앱 설치로 Teams 대안 구축
+    zh_cn: 通过引导式应用安装构建您的Teams替代方案
+    fr_fr: Construisez votre alternative Teams avec l'installation guidee d'applications
+    es_es: Construya su alternativa a Teams con instalacion guiada de aplicaciones
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/icon.png
-  screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/screenshot-1.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/screenshot-3.png
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/thumbnail.png
   tips:
     before_install:
       en_us: |
-        **Complete Teams Alternative - Pre-Enabled Apps**
+        **Default Account**
+        | Username | Password       |
+        | -------- | -------------- |
+        | `admin`  | `$default_pwd` |
         
-        Setup Steps:
-        1. Access web interface after installation
-        2. Complete setup wizard (create admin account)
-        3. If infinite loading occurs, restart the app
-        4. All essential apps automatically enabled!
+        **Setup Process:**
         
-        Pre-Enabled Apps (Ready to Use):
-        - Calendar: Team scheduling and meetings
-        - Contacts: Contact management
-        - Mail: Email integration
-        - Talk: Video calls and chat (spreed)
-        - Deck: Project management (Kanban boards)
-        - Tasks: Task and todo management
-        - Nextcloud Office: Document editing (richdocuments)
+        **1. Wait for Setup (3-5 minutes):**
+        - Initial installation takes time
+        - Admin account created automatically
+        - ⚠️ **Don't access until setup complete**
         
-        Features Ready Immediately:
-        - Real-time document collaboration
-        - Video conferencing and chat
-        - File sharing with version control
-        - Team calendars and scheduling
-        - Project and task management
-        - Email integration
+        **2. First Access:**
+        - Login with credentials above
+        - Skip any setup wizard (auto-completed)
         
-        No manual app installation needed!
+        **3. Add Team Apps (Profile → Apps):**
+        **Enable Built-in:** Calendar, Contacts, Mail
+        **Install from Store:** Talk, Deck, Tasks, Nextcloud Office
+        
+        **Files sync to:** `/DATA/Documents` & `/DATA/Media`
+        
       ko_kr: |
-        **완전한 Teams 대안 - 사전 활성화된 앱**
+        **기본 계정**
+        | 사용자명 | 비밀번호       |
+        | -------- | -------------- |
+        | `admin`  | `$default_pwd` |
         
-        설정 단계:
-        1. 설치 후 웹 인터페이스 접속
-        2. 설정 마법사 완료 (관리자 계정 생성)
-        3. 무한 로딩 발생 시 앱 재시작
-        4. 모든 필수 앱이 자동으로 활성화됨!
+        **설정 과정:**
         
-        사전 활성화된 앱들 (즉시 사용 가능):
-        - Calendar: 팀 일정 관리 및 회의
-        - Contacts: 연락처 관리
-        - Mail: 이메일 통합
-        - Talk: 화상통화 및 채팅 (spreed)
-        - Deck: 프로젝트 관리 (칸반 보드)
-        - Tasks: 작업 및 할 일 관리
-        - Nextcloud Office: 문서 편집 (richdocuments)
+        **1. 설정 대기 (3-5분):**
+        - 초기 설치에 시간 소요
+        - 관리자 계정 자동 생성
+        - ⚠️ **설정 완료까지 접속 금지**
         
-        즉시 사용 가능한 기능:
-        - 실시간 문서 협업
-        - 화상회의 및 채팅
-        - 버전 관리가 포함된 파일 공유
-        - 팀 캘린더 및 일정 관리
-        - 프로젝트 및 작업 관리
-        - 이메일 통합
+        **2. 첫 접속:**
+        - 위 자격증명으로 로그인
+        - 설정 마법사 건너뛰기 (자동 완료됨)
         
-        수동 앱 설치 불필요!
+        **3. 팀 앱 추가 (프로필 → 앱):**
+        **내장 앱 활성화:** Calendar, Contacts, Mail
+        **스토어에서 설치:** Talk, Deck, Tasks, Nextcloud Office
+        
+        **파일 동기화:** `/DATA/Documents` & `/DATA/Media`
   index: /
