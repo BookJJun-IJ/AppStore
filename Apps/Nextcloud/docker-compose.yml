@@ -24,10 +24,12 @@ services:
       - MYSQL_PASSWORD=$default_pwd
       - NEXTCLOUD_ADMIN_USER=admin
       - NEXTCLOUD_ADMIN_PASSWORD=$default_pwd
-      - NEXTCLOUD_TRUSTED_DOMAINS=localhost,$domain
+      - NEXTCLOUD_TRUSTED_DOMAINS=localhost,127.0.0.1,$domain,*.nsl.sh
       - OVERWRITEPROTOCOL=https
       - OVERWRITEHOST=$domain
+      - OVERWRITECONDADDR=^172\..*$
       - TRUSTED_PROXIES=172.16.0.0/12,10.0.0.0/8,192.168.0.0/16
+      - APACHE_DISABLE_REWRITE_IP=1
     volumes:
       - /DATA/AppData/$AppID/html:/var/www/html
       - /DATA/AppData/$AppID/apps:/var/www/html/custom_apps
