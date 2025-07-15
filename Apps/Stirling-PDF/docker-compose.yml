@@ -80,52 +80,29 @@ x-casaos:
   author: Yundera Team
   developer: Nextcloud GmbH
   description:
-    en_us: Nextcloud is a suite of client-server software for creating and using file hosting services. Access and sync your files, contacts, calendars and communicate and collaborate across your devices.
-    ko_kr: Nextcloud는 파일 호스팅 서비스를 만들고 사용하기 위한 클라이언트-서버 소프트웨어 제품군입니다. 모든 기기에서 파일, 연락처, 캘린더에 액세스하고 동기화하며 소통하고 협업하세요.
+    en_us: Complete Microsoft Teams alternative with built-in Nextcloud Office, Talk video conferencing, Calendar, Contacts, and collaborative file sharing. Follow the simple setup guide to enable all essential productivity apps in 30 seconds.
+    ko_kr: 내장된 Nextcloud Office, Talk 화상회의, 캘린더, 연락처, 협업 파일 공유를 포함한 완전한 Microsoft Teams 대안. 간단한 설정 가이드를 따라 30초 만에 모든 필수 생산성 앱을 활성화하세요.
+    zh_cn: 完整的Microsoft Teams替代方案，内置Nextcloud Office、Talk视频会议、日历、联系人和协作文件共享。按照简单的设置指南，在30秒内启用所有基本生产力应用程序。
+    fr_fr: Alternative complete a Microsoft Teams avec Nextcloud Office integre, visioconference Talk, calendrier, contacts et partage de fichiers collaboratif. Suivez le guide de configuration simple pour activer toutes les applications de productivite essentielles en 30 secondes.
+    es_es: Alternativa completa a Microsoft Teams con Nextcloud Office integrado, videoconferencias Talk, calendario, contactos y comparticion colaborativa de archivos. Siga la guia de configuracion simple para habilitar todas las aplicaciones de productividad esenciales en 30 segundos.
   title:
-    en_us: Nextcloud
-    ko_kr: Nextcloud
+    en_us: Nextcloud Teams
+    ko_kr: Nextcloud Teams
+    zh_cn: Nextcloud Teams
+    fr_fr: Nextcloud Teams
+    es_es: Nextcloud Teams
   tagline:
-    en_us: Self-hosted file sync and share platform
-    ko_kr: 자체 호스팅 파일 동기화 및 공유 플랫폼
+    en_us: Complete collaboration suite - 30 second setup
+    ko_kr: 완전한 협업 제품군 - 30초 설정
+    zh_cn: 完整的协作套件 - 30秒设置
+    fr_fr: Suite de collaboration complete - Configuration en 30 secondes
+    es_es: Suite de colaboracion completa - Configuracion de 30 segundos
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/icon.png
   screenshot_link:
     - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/screenshot-3.png
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/thumbnail.png
-  pre-install-cmd: |
-    mkdir -p /DATA/AppData/nextcloud/scripts
-    cat > /DATA/AppData/nextcloud/scripts/setup-nextcloud.sh << 'EOF'
-    #!/bin/bash
-    echo "Nextcloud 설정 시작..."
-    sleep 90
-    
-    # trusted_domains 설정
-    echo "trusted_domains 설정 중..."
-    docker exec nextcloud php /var/www/html/occ config:system:set trusted_domains 0 --value=localhost || true
-    docker exec nextcloud php /var/www/html/occ config:system:set trusted_domains 1 --value=127.0.0.1 || true
-    docker exec nextcloud php /var/www/html/occ config:system:set trusted_domains 2 --value=$HOSTNAME.nsl.sh || true
-    docker exec nextcloud php /var/www/html/occ config:system:set trusted_domains 3 --value=nextcloud-$HOSTNAME.nsl.sh || true
-    
-    # 프록시 설정
-    docker exec nextcloud php /var/www/html/occ config:system:set overwriteprotocol --value=https || true
-    docker exec nextcloud php /var/www/html/occ config:system:set overwrite.cli.url --value=https://nextcloud-$HOSTNAME.nsl.sh || true
-    
-    # 앱 설치 및 활성화
-    echo "앱 설치 중..."
-    docker exec nextcloud php /var/www/html/occ app:enable calendar || true
-    docker exec nextcloud php /var/www/html/occ app:enable contacts || true
-    docker exec nextcloud php /var/www/html/occ app:enable mail || true
-    docker exec nextcloud php /var/www/html/occ app:enable spreed || true
-    docker exec nextcloud php /var/www/html/occ app:enable deck || true
-    docker exec nextcloud php /var/www/html/occ app:enable tasks || true
-    docker exec nextcloud php /var/www/html/occ app:install richdocuments || true
-    docker exec nextcloud php /var/www/html/occ app:enable richdocuments || true
-    
-    echo "설정 완료" > /DATA/AppData/nextcloud/scripts/setup-complete.log
-    EOF
-    
-    chmod +x /DATA/AppData/nextcloud/scripts/setup-nextcloud.sh
-    nohup /DATA/AppData/nextcloud/scripts/setup-nextcloud.sh > /DATA/AppData/nextcloud/scripts/setup.log 2>&1 &
   tips:
     before_install:
       en_us: |
@@ -134,32 +111,77 @@ x-casaos:
         | -------- | -------------- |
         | `admin`  | `$default_pwd` |
         
-        **Setup Steps:**
-        1. Access web interface after installation
-        2. Login with admin credentials above
-        3. Wait 2-3 minutes for automatic app installation
-        4. Essential collaboration apps will be enabled automatically
+        **Step-by-Step Setup for Teams Features:**
         
-        **Auto-Enabled Apps:**
-        - Calendar, Contacts, Mail
-        - Talk (Video conferencing)
-        - Deck (Project boards)
-        - Tasks, Nextcloud Office
+        **1. After Installation:**
+        - Login immediately with admin credentials above
+        - Complete the setup if prompted
+        
+        **2. Enable Essential Apps (30 seconds):**
+        - Click your profile icon (top-right) → "Apps"
+        - **Enable these apps by clicking the "Enable" button:**
+          
+          **📅 Calendar** - Team scheduling and meetings
+          **👥 Contacts** - Contact management
+          **📧 Mail** - Email integration  
+          **💬 Talk** - Video calls and chat
+          **📋 Deck** - Project management (Kanban boards)
+          **✅ Tasks** - Task and todo management
+          
+        **3. Install Additional Apps:**
+        - Still in Apps page, search and install:
+          **📄 Nextcloud Office** - Document editing (Word/Excel/PowerPoint)
+          **📝 Notes** - Note-taking app
+          **🔍 Full text search** - Search within documents
+          
+        **4. You're Done!**
+        Your Nextcloud is now a complete Microsoft Teams alternative with:
+        - Real-time document collaboration
+        - Video conferencing and chat
+        - File sharing with version control
+        - Team calendars and scheduling
+        - Project and task management
+        - Email integration
+        
+        **Files automatically sync to /DATA/Documents and /DATA/Media**
+        
       ko_kr: |
         **기본 계정**
         | 사용자명 | 비밀번호       |
         | -------- | -------------- |
         | `admin`  | `$default_pwd` |
         
-        **설정 단계:**
-        1. 설치 후 웹 인터페이스 접속
-        2. 위 관리자 자격증명으로 로그인
-        3. 자동 앱 설치를 위해 2-3분 대기
-        4. 필수 협업 앱이 자동으로 활성화됨
+        **Teams 기능을 위한 단계별 설정:**
         
-        **자동 활성화 앱:**
-        - Calendar, Contacts, Mail
-        - Talk (화상회의)
-        - Deck (프로젝트 보드)
-        - Tasks, Nextcloud Office
+        **1. 설치 후:**
+        - 위 관리자 자격증명으로 즉시 로그인
+        - 프롬프트가 나타나면 설정 완료
+        
+        **2. 필수 앱 활성화 (30초):**
+        - 프로필 아이콘 클릭 (우측 상단) → "앱"
+        - **다음 앱들을 "활성화" 버튼 클릭하여 활성화:**
+          
+          **📅 Calendar** - 팀 일정 관리 및 회의
+          **👥 Contacts** - 연락처 관리
+          **📧 Mail** - 이메일 통합
+          **💬 Talk** - 화상통화 및 채팅
+          **📋 Deck** - 프로젝트 관리 (칸반 보드)
+          **✅ Tasks** - 작업 및 할 일 관리
+          
+        **3. 추가 앱 설치:**
+        - 앱 페이지에서 검색하여 설치:
+          **📄 Nextcloud Office** - 문서 편집 (워드/엑셀/파워포인트)
+          **📝 Notes** - 노트 앱
+          **🔍 Full text search** - 문서 내 검색
+          
+        **4. 완료!**
+        이제 Nextcloud가 다음 기능을 갖춘 완전한 Microsoft Teams 대안이 됩니다:
+        - 실시간 문서 협업
+        - 화상회의 및 채팅
+        - 버전 관리가 포함된 파일 공유
+        - 팀 캘린더 및 일정 관리
+        - 프로젝트 및 작업 관리
+        - 이메일 통합
+        
+        **파일은 자동으로 /DATA/Documents 및 /DATA/Media와 동기화됩니다**
   index: /
