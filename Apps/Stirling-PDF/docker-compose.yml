@@ -13,8 +13,6 @@ services:
     expose:
       - 8080
     environment:
-      PGID: $PGID
-      PUID: $PUID
       TZ: $TZ
       PASSWORD: $default_pwd
       DOMAIN: $domain
