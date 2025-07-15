@@ -1,90 +1,127 @@
-name: stirlingpdf
+name: nextcloud
 
 services:
-  stirlingpdf:
-    image: docker.stirlingpdf.com/stirlingtools/stirling-pdf:0.46.2
-    container_name: stirling-pdf
-    restart: unless-stopped
-    expose:
-      - 8080
-    volumes:
-      - /DATA/AppData/$AppID/tessdata:/usr/share/tessdata
-      - /DATA/AppData/$AppID/configs:/configs
-      - /DATA/AppData/$AppID/logs:/logs
-      - /DATA/Downloads:/downloads
+  nextcloud:
+    image: ghcr.io/nextcloud-releases/all-in-one:latest
+    container_name: nextcloud
     user: $PUID:$PGID
-    environment:
-      PGID: $PGID                              # Group ID for file permissions
-      PUID: $PUID                              # User ID for file permissions
-      TZ: $TZ                                  # Timezone setting
-      DOCKER_ENABLE_SECURITY: true            # Enable security jar download (required for login)
-      SECURITY_ENABLE_LOGIN: true             # Enable login authentication
-      SECURITY_INITIALLOGIN_USERNAME: admin   # Default admin username
-      SECURITY_INITIALLOGIN_PASSWORD: admin   # Default admin password (change after first login)
-    cpu_shares: 100
+    restart: unless-stopped
     deploy:
       resources:
         limits:
-          memory: 2G
+          memory: 1024M
+          cpus: "1.0"
+    expose:
+      - 8080
+    environment:
+      PGID: $PGID
+      PUID: $PUID
+      TZ: $TZ
+      PASSWORD: $default_pwd
+      DOMAIN: $domain
+      NEXTCLOUD_DATADIR: /DATA/AppData/$AppID/data
+      NEXTCLOUD_STARTUP_APPS: calendar contacts mail spreed deck tasks richdocuments
+      APACHE_PORT: 8080
+      APACHE_IP_BINDING: 0.0.0.0
+      NEXTCLOUD_TRUSTED_DOMAINS: $domain
+      NEXTCLOUD_ENABLE_DRI_DEVICE: true
+      NEXTCLOUD_MEMORY_LIMIT: 512M
+      PHP_MEMORY_LIMIT: 512M
+    volumes:
+      - /DATA/AppData/$AppID/config:/mnt/docker-aio-config
+      - /DATA/AppData/$AppID/data:/DATA/AppData/$AppID/data
+      - /DATA/Documents:/DATA/Documents
+      - /DATA/Media:/DATA/Media
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    cpu_shares: 100
 
 x-casaos:
-  architectures:
-    - amd64
-    - arm64
-  author: CasaOS Team
-  category: Office
-  developer: Stirling Tools
-  description:
-    en_us: Stirling-PDF is a powerful, locally hosted web-based PDF manipulation tool using Docker. It enables you to perform various operations on PDF files, such as splitting, merging, converting, reorganizing, adding images, rotating, compressing, and more.
-    zh_cn: Stirling-PDF 是一个强大的本地托管的基于网页的PDF处理工具。它使您能够对PDF文件执行各种操作，如分割、合并、转换、重新组织、添加图像、旋转、压缩等。
-    ko_kr: Stirling-PDF는 Docker를 사용하는 강력한 로컬 호스팅 웹 기반 PDF 조작 도구입니다. PDF 파일에 대해 분할, 병합, 변환, 재구성, 이미지 추가, 회전, 압축 등 다양한 작업을 수행할 수 있습니다.
-  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Stirling-PDF/icon.png
-  screenshot_link:
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Stirling-PDF/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Stirling-PDF/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Stirling-PDF/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Stirling-PDF/thumbnail.png
-  index: /
-  tagline:
-    en_us: Your best free PDF manipulation tool
-    zh_cn: 您最好的免费PDF处理工具
-    ko_kr: 최고의 무료 PDF 조작 도구
-  title:
-    en_us: Stirling-PDF
-    zh_cn: Stirling-PDF
-    ko_kr: Stirling-PDF
-  store_app_id: stirlingpdf
-  main: stirlingpdf
-  is_uncontrolled: false
+  main: nextcloud
   webui_port: 8080
+  category: Utilities
+  architectures: [amd64, arm64]
+  author: Yundera Team
+  developer: Nextcloud GmbH
+  description:
+    en_us: Official Nextcloud All-in-One with built-in Calendar, Contacts, Mail, Talk, Deck, Tasks, and Nextcloud Office. Includes database, Redis, and all collaboration features in a single container. Perfect Microsoft Teams alternative.
+    ko_kr: 내장된 캘린더, 연락처, 메일, Talk, Deck, Tasks, Nextcloud Office가 포함된 공식 Nextcloud All-in-One. 데이터베이스, Redis, 모든 협업 기능이 단일 컨테이너에 포함. 완벽한 Microsoft Teams 대안.
+    zh_cn: 官方Nextcloud All-in-One，内置日历、联系人、邮件、Talk、Deck、Tasks和Nextcloud Office。包含数据库、Redis和单个容器中的所有协作功能。完美的Microsoft Teams替代方案。
+    fr_fr: Nextcloud All-in-One officiel avec calendrier, contacts, courrier, Talk, Deck, taches et Nextcloud Office intégres. Inclut base de donnees, Redis et toutes les fonctionnalites de collaboration dans un seul conteneur.
+    es_es: Nextcloud All-in-One oficial con calendario, contactos, correo, Talk, Deck, tareas y Nextcloud Office integrados. Incluye base de datos, Redis y todas las funciones de colaboracion en un solo conteneur.
+  title:
+    en_us: Nextcloud AIO
+    ko_kr: Nextcloud AIO
+    zh_cn: Nextcloud AIO
+    fr_fr: Nextcloud AIO
+    es_es: Nextcloud AIO
+  tagline:
+    en_us: Official All-in-One with pre-installed collaboration apps
+    ko_kr: 사전 설치된 협업 앱이 포함된 공식 올인원
+    zh_cn: 预装协作应用的官方一体化解决方案
+    fr_fr: Solution officielle tout-en-un avec applications de collaboration pre-installees
+    es_es: Solucion oficial todo en uno con aplicaciones de colaboracion preinstaladas
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/icon.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/thumbnail.png
   tips:
     before_install:
       en_us: |
-        ⚠️ **Installation Notice:**
-        • This app may take 5-10 minutes to complete setup after installation
-        • Please wait for the configuration to finish before accessing
-
-        🔐 **Default Login Credentials:**
-        • Username: `admin`
-        • Password: `admin`
-        • **Important**: Change these credentials after first login for security
-
-      zh_cn: |
-        ⚠️ **安装提示：**
-        • 此应用安装后可能需要5-10分钟完成设置配置
-        • 请等待配置完成后再访问
-
-        🔐 **默认登录凭据：**
-        • 用户名：`admin`
-        • 密码：`admin`
-        • **重要**：首次登录后请更改这些凭据以确保安全
-
+        **Default Account**
+        | Username   | Password       |
+        | --------   | ------------   |
+        | `admin`    | `$default_pwd` |
+        
+        **Official Nextcloud All-in-One (AIO)**
+        
+        **Pre-Installed Apps (Ready to Use):**
+        - Calendar: Team scheduling and meetings
+        - Contacts: Contact management
+        - Mail: Email integration
+        - Talk: Video calls and chat
+        - Deck: Project management (Kanban boards)
+        - Tasks: Task and todo management
+        - Nextcloud Office: Document editing (Word/Excel/PowerPoint)
+        
+        **Setup Steps:**
+        1. Access web interface at your assigned domain
+        2. Follow the AIO setup wizard with provided credentials
+        3. All apps are automatically configured
+        4. No manual app installation needed!
+        
+        **Data Storage:**
+        All data stored in: `/DATA/AppData/nextcloud/`
+        
+        **Microsoft Teams Alternative:**
+        Complete collaboration suite with everything included!
       ko_kr: |
-        ⚠️ **설치 안내:**
-        • 이 앱은 설치 후 설정이 완료되기까지 5-10분 정도 소요될 수 있습니다
-        • 설정이 완료될 때까지 기다린 후 접속해 주세요
-
-        🔐 **기본 로그인 정보:**
-        • 사용자명: `admin`
-        • 비밀번호: `admin`
-        • **중요**: 보안을 위해 첫 로그인 후 이 정보를 변경하세요
+        **기본 계정**
+        | 사용자명   | 비밀번호       |
+        | --------   | ------------   |
+        | `admin`    | `$default_pwd` |
+        
+        **공식 Nextcloud All-in-One (AIO)**
+        
+        **사전 설치된 앱들 (즉시 사용 가능):**
+        - Calendar: 팀 일정 관리 및 회의
+        - Contacts: 연락처 관리
+        - Mail: 이메일 통합
+        - Talk: 화상통화 및 채팅
+        - Deck: 프로젝트 관리 (칸반 보드)
+        - Tasks: 작업 및 할 일 관리
+        - Nextcloud Office: 문서 편집 (워드/엑셀/파워포인트)
+        
+        **설정 단계:**
+        1. 할당된 도메인에서 웹 인터페이스 접속
+        2. 제공된 자격 증명으로 AIO 설정 마법사 따라하기
+        3. 모든 앱이 자동으로 구성됨
+        4. 수동 앱 설치 불필요!
+        
+        **데이터 저장소:**
+        모든 데이터 저장 위치: `/DATA/AppData/nextcloud/`
+        
+        **Microsoft Teams 대안:**
+        모든 것이 포함된 완전한 협업 제품군!
+  index: /
