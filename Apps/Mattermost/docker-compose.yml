@@ -43,6 +43,7 @@ services:
       - /DATA/AppData/$AppID/data:/mattermost/data
       - /DATA/AppData/$AppID/logs:/mattermost/logs
       - /DATA/AppData/$AppID/plugins:/mattermost/plugins
+      - /DATA/AppData/$AppID/client-plugins:/mattermost/client/plugins
     environment:
       PUID: $PUID
       PGID: $PGID
@@ -136,3 +137,7 @@ x-casaos:
   index: /
   port_map: "80"
   store_app_id: mattermost
+  pre-install-cmd: |
+    mkdir -p /DATA/AppData/$AppID/{config,data,logs,plugins,postgres,client-plugins} &&
+    chown -R $PUID:$PGID /DATA/AppData/$AppID &&
+    chmod -R 755 /DATA/AppData/$AppID
