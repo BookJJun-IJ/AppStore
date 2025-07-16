@@ -69,9 +69,19 @@ services:
       # 이메일 알림 비활성화
       MM_EMAILSETTINGS_SENDEMAILNOTIFICATIONS: false
       
-      # 추가 안정성 설정
+      # WebSocket 문제 해결 설정
       MM_SERVICESETTINGS_ENABLEINSECUREOUTGOINGCONNECTIONS: true
       MM_SERVICESETTINGS_ALLOWCORSFROM: "*"
+      MM_SERVICESETTINGS_WEBSOCKETURL: ""  # 자동 감지로 WebSocket 문제 우회
+      MM_SERVICESETTINGS_ALLOWUNTRUSTEDINTERNALCONNECTIONS: true
+      
+      # 연결 타임아웃 설정
+      MM_SERVICESETTINGS_READTIMEOUT: 300
+      MM_SERVICESETTINGS_WRITETIMEOUT: 300
+      
+      # 디버그 로깅 (문제 해결용)
+      MM_LOGSETTINGS_FILELEVEL: DEBUG
+      MM_LOGSETTINGS_CONSOLELEVEL: DEBUG
 
 # 🔥 수정 4: 커스텀 네트워크 제거 (CasaOS 기본 네트워크 사용)
 
