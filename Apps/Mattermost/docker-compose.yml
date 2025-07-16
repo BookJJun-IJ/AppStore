@@ -35,7 +35,7 @@ services:
           memory: 1G
           cpus: '1.0'
     expose:
-      - 3000  # 🔥 포트 변경: 80 → 3000
+      - 3000
     volumes:
       - /DATA/AppData/$AppID/config:/mattermost/config
       - /DATA/AppData/$AppID/data:/mattermost/data
@@ -46,59 +46,166 @@ services:
       PGID: $PGID
       TZ: $TZ
       
+      # Core Database Settings
       MM_SQLSETTINGS_DRIVERNAME: postgres
       MM_SQLSETTINGS_DATASOURCE: postgres://mmuser:$default_pwd@postgres:5432/mattermost?sslmode=disable&connect_timeout=10
-      MM_SERVICESETTINGS_SITEURL: "https://3000-$domain"  # 🔥 URL 변경
-      MM_SERVICESETTINGS_LISTENADDRESS: ":3000"  # 🔥 포트 변경
-      MM_SERVICESETTINGS_ENABLELOCALMODE: true
       
-      # WebSocket 문제 해결 설정
-      MM_SERVICESETTINGS_WEBSOCKETURL: ""
+      # Server Settings for Teams Alternative
+      MM_SERVICESETTINGS_SITEURL: "https://3000-$domain"
+      MM_SERVICESETTINGS_LISTENADDRESS: ":3000"
+      MM_SERVICESETTINGS_ENABLELOCALMODE: true
       MM_SERVICESETTINGS_ALLOWUNTRUSTEDINTERNALCONNECTIONS: true
       MM_SERVICESETTINGS_ENABLEINSECUREOUTGOINGCONNECTIONS: true
       MM_SERVICESETTINGS_ALLOWCORSFROM: "*"
+      MM_SERVICESETTINGS_WEBSOCKETURL: ""
+      MM_SERVICESETTINGS_ENABLEFILEATTACHMENTS: true
       
-      # Teams 대체용 플러그인 시스템 활성화
+      # Teams Alternative Plugin System
       MM_PLUGINSETTINGS_ENABLE: true
       MM_PLUGINSETTINGS_ENABLEUPLOADS: true
       MM_PLUGINSETTINGS_AUTOMATICPREPACKAGEDPLUGINS: true
+      MM_PLUGINSETTINGS_ENABLEREMOTEMARKETPLACE: true
+      MM_PLUGINSETTINGS_MARKETPLACEURL: "https://api.integrations.mattermost.com"
       
-      # 화상회의 및 협업 기능
+      # Video Conferencing (Teams calls replacement)
       MM_PLUGINSETTINGS_ENABLEJITSI: true
       MM_PLUGINSETTINGS_ENABLEZOOM: true
       
-      # 파일 공유 및 Office 통합
-      MM_SERVICESETTINGS_ENABLEFILEATTACHMENTS: true
+      # File and Media Settings (Teams file sharing)
+      MM_FILESETTINGS_MAXFILESIZE: 104857600
       MM_FILESETTINGS_ENABLEFILEATTACHMENTS: true
       MM_FILESETTINGS_ENABLEPUBLICLINK: true
+      MM_FILESETTINGS_ENABLEMOBILEUPLOAD: true
+      MM_FILESETTINGS_ENABLEMOBILEDOWNLOAD: true
       
+      # Team and User Management
       MM_TEAMSETTINGS_ENABLETEAMCREATION: true
       MM_TEAMSETTINGS_ENABLEUSERCREATION: true
+      MM_TEAMSETTINGS_ENABLEOPENSERVER: false
+      MM_TEAMSETTINGS_RESTRICTCREATIONTDOMAINS: ""
       
-      # Teams 대체용 파일 및 미디어 설정
-      MM_FILESETTINGS_MAXFILESIZE: 104857600  # 100MB (Teams와 유사)
-      MM_FILESETTINGS_ENABLEFILEATTACHMENTS: true
-      MM_FILESETTINGS_ENABLEPUBLICLINK: true
-      
-      # 알림 및 멘션 설정 (Teams와 유사)
+      # Notification Settings (Teams alerts replacement)
       MM_NOTIFICATIONSETTINGS_DEFAULTSERVERPUSHENABLED: true
       MM_NOTIFICATIONSETTINGS_DEFAULTCHANNELPUSHENABLED: true
       MM_NOTIFICATIONSETTINGS_DEFAULTDESKTOPNOTIFICATIONSENABLED: true
+      MM_NOTIFICATIONSETTINGS_DEFAULTPUSHSTATUS: "mention"
       
-      # 이메일 알림 활성화 (Teams 대체용)
+      # Email Integration (Teams notifications)
       MM_EMAILSETTINGS_SENDEMAILNOTIFICATIONS: true
       MM_EMAILSETTINGS_ENABLEEMAILBATCHING: true
+      MM_EMAILSETTINGS_EMAILBATCHINGBUFFERSIZE: 256
+      MM_EMAILSETTINGS_EMAILBATCHINGINTERVAL: 30
+      
+      # Security and Privacy
+      MM_PRIVACYSETTINGS_SHOWEMAILADDRESS: true
+      MM_PRIVACYSETTINGS_SHOWFULLNAME: true
+      
+      # Logging for Teams Migration
+      MM_LOGSETTINGS_CONSOLELEVEL: "INFO"
+      MM_LOGSETTINGS_FILELEVEL: "INFO"
 
 x-casaos:
   architectures: [amd64, arm64]
   main: mattermost
-  webui_port: 3000  # 🔥 CasaOS에도 포트 변경 알림
+  webui_port: 3000
   author: Yundera Team
   category: Communication
   description:
-    en_us: Open-source team communication platform similar to Slack with secure messaging and collaboration features
-    ko_kr: Slack과 유사한 오픈소스 팀 커뮤니케이션 플랫폼으로 보안 메시징 및 협업 기능 제공
+    en_us: Complete Microsoft Teams alternative with video calls, file sharing, team collaboration, and enterprise features
+    ko_kr: 화상 통화, 파일 공유, 팀 협업 및 엔터프라이즈 기능을 갖춘 완전한 Microsoft Teams 대체 솔루션
+    fr_fr: Alternative complète à Microsoft Teams avec appels vidéo, partage de fichiers, collaboration d'équipe et fonctionnalités d'entreprise
+    es_es: Alternativa completa a Microsoft Teams con videollamadas, intercambio de archivos, colaboración en equipo y funciones empresariales
+    zh_cn: 具有视频通话、文件共享、团队协作和企业功能的完整Microsoft Teams替代方案
   developer: Mattermost, Inc.
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mattermost/icon.png
   tagline:
-    en_us: Secure team
+    en_us: Enterprise Teams alternative - self-hosted
+    ko_kr: 엔터프라이즈 Teams 대체 - 자체 호스팅
+    fr_fr: Alternative Teams d'entreprise - auto-hébergée
+    es_es: Alternativa Teams empresarial - auto-alojada
+    zh_cn: 企业Teams替代方案 - 自托管
+  title:
+    en_us: Mattermost Teams
+    ko_kr: Mattermost Teams
+  tips:
+    before_install:
+      en_us: |
+        **Mattermost: Complete Microsoft Teams Replacement**
+        
+        🚀 **Enterprise Features Pre-configured:**
+        - Unlimited messaging & channels
+        - Video calls (via plugin marketplace)
+        - File sharing up to 100MB
+        - Screen sharing capabilities
+        - Mobile & desktop apps
+        - Advanced notifications
+        - Team management tools
+        
+        📋 **Quick Setup Guide:**
+        1. Access: https://3000-mattermost-username.nsl.sh/
+        2. Create admin account (first user = system admin)
+        3. Create your team/organization
+        4. Install plugins from marketplace:
+           - Jitsi Meet (video calls)
+           - GitHub (code collaboration)
+           - Google Drive (file sharing)
+           - Zoom (backup video)
+        
+        🔧 **Teams Migration Benefits:**
+        ✅ No per-user licensing costs
+        ✅ Complete data ownership
+        ✅ Better performance (local hosting)
+        ✅ Advanced customization
+        ✅ Enterprise security controls
+        ✅ API integrations
+        
+        🎯 **Key Difference from Teams:**
+        - Plugins installed via System Console → Marketplace
+        - More secure (self-hosted)
+        - No Microsoft account required
+        - Unlimited file storage
+        
+        **Database Password:** $default_pwd
+        **Plugin Marketplace:** Enabled for easy installation
+      ko_kr: |
+        **Mattermost: 완전한 Microsoft Teams 대체재**
+        
+        🚀 **사전 구성된 엔터프라이즈 기능:**
+        - 무제한 메시징 및 채널
+        - 화상 통화 (플러그인 마켓플레이스 통해)
+        - 최대 100MB 파일 공유
+        - 화면 공유 기능
+        - 모바일 및 데스크톱 앱
+        - 고급 알림 시스템
+        - 팀 관리 도구
+        
+        📋 **빠른 설정 가이드:**
+        1. 접속: https://3000-mattermost-username.nsl.sh/
+        2. 관리자 계정 생성 (첫 사용자 = 시스템 관리자)
+        3. 팀/조직 생성
+        4. 마켓플레이스에서 플러그인 설치:
+           - Jitsi Meet (화상 통화)
+           - GitHub (코드 협업)
+           - Google Drive (파일 공유)
+           - Zoom (백업 화상 통화)
+        
+        🔧 **Teams 마이그레이션 장점:**
+        ✅ 사용자당 라이선스 비용 없음
+        ✅ 완전한 데이터 소유권
+        ✅ 더 나은 성능 (로컬 호스팅)
+        ✅ 고급 커스터마이징
+        ✅ 엔터프라이즈 보안 제어
+        ✅ API 통합 지원
+        
+        🎯 **Teams와의 주요 차이점:**
+        - 시스템 콘솔 → 마켓플레이스를 통한 플러그인 설치
+        - 더 안전함 (자체 호스팅)
+        - Microsoft 계정 불필요
+        - 무제한 파일 저장소
+        
+        **데이터베이스 비밀번호:** $default_pwd
+        **플러그인 마켓플레이스:** 쉬운 설치를 위해 활성화됨
+  pre-install-cmd: mkdir -p /DATA/AppData/$AppID/config /DATA/AppData/$AppID/data /DATA/AppData/$AppID/logs /DATA/AppData/$AppID/plugins /DATA/AppData/$AppID/postgres && chown -R $PUID:$PGID /DATA/AppData/$AppID
+  index: /
+  port_map: "3000"
+  store_app_id: mattermost
