@@ -125,8 +125,8 @@ x-casaos:
     es_es: Alternativa Teams empresarial - auto-alojada
     zh_cn: 企业Teams替代方案 - 自托管
   title:
-    en_us: Mattermost Teams
-    ko_kr: Mattermost Teams
+    en_us: Mattermost
+    ko_kr: Mattermost
   tips:
     before_install:
       en_us: |
