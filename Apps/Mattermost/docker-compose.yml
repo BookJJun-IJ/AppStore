@@ -3,6 +3,7 @@ name: mattermost
 services:
   postgres:
     image: postgres:13-alpine
+    user: $PUID:$PGID  # 🔥 핵심 수정 1
     restart: unless-stopped
     deploy:
       resources:
@@ -12,6 +13,8 @@ services:
     volumes:
       - /DATA/AppData/$AppID/postgres:/var/lib/postgresql/data
     environment:
+      PUID: $PUID
+      PGID: $PGID
       POSTGRES_USER: mmuser
       POSTGRES_PASSWORD: $default_pwd
       POSTGRES_DB: mattermost
@@ -23,15 +26,13 @@ services:
       timeout: 10s
       retries: 3
       start_period: 120s
-    networks:
-      - mattermost-net
 
   mattermost:
     image: mattermost/mattermost-team-edition:10.9.1
+    user: $PUID:$PGID  # 🔥 핵심 수정 2
     restart: unless-stopped
     depends_on:
-      postgres:
-        condition: service_healthy
+      - postgres  # 🔥 수정 3: condition 제거 (CasaOS 호환성)
     deploy:
       resources:
         limits:
@@ -71,12 +72,8 @@ services:
       # 추가 안정성 설정
       MM_SERVICESETTINGS_ENABLEINSECUREOUTGOINGCONNECTIONS: true
       MM_SERVICESETTINGS_ALLOWCORSFROM: "*"
-    networks:
-      - mattermost-net
 
-networks:
-  mattermost-net:
-    driver: bridge
+# 🔥 수정 4: 커스텀 네트워크 제거 (CasaOS 기본 네트워크 사용)
 
 x-casaos:
   architectures: [amd64, arm64]
@@ -115,7 +112,7 @@ x-casaos:
         
         **Core features included:**
         - Real-time team messaging
-        - File sharing capabilities
+        - file sharing capabilities
         - Channel-based organization
         - Direct messaging
         
@@ -141,6 +138,10 @@ x-casaos:
         **참고**: 안정성을 위해 플러그인이 초기에 비활성화되어 있습니다. 설정 후 시스템 콘솔에서 수동으로 활성화하세요.
         
         데이터베이스 비밀번호: `$default_pwd`
+  # 🔥 수정 5: pre-install 명령 추가
+  pre-install-cmd: |
+    mkdir -p /DATA/AppData/$AppID/{config,data,logs,plugins,postgres} &&
+    chown -R $PUID:$PGID /DATA/AppData/$AppID/
   index: /
   port_map: "80"
   store_app_id: mattermost
