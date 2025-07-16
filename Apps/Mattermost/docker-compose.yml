@@ -24,8 +24,47 @@ services:
       retries: 3
       start_period: 120s
 
-  mattermost:
-    image: mattermost/mattermost-team-edition:10.9.1
+  nextcloud:
+    image: nextcloud:28-apache
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+    expose:
+      - 80
+    volumes:
+      - /DATA/AppData/$AppID/nextcloud/html:/var/www/html
+      - /DATA/AppData/$AppID/nextcloud/data:/var/www/html/data
+      - /DATA/Media:/var/www/html/data/shared_media
+      - /DATA/Documents:/var/www/html/data/shared_docs
+    environment:
+      NEXTCLOUD_ADMIN_USER: admin
+      NEXTCLOUD_ADMIN_PASSWORD: $default_pwd
+      NEXTCLOUD_TRUSTED_DOMAINS: "4000-$domain"
+      MYSQL_HOST: db
+      MYSQL_DATABASE: nextcloud
+      MYSQL_USER: nextcloud
+      MYSQL_PASSWORD: $default_pwd
+    depends_on:
+      - db
+
+  db:
+    image: mariadb:10.11
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.3'
+    volumes:
+      - /DATA/AppData/$AppID/mariadb:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: $default_pwd
+      MYSQL_DATABASE: nextcloud
+      MYSQL_USER: nextcloud
+      MYSQL_PASSWORD: $default_pwd
     restart: unless-stopped
     depends_on:
       - postgres
@@ -60,7 +99,7 @@ services:
       MM_SERVICESETTINGS_WEBSOCKETURL: ""
       MM_SERVICESETTINGS_ENABLEFILEATTACHMENTS: true
       
-      # Teams Alternative Plugin System
+      # Teams Alternative with Plugin Marketplace
       MM_PLUGINSETTINGS_ENABLE: true
       MM_PLUGINSETTINGS_ENABLEUPLOADS: true
       MM_PLUGINSETTINGS_AUTOMATICPREPACKAGEDPLUGINS: true
@@ -127,84 +166,6 @@ x-casaos:
   title:
     en_us: Mattermost
     ko_kr: Mattermost
-  tips:
-    before_install:
-      en_us: |
-        **Mattermost: Complete Microsoft Teams Replacement**
-        
-        🚀 **Enterprise Features Pre-configured:**
-        - Unlimited messaging & channels
-        - Video calls (via plugin marketplace)
-        - File sharing up to 100MB
-        - Screen sharing capabilities
-        - Mobile & desktop apps
-        - Advanced notifications
-        - Team management tools
-        
-        📋 **Quick Setup Guide:**
-        1. Access: https://3000-mattermost-username.nsl.sh/
-        2. Create admin account (first user = system admin)
-        3. Create your team/organization
-        4. Install plugins from marketplace:
-           - Jitsi Meet (video calls)
-           - GitHub (code collaboration)
-           - Google Drive (file sharing)
-           - Zoom (backup video)
-        
-        🔧 **Teams Migration Benefits:**
-        ✅ No per-user licensing costs
-        ✅ Complete data ownership
-        ✅ Better performance (local hosting)
-        ✅ Advanced customization
-        ✅ Enterprise security controls
-        ✅ API integrations
-        
-        🎯 **Key Difference from Teams:**
-        - Plugins installed via System Console → Marketplace
-        - More secure (self-hosted)
-        - No Microsoft account required
-        - Unlimited file storage
-        
-        **Database Password:** $default_pwd
-        **Plugin Marketplace:** Enabled for easy installation
-      ko_kr: |
-        **Mattermost: 완전한 Microsoft Teams 대체재**
-        
-        🚀 **사전 구성된 엔터프라이즈 기능:**
-        - 무제한 메시징 및 채널
-        - 화상 통화 (플러그인 마켓플레이스 통해)
-        - 최대 100MB 파일 공유
-        - 화면 공유 기능
-        - 모바일 및 데스크톱 앱
-        - 고급 알림 시스템
-        - 팀 관리 도구
-        
-        📋 **빠른 설정 가이드:**
-        1. 접속: https://3000-mattermost-username.nsl.sh/
-        2. 관리자 계정 생성 (첫 사용자 = 시스템 관리자)
-        3. 팀/조직 생성
-        4. 마켓플레이스에서 플러그인 설치:
-           - Jitsi Meet (화상 통화)
-           - GitHub (코드 협업)
-           - Google Drive (파일 공유)
-           - Zoom (백업 화상 통화)
-        
-        🔧 **Teams 마이그레이션 장점:**
-        ✅ 사용자당 라이선스 비용 없음
-        ✅ 완전한 데이터 소유권
-        ✅ 더 나은 성능 (로컬 호스팅)
-        ✅ 고급 커스터마이징
-        ✅ 엔터프라이즈 보안 제어
-        ✅ API 통합 지원
-        
-        🎯 **Teams와의 주요 차이점:**
-        - 시스템 콘솔 → 마켓플레이스를 통한 플러그인 설치
-        - 더 안전함 (자체 호스팅)
-        - Microsoft 계정 불필요
-        - 무제한 파일 저장소
-        
-        **데이터베이스 비밀번호:** $default_pwd
-        **플러그인 마켓플레이스:** 쉬운 설치를 위해 활성화됨
   pre-install-cmd: mkdir -p /DATA/AppData/$AppID/config /DATA/AppData/$AppID/data /DATA/AppData/$AppID/logs /DATA/AppData/$AppID/plugins /DATA/AppData/$AppID/postgres && chown -R $PUID:$PGID /DATA/AppData/$AppID
   index: /
   port_map: "3000"
