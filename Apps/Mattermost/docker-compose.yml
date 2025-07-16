@@ -24,47 +24,8 @@ services:
       retries: 3
       start_period: 120s
 
-  nextcloud:
-    image: nextcloud:28-apache
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-          cpus: '0.5'
-    expose:
-      - 80
-    volumes:
-      - /DATA/AppData/$AppID/nextcloud/html:/var/www/html
-      - /DATA/AppData/$AppID/nextcloud/data:/var/www/html/data
-      - /DATA/Media:/var/www/html/data/shared_media
-      - /DATA/Documents:/var/www/html/data/shared_docs
-    environment:
-      NEXTCLOUD_ADMIN_USER: admin
-      NEXTCLOUD_ADMIN_PASSWORD: $default_pwd
-      NEXTCLOUD_TRUSTED_DOMAINS: "4000-$domain"
-      MYSQL_HOST: db
-      MYSQL_DATABASE: nextcloud
-      MYSQL_USER: nextcloud
-      MYSQL_PASSWORD: $default_pwd
-    depends_on:
-      - db
-
-  db:
-    image: mariadb:10.11
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-          cpus: '0.3'
-    volumes:
-      - /DATA/AppData/$AppID/mariadb:/var/lib/mysql
-    environment:
-      MYSQL_ROOT_PASSWORD: $default_pwd
-      MYSQL_DATABASE: nextcloud
-      MYSQL_USER: nextcloud
-      MYSQL_PASSWORD: $default_pwd
+  mattermost:
+    image: mattermost/mattermost-team-edition:10.9.1
     restart: unless-stopped
     depends_on:
       - postgres
@@ -84,12 +45,8 @@ services:
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
-      
-      # Core Database Settings
       MM_SQLSETTINGS_DRIVERNAME: postgres
       MM_SQLSETTINGS_DATASOURCE: postgres://mmuser:$default_pwd@postgres:5432/mattermost?sslmode=disable&connect_timeout=10
-      
-      # Server Settings for Teams Alternative
       MM_SERVICESETTINGS_SITEURL: "https://3000-$domain"
       MM_SERVICESETTINGS_LISTENADDRESS: ":3000"
       MM_SERVICESETTINGS_ENABLELOCALMODE: true
@@ -98,48 +55,16 @@ services:
       MM_SERVICESETTINGS_ALLOWCORSFROM: "*"
       MM_SERVICESETTINGS_WEBSOCKETURL: ""
       MM_SERVICESETTINGS_ENABLEFILEATTACHMENTS: true
-      
-      # Teams Alternative with Plugin Marketplace
       MM_PLUGINSETTINGS_ENABLE: true
       MM_PLUGINSETTINGS_ENABLEUPLOADS: true
       MM_PLUGINSETTINGS_AUTOMATICPREPACKAGEDPLUGINS: true
       MM_PLUGINSETTINGS_ENABLEREMOTEMARKETPLACE: true
-      MM_PLUGINSETTINGS_MARKETPLACEURL: "https://api.integrations.mattermost.com"
-      
-      # Video Conferencing (Teams calls replacement)
-      MM_PLUGINSETTINGS_ENABLEJITSI: true
-      MM_PLUGINSETTINGS_ENABLEZOOM: true
-      
-      # File and Media Settings (Teams file sharing)
       MM_FILESETTINGS_MAXFILESIZE: 104857600
       MM_FILESETTINGS_ENABLEFILEATTACHMENTS: true
       MM_FILESETTINGS_ENABLEPUBLICLINK: true
-      MM_FILESETTINGS_ENABLEMOBILEUPLOAD: true
-      MM_FILESETTINGS_ENABLEMOBILEDOWNLOAD: true
-      
-      # Team and User Management
       MM_TEAMSETTINGS_ENABLETEAMCREATION: true
       MM_TEAMSETTINGS_ENABLEUSERCREATION: true
-      MM_TEAMSETTINGS_ENABLEOPENSERVER: false
-      MM_TEAMSETTINGS_RESTRICTCREATIONTDOMAINS: ""
-      
-      # Notification Settings (Teams alerts replacement)
-      MM_NOTIFICATIONSETTINGS_DEFAULTSERVERPUSHENABLED: true
-      MM_NOTIFICATIONSETTINGS_DEFAULTCHANNELPUSHENABLED: true
-      MM_NOTIFICATIONSETTINGS_DEFAULTDESKTOPNOTIFICATIONSENABLED: true
-      MM_NOTIFICATIONSETTINGS_DEFAULTPUSHSTATUS: "mention"
-      
-      # Email Integration (Teams notifications)
-      MM_EMAILSETTINGS_SENDEMAILNOTIFICATIONS: true
-      MM_EMAILSETTINGS_ENABLEEMAILBATCHING: true
-      MM_EMAILSETTINGS_EMAILBATCHINGBUFFERSIZE: 256
-      MM_EMAILSETTINGS_EMAILBATCHINGINTERVAL: 30
-      
-      # Security and Privacy
-      MM_PRIVACYSETTINGS_SHOWEMAILADDRESS: true
-      MM_PRIVACYSETTINGS_SHOWFULLNAME: true
-      
-      # Logging for Teams Migration
+      MM_EMAILSETTINGS_SENDEMAILNOTIFICATIONS: false
       MM_LOGSETTINGS_CONSOLELEVEL: "INFO"
       MM_LOGSETTINGS_FILELEVEL: "INFO"
 
@@ -150,23 +75,86 @@ x-casaos:
   author: Yundera Team
   category: Communication
   description:
-    en_us: Complete Microsoft Teams alternative with video calls, file sharing, team collaboration, and enterprise features
-    ko_kr: 화상 통화, 파일 공유, 팀 협업 및 엔터프라이즈 기능을 갖춘 완전한 Microsoft Teams 대체 솔루션
-    fr_fr: Alternative complète à Microsoft Teams avec appels vidéo, partage de fichiers, collaboration d'équipe et fonctionnalités d'entreprise
-    es_es: Alternativa completa a Microsoft Teams con videollamadas, intercambio de archivos, colaboración en equipo y funciones empresariales
-    zh_cn: 具有视频通话、文件共享、团队协作和企业功能的完整Microsoft Teams替代方案
+    en_us: Self-hosted Microsoft Teams alternative with voice calls, video calls, screen sharing and team collaboration
+    ko_kr: 음성 통화, 화상 통화, 화면 공유 및 팀 협업 기능을 갖춘 자체 호스팅 Microsoft Teams 대체 솔루션
+    fr_fr: Alternative auto-hébergée à Microsoft Teams avec appels vocaux, appels vidéo, partage d'écran et collaboration d'équipe
+    es_es: Alternativa auto-alojada a Microsoft Teams con llamadas de voz, videollamadas, intercambio de pantalla y colaboración en equipo
+    zh_cn: 具有语音通话、视频通话、屏幕共享和团队协作功能的自托管Microsoft Teams替代方案
   developer: Mattermost, Inc.
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mattermost/icon.png
   tagline:
-    en_us: Enterprise Teams alternative - self-hosted
-    ko_kr: 엔터프라이즈 Teams 대체 - 자체 호스팅
-    fr_fr: Alternative Teams d'entreprise - auto-hébergée
-    es_es: Alternativa Teams empresarial - auto-alojada
-    zh_cn: 企业Teams替代方案 - 自托管
+    en_us: Microsoft Teams alternative with calling features
+    ko_kr: 통화 기능을 갖춘 Microsoft Teams 대체 솔루션
+    fr_fr: Alternative à Microsoft Teams avec fonctionnalités d'appel
+    es_es: Alternativa a Microsoft Teams con funciones de llamada
+    zh_cn: 具有通话功能的Microsoft Teams替代方案
   title:
     en_us: Mattermost
     ko_kr: Mattermost
-  pre-install-cmd: mkdir -p /DATA/AppData/$AppID/config /DATA/AppData/$AppID/data /DATA/AppData/$AppID/logs /DATA/AppData/$AppID/plugins /DATA/AppData/$AppID/postgres && chown -R $PUID:$PGID /DATA/AppData/$AppID
+  tips:
+    before_install:
+      en_us: |
+        **Mattermost Teams Alternative**
+        
+        Ready for Microsoft Teams migration with enterprise features:
+        
+        🚀 **Core Features:**
+        - Team channels & direct messaging
+        - File sharing (100MB per file)
+        - Mobile & desktop apps
+        - Plugin marketplace access
+        - Advanced notifications
+        
+        📞 **Voice & Video Calls Setup:**
+        After installation, enable calling features:
+        1. Go to System Console → Plugins → Marketplace
+        2. Install "Calls" plugin (official Mattermost plugin)
+        3. Activate for voice/video calls and screen sharing
+        
+        📋 **Quick Start:**
+        1. Access: https://3000-mattermost-username.nsl.sh/
+        2. Create admin account (first user becomes admin)
+        3. Create your team/organization
+        4. Install Calls plugin for full Teams experience
+        
+        🎯 **Teams vs Mattermost:**
+        - ✅ No per-user licensing fees
+        - ✅ Complete data ownership
+        - ✅ Better performance (self-hosted)
+        - ✅ Full customization control
+        
+        Database password: $default_pwd
+      ko_kr: |
+        **Mattermost Teams 대체 솔루션**
+        
+        엔터프라이즈 기능을 갖춘 Microsoft Teams 마이그레이션 준비:
+        
+        🚀 **핵심 기능:**
+        - 팀 채널 및 다이렉트 메시징
+        - 파일 공유 (파일당 100MB)
+        - 모바일 및 데스크톱 앱
+        - 플러그인 마켓플레이스 접근
+        - 고급 알림 시스템
+        
+        📞 **음성 및 화상 통화 설정:**
+        설치 후 통화 기능 활성화:
+        1. 시스템 콘솔 → 플러그인 → 마켓플레이스로 이동
+        2. "Calls" 플러그인 설치 (Mattermost 공식 플러그인)
+        3. 음성/화상 통화 및 화면 공유를 위해 활성화
+        
+        📋 **빠른 시작:**
+        1. 접속: https://3000-mattermost-username.nsl.sh/
+        2. 관리자 계정 생성 (첫 사용자가 관리자가 됨)
+        3. 팀/조직 생성
+        4. 완전한 Teams 경험을 위해 Calls 플러그인 설치
+        
+        🎯 **Teams vs Mattermost:**
+        - ✅ 사용자당 라이선스 비용 없음
+        - ✅ 완전한 데이터 소유권
+        - ✅ 더 나은 성능 (자체 호스팅)
+        - ✅ 완전한 커스터마이징 제어
+        
+        데이터베이스 비밀번호: $default_pwd
   index: /
   port_map: "3000"
   store_app_id: mattermost
