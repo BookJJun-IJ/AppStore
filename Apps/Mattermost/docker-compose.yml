@@ -18,7 +18,7 @@ services:
       POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
       PGDATA: /var/lib/postgresql/data/pgdata
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/api/v4/system/ping"]
+      test: ["CMD-SHELL", "pg_isready -U mmuser -d mattermost"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -27,7 +27,7 @@ services:
       - mattermost-net
 
   mattermost:
-    image: mattermost/mattermost-team-edition:9.11.0
+    image: mattermost/mattermost-team-edition:10.9.1
     user: $PUID:$PGID
     restart: unless-stopped
     depends_on:
@@ -51,22 +51,27 @@ services:
       
       MM_SQLSETTINGS_DRIVERNAME: postgres
       MM_SQLSETTINGS_DATASOURCE: postgres://mmuser:$default_pwd@postgres:5432/mattermost?sslmode=disable&connect_timeout=10
-      MM_SERVICESETTINGS_SITEURL: "https://mattermost-$CASAOS_USERNAME.nsl.sh"
+      MM_SERVICESETTINGS_SITEURL: "https://$domain"
       MM_SERVICESETTINGS_LISTENADDRESS: ":80"
       MM_SERVICESETTINGS_ENABLELOCALMODE: true
       MM_SERVICESETTINGS_SUBPATH: ""
       
-      # 간소화된 설정으로 안정성 우선
-      MM_PLUGINSETTINGS_ENABLE: false
-      MM_PLUGINSETTINGS_ENABLEUPLOADS: false
-      MM_PLUGINSETTINGS_AUTOMATICPREPACKAGEDPLUGINS: false
+      # 플러그인 활성화 (실시간 채팅, 통화 기능용)
+      MM_PLUGINSETTINGS_ENABLE: true
+      MM_PLUGINSETTINGS_ENABLEUPLOADS: true
+      MM_PLUGINSETTINGS_AUTOMATICPREPACKAGEDPLUGINS: true
       
       MM_TEAMSETTINGS_ENABLETEAMCREATION: true
       MM_TEAMSETTINGS_ENABLEUSERCREATION: true
       
       MM_FILESETTINGS_MAXFILESIZE: 52428800
       
+      # 이메일 알림 비활성화 (간단한 설정)
       MM_EMAILSETTINGS_SENDEMAILNOTIFICATIONS: false
+      
+      # 통화 기능 활성화
+      MM_PLUGINSETTINGS_CLIENTDIRECTORY: "/mattermost/client/plugins"
+      MM_CLUSTERSETTINGS_ENABLE: false
     networks:
       - mattermost-net
 
@@ -81,38 +86,54 @@ x-casaos:
   author: Yundera Team
   category: Communication
   description:
-    en_us: Open-source team communication platform similar to Slack
-    ko_kr: Slack과 유사한 오픈소스 팀 커뮤니케이션 플랫폼
+    en_us: Open-source team communication platform similar to Slack with real-time messaging, voice calls, and collaboration features
+    ko_kr: Slack과 유사한 오픈소스 팀 커뮤니케이션 플랫폼으로 실시간 메시징, 음성 통화, 협업 기능 제공
+    fr_fr: Plateforme de communication d'équipe open-source similaire à Slack avec messagerie en temps réel, appels vocaux et fonctionnalités de collaboration
+    es_es: Plataforma de comunicación de equipo de código abierto similar a Slack con mensajería en tiempo real, llamadas de voz y funciones de colaboración
+    zh_cn: 类似Slack的开源团队沟通平台，提供实时消息、语音通话和协作功能
   developer: Mattermost, Inc.
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mattermost/icon.png
   tagline:
-    en_us: Team chat and collaboration
-    ko_kr: 팀 채팅 및 협업
+    en_us: Team chat, calls, and collaboration
+    ko_kr: 팀 채팅, 통화 및 협업
+    fr_fr: Chat d'équipe, appels et collaboration
+    es_es: Chat de equipo, llamadas y colaboración
+    zh_cn: 团队聊天、通话和协作
   title:
     en_us: Mattermost
     ko_kr: Mattermost
   tips:
     before_install:
       en_us: |
-        **Simple Mattermost Setup**
+        **Mattermost Team Communication Setup**
         
         1. Visit the web interface after installation
-        2. Create your first account (becomes admin)
-        3. Create a team and start chatting!
+        2. Create your first account (becomes system admin)
+        3. Create a team and invite members
+        4. Enable plugins for voice calls and advanced features
+        
+        **Features enabled:**
+        - Real-time messaging and notifications
+        - Voice and video calls
+        - File sharing and screen sharing
+        - Plugin support for integrations
         
         Database password: `$default_pwd`
       ko_kr: |
-        **간단한 Mattermost 설정**
+        **Mattermost 팀 커뮤니케이션 설정**
         
         1. 설치 후 웹 인터페이스 방문
-        2. 첫 번째 계정 생성 (관리자가 됨)
-        3. 팀 생성하고 채팅 시작!
+        2. 첫 번째 계정 생성 (시스템 관리자가 됨)
+        3. 팀 생성 및 멤버 초대
+        4. 음성 통화 및 고급 기능을 위한 플러그인 활성화
+        
+        **활성화된 기능:**
+        - 실시간 메시징 및 알림
+        - 음성 및 화상 통화
+        - 파일 공유 및 화면 공유
+        - 통합을 위한 플러그인 지원
         
         데이터베이스 비밀번호: `$default_pwd`
   index: /
-  port_map: "8065"
+  port_map: "80"
   store_app_id: mattermost
-  pre_install_cmd: |
-    mkdir -p /DATA/AppData/$AppID/{config,data,logs,plugins,postgres} &&
-    chown -R $PUID:$PGID /DATA/AppData/$AppID &&
-    echo "Mattermost basic setup completed"
