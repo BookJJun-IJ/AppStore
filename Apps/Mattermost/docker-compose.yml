@@ -30,7 +30,8 @@ services:
     image: mattermost/mattermost-team-edition:10.9.1
     restart: unless-stopped
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     deploy:
       resources:
         limits:
@@ -43,7 +44,6 @@ services:
       - /DATA/AppData/$AppID/data:/mattermost/data
       - /DATA/AppData/$AppID/logs:/mattermost/logs
       - /DATA/AppData/$AppID/plugins:/mattermost/plugins
-      - /DATA/AppData/$AppID/client-plugins:/mattermost/client/plugins
     environment:
       PUID: $PUID
       PGID: $PGID
@@ -54,24 +54,23 @@ services:
       MM_SERVICESETTINGS_SITEURL: "https://$domain"
       MM_SERVICESETTINGS_LISTENADDRESS: ":80"
       MM_SERVICESETTINGS_ENABLELOCALMODE: true
-      MM_SERVICESETTINGS_SUBPATH: ""
       
-      # 플러그인 활성화 (실시간 채팅, 통화 기능용)
-      MM_PLUGINSETTINGS_ENABLE: true
-      MM_PLUGINSETTINGS_ENABLEUPLOADS: true
-      MM_PLUGINSETTINGS_AUTOMATICPREPACKAGEDPLUGINS: true
+      # 플러그인 시스템 완전 비활성화 (안정성 우선)
+      MM_PLUGINSETTINGS_ENABLE: false
+      MM_PLUGINSETTINGS_ENABLEUPLOADS: false
+      MM_PLUGINSETTINGS_AUTOMATICPREPACKAGEDPLUGINS: false
       
       MM_TEAMSETTINGS_ENABLETEAMCREATION: true
       MM_TEAMSETTINGS_ENABLEUSERCREATION: true
       
       MM_FILESETTINGS_MAXFILESIZE: 52428800
       
-      # 이메일 알림 비활성화 (간단한 설정)
+      # 이메일 알림 비활성화
       MM_EMAILSETTINGS_SENDEMAILNOTIFICATIONS: false
       
-      # 통화 기능 활성화
-      MM_PLUGINSETTINGS_CLIENTDIRECTORY: "/mattermost/client/plugins"
-      MM_CLUSTERSETTINGS_ENABLE: false
+      # 추가 안정성 설정
+      MM_SERVICESETTINGS_ENABLEINSECUREOUTGOINGCONNECTIONS: true
+      MM_SERVICESETTINGS_ALLOWCORSFROM: "*"
     networks:
       - mattermost-net
 
@@ -86,58 +85,62 @@ x-casaos:
   author: Yundera Team
   category: Communication
   description:
-    en_us: Open-source team communication platform similar to Slack with real-time messaging, voice calls, and collaboration features
-    ko_kr: Slack과 유사한 오픈소스 팀 커뮤니케이션 플랫폼으로 실시간 메시징, 음성 통화, 협업 기능 제공
-    fr_fr: Plateforme de communication d'équipe open-source similaire à Slack avec messagerie en temps réel, appels vocaux et fonctionnalités de collaboration
-    es_es: Plataforma de comunicación de equipo de código abierto similar a Slack con mensajería en tiempo real, llamadas de voz y funciones de colaboración
-    zh_cn: 类似Slack的开源团队沟通平台，提供实时消息、语音通话和协作功能
+    en_us: Open-source team communication platform similar to Slack with secure messaging and collaboration features
+    ko_kr: Slack과 유사한 오픈소스 팀 커뮤니케이션 플랫폼으로 보안 메시징 및 협업 기능 제공
+    fr_fr: Plateforme de communication d'équipe open-source similaire à Slack avec messagerie sécurisée et fonctionnalités de collaboration
+    es_es: Plataforma de comunicación de equipo de código abierto similar a Slack con mensajería segura y funciones de colaboración
+    zh_cn: 类似Slack的开源团队沟通平台，提供安全消息传递和协作功能
   developer: Mattermost, Inc.
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mattermost/icon.png
   tagline:
-    en_us: Team chat, calls, and collaboration
-    ko_kr: 팀 채팅, 통화 및 협업
-    fr_fr: Chat d'équipe, appels et collaboration
-    es_es: Chat de equipo, llamadas y colaboración
-    zh_cn: 团队聊天、通话和协作
+    en_us: Secure team chat and collaboration
+    ko_kr: 보안 팀 채팅 및 협업
+    fr_fr: Chat d'équipe et collaboration sécurisés
+    es_es: Chat de equipo y colaboración seguros
+    zh_cn: 安全的团队聊天和协作
   title:
     en_us: Mattermost
     ko_kr: Mattermost
   tips:
     before_install:
       en_us: |
-        **Mattermost Team Communication Setup**
+        **Mattermost Team Communication (Latest Version)**
+        
+        This uses the latest stable version with basic features enabled.
         
         1. Visit the web interface after installation
         2. Create your first account (becomes system admin)
-        3. Create a team and invite members
-        4. Enable plugins for voice calls and advanced features
+        3. Create a team and start messaging!
+        4. Enable advanced features later in System Console
         
-        **Features enabled:**
-        - Real-time messaging and notifications
-        - Voice and video calls
-        - File sharing and screen sharing
-        - Plugin support for integrations
+        **Core features included:**
+        - Real-time team messaging
+        - File sharing capabilities
+        - Channel-based organization
+        - Direct messaging
+        
+        **Note**: Plugins disabled initially for stability. Enable them manually in System Console after setup.
         
         Database password: `$default_pwd`
       ko_kr: |
-        **Mattermost 팀 커뮤니케이션 설정**
+        **Mattermost 팀 커뮤니케이션 (최신 버전)**
+        
+        기본 기능이 활성화된 최신 안정 버전을 사용합니다.
         
         1. 설치 후 웹 인터페이스 방문
         2. 첫 번째 계정 생성 (시스템 관리자가 됨)
-        3. 팀 생성 및 멤버 초대
-        4. 음성 통화 및 고급 기능을 위한 플러그인 활성화
+        3. 팀 생성하고 메시징 시작!
+        4. 나중에 시스템 콘솔에서 고급 기능 활성화
         
-        **활성화된 기능:**
-        - 실시간 메시징 및 알림
-        - 음성 및 화상 통화
-        - 파일 공유 및 화면 공유
-        - 통합을 위한 플러그인 지원
+        **포함된 핵심 기능:**
+        - 실시간 팀 메시징
+        - 파일 공유 기능
+        - 채널 기반 조직
+        - 다이렉트 메시징
+        
+        **참고**: 안정성을 위해 플러그인이 초기에 비활성화되어 있습니다. 설정 후 시스템 콘솔에서 수동으로 활성화하세요.
         
         데이터베이스 비밀번호: `$default_pwd`
   index: /
   port_map: "80"
   store_app_id: mattermost
-  pre-install-cmd: |
-    mkdir -p /DATA/AppData/$AppID/{config,data,logs,plugins,postgres,client-plugins} &&
-    chown -R $PUID:$PGID /DATA/AppData/$AppID &&
-    chmod -R 755 /DATA/AppData/$AppID
