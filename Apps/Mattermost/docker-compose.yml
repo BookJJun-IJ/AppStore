@@ -68,6 +68,12 @@ services:
       MM_EMAILSETTINGS_SENDEMAILNOTIFICATIONS: false
       MM_LOGSETTINGS_CONSOLELEVEL: "INFO"
       MM_LOGSETTINGS_FILELEVEL: "INFO"
+      # Calls 플러그인 설정 - 테스트 모드 비활성화
+      MM_PLUGINSETTINGS_PLUGINS_COM_MATTERMOST_CALLS_ENABLEPLUGIN: true
+      MM_PLUGINSETTINGS_PLUGINS_COM_MATTERMOST_CALLS_ALLOWUSERSTOSTARTCALLS: true
+      MM_PLUGINSETTINGS_PLUGINS_COM_MATTERMOST_CALLS_TESTMODE: false
+      MM_PLUGINSETTINGS_PLUGINS_COM_MATTERMOST_CALLS_DEFAULTENABLED: true
+      MM_PLUGINSETTINGS_PLUGINS_COM_MATTERMOST_CALLS_ALLOWSCREENSHARING: true
 
 x-casaos:
   architectures: [amd64, arm64]
@@ -114,16 +120,16 @@ x-casaos:
         - Advanced notifications
         
         📞 **Voice & Video Calls Setup:**
-        After installation, enable calling features:
-        1. Go to System Console → Plugins → Marketplace
-        2. Install "Calls" plugin (official Mattermost plugin)
-        3. Activate for voice/video calls and screen sharing
+        Calling features are automatically enabled and configured:
+        - Voice calls, video calls, and screen sharing ready
+        - No manual plugin installation required
+        - Test mode disabled for all users
         
         📋 **Quick Start:**
         1. Access: https://3000-mattermost-username.nsl.sh/
         2. Create admin account (first user becomes admin)
         3. Create your team/organization
-        4. Install Calls plugin for full Teams experience
+        4. Start using voice/video calls immediately!
         
         🎯 **Teams vs Mattermost:**
         - ✅ No per-user licensing fees
@@ -145,16 +151,16 @@ x-casaos:
         - 고급 알림 시스템
         
         📞 **음성 및 화상 통화 설정:**
-        설치 후 통화 기능 활성화:
-        1. 시스템 콘솔 → 플러그인 → 마켓플레이스로 이동
-        2. "Calls" 플러그인 설치 (Mattermost 공식 플러그인)
-        3. 음성/화상 통화 및 화면 공유를 위해 활성화
+        통화 기능이 자동으로 활성화되고 구성됩니다:
+        - 음성 통화, 화상 통화, 화면 공유 준비 완료
+        - 수동 플러그인 설치 불필요
+        - 모든 사용자를 위해 테스트 모드 비활성화
         
         📋 **빠른 시작:**
         1. 접속: https://3000-mattermost-username.nsl.sh/
         2. 관리자 계정 생성 (첫 사용자가 관리자가 됨)
         3. 팀/조직 생성
-        4. 완전한 Teams 경험을 위해 Calls 플러그인 설치
+        4. 바로 음성/화상 통화 사용 시작!
         
         🎯 **Teams vs Mattermost:**
         - ✅ 사용자당 라이선스 비용 없음
