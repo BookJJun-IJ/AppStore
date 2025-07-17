@@ -2,7 +2,7 @@ name: rocketchat-simple
 
 services:
   mongodb:
-    image: mongo:6.0
+    image: mongo:4.4
     user: $PUID:$PGID
     deploy:
       resources:
@@ -16,6 +16,12 @@ services:
       - /DATA/AppData/$AppID/mongodb:/data/db
     restart: unless-stopped
     command: mongod --quiet --logpath /dev/null
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongo localhost:27017/test --quiet
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
 
   rocketchat:
     image: registry.rocket.chat/rocketchat/rocket.chat:7.5.0
@@ -41,7 +47,8 @@ services:
       - /DATA/AppData/$AppID/uploads:/app/uploads
       - /DATA/AppData/$AppID/data:/app/data
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_healthy
     restart: unless-stopped
 
 x-casaos:
@@ -52,7 +59,7 @@ x-casaos:
   author: Yundera Team
   category: Utilities
   description:
-    en_us: Rocket.Chat team communication platform with MongoDB 6.0 for older CPU compatibility
+    en_us: Rocket.Chat team communication platform with MongoDB 4.4 for maximum CPU compatibility
   developer: Rocket.Chat Technologies Corp.
   tagline:
     en_us: Team communication platform compatible with older hardware
@@ -62,6 +69,6 @@ x-casaos:
     before_install:
       en_us: |
         Default login: admin / (auto-generated password)
-        Compatible with older CPUs - no AVX requirement
+        MongoDB 4.4 - Compatible with ALL CPUs (no AVX requirement)
   index: /
   webui_port: 80
