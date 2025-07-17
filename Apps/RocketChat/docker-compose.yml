@@ -3,6 +3,7 @@ name: rocketchat
 services:
   mongodb:
     image: bitnami/mongodb:6.0
+    user: 0:0
     deploy:
       resources:
         limits:
@@ -17,6 +18,8 @@ services:
       MONGODB_ADVERTISED_HOSTNAME: mongodb
       MONGODB_ENABLE_JOURNAL: true
       ALLOW_EMPTY_PASSWORD: yes
+      PUID: 0
+      PGID: 0
     volumes:
       - /DATA/AppData/$AppID/mongodb:/bitnami/mongodb
     restart: unless-stopped
@@ -30,12 +33,12 @@ services:
           memory: 1G
           cpus: '1.0'
     expose:
-      - 80
+      - 3000
     environment:
       MONGO_URL: mongodb://mongodb:27017/rocketchat?replicaSet=rs0
       MONGO_OPLOG_URL: mongodb://mongodb:27017/local?replicaSet=rs0
       ROOT_URL: https://$domain
-      PORT: 80
+      PORT: 3000
       INITIAL_USER: admin
       INITIAL_PASS: $default_pwd
       ADMIN_USERNAME: admin
@@ -174,4 +177,4 @@ x-casaos:
         - 모든 데이터는 `/DATA/AppData/rocketchat/`에 저장됩니다
         - MongoDB는 최초 시작 시 30-60초가 소요됩니다
   index: /
-  webui_port: 80
+  webui_port: 3000
