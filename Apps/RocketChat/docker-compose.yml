@@ -1,0 +1,185 @@
+name: rocketchat
+
+services:
+  mongodb:
+    image: bitnami/mongodb:7.0.14
+    user: $PUID:$PGID
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+    environment:
+      MONGODB_REPLICA_SET_MODE: primary
+      MONGODB_REPLICA_SET_NAME: rs0
+      MONGODB_PORT_NUMBER: 27017
+      MONGODB_INITIAL_PRIMARY_HOST: mongodb
+      MONGODB_INITIAL_PRIMARY_PORT_NUMBER: 27017
+      MONGODB_ADVERTISED_HOSTNAME: mongodb
+      MONGODB_ENABLE_JOURNAL: true
+      ALLOW_EMPTY_PASSWORD: yes
+      PUID: $PUID
+      PGID: $PGID
+    volumes:
+      - /DATA/AppData/$AppID/mongodb:/bitnami/mongodb
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mongosh", "--port", "27017", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+  rocketchat:
+    image: registry.rocket.chat/rocketchat/rocket.chat:7.4.1
+    user: $PUID:$PGID
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+    expose:
+      - 80
+    environment:
+      MONGO_URL: mongodb://mongodb:27017/rocketchat?replicaSet=rs0
+      MONGO_OPLOG_URL: mongodb://mongodb:27017/local?replicaSet=rs0
+      ROOT_URL: https://$domain
+      PORT: 80
+      INITIAL_USER: admin
+      INITIAL_PASS: $default_pwd
+      ADMIN_USERNAME: admin
+      ADMIN_PASS: $default_pwd
+      ADMIN_EMAIL: admin@$domain
+      PUID: $PUID
+      PGID: $PGID
+      TZ: $TZ
+      INSTANCE_IP: $public_ip
+    volumes:
+      - /DATA/AppData/$AppID/uploads:/app/uploads
+      - /DATA/AppData/$AppID/data:/app/data
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    restart: unless-stopped
+
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  main: rocketchat
+  author: Yundera Team
+  category: Communication
+  description:
+    en_us: |
+      Rocket.Chat is a fully customizable communications platform for organizations with high standards of data protection. 
+      
+      **Features:**
+      - Open source team communication
+      - Real-time messaging and file sharing
+      - Video conferencing and screen sharing
+      - Omnichannel customer service
+      - Advanced security and compliance
+      - Mobile and desktop apps
+      - API and integrations
+      
+      **Default Login:**
+      - Username: admin
+      - Password: Check the default password in CasaOS settings
+    ko_kr: |
+      Rocket.Chat은 높은 수준의 데이터 보호 기준을 가진 조직을 위한 완전히 커스터마이징 가능한 커뮤니케이션 플랫폼입니다.
+      
+      **기능:**
+      - 오픈소스 팀 커뮤니케이션
+      - 실시간 메시징 및 파일 공유
+      - 화상 회의 및 화면 공유
+      - 옴니채널 고객 서비스
+      - 고급 보안 및 규정 준수
+      - 모바일 및 데스크톱 앱
+      - API 및 통합
+      
+      **기본 로그인:**
+      - 사용자명: admin
+      - 비밀번호: CasaOS 설정에서 기본 비밀번호 확인
+    zh_cn: |
+      Rocket.Chat 是一个为具有高数据保护标准的组织提供的完全可定制的通信平台。
+      
+      **功能特点:**
+      - 开源团队通信
+      - 实时消息和文件共享
+      - 视频会议和屏幕共享
+      - 全渠道客户服务
+      - 高级安全和合规性
+      - 移动和桌面应用
+      - API 和集成
+      
+      **默认登录:**
+      - 用户名: admin
+      - 密码: 请在 CasaOS 设置中查看默认密码
+    fr_fr: |
+      Rocket.Chat est une plateforme de communication entièrement personnalisable pour les organisations ayant des normes élevées de protection des données.
+      
+      **Fonctionnalités:**
+      - Communication d'équipe open source
+      - Messagerie en temps réel et partage de fichiers
+      - Visioconférence et partage d'écran
+      - Service client omnicanal
+      - Sécurité avancée et conformité
+      - Applications mobiles et de bureau
+      - API et intégrations
+      
+      **Connexion par défaut:**
+      - Nom d'utilisateur: admin
+      - Mot de passe: Vérifiez le mot de passe par défaut dans les paramètres CasaOS
+    es_es: |
+      Rocket.Chat es una plataforma de comunicaciones completamente personalizable para organizaciones con altos estándares de protección de datos.
+      
+      **Características:**
+      - Comunicación de equipo de código abierto
+      - Mensajería en tiempo real y compartición de archivos
+      - Videoconferencia y compartición de pantalla
+      - Servicio al cliente omnicanal
+      - Seguridad avanzada y cumplimiento
+      - Aplicaciones móviles y de escritorio
+      - API e integraciones
+      
+      **Inicio de sesión predeterminado:**
+      - Nombre de usuario: admin
+      - Contraseña: Verifique la contraseña predeterminada en la configuración de CasaOS
+  developer: Rocket.Chat Technologies Corp.
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/RocketChat/icon.png
+  screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/RocketChat/screenshot-1.png
+  tagline:
+    en_us: Open-source team communication platform with enterprise-grade security
+    ko_kr: 엔터프라이즈급 보안을 갖춘 오픈소스 팀 커뮤니케이션 플랫폼
+    zh_cn: 具有企业级安全性的开源团队通信平台
+    fr_fr: Plateforme de communication d'équipe open source avec sécurité de niveau entreprise
+    es_es: Plataforma de comunicación de equipo de código abierto con seguridad empresarial
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/RocketChat/thumbnail.png
+  title:
+    en_us: Rocket.Chat
+  tips:
+    before_install:
+      en_us: |
+        **Default Account**
+        | Username | Password |
+        | -------- | -------- |
+        | `admin`  | `$default_pwd` |
+        
+        **Important Notes:**
+        - First-time setup will create the admin account automatically
+        - You can change the admin password after first login
+        - The app includes MongoDB database for data storage
+        - All data is stored in `/DATA/AppData/rocketchat/`
+      ko_kr: |
+        **기본 계정**
+        | 사용자명 | 비밀번호 |
+        | -------- | -------- |
+        | `admin`  | `$default_pwd` |
+        
+        **중요 사항:**
+        - 최초 설정 시 관리자 계정이 자동으로 생성됩니다
+        - 첫 로그인 후 관리자 비밀번호를 변경할 수 있습니다
+        - 앱에는 데이터 저장을 위한 MongoDB 데이터베이스가 포함되어 있습니다
+        - 모든 데이터는 `/DATA/AppData/rocketchat/`에 저장됩니다
+  index: /
+  webui_port: 80
