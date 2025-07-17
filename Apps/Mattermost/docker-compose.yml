@@ -3,6 +3,7 @@ name: mattermost
 services:
   postgres:
     image: postgres:13-alpine
+    user: $PUID:$PGID
     restart: unless-stopped
     deploy:
       resources:
@@ -17,6 +18,8 @@ services:
       POSTGRES_DB: mattermost
       POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
       PGDATA: /var/lib/postgresql/data/pgdata
+      PUID: $PUID
+      PGID: $PGID
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U mmuser -d mattermost"]
       interval: 30s
@@ -26,9 +29,11 @@ services:
 
   mattermost:
     image: mattermost/mattermost-team-edition:10.9.1
+    user: $PUID:$PGID
     restart: unless-stopped
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     deploy:
       resources:
         limits:
@@ -74,6 +79,12 @@ services:
       MM_PLUGINSETTINGS_PLUGINS_COM_MATTERMOST_CALLS_TESTMODE: false
       MM_PLUGINSETTINGS_PLUGINS_COM_MATTERMOST_CALLS_DEFAULTENABLED: true
       MM_PLUGINSETTINGS_PLUGINS_COM_MATTERMOST_CALLS_ALLOWSCREENSHARING: true
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/v4/system/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
 
 x-casaos:
   architectures: [amd64, arm64]
@@ -87,7 +98,8 @@ x-casaos:
     mkdir -p /DATA/AppData/$AppID/data &&
     mkdir -p /DATA/AppData/$AppID/logs &&
     mkdir -p /DATA/AppData/$AppID/plugins &&
-    chmod -R 755 /DATA/AppData/$AppID/
+    mkdir -p /DATA/AppData/$AppID/postgres &&
+    chown -R $PUID:$PGID /DATA/AppData/$AppID/
   description:
     en_us: Self-hosted Microsoft Teams alternative with voice calls, video calls, screen sharing and team collaboration
     ko_kr: 음성 통화, 화상 통화, 화면 공유 및 팀 협업 기능을 갖춘 자체 호스팅 Microsoft Teams 대체 솔루션
@@ -95,7 +107,12 @@ x-casaos:
     es_es: Alternativa auto-alojada a Microsoft Teams con llamadas de voz, videollamadas, intercambio de pantalla y colaboración en equipo
     zh_cn: 具有语音通话、视频通话、屏幕共享和团队协作功能的自托管Microsoft Teams替代方案
   developer: Mattermost, Inc.
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mattermost/icon.png
+  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Mattermost/icon.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Mattermost/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Mattermost/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Mattermost/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Mattermost/screenshot-3.png
   tagline:
     en_us: Microsoft Teams alternative with calling features
     ko_kr: 통화 기능을 갖춘 Microsoft Teams 대체 솔루션
@@ -126,7 +143,7 @@ x-casaos:
         - Test mode disabled for all users
         
         📋 **Quick Start:**
-        1. Access: https://3000-mattermost-username.nsl.sh/
+        1. Access: https://mattermost-username.nsl.sh/
         2. Create admin account (first user becomes admin)
         3. Create your team/organization
         4. Start using voice/video calls immediately!
@@ -157,7 +174,7 @@ x-casaos:
         - 모든 사용자를 위해 테스트 모드 비활성화
         
         📋 **빠른 시작:**
-        1. 접속: https://3000-mattermost-username.nsl.sh/
+        1. 접속: https://mattermost-username.nsl.sh/
         2. 관리자 계정 생성 (첫 사용자가 관리자가 됨)
         3. 팀/조직 생성
         4. 바로 음성/화상 통화 사용 시작!
@@ -170,5 +187,5 @@ x-casaos:
         
         데이터베이스 비밀번호: $default_pwd
   index: /
-  port_map: "3000"
+  port_map: "80"
   store_app_id: mattermost
