@@ -2,7 +2,7 @@ name: rocketchat
 
 services:
   mongodb:
-    image: mongo:4.4
+    image: mongo:4.2
     user: $PUID:$PGID
     deploy:
       resources:
