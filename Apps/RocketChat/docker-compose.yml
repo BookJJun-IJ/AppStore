@@ -1,4 +1,4 @@
-name: rocketchat
+name: rocketchat-simple
 
 services:
   mongodb:
@@ -7,15 +7,15 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1G
-          cpus: '0.5'
+          memory: 512M
+          cpus: '0.3'
     environment:
       PUID: $PUID
       PGID: $PGID
     volumes:
       - /DATA/AppData/$AppID/mongodb:/data/db
     restart: unless-stopped
-    command: mongod --replSet rs0 --oplogSize 128 --quiet --logpath /dev/null
+    command: mongod --quiet --logpath /dev/null
 
   rocketchat:
     image: registry.rocket.chat/rocketchat/rocket.chat:7.5.0
@@ -23,11 +23,10 @@ services:
     deploy:
       resources:
         limits:
-          memory: 2G
-          cpus: '1.0'
+          memory: 1G
+          cpus: '0.5'
     environment:
-      MONGO_URL: mongodb://mongodb:27017/rocketchat?replicaSet=rs0
-      MONGO_OPLOG_URL: mongodb://mongodb:27017/local?replicaSet=rs0
+      MONGO_URL: mongodb://mongodb:27017/rocketchat
       ROOT_URL: http://localhost:80
       PORT: 80
       ADMIN_USERNAME: admin
@@ -45,90 +44,24 @@ services:
       - mongodb
     restart: unless-stopped
 
-  mongo-init:
-    image: mongo:6.0
-    user: $PUID:$PGID
-    deploy:
-      resources:
-        limits:
-          memory: 128M
-          cpus: '0.1'
-    depends_on:
-      - mongodb
-    command: >
-      bash -c '
-        sleep 10
-        until mongosh --host mongodb:27017 --eval "print(\"MongoDB connection successful\")" > /dev/null 2>&1; do
-          echo "Waiting for MongoDB..."
-          sleep 5
-        done
-        mongosh --host mongodb:27017 --eval "
-          try {
-            rs.status()
-          } catch(e) {
-            rs.initiate({
-              _id: \"rs0\",
-              members: [{ _id: 0, host: \"mongodb:27017\" }]
-            })
-          }
-        "
-        echo "Replica set initialized"
-      '
-    restart: "no"
-
 x-casaos:
   architectures:
     - amd64
     - arm64
   main: rocketchat
   author: Yundera Team
-  category: Communication
+  category: Utilities
   description:
-    en_us: Rocket.Chat is an open-source fully customizable communications platform with MongoDB replica set support. Compatible with older hardware (MongoDB 6.0 - no AVX requirement).
-    ko_kr: Rocket.Chat은 MongoDB 복제본 세트를 지원하는 오픈소스 완전 맞춤형 커뮤니케이션 플랫폼입니다. 구형 하드웨어와 호환됩니다(MongoDB 6.0 - AVX 요구사항 없음).
-    zh_cn: Rocket.Chat是一个支持MongoDB副本集的开源完全可定制的通信平台。与旧硬件兼容（MongoDB 6.0 - 无AVX要求）。
-    fr_fr: Rocket.Chat est une plateforme de communication entièrement personnalisable et open-source avec support des replica sets MongoDB. Compatible avec le matériel ancien (MongoDB 6.0 - pas d'exigence AVX).
-    es_es: Rocket.Chat es una plataforma de comunicaciones completamente personalizable y de código abierto con soporte para replica sets de MongoDB. Compatible con hardware antiguo (MongoDB 6.0 - sin requisito AVX).
+    en_us: Rocket.Chat team communication platform with MongoDB 6.0 for older CPU compatibility
   developer: Rocket.Chat Technologies Corp.
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Rocket.Chat/icon.png
   tagline:
-    en_us: Production-ready team communication with replica set support
-    ko_kr: 복제본 세트를 지원하는 프로덕션용 팀 커뮤니케이션
-    zh_cn: 支持副本集的生产就绪团队通信
-    fr_fr: Communication d'équipe prête pour la production avec support des replica sets
-    es_es: Comunicación de equipo lista para producción con soporte de replica sets
-  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Rocket.Chat/thumbnail.png
+    en_us: Team communication platform compatible with older hardware
   title:
-    en_us: Rocket.Chat (Production)
-    ko_kr: Rocket.Chat (프로덕션)
-    zh_cn: Rocket.Chat (生产版)
-    fr_fr: Rocket.Chat (Production)
-    es_es: Rocket.Chat (Producción)
+    en_us: Rocket.Chat
   tips:
     before_install:
       en_us: |
-        **Default Account**
-        | Username | Password |
-        |----------|----------|
-        | `admin`  | `$default_pwd` |
-        
-        **Production Features:**
-        - MongoDB 6.0 with replica set (no AVX requirement)
-        - Automatic replica set initialization
-        - High availability and backup support
-        - Compatible with older CPUs
-        - Initial setup takes 2-3 minutes
-      ko_kr: |
-        **기본 계정**
-        | 사용자명 | 비밀번호 |
-        |----------|----------|
-        | `admin`  | `$default_pwd` |
-        
-        **프로덕션 기능:**
-        - 복제본 세트를 갖춘 MongoDB 6.0 (AVX 요구사항 없음)
-        - 자동 복제본 세트 초기화
-        - 고가용성 및 백업 지원
-        - 구형 CPU와 호환
-        - 초기 설정에 2-3분 소요
+        Default login: admin / (auto-generated password)
+        Compatible with older CPUs - no AVX requirement
   index: /
   webui_port: 80
