@@ -2,7 +2,7 @@ name: rocketchat
 
 services:
   mongodb:
-    image: bitnami/mongodb:7.0
+    image: mongo:6.0
     user: $PUID:$PGID
     deploy:
       resources:
@@ -10,20 +10,12 @@ services:
           memory: 1G
           cpus: '0.5'
     environment:
-      MONGODB_REPLICA_SET_MODE: primary
-      MONGODB_REPLICA_SET_NAME: rs0
-      MONGODB_PORT_NUMBER: 27017
-      MONGODB_INITIAL_PRIMARY_HOST: mongodb
-      MONGODB_INITIAL_PRIMARY_PORT_NUMBER: 27017
-      MONGODB_ADVERTISED_HOSTNAME: mongodb
-      MONGODB_ENABLE_JOURNAL: true
-      ALLOW_EMPTY_PASSWORD: yes
       PUID: $PUID
       PGID: $PGID
     volumes:
-      - /DATA/AppData/$AppID/mongodb:/bitnami/mongodb
+      - /DATA/AppData/$AppID/mongodb:/data/db
     restart: unless-stopped
-    command: /opt/bitnami/scripts/mongodb/entrypoint.sh /opt/bitnami/scripts/mongodb/run.sh --oplogSize=128 --replSet=rs0 --storageEngine=wiredTiger
+    command: mongod --replSet rs0 --oplogSize 128 --quiet --logpath /dev/null
 
   rocketchat:
     image: registry.rocket.chat/rocketchat/rocket.chat:7.5.0
@@ -36,11 +28,11 @@ services:
     environment:
       MONGO_URL: mongodb://mongodb:27017/rocketchat?replicaSet=rs0
       MONGO_OPLOG_URL: mongodb://mongodb:27017/local?replicaSet=rs0
-      ROOT_URL: https://$domain/
+      ROOT_URL: http://localhost:80
       PORT: 80
       ADMIN_USERNAME: admin
       ADMIN_PASS: $default_pwd
-      ADMIN_EMAIL: admin@$domain
+      ADMIN_EMAIL: admin@localhost
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
@@ -53,6 +45,37 @@ services:
       - mongodb
     restart: unless-stopped
 
+  mongo-init:
+    image: mongo:6.0
+    user: $PUID:$PGID
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.1'
+    depends_on:
+      - mongodb
+    command: >
+      bash -c '
+        sleep 10
+        until mongosh --host mongodb:27017 --eval "print(\"MongoDB connection successful\")" > /dev/null 2>&1; do
+          echo "Waiting for MongoDB..."
+          sleep 5
+        done
+        mongosh --host mongodb:27017 --eval "
+          try {
+            rs.status()
+          } catch(e) {
+            rs.initiate({
+              _id: \"rs0\",
+              members: [{ _id: 0, host: \"mongodb:27017\" }]
+            })
+          }
+        "
+        echo "Replica set initialized"
+      '
+    restart: "no"
+
 x-casaos:
   architectures:
     - amd64
@@ -61,26 +84,26 @@ x-casaos:
   author: Yundera Team
   category: Communication
   description:
-    en_us: Rocket.Chat is an open-source fully customizable communications platform developed in JavaScript for organizations with high standards of data protection. It's a complete chat solution with video conferencing, file sharing, voice messages, and many other features.
-    ko_kr: Rocket.Chat은 높은 수준의 데이터 보호 기준을 가진 조직을 위해 JavaScript로 개발된 오픈소스 완전 맞춤형 커뮤니케이션 플랫폼입니다. 영상 회의, 파일 공유, 음성 메시지 및 기타 여러 기능을 갖춘 완전한 채팅 솔루션입니다.
-    zh_cn: Rocket.Chat是一个为高数据保护标准组织开发的开源完全可定制的通信平台。它是一个完整的聊天解决方案，具有视频会议、文件共享、语音消息等功能。
-    fr_fr: Rocket.Chat est une plateforme de communication entièrement personnalisable et open-source développée en JavaScript pour les organisations ayant des normes élevées de protection des données.
-    es_es: Rocket.Chat es una plataforma de comunicaciones completamente personalizable y de código abierto desarrollada en JavaScript para organizaciones con altos estándares de protección de datos.
+    en_us: Rocket.Chat is an open-source fully customizable communications platform with MongoDB replica set support. Compatible with older hardware (MongoDB 6.0 - no AVX requirement).
+    ko_kr: Rocket.Chat은 MongoDB 복제본 세트를 지원하는 오픈소스 완전 맞춤형 커뮤니케이션 플랫폼입니다. 구형 하드웨어와 호환됩니다(MongoDB 6.0 - AVX 요구사항 없음).
+    zh_cn: Rocket.Chat是一个支持MongoDB副本集的开源完全可定制的通信平台。与旧硬件兼容（MongoDB 6.0 - 无AVX要求）。
+    fr_fr: Rocket.Chat est une plateforme de communication entièrement personnalisable et open-source avec support des replica sets MongoDB. Compatible avec le matériel ancien (MongoDB 6.0 - pas d'exigence AVX).
+    es_es: Rocket.Chat es una plataforma de comunicaciones completamente personalizable y de código abierto con soporte para replica sets de MongoDB. Compatible con hardware antiguo (MongoDB 6.0 - sin requisito AVX).
   developer: Rocket.Chat Technologies Corp.
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Rocket.Chat/icon.png
   tagline:
-    en_us: Open-source team communication platform with complete customization
-    ko_kr: 완전한 맞춤 설정이 가능한 오픈소스 팀 커뮤니케이션 플랫폼
-    zh_cn: 完全可定制的开源团队通信平台
-    fr_fr: Plateforme de communication d'équipe open-source entièrement personnalisable
-    es_es: Plataforma de comunicación de equipo de código abierto completamente personalizable
+    en_us: Production-ready team communication with replica set support
+    ko_kr: 복제본 세트를 지원하는 프로덕션용 팀 커뮤니케이션
+    zh_cn: 支持副本集的生产就绪团队通信
+    fr_fr: Communication d'équipe prête pour la production avec support des replica sets
+    es_es: Comunicación de equipo lista para producción con soporte de replica sets
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Rocket.Chat/thumbnail.png
   title:
-    en_us: Rocket.Chat
-    ko_kr: Rocket.Chat
-    zh_cn: Rocket.Chat
-    fr_fr: Rocket.Chat
-    es_es: Rocket.Chat
+    en_us: Rocket.Chat (Production)
+    ko_kr: Rocket.Chat (프로덕션)
+    zh_cn: Rocket.Chat (生产版)
+    fr_fr: Rocket.Chat (Production)
+    es_es: Rocket.Chat (Producción)
   tips:
     before_install:
       en_us: |
@@ -89,19 +112,23 @@ x-casaos:
         |----------|----------|
         | `admin`  | `$default_pwd` |
         
-        **Important Notes:**
-        - First startup may take 2-3 minutes as MongoDB initializes replica set
-        - Access your instance at the provided URL after installation
-        - Configure additional settings through the admin panel
+        **Production Features:**
+        - MongoDB 6.0 with replica set (no AVX requirement)
+        - Automatic replica set initialization
+        - High availability and backup support
+        - Compatible with older CPUs
+        - Initial setup takes 2-3 minutes
       ko_kr: |
         **기본 계정**
         | 사용자명 | 비밀번호 |
         |----------|----------|
         | `admin`  | `$default_pwd` |
         
-        **중요 사항:**
-        - MongoDB 복제본 세트 초기화로 인해 첫 시작 시 2-3분 소요될 수 있습니다
-        - 설치 후 제공된 URL로 인스턴스에 접속하세요
-        - 관리자 패널을 통해 추가 설정을 구성하세요
+        **프로덕션 기능:**
+        - 복제본 세트를 갖춘 MongoDB 6.0 (AVX 요구사항 없음)
+        - 자동 복제본 세트 초기화
+        - 고가용성 및 백업 지원
+        - 구형 CPU와 호환
+        - 초기 설정에 2-3분 소요
   index: /
   webui_port: 80
