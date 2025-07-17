@@ -2,8 +2,7 @@ name: rocketchat
 
 services:
   mongodb:
-    image: bitnami/mongodb:7.0.14
-    user: $PUID:$PGID
+    image: bitnami/mongodb:6.0
     deploy:
       resources:
         limits:
@@ -18,17 +17,9 @@ services:
       MONGODB_ADVERTISED_HOSTNAME: mongodb
       MONGODB_ENABLE_JOURNAL: true
       ALLOW_EMPTY_PASSWORD: yes
-      PUID: $PUID
-      PGID: $PGID
     volumes:
       - /DATA/AppData/$AppID/mongodb:/bitnami/mongodb
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "mongosh", "--port", "27017", "--eval", "db.adminCommand('ping')"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 40s
 
   rocketchat:
     image: registry.rocket.chat/rocketchat/rocket.chat:7.4.1
@@ -58,8 +49,7 @@ services:
       - /DATA/AppData/$AppID/uploads:/app/uploads
       - /DATA/AppData/$AppID/data:/app/data
     depends_on:
-      mongodb:
-        condition: service_healthy
+      - mongodb
     restart: unless-stopped
 
 x-casaos:
@@ -170,6 +160,7 @@ x-casaos:
         - You can change the admin password after first login
         - The app includes MongoDB database for data storage
         - All data is stored in `/DATA/AppData/rocketchat/`
+        - MongoDB will take 30-60 seconds to initialize on first startup
       ko_kr: |
         **기본 계정**
         | 사용자명 | 비밀번호 |
@@ -181,5 +172,6 @@ x-casaos:
         - 첫 로그인 후 관리자 비밀번호를 변경할 수 있습니다
         - 앱에는 데이터 저장을 위한 MongoDB 데이터베이스가 포함되어 있습니다
         - 모든 데이터는 `/DATA/AppData/rocketchat/`에 저장됩니다
+        - MongoDB는 최초 시작 시 30-60초가 소요됩니다
   index: /
   webui_port: 80
