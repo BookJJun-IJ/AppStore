@@ -1,6 +1,22 @@
-name: rocketchat
+name: rocketchat-simple
 
 services:
+  mongodb:
+    image: bitnami/mongodb:7.0.18
+    user: $PUID:$PGID
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.3'
+    environment:
+      ALLOW_EMPTY_PASSWORD: yes
+      PUID: $PUID
+      PGID: $PGID
+    volumes:
+      - /DATA/AppData/$AppID/mongodb:/bitnami/mongodb
+    restart: unless-stopped
+
   rocketchat:
     image: registry.rocket.chat/rocketchat/rocket.chat:7.5.0
     user: $PUID:$PGID
@@ -10,9 +26,7 @@ services:
           memory: 1G
           cpus: '0.5'
     environment:
-      # 외부 MongoDB 연결 (예시 - 실제 MongoDB URL로 변경 필요)
-      MONGO_URL: mongodb://your-mongodb-host:27017/rocketchat
-      MONGO_OPLOG_URL: mongodb://your-mongodb-host:27017/local
+      MONGO_URL: mongodb://mongodb:27017/rocketchat
       ROOT_URL: https://$domain/
       PORT: 80
       ADMIN_USERNAME: admin
@@ -26,6 +40,8 @@ services:
     volumes:
       - /DATA/AppData/$AppID/uploads:/app/uploads
       - /DATA/AppData/$AppID/data:/app/data
+    depends_on:
+      - mongodb
     restart: unless-stopped
 
 x-casaos:
@@ -36,35 +52,47 @@ x-casaos:
   author: Yundera Team
   category: Communication
   description:
-    en_us: Rocket.Chat is an open-source team communication platform. This version requires an external MongoDB database.
-    ko_kr: Rocket.Chat은 오픈소스 팀 커뮤니케이션 플랫폼입니다. 이 버전은 외부 MongoDB 데이터베이스가 필요합니다.
+    en_us: Rocket.Chat is an open-source team communication platform with integrated chat, video conferencing, file sharing, and collaboration tools. Simple deployment with MongoDB included.
+    ko_kr: Rocket.Chat은 통합 채팅, 영상 회의, 파일 공유 및 협업 도구를 갖춘 오픈소스 팀 커뮤니케이션 플랫폼입니다. MongoDB가 포함된 간단한 배포입니다.
+    zh_cn: Rocket.Chat是一个开源团队通信平台，集成了聊天、视频会议、文件共享和协作工具。包含MongoDB的简单部署。
+    fr_fr: Rocket.Chat est une plateforme de communication d'équipe open-source avec chat intégré, visioconférence, partage de fichiers et outils de collaboration. Déploiement simple avec MongoDB inclus.
+    es_es: Rocket.Chat es una plataforma de comunicación de equipo de código abierto con chat integrado, videoconferencia, intercambio de archivos y herramientas de colaboración. Implementación simple con MongoDB incluido.
   developer: Rocket.Chat Technologies Corp.
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Rocket.Chat/icon.png
   tagline:
-    en_us: Lightweight Rocket.Chat deployment with external MongoDB
-    ko_kr: 외부 MongoDB를 사용하는 경량 Rocket.Chat 배포
+    en_us: Simple team communication with chat, video calls & file sharing
+    ko_kr: 채팅, 영상 통화 및 파일 공유를 제공하는 간단한 팀 커뮤니케이션
+    zh_cn: 简单的团队通信，包含聊天、视频通话和文件共享
+    fr_fr: Communication d'équipe simple avec chat, appels vidéo et partage de fichiers
+    es_es: Comunicación de equipo simple con chat, videollamadas e intercambio de archivos
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Rocket.Chat/thumbnail.png
   title:
-    en_us: Rocket.Chat (External DB)
-    ko_kr: Rocket.Chat (외부 DB)
+    en_us: Rocket.Chat (Simple)
+    ko_kr: Rocket.Chat (간단 버전)
+    zh_cn: Rocket.Chat (简单版)
+    fr_fr: Rocket.Chat (Simple)
+    es_es: Rocket.Chat (Simple)
   tips:
     before_install:
       en_us: |
-        **Requirements:**
-        - External MongoDB 6.0+ with replica set enabled
-        - Update MONGO_URL and MONGO_OPLOG_URL in the compose file
-        
-        **Default Account:**
+        **Default Account**
         | Username | Password |
         |----------|----------|
         | `admin`  | `$default_pwd` |
-      ko_kr: |
-        **요구사항:**
-        - 복제본 세트가 활성화된 외부 MongoDB 6.0+ 필요
-        - compose 파일에서 MONGO_URL과 MONGO_OPLOG_URL 업데이트 필요
         
-        **기본 계정:**
+        **Simple Setup:**
+        - Basic MongoDB configuration (no replica set)
+        - Faster startup time
+        - Perfect for small teams and testing
+      ko_kr: |
+        **기본 계정**
         | 사용자명 | 비밀번호 |
         |----------|----------|
         | `admin`  | `$default_pwd` |
+        
+        **간단한 설정:**
+        - 기본 MongoDB 구성 (복제본 세트 없음)
+        - 빠른 시작 시간
+        - 소규모 팀과 테스트에 완벽
   index: /
   webui_port: 80
