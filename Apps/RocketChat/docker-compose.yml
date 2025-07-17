@@ -1,24 +1,8 @@
-name: rocketchat-simple
+name: rocketchat
 
 services:
   mongodb:
-    image: bitnami/mongodb:7.0.18
-    user: $PUID:$PGID
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-          cpus: '0.3'
-    environment:
-      ALLOW_EMPTY_PASSWORD: yes
-      PUID: $PUID
-      PGID: $PGID
-    volumes:
-      - /DATA/AppData/$AppID/mongodb:/bitnami/mongodb
-    restart: unless-stopped
-
-  rocketchat:
-    image: registry.rocket.chat/rocketchat/rocket.chat:7.5.0
+    image: bitnami/mongodb:7.0
     user: $PUID:$PGID
     deploy:
       resources:
@@ -26,7 +10,32 @@ services:
           memory: 1G
           cpus: '0.5'
     environment:
-      MONGO_URL: mongodb://mongodb:27017/rocketchat
+      MONGODB_REPLICA_SET_MODE: primary
+      MONGODB_REPLICA_SET_NAME: rs0
+      MONGODB_PORT_NUMBER: 27017
+      MONGODB_INITIAL_PRIMARY_HOST: mongodb
+      MONGODB_INITIAL_PRIMARY_PORT_NUMBER: 27017
+      MONGODB_ADVERTISED_HOSTNAME: mongodb
+      MONGODB_ENABLE_JOURNAL: true
+      ALLOW_EMPTY_PASSWORD: yes
+      PUID: $PUID
+      PGID: $PGID
+    volumes:
+      - /DATA/AppData/$AppID/mongodb:/bitnami/mongodb
+    restart: unless-stopped
+    command: /opt/bitnami/scripts/mongodb/entrypoint.sh /opt/bitnami/scripts/mongodb/run.sh --oplogSize=128 --replSet=rs0 --storageEngine=wiredTiger
+
+  rocketchat:
+    image: registry.rocket.chat/rocketchat/rocket.chat:7.5.0
+    user: $PUID:$PGID
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+    environment:
+      MONGO_URL: mongodb://mongodb:27017/rocketchat?replicaSet=rs0
+      MONGO_OPLOG_URL: mongodb://mongodb:27017/local?replicaSet=rs0
       ROOT_URL: https://$domain/
       PORT: 80
       ADMIN_USERNAME: admin
@@ -52,26 +61,26 @@ x-casaos:
   author: Yundera Team
   category: Communication
   description:
-    en_us: Rocket.Chat is an open-source team communication platform with integrated chat, video conferencing, file sharing, and collaboration tools. Simple deployment with MongoDB included.
-    ko_kr: Rocket.Chat은 통합 채팅, 영상 회의, 파일 공유 및 협업 도구를 갖춘 오픈소스 팀 커뮤니케이션 플랫폼입니다. MongoDB가 포함된 간단한 배포입니다.
-    zh_cn: Rocket.Chat是一个开源团队通信平台，集成了聊天、视频会议、文件共享和协作工具。包含MongoDB的简单部署。
-    fr_fr: Rocket.Chat est une plateforme de communication d'équipe open-source avec chat intégré, visioconférence, partage de fichiers et outils de collaboration. Déploiement simple avec MongoDB inclus.
-    es_es: Rocket.Chat es una plataforma de comunicación de equipo de código abierto con chat integrado, videoconferencia, intercambio de archivos y herramientas de colaboración. Implementación simple con MongoDB incluido.
+    en_us: Rocket.Chat is an open-source fully customizable communications platform developed in JavaScript for organizations with high standards of data protection. It's a complete chat solution with video conferencing, file sharing, voice messages, and many other features.
+    ko_kr: Rocket.Chat은 높은 수준의 데이터 보호 기준을 가진 조직을 위해 JavaScript로 개발된 오픈소스 완전 맞춤형 커뮤니케이션 플랫폼입니다. 영상 회의, 파일 공유, 음성 메시지 및 기타 여러 기능을 갖춘 완전한 채팅 솔루션입니다.
+    zh_cn: Rocket.Chat是一个为高数据保护标准组织开发的开源完全可定制的通信平台。它是一个完整的聊天解决方案，具有视频会议、文件共享、语音消息等功能。
+    fr_fr: Rocket.Chat est une plateforme de communication entièrement personnalisable et open-source développée en JavaScript pour les organisations ayant des normes élevées de protection des données.
+    es_es: Rocket.Chat es una plataforma de comunicaciones completamente personalizable y de código abierto desarrollada en JavaScript para organizaciones con altos estándares de protección de datos.
   developer: Rocket.Chat Technologies Corp.
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Rocket.Chat/icon.png
   tagline:
-    en_us: Simple team communication with chat, video calls & file sharing
-    ko_kr: 채팅, 영상 통화 및 파일 공유를 제공하는 간단한 팀 커뮤니케이션
-    zh_cn: 简单的团队通信，包含聊天、视频通话和文件共享
-    fr_fr: Communication d'équipe simple avec chat, appels vidéo et partage de fichiers
-    es_es: Comunicación de equipo simple con chat, videollamadas e intercambio de archivos
+    en_us: Open-source team communication platform with complete customization
+    ko_kr: 완전한 맞춤 설정이 가능한 오픈소스 팀 커뮤니케이션 플랫폼
+    zh_cn: 完全可定制的开源团队通信平台
+    fr_fr: Plateforme de communication d'équipe open-source entièrement personnalisable
+    es_es: Plataforma de comunicación de equipo de código abierto completamente personalizable
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Rocket.Chat/thumbnail.png
   title:
-    en_us: Rocket.Chat (Simple)
-    ko_kr: Rocket.Chat (간단 버전)
-    zh_cn: Rocket.Chat (简单版)
-    fr_fr: Rocket.Chat (Simple)
-    es_es: Rocket.Chat (Simple)
+    en_us: Rocket.Chat
+    ko_kr: Rocket.Chat
+    zh_cn: Rocket.Chat
+    fr_fr: Rocket.Chat
+    es_es: Rocket.Chat
   tips:
     before_install:
       en_us: |
@@ -80,19 +89,19 @@ x-casaos:
         |----------|----------|
         | `admin`  | `$default_pwd` |
         
-        **Simple Setup:**
-        - Basic MongoDB configuration (no replica set)
-        - Faster startup time
-        - Perfect for small teams and testing
+        **Important Notes:**
+        - First startup may take 2-3 minutes as MongoDB initializes replica set
+        - Access your instance at the provided URL after installation
+        - Configure additional settings through the admin panel
       ko_kr: |
         **기본 계정**
         | 사용자명 | 비밀번호 |
         |----------|----------|
         | `admin`  | `$default_pwd` |
         
-        **간단한 설정:**
-        - 기본 MongoDB 구성 (복제본 세트 없음)
-        - 빠른 시작 시간
-        - 소규모 팀과 테스트에 완벽
+        **중요 사항:**
+        - MongoDB 복제본 세트 초기화로 인해 첫 시작 시 2-3분 소요될 수 있습니다
+        - 설치 후 제공된 URL로 인스턴스에 접속하세요
+        - 관리자 패널을 통해 추가 설정을 구성하세요
   index: /
   webui_port: 80
