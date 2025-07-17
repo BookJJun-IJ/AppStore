@@ -1,4 +1,4 @@
-name: rocketchat-simple
+name: rocketchat
 
 services:
   mongodb:
@@ -56,19 +56,21 @@ x-casaos:
     - amd64
     - arm64
   main: rocketchat
-  author: Yundera Team
-  category: Utilities
+  author: CasaOS Team
+  category: Developer
   description:
-    en_us: Rocket.Chat team communication platform with MongoDB 4.4 for maximum CPU compatibility
+    en_us: Rocket.Chat is an open-source team communication platform with chat, video conferencing, and file sharing capabilities.
   developer: Rocket.Chat Technologies Corp.
   tagline:
-    en_us: Team communication platform compatible with older hardware
+    en_us: Open-source team communication platform
   title:
     en_us: Rocket.Chat
   tips:
     before_install:
       en_us: |
-        Default login: admin / (auto-generated password)
-        MongoDB 4.4 - Compatible with ALL CPUs (no AVX requirement)
+        Default Account
+        | Username | Password |
+        | -------- | -------- |
+        | `admin`  | `$default_pwd` |
   index: /
   webui_port: 80
