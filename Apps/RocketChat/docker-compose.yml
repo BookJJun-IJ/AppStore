@@ -52,25 +52,26 @@ services:
     restart: unless-stopped
 
 x-casaos:
-  architectures:
-    - amd64
-    - arm64
-  main: rocketchat
-  author: CasaOS Team
-  category: Developer
-  description:
-    en_us: Rocket.Chat is an open-source team communication platform with chat, video conferencing, and file sharing capabilities.
-  developer: Rocket.Chat Technologies Corp.
-  tagline:
-    en_us: Open-source team communication platform
-  title:
-    en_us: Rocket.Chat
-  tips:
-    before_install:
-      en_us: |
-        Default Account
-        | Username | Password |
-        | -------- | -------- |
-        | `admin`  | `$default_pwd` |
-  index: /
-  webui_port: 80
+    architectures:
+        - amd64
+        - arm64
+    main: rocketchat
+    author: CasaOS Team
+    category: Communication
+    description:
+        en_us: Rocket.Chat is an open-source team communication platform. It provides chat, video conferencing, file sharing and many other communication features for teams.
+    developer: Rocket.Chat Technologies Corp.
+    icon: https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/RocketChat/icon.png
+    tagline:
+        en_us: Open-source team communication platform
+    title:
+        en_us: Rocket.Chat
+    tips:
+        before_install:
+            en_us: |
+                Default Account
+                | Username | Password |
+                | -------- | -------- |
+                | `admin`  | `$default_pwd` |
+    index: /
+    port_map: "80"
