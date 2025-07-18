@@ -1,0 +1,107 @@
+name: odoo
+
+services:
+  postgres:
+    image: postgres:15.8
+    user: $PUID:$PGID
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: odoo
+      POSTGRES_PASSWORD: $default_pwd
+      PGDATA: /var/lib/postgresql/data/pgdata
+      PUID: $PUID
+      PGID: $PGID
+      TZ: $TZ
+    volumes:
+      - /DATA/AppData/$AppID/postgres-data:/var/lib/postgresql/data/pgdata
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+    restart: unless-stopped
+    networks:
+      - odoo-network
+
+  odoo:
+    image: odoo:18.0
+    user: $PUID:$PGID
+    depends_on:
+      - postgres
+    expose:
+      - 80
+    environment:
+      HOST: postgres
+      USER: odoo
+      PASSWORD: $default_pwd
+      PUID: $PUID
+      PGID: $PGID
+      TZ: $TZ
+      # Odoo 설정
+      ODOO_RC: /etc/odoo/odoo.conf
+    volumes:
+      - /DATA/AppData/$AppID/web-data:/var/lib/odoo
+      - /DATA/AppData/$AppID/config:/etc/odoo
+      - /DATA/AppData/$AppID/addons:/mnt/extra-addons
+      - /DATA/Documents:/opt/documents
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+    restart: unless-stopped
+    networks:
+      - odoo-network
+    command: >
+      bash -c "
+      odoo --init=base 
+      --db_host=postgres 
+      --db_user=odoo 
+      --db_password=$default_pwd 
+      --http-port=80 
+      --workers=2
+      --max-cron-threads=1
+      --limit-memory-hard=1073741824
+      --limit-memory-soft=805306368
+      --limit-request=8192
+      --limit-time-cpu=600
+      --limit-time-real=1200
+      --log-level=info
+      --logfile=/var/log/odoo/odoo.log
+      --proxy-mode
+      "
+
+networks:
+  odoo-network:
+    driver: bridge
+
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  main: odoo
+  webui_port: 80
+  category: Business
+  author: CasaOS Team
+  developer: Odoo S.A.
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Odoo/icon.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Odoo/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Odoo/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Odoo/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Odoo/thumbnail.png
+  title:
+    en_us: Odoo
+    ko_kr: Odoo
+    fr_fr: Odoo
+    zh_cn: Odoo
+    es_es: Odoo
+  tagline:
+    en_us: Complete business management suite with CRM, eCommerce, accounting, inventory, point of sale, project management, etc.
+    ko_kr: CRM, 전자상거래, 회계, 재고, 판매시점관리, 프로젝트 관리 등을 포함한 완전한 비즈니스 관리 솔루션
+    fr_fr: Suite complète de gestion d'entreprise avec CRM, e-commerce, comptabilité, inventaire, point de vente, gestion de projet, etc.
+    zh_cn: 完整的业务管理套件，包含CRM、电子商务、会计、库存、销售点、项目管理等功能
+    es_es: Suite completa de gestión empresarial con CRM, comercio electrónico, contabilidad, inventario, punto de venta, gestión de proyectos, etc.
+
+  index: /
+  port_map: "80"
