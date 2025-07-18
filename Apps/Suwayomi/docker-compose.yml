@@ -36,7 +36,7 @@ services:
       # WebUI 설정 - Preview 버전 (디바이스별 설정 지원)
       WEB_UI_ENABLED: true
       WEB_UI_FLAVOR: WebUI
-      WEB_UI_CHANNEL: preview  # 🔥 디바이스별 설정 기능을 위해 preview 사용
+      WEB_UI_CHANNEL: preview  # 🔥 디바이스별 설정 기능
       WEB_UI_UPDATE_INTERVAL: 23
       
       # 확장 저장소 (Keiyoushi만)
@@ -101,138 +101,6 @@ x-casaos:
   main: suwayomi
   author: Suwayomi Team
   category: Media
-  
-  # 🚀 모바일 리더 설정 자동 구성
-  pre-install-cmd: |
-    # 데이터 디렉토리 생성
-    mkdir -p /DATA/AppData/$AppID/data
-    
-    # 서버 설정 파일 생성 (기본값 + 확장성)
-    cat > /DATA/AppData/$AppID/data/server.conf << 'EOF'
-    # Suwayomi 서버 설정
-    server {
-      # 기본 인증 설정
-      basicAuthEnabled = true
-      basicAuthUsername = "admin"
-      
-      # WebUI 설정
-      webUIFlavor = "WebUI"
-      webUIChannel = "preview"
-      
-      # 시스템 설정
-      systemTrayEnabled = false
-      initialOpenInBrowserEnabled = false
-      debugLogsEnabled = false
-      
-      # 다운로드 경로
-      downloadsPath = "/home/suwayomi/.local/share/Tachidesk/downloads"
-    }
-    
-    # 확장 설정
-    extension {
-      # 성인 콘텐츠 소스 숨김
-      hideNsfwSources = true
-    }
-    EOF
-    
-    # 모바일 디바이스 설정을 위한 스크립트 생성
-    cat > /DATA/AppData/$AppID/setup-mobile.sh << 'EOF'
-    #!/bin/bash
-    
-    # Suwayomi가 시작될 때까지 대기
-    echo "Waiting for Suwayomi to start..."
-    sleep 30
-    
-    # GraphQL API를 통한 모바일 디바이스 설정
-    # (이 스크립트는 컨테이너 시작 후 실행됨)
-    
-    # 모바일 디바이스 생성 및 설정
-    curl -X POST 'http://localhost:80/api/graphql' \
-      -H 'Content-Type: application/json' \
-      -H 'Authorization: Basic $(echo -n "admin:$ADMIN_PASSWORD" | base64)' \
-      -d '{
-        "query": "mutation { 
-          createDevice(input: { 
-            name: \"Mobile\", 
-            settings: {
-              readerSettings: {
-                readingMode: \"VERTICAL\",
-                imageScale: \"FIT_WIDTH\",
-                tapZoneEnabled: true,
-                pageSpacing: 0
-              }
-            }
-          }) { 
-            id 
-          } 
-        }"
-      }' 2>/dev/null
-    
-    echo "Mobile device settings configured"
-    EOF
-    
-    chmod +x /DATA/AppData/$AppID/setup-mobile.sh
-    
-    # LocalStorage용 모바일 설정 JSON 파일 생성
-    mkdir -p /DATA/AppData/$AppID/data/webui-settings
-    cat > /DATA/AppData/$AppID/data/webui-settings/mobile-defaults.json << 'EOF'
-    {
-      "devices": {
-        "Mobile": {
-          "readerSettings": {
-            "readingMode": "VERTICAL",
-            "imageScale": "FIT_WIDTH", 
-            "tapZoneEnabled": true,
-            "pageSpacing": 0,
-            "backgroundColor": "#000000",
-            "showPageNumber": true,
-            "skipDuplicateChapters": true
-          },
-          "generalSettings": {
-            "darkMode": true,
-            "language": "en"
-          }
-        },
-        "Desktop": {
-          "readerSettings": {
-            "readingMode": "SINGLE_PAGE",
-            "imageScale": "FIT_SCREEN",
-            "tapZoneEnabled": false,
-            "pageSpacing": 5
-          }
-        }
-      },
-      "defaultDeviceSettings": {
-        "mobile": "Mobile",
-        "desktop": "Desktop"
-      }
-    }
-    EOF
-    
-    # 모바일 사용 가이드 생성
-    cat > /DATA/AppData/$AppID/MOBILE_SETUP.md << 'EOF'
-    # 📱 모바일 설정 가이드
-    
-    ## 자동 설정된 항목들
-    ✅ 읽기 모드: Vertical (세로 스크롤)
-    ✅ 이미지 크기: Fit to Width (화면 너비에 맞춤)  
-    ✅ 탭 존: 활성화 (좌우 탭으로 페이지 넘김)
-    ✅ 페이지 간격: 최소화 (0px)
-    
-    ## 첫 접속 후 확인사항
-    1. 설정 → 일반 → 디바이스 관리
-    2. "Mobile" 디바이스가 생성되었는지 확인
-    3. 모바일에서 "Mobile" 디바이스 선택
-    
-    ## 추가 모바일 최적화
-    - 다크 모드 자동 활성화
-    - 페이지 번호 표시
-    - 중복 챕터 건너뛰기
-    EOF
-    
-    # 권한 설정
-    chown -R $PUID:$PGID /DATA/AppData/$AppID/
-    
   icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Suwayomi/icon.png
   screenshot_link:
     - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Suwayomi/screenshot-1.png
@@ -243,10 +111,10 @@ x-casaos:
     en_us: |
       Self-hosted manga server that lets you read manga from 1200+ sources on any device. 
       Access your manga library from web browsers, mobile apps, or any OPDS-compatible reader. 
-      Pre-configured with mobile-optimized reading settings and trusted manga sources.
+      Pre-configured with trusted manga sources and safe browsing settings.
   developer: Suwayomi Project
   tagline:
-    en_us: Your personal manga server with auto-configured mobile reading
+    en_us: Your personal manga server with 1200+ sources
   title:
     en_us: Suwayomi
   tips:
@@ -257,25 +125,36 @@ x-casaos:
         | -------- | -------------- |
         | `admin`  | `$default_pwd` |
         
-        **📱 Auto-Configured Mobile Settings**
-        ✅ **Vertical reading mode** - Perfect for mobile scrolling
-        ✅ **Fit to width scaling** - No horizontal scrolling needed  
-        ✅ **Tap zones enabled** - Left/right tap to turn pages
-        ✅ **Minimal page spacing** - Maximum reading area
-        ✅ **Dark mode default** - Easy on mobile screens
+        **📱 ONE-TIME Mobile Setup (60 seconds)** 
         
-        **🎯 First Time Setup**
-        1. **Login** with credentials above
-        2. **Mobile users**: Settings → Device Management → Select "Mobile"
-        3. **Desktop users**: Keep "Desktop" settings (optimized for large screens)
-        4. **Install sources**: Settings → Browse → Extensions
+        **After first login on mobile:**
+        
+        1️⃣ **Settings** → **General** → **Device Management**
+        
+        2️⃣ **Add Device**: Name it `Mobile` or `Phone`
+        
+        3️⃣ **Reader Settings** for Mobile device:
+        ```
+        • Reading Mode: Vertical ✅
+        • Scale Type: Fit Width ✅  
+        • Tap to Turn Page: ON ✅
+        • Page Spacing: 0 ✅
+        ```
+        
+        4️⃣ **Save** and **select "Mobile" device**
+        
+        **Done! Mobile perfectly optimized** 🎉
+        
+        **💻 Desktop automatically uses separate settings**
+        
+        **🎯 Why this setup?**
+        - Vertical: Perfect for mobile scrolling
+        - Fit Width: No horizontal scrolling needed
+        - Tap Zones: Left/right tap to turn pages
+        - 0 Spacing: Maximum reading area
         
         **📚 Recommended Sources**
-        MangaDex, Mangakakalot, Mangafire, AsuraScans, Webtoons, Manga Plus
-        
-        **⚡ Quick Start**
-        - Browse → Install extensions → Add manga → Start reading!
-        - Mobile settings already optimized for your phone screen
-        - Desktop gets separate settings for comfortable PC reading
+        Settings → Browse → Extensions:
+        MangaDex, Mangakakalot, Mangafire, AsuraScans
   index: /
   webui_port: 80
