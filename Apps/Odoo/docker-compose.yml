@@ -35,6 +35,7 @@ services:
       TZ: $TZ
     volumes:
       - /DATA/AppData/$AppID/web-data:/var/lib/odoo
+      - /DATA/AppData/$AppID/config:/etc/odoo
       - /DATA/AppData/$AppID/addons:/mnt/extra-addons
     deploy:
       resources:
@@ -50,6 +51,9 @@ networks:
     driver: bridge
 
 x-casaos:
+  pre-install-cmd: |
+    mkdir -p /DATA/AppData/$AppID/config /DATA/AppData/$AppID/web-data /DATA/AppData/$AppID/addons /DATA/AppData/$AppID/postgres-data &&
+    chown -R $PUID:$PGID /DATA/AppData/$AppID/config /DATA/AppData/$AppID/web-data /DATA/AppData/$AppID/addons
   architectures:
     - amd64
     - arm64
@@ -66,7 +70,7 @@ x-casaos:
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Odoo/thumbnail.png
   title:
     en_us: Odoo
-    ko_kr: 오두
+    ko_kr: Odoo
     fr_fr: Odoo
     zh_cn: Odoo
     es_es: Odoo
