@@ -2,7 +2,7 @@ name: suwayomi
 
 services:
   suwayomi:
-    image: ghcr.io/suwayomi/tachidesk:v2.0.1727  # 공식 최신 이미지
+    image: ghcr.io/suwayomi/tachidesk:v2.0.1854  # 공식 최신 이미지
     user: $PUID:$PGID
     container_name: suwayomi
     expose:
