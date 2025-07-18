@@ -18,6 +18,7 @@ services:
     restart: unless-stopped
     networks:
       - odoo-network
+    command: ["odoo", "--http-port=80"]
 
   odoo:
     image: odoo:18.0
@@ -25,7 +26,7 @@ services:
     depends_on:
       - postgres
     expose:
-      - 8069
+      - 80
     environment:
       HOST: postgres
       USER: odoo
@@ -33,6 +34,8 @@ services:
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
+      ODOO_RC: /etc/odoo/odoo.conf
+      PORT: 80
     volumes:
       - /DATA/AppData/$AppID/web-data:/var/lib/odoo
       - /DATA/AppData/$AppID/config:/etc/odoo
@@ -58,7 +61,7 @@ x-casaos:
     - amd64
     - arm64
   main: odoo
-  webui_port: 8069
+  webui_port: 80
   category: Business
   author: CasaOS Team
   developer: Odoo S.A.
@@ -70,7 +73,7 @@ x-casaos:
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Odoo/thumbnail.png
   title:
     en_us: Odoo
-    ko_kr: Odoo
+    ko_kr: 오두
     fr_fr: Odoo
     zh_cn: Odoo
     es_es: Odoo
@@ -81,4 +84,4 @@ x-casaos:
     zh_cn: 完整的业务管理套件，包含CRM、电子商务、会计、库存、销售点、项目管理等功能
     es_es: Suite completa de gestión empresarial con CRM, comercio electrónico, contabilidad, inventario, punto de venta, gestión de proyectos, etc.
   index: /
-  port_map: "8069"
+  port_map: "80"
