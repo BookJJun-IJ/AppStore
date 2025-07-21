@@ -99,93 +99,28 @@ x-casaos:
     mkdir -p /DATA/AppData/$AppID/logs &&
     mkdir -p /DATA/AppData/$AppID/plugins &&
     mkdir -p /DATA/AppData/$AppID/postgres &&
-    chown -R $PUID:$PGID /DATA/AppData/$AppID/
+    chown -R $PUID:$PGID /DATA/AppData/$AppID/ &&
+    echo "Downloading Jitsi Plugin..." &&
+    curl -L -o /DATA/AppData/$AppID/jitsi-plugin.tar.gz "https://github.com/mattermost-community/mattermost-plugin-jitsi/releases/latest/download/com.mattermost.plugin-jitsi.tar.gz" &&
+    echo "Jitsi Plugin downloaded to /DATA/AppData/$AppID/jitsi-plugin.tar.gz" &&
+    echo "Install it via System Console > Plugins > Plugin Management after first login"
   description:
-    en_us: Self-hosted Microsoft Teams alternative with voice calls, video calls, screen sharing and team collaboration
-    ko_kr: 음성 통화, 화상 통화, 화면 공유 및 팀 협업 기능을 갖춘 자체 호스팅 Microsoft Teams 대체 솔루션
-    fr_fr: Alternative auto-hébergée à Microsoft Teams avec appels vocaux, appels vidéo, partage d'écran et collaboration d'équipe
-    es_es: Alternativa auto-alojada a Microsoft Teams con llamadas de voz, videollamadas, intercambio de pantalla y colaboración en equipo
-    zh_cn: 具有语音通话、视频通话、屏幕共享和团队协作功能的自托管Microsoft Teams替代方案
+    en_us: Self-hosted Microsoft Teams alternative with voice calls, video calls, screen sharing and team collaboration powered by Jitsi
+    ko_kr: Jitsi 기반 음성 통화, 화상 통화, 화면 공유 및 팀 협업 기능을 갖춘 자체 호스팅 Microsoft Teams 대체 솔루션
+    fr_fr: Alternative auto-hébergée à Microsoft Teams avec appels vocaux, appels vidéo, partage d'écran et collaboration d'équipe alimentés par Jitsi
+    es_es: Alternativa auto-alojada a Microsoft Teams con llamadas de voz, videollamadas, intercambio de pantalla y colaboración en equipo con Jitsi
+    zh_cn: 基于Jitsi的自托管Microsoft Teams替代方案，具有语音通话、视频通话、屏幕共享和团队协作功能
   developer: Mattermost, Inc.
-  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Mattermost/icon.png
-  screenshot_link:
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Mattermost/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Mattermost/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Mattermost/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Mattermost/screenshot-3.png
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mattermost/icon.png
   tagline:
-    en_us: Microsoft Teams alternative with calling features
-    ko_kr: 통화 기능을 갖춘 Microsoft Teams 대체 솔루션
-    fr_fr: Alternative à Microsoft Teams avec fonctionnalités d'appel
-    es_es: Alternativa a Microsoft Teams con funciones de llamada
-    zh_cn: 具有通话功能的Microsoft Teams替代方案
+    en_us: Microsoft Teams alternative with voice, video calls, and screen sharing via Jitsi
+    ko_kr: Jitsi 기반 음성, 화상 통화 및 화면 공유 기능을 갖춘 Microsoft Teams 대체 솔루션
+    fr_fr: Alternative à Microsoft Teams avec appels vocaux, vidéo et partage d'écran via Jitsi
+    es_es: Alternativa a Microsoft Teams con llamadas de voz, video y pantalla compartida via Jitsi
+    zh_cn: 通过Jitsi实现语音、视频通话和屏幕共享的Microsoft Teams替代方案
   title:
     en_us: Mattermost
     ko_kr: Mattermost
-  tips:
-    before_install:
-      en_us: |
-        **Mattermost Teams Alternative**
-        
-        Ready for Microsoft Teams migration with enterprise features:
-        
-        🚀 **Core Features:**
-        - Team channels & direct messaging
-        - File sharing (100MB per file)
-        - Mobile & desktop apps
-        - Plugin marketplace access
-        - Advanced notifications
-        
-        📞 **Voice & Video Calls Setup:**
-        Calling features are automatically enabled and configured:
-        - Voice calls, video calls, and screen sharing ready
-        - No manual plugin installation required
-        - Test mode disabled for all users
-        
-        📋 **Quick Start:**
-        1. Access: https://mattermost-username.nsl.sh/
-        2. Create admin account (first user becomes admin)
-        3. Create your team/organization
-        4. Start using voice/video calls immediately!
-        
-        🎯 **Teams vs Mattermost:**
-        - ✅ No per-user licensing fees
-        - ✅ Complete data ownership
-        - ✅ Better performance (self-hosted)
-        - ✅ Full customization control
-        
-        Database password: $default_pwd
-      ko_kr: |
-        **Mattermost Teams 대체 솔루션**
-        
-        엔터프라이즈 기능을 갖춘 Microsoft Teams 마이그레이션 준비:
-        
-        🚀 **핵심 기능:**
-        - 팀 채널 및 다이렉트 메시징
-        - 파일 공유 (파일당 100MB)
-        - 모바일 및 데스크톱 앱
-        - 플러그인 마켓플레이스 접근
-        - 고급 알림 시스템
-        
-        📞 **음성 및 화상 통화 설정:**
-        통화 기능이 자동으로 활성화되고 구성됩니다:
-        - 음성 통화, 화상 통화, 화면 공유 준비 완료
-        - 수동 플러그인 설치 불필요
-        - 모든 사용자를 위해 테스트 모드 비활성화
-        
-        📋 **빠른 시작:**
-        1. 접속: https://mattermost-username.nsl.sh/
-        2. 관리자 계정 생성 (첫 사용자가 관리자가 됨)
-        3. 팀/조직 생성
-        4. 바로 음성/화상 통화 사용 시작!
-        
-        🎯 **Teams vs Mattermost:**
-        - ✅ 사용자당 라이선스 비용 없음
-        - ✅ 완전한 데이터 소유권
-        - ✅ 더 나은 성능 (자체 호스팅)
-        - ✅ 완전한 커스터마이징 제어
-        
-        데이터베이스 비밀번호: $default_pwd
   index: /
-  port_map: "80"
+  port_map: "3000"
   store_app_id: mattermost
