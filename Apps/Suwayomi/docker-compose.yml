@@ -2,7 +2,7 @@ name: suwayomi
 
 services:
   suwayomi:
-    image: ghcr.io/suwayomi/tachidesk:v2.0.1854  # 공식 최신 이미지
+    image: ghcr.io/suwayomi/tachidesk:v2.0.1727  # 공식 최신 이미지
     user: $PUID:$PGID
     container_name: suwayomi
     expose:
@@ -125,36 +125,32 @@ x-casaos:
         | -------- | -------------- |
         | `admin`  | `$default_pwd` |
         
-        **📱 ONE-TIME Mobile Setup (60 seconds)** 
+        **📱 Mobile Reading Setup (One-time)**
         
-        **After first login on mobile:**
+        **Settings** → **Reader** → Set for ALL reading modes:
         
-        1️⃣ **Settings** → **General** → **Device Management**
+        **Scale Type**: `Fit Screen` or `Fit Height` ✅
         
-        2️⃣ **Add Device**: Name it `Mobile` or `Phone`
+        **Apply to ALL modes below:**
+        - Vertical (Single Page)
+        - Vertical (Strip) 
+        - Right to Left
+        - Left to Right
+        - Vertical (Webtoon)
         
-        3️⃣ **Reader Settings** for Mobile device:
-        ```
-        • Reading Mode: Vertical ✅
-        • Scale Type: Fit Width ✅  
-        • Tap to Turn Page: ON ✅
-        • Page Spacing: 0 ✅
-        ```
+        **⚠️ Known Issue**: Settings reset when opening new manga
+        **Workaround**: Bookmark this setting path for quick re-setup
         
-        4️⃣ **Save** and **select "Mobile" device**
+        **🎯 Best Scale Types for Mobile:**
+        - **Fit Screen**: Full page fits mobile screen
+        - **Fit Height**: Page height matches screen height
         
-        **Done! Mobile perfectly optimized** 🎉
-        
-        **💻 Desktop automatically uses separate settings**
-        
-        **🎯 Why this setup?**
-        - Vertical: Perfect for mobile scrolling
-        - Fit Width: No horizontal scrolling needed
-        - Tap Zones: Left/right tap to turn pages
-        - 0 Spacing: Maximum reading area
+        **💻 Desktop users**: Use separate browser for different settings
         
         **📚 Recommended Sources**
         Settings → Browse → Extensions:
         MangaDex, Mangakakalot, Mangafire, AsuraScans
+        
+        **🔄 Quick Reset**: Settings → Reader → Scale Type → Apply to all modes
   index: /
   webui_port: 80
