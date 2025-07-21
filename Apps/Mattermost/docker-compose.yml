@@ -111,7 +111,12 @@ x-casaos:
     es_es: Alternativa auto-alojada a Microsoft Teams con llamadas de voz, videollamadas, intercambio de pantalla y colaboración en equipo con Jitsi
     zh_cn: 基于Jitsi的自托管Microsoft Teams替代方案，具有语音通话、视频通话、屏幕共享和团队协作功能
   developer: Mattermost, Inc.
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mattermost/icon.png
+  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Mattermost/icon.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Mattermost/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Mattermost/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Mattermost/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Mattermost/screenshot-3.png
   tagline:
     en_us: Microsoft Teams alternative with voice, video calls, and screen sharing via Jitsi
     ko_kr: Jitsi 기반 음성, 화상 통화 및 화면 공유 기능을 갖춘 Microsoft Teams 대체 솔루션
@@ -122,5 +127,4 @@ x-casaos:
     en_us: Mattermost
     ko_kr: Mattermost
   index: /
-  port_map: "3000"
   store_app_id: mattermost
