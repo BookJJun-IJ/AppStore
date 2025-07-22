@@ -28,16 +28,14 @@ services:
       - 80
     environment:
       HOST: postgres
+      PORT: 5432
       USER: odoo
       PASSWORD: $default_pwd
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
-      ODOO_RC: /etc/odoo/odoo.conf
-      PORT: 80
     volumes:
       - /DATA/AppData/$AppID/web-data:/var/lib/odoo
-      - /DATA/AppData/$AppID/config:/etc/odoo
       - /DATA/AppData/$AppID/addons:/mnt/extra-addons
     deploy:
       resources:
@@ -55,8 +53,8 @@ networks:
 
 x-casaos:
   pre-install-cmd: |
-    mkdir -p /DATA/AppData/$AppID/config /DATA/AppData/$AppID/web-data /DATA/AppData/$AppID/addons /DATA/AppData/$AppID/postgres-data &&
-    chown -R $PUID:$PGID /DATA/AppData/$AppID/config /DATA/AppData/$AppID/web-data /DATA/AppData/$AppID/addons
+    mkdir -p /DATA/AppData/$AppID/web-data /DATA/AppData/$AppID/addons /DATA/AppData/$AppID/postgres-data &&
+    chown -R $PUID:$PGID /DATA/AppData/$AppID/web-data /DATA/AppData/$AppID/addons
   architectures:
     - amd64
     - arm64
