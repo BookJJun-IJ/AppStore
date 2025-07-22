@@ -7,7 +7,7 @@ services:
       POSTGRES_DB: odoo
       POSTGRES_USER: odoo  
       POSTGRES_PASSWORD: $default_pwd
-      POSTGRES_HOST_AUTH_METHOD: md5
+      POSTGRES_HOST_AUTH_METHOD: trust
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
       - /DATA/AppData/$AppID/postgres-data:/var/lib/postgresql/data/pgdata
@@ -29,10 +29,8 @@ services:
       - 80
     environment:
       HOST: postgres
-      DB_PORT: 5432
-      DB_USER: odoo
-      DB_PASSWORD: $default_pwd
-      DB_NAME: odoo
+      USER: odoo
+      PASSWORD: $default_pwd
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
