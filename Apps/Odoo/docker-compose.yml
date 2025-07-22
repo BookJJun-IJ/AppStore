@@ -7,6 +7,7 @@ services:
       POSTGRES_DB: odoo
       POSTGRES_USER: odoo  
       POSTGRES_PASSWORD: $default_pwd
+      POSTGRES_HOST_AUTH_METHOD: md5
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
       - /DATA/AppData/$AppID/postgres-data:/var/lib/postgresql/data/pgdata
