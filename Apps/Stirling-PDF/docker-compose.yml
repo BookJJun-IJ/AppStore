@@ -35,9 +35,146 @@ x-casaos:
   category: Office
   developer: Stirling Tools
   description:
-    en_us: Stirling-PDF is a powerful, locally hosted web-based PDF manipulation tool using Docker. It enables you to perform various operations on PDF files, such as splitting, merging, converting, reorganizing, adding images, rotating, compressing, and more.
-    zh_cn: Stirling-PDF 是一个强大的本地托管的基于网页的PDF处理工具。它使您能够对PDF文件执行各种操作，如分割、合并、转换、重新组织、添加图像、旋转、压缩等。
-    ko_kr: Stirling-PDF는 Docker를 사용하는 강력한 로컬 호스팅 웹 기반 PDF 조작 도구입니다. PDF 파일에 대해 분할, 병합, 변환, 재구성, 이미지 추가, 회전, 압축 등 다양한 작업을 수행할 수 있습니다.
+    en_us: |
+      Stirling PDF is your complete PDF toolkit - everything you need to work with PDF files, right from your web browser.
+
+      **What you can do:**
+      • **Split & Merge**: Break large PDFs into smaller files or combine multiple PDFs into one
+      • **Convert**: Turn PDFs into images, Word documents, Excel files, or PowerPoint presentations
+      • **Compress**: Reduce file size to save space and make sharing easier  
+      • **Edit**: Add text, images, signatures, watermarks, or remove pages
+      • **Organize**: Rotate pages, reorder sections, or extract specific pages
+      • **Security**: Add passwords, remove passwords, or redact sensitive information
+      • **OCR**: Extract text from scanned documents and images
+
+      **Why choose Stirling PDF:**
+      • **Private & Secure**: All processing happens on your server - your files never leave your device
+      • **No file size limits**: Work with PDFs of any size
+      • **No subscription fees**: Completely free with no ads or hidden costs
+      • **Works anywhere**: Access from any device with a web browser
+      • **Professional quality**: Get the same results as expensive PDF software
+
+      Perfect for students, professionals, or anyone who works with PDF documents regularly. No more paying for expensive PDF software or worrying about uploading sensitive documents to online services.
+    en_gb: |
+      Stirling PDF is your complete PDF toolkit - everything you need to work with PDF files, right from your web browser.
+
+      **What you can do:**
+      • **Split & Merge**: Break large PDFs into smaller files or combine multiple PDFs into one
+      • **Convert**: Turn PDFs into images, Word documents, Excel files, or PowerPoint presentations
+      • **Compress**: Reduce file size to save space and make sharing easier  
+      • **Edit**: Add text, images, signatures, watermarks, or remove pages
+      • **Organise**: Rotate pages, reorder sections, or extract specific pages
+      • **Security**: Add passwords, remove passwords, or redact sensitive information
+      • **OCR**: Extract text from scanned documents and images
+
+      **Why choose Stirling PDF:**
+      • **Private & Secure**: All processing happens on your server - your files never leave your device
+      • **No file size limits**: Work with PDFs of any size
+      • **No subscription fees**: Completely free with no ads or hidden costs
+      • **Works anywhere**: Access from any device with a web browser
+      • **Professional quality**: Get the same results as expensive PDF software
+
+      Perfect for students, professionals, or anyone who works with PDF documents regularly. No more paying for expensive PDF software or worrying about uploading sensitive documents to online services.
+    ko_kr: |
+      Stirling PDF는 완전한 PDF 툴킷입니다 - 웹 브라우저에서 바로 PDF 파일 작업에 필요한 모든 것을 제공합니다.
+
+      **할 수 있는 일들:**
+      • **분할 및 병합**: 큰 PDF를 작은 파일로 나누거나 여러 PDF를 하나로 합치기
+      • **변환**: PDF를 이미지, Word 문서, Excel 파일, PowerPoint 프레젠테이션으로 변환
+      • **압축**: 파일 크기를 줄여서 공간을 절약하고 공유를 쉽게 만들기
+      • **편집**: 텍스트, 이미지, 서명, 워터마크 추가 또는 페이지 제거
+      • **정리**: 페이지 회전, 섹션 재정렬, 특정 페이지 추출
+      • **보안**: 비밀번호 추가, 비밀번호 제거, 민감한 정보 편집
+      • **OCR**: 스캔한 문서와 이미지에서 텍스트 추출
+
+      **왜 Stirling PDF를 선택해야 할까요:**
+      • **개인정보 보호 및 보안**: 모든 처리가 당신의 서버에서 일어남 - 파일이 기기를 떠나지 않음
+      • **파일 크기 제한 없음**: 어떤 크기의 PDF든 작업 가능
+      • **구독료 없음**: 광고나 숨겨진 비용 없이 완전 무료
+      • **어디서나 작동**: 웹 브라우저가 있는 모든 기기에서 접근
+      • **전문가 품질**: 비싼 PDF 소프트웨어와 같은 결과
+
+      PDF 문서를 정기적으로 다루는 학생, 전문가, 또는 누구에게나 완벽합니다. 더 이상 비싼 PDF 소프트웨어 비용을 지불하거나 민감한 문서를 온라인 서비스에 업로드하는 것에 대해 걱정할 필요가 없습니다.
+    zh_cn: |
+      Stirling PDF是您完整的PDF工具包 - 直接从网页浏览器处理PDF文件所需的一切。
+
+      **您可以做什么：**
+      • **拆分和合并**：将大PDF分解为小文件或将多个PDF合并为一个
+      • **转换**：将PDF转换为图像、Word文档、Excel文件或PowerPoint演示文稿
+      • **压缩**：减少文件大小以节省空间并使共享更容易
+      • **编辑**：添加文本、图像、签名、水印或删除页面
+      • **整理**：旋转页面、重新排序部分或提取特定页面
+      • **安全**：添加密码、删除密码或编辑敏感信息
+      • **OCR**：从扫描的文档和图像中提取文本
+
+      **为什么选择Stirling PDF：**
+      • **私密和安全**：所有处理都在您的服务器上进行 - 您的文件永远不会离开您的设备
+      • **无文件大小限制**：处理任何大小的PDF
+      • **无订阅费用**：完全免费，无广告或隐藏费用
+      • **随处可用**：从任何有网页浏览器的设备访问
+      • **专业品质**：获得与昂贵PDF软件相同的结果
+
+      非常适合经常处理PDF文档的学生、专业人士或任何人。无需再为昂贵的PDF软件付费，也无需担心将敏感文档上传到在线服务。
+    fr_fr: |
+      Stirling PDF est votre boîte à outils PDF complète - tout ce dont vous avez besoin pour travailler avec des fichiers PDF, directement depuis votre navigateur web.
+
+      **Ce que vous pouvez faire :**
+      • **Diviser et fusionner** : Séparer de gros PDF en fichiers plus petits ou combiner plusieurs PDF en un seul
+      • **Convertir** : Transformer les PDF en images, documents Word, fichiers Excel ou présentations PowerPoint
+      • **Compresser** : Réduire la taille du fichier pour économiser l'espace et faciliter le partage
+      • **Éditer** : Ajouter du texte, des images, des signatures, des filigranes ou supprimer des pages
+      • **Organiser** : Faire pivoter les pages, réorganiser les sections ou extraire des pages spécifiques
+      • **Sécurité** : Ajouter des mots de passe, supprimer des mots de passe ou caviarder des informations sensibles
+      • **OCR** : Extraire du texte de documents scannés et d'images
+
+      **Pourquoi choisir Stirling PDF :**
+      • **Privé et sécurisé** : Tout le traitement se fait sur votre serveur - vos fichiers ne quittent jamais votre appareil
+      • **Pas de limites de taille de fichier** : Travaillez avec des PDF de toute taille
+      • **Pas de frais d'abonnement** : Entièrement gratuit sans publicités ni coûts cachés
+      • **Fonctionne partout** : Accès depuis n'importe quel appareil avec un navigateur web
+      • **Qualité professionnelle** : Obtenez les mêmes résultats que les logiciels PDF coûteux
+
+      Parfait pour les étudiants, les professionnels ou toute personne qui travaille régulièrement avec des documents PDF. Fini de payer pour des logiciels PDF coûteux ou de s'inquiéter de télécharger des documents sensibles vers des services en ligne.
+    de_de: |
+      Stirling PDF ist Ihr komplettes PDF-Toolkit - alles was Sie brauchen, um mit PDF-Dateien zu arbeiten, direkt von Ihrem Webbrowser aus.
+
+      **Was Sie tun können:**
+      • **Teilen & Zusammenführen**: Große PDFs in kleinere Dateien aufteilen oder mehrere PDFs zu einer zusammenfassen
+      • **Konvertieren**: PDFs in Bilder, Word-Dokumente, Excel-Dateien oder PowerPoint-Präsentationen umwandeln
+      • **Komprimieren**: Dateigröße reduzieren um Speicherplatz zu sparen und das Teilen zu erleichtern
+      • **Bearbeiten**: Text, Bilder, Signaturen, Wasserzeichen hinzufügen oder Seiten entfernen
+      • **Organisieren**: Seiten drehen, Abschnitte neu anordnen oder bestimmte Seiten extrahieren
+      • **Sicherheit**: Passwörter hinzufügen, Passwörter entfernen oder sensible Informationen schwärzen
+      • **OCR**: Text aus gescannten Dokumenten und Bildern extrahieren
+
+      **Warum Stirling PDF wählen:**
+      • **Privat & Sicher**: Alle Verarbeitung findet auf Ihrem Server statt - Ihre Dateien verlassen niemals Ihr Gerät
+      • **Keine Dateigrößenbegrenzung**: Arbeiten Sie mit PDFs jeder Größe
+      • **Keine Abonnementgebühren**: Völlig kostenlos ohne Werbung oder versteckte Kosten
+      • **Funktioniert überall**: Zugriff von jedem Gerät mit Webbrowser
+      • **Professionelle Qualität**: Erhalten Sie die gleichen Ergebnisse wie teure PDF-Software
+
+      Perfekt für Studenten, Berufstätige oder jeden, der regelmäßig mit PDF-Dokumenten arbeitet. Keine teuren PDF-Software mehr bezahlen oder sich Sorgen über das Hochladen sensibler Dokumente zu Online-Diensten machen.
+    es_es: |
+      Stirling PDF es tu kit de herramientas PDF completo - todo lo que necesitas para trabajar con archivos PDF, directamente desde tu navegador web.
+
+      **Lo que puedes hacer:**
+      • **Dividir y combinar**: Separar PDFs grandes en archivos más pequeños o combinar múltiples PDFs en uno
+      • **Convertir**: Convertir PDFs en imágenes, documentos Word, archivos Excel o presentaciones PowerPoint
+      • **Comprimir**: Reducir el tamaño del archivo para ahorrar espacio y facilitar el intercambio
+      • **Editar**: Agregar texto, imágenes, firmas, marcas de agua o eliminar páginas
+      • **Organizar**: Rotar páginas, reordenar secciones o extraer páginas específicas
+      • **Seguridad**: Agregar contraseñas, eliminar contraseñas o censurar información sensible
+      • **OCR**: Extraer texto de documentos escaneados e imágenes
+
+      **Por qué elegir Stirling PDF:**
+      • **Privado y seguro**: Todo el procesamiento ocurre en tu servidor - tus archivos nunca salen de tu dispositivo
+      • **Sin límites de tamaño de archivo**: Trabaja con PDFs de cualquier tamaño
+      • **Sin tarifas de suscripción**: Completamente gratis sin anuncios ni costos ocultos
+      • **Funciona en cualquier lugar**: Acceso desde cualquier dispositivo con navegador web
+      • **Calidad profesional**: Obtén los mismos resultados que el software PDF caro
+
+      Perfecto para estudiantes, profesionales o cualquiera que trabaje regularmente con documentos PDF. No más pagar por software PDF caro o preocuparse por subir documentos sensibles a servicios en línea.
   icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Stirling-PDF/icon.png
   screenshot_link:
     - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Stirling-PDF/screenshot-1.png
@@ -46,13 +183,21 @@ x-casaos:
   thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Stirling-PDF/thumbnail.png
   index: /
   tagline:
-    en_us: Your best free PDF manipulation tool
-    zh_cn: 您最好的免费PDF处理工具
-    ko_kr: 최고의 무료 PDF 조작 도구
+    en_us: Your complete PDF toolkit in your browser
+    en_gb: Your complete PDF toolkit in your browser
+    ko_kr: 브라우저 안의 완전한 PDF 툴킷
+    zh_cn: 浏览器中的完整PDF工具包
+    fr_fr: Votre boîte à outils PDF complète dans votre navigateur
+    de_de: Ihr komplettes PDF-Toolkit in Ihrem Browser
+    es_es: Tu kit completo de herramientas PDF en tu navegador
   title:
-    en_us: Stirling-PDF
-    zh_cn: Stirling-PDF
-    ko_kr: Stirling-PDF
+    en_us: Stirling PDF
+    en_gb: Stirling PDF
+    ko_kr: Stirling PDF
+    zh_cn: Stirling PDF
+    fr_fr: Stirling PDF
+    de_de: Stirling PDF
+    es_es: Stirling PDF
   store_app_id: stirlingpdf
   main: stirlingpdf
   is_uncontrolled: false
@@ -60,31 +205,93 @@ x-casaos:
   tips:
     before_install:
       en_us: |
-        ⚠️ **Installation Notice:**
-        • This app may take 5-10 minutes to complete setup after installation
-        • Please wait for the configuration to finish before accessing
+        ⏰ **Setup Time:**
+        This app takes about 5-10 minutes to set up after installation. Please be patient and wait before trying to access it.
 
-        🔐 **Default Login Credentials:**
+        🔐 **Login Information:**
         • Username: `admin`
         • Password: `admin`
-        • **Important**: Change these credentials after first login for security
 
-      zh_cn: |
-        ⚠️ **安装提示：**
-        • 此应用安装后可能需要5-10分钟完成设置配置
-        • 请等待配置完成后再访问
+        🔒 **Important Security Note:**
+        After your first login, go to settings and change both the username and password to something secure. This protects your PDF files from unauthorized access.
 
-        🔐 **默认登录凭据：**
-        • 用户名：`admin`
-        • 密码：`admin`
-        • **重要**：首次登录后请更改这些凭据以确保安全
+        **How to use:**
+        Once ready, you can upload PDF files through your web browser and start editing them right away!
+      en_gb: |
+        ⏰ **Setup Time:**
+        This app takes about 5-10 minutes to set up after installation. Please be patient and wait before trying to access it.
 
+        🔐 **Login Information:**
+        • Username: `admin`
+        • Password: `admin`
+
+        🔒 **Important Security Note:**
+        After your first login, go to settings and change both the username and password to something secure. This protects your PDF files from unauthorised access.
+
+        **How to use:**
+        Once ready, you can upload PDF files through your web browser and start editing them right away!
       ko_kr: |
-        ⚠️ **설치 안내:**
-        • 이 앱은 설치 후 설정이 완료되기까지 5-10분 정도 소요될 수 있습니다
-        • 설정이 완료될 때까지 기다린 후 접속해 주세요
+        ⏰ **설정 시간:**
+        이 앱은 설치 후 설정이 완료되기까지 약 5-10분이 걸립니다. 인내심을 갖고 접속하기 전에 기다려 주세요.
 
-        🔐 **기본 로그인 정보:**
+        🔐 **로그인 정보:**
         • 사용자명: `admin`
         • 비밀번호: `admin`
-        • **중요**: 보안을 위해 첫 로그인 후 이 정보를 변경하세요
+
+        🔒 **중요한 보안 알림:**
+        첫 로그인 후 설정으로 가서 사용자명과 비밀번호를 안전한 것으로 변경하세요. 이렇게 하면 PDF 파일을 무단 접근으로부터 보호할 수 있습니다.
+
+        **사용 방법:**
+        준비가 되면 웹 브라우저를 통해 PDF 파일을 업로드하고 바로 편집을 시작할 수 있습니다!
+      zh_cn: |
+        ⏰ **设置时间：**
+        此应用在安装后需要约5-10分钟来完成设置。请耐心等待，在尝试访问之前请等待。
+
+        🔐 **登录信息：**
+        • 用户名：`admin`
+        • 密码：`admin`
+
+        🔒 **重要安全提示：**
+        首次登录后，请前往设置并将用户名和密码更改为安全的内容。这可以保护您的PDF文件免受未经授权的访问。
+
+        **如何使用：**
+        准备就绪后，您可以通过网页浏览器上传PDF文件并立即开始编辑它们！
+      fr_fr: |
+        ⏰ **Temps d'installation :**
+        Cette application prend environ 5-10 minutes pour s'installer après l'installation. Veuillez être patient et attendre avant d'essayer d'y accéder.
+
+        🔐 **Informations de connexion :**
+        • Nom d'utilisateur : `admin`
+        • Mot de passe : `admin`
+
+        🔒 **Note de sécurité importante :**
+        Après votre première connexion, allez dans les paramètres et changez le nom d'utilisateur et le mot de passe pour quelque chose de sécurisé. Cela protège vos fichiers PDF des accès non autorisés.
+
+        **Comment utiliser :**
+        Une fois prêt, vous pouvez télécharger des fichiers PDF via votre navigateur web et commencer à les éditer immédiatement !
+      de_de: |
+        ⏰ **Einrichtungszeit:**
+        Diese App benötigt etwa 5-10 Minuten zur Einrichtung nach der Installation. Bitte haben Sie Geduld und warten Sie, bevor Sie versuchen darauf zuzugreifen.
+
+        🔐 **Login-Informationen:**
+        • Benutzername: `admin`
+        • Passwort: `admin`
+
+        🔒 **Wichtiger Sicherheitshinweis:**
+        Nach Ihrem ersten Login gehen Sie zu den Einstellungen und ändern Sie sowohl Benutzername als auch Passwort zu etwas Sicherem. Dies schützt Ihre PDF-Dateien vor unbefugtem Zugriff.
+
+        **Wie zu verwenden:**
+        Sobald bereit, können Sie PDF-Dateien über Ihren Webbrowser hochladen und sofort mit der Bearbeitung beginnen!
+      es_es: |
+        ⏰ **Tiempo de configuración:**
+        Esta aplicación toma aproximadamente 5-10 minutos para configurarse después de la instalación. Por favor ten paciencia y espera antes de intentar acceder.
+
+        🔐 **Información de inicio de sesión:**
+        • Nombre de usuario: `admin`
+        • Contraseña: `admin`
+
+        🔒 **Nota de seguridad importante:**
+        Después de tu primer inicio de sesión, ve a configuraciones y cambia tanto el nombre de usuario como la contraseña por algo seguro. Esto protege tus archivos PDF del acceso no autorizado.
+
+        **Cómo usar:**
+        Una vez listo, puedes subir archivos PDF a través de tu navegador web y comenzar a editarlos de inmediato!

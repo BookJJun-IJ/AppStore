@@ -18,7 +18,6 @@ services:
     restart: unless-stopped
     networks:
       - odoo-network
-    command: ["odoo", "--http-port=80"]
 
   odoo:
     image: odoo:18.0
@@ -48,6 +47,7 @@ services:
     restart: unless-stopped
     networks:
       - odoo-network
+    command: ["odoo", "--http-port=80"]
 
 networks:
   odoo-network:

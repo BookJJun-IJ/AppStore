@@ -33,133 +33,207 @@ x-casaos:
   description:
     en_us: |
       🔐 **What is Vaultwarden?**
-      **Vaultwarden** is a secure password manager that helps you **store, organize, and access your passwords** easily across all your devices. Instead of trying to remember dozens of passwords, you only need **one master password** to unlock your vault.
-      
+
+      **Vaultwarden, known as Bitwarden** is a secure password manager that helps you **store, organize, and access your passwords** easily across all your devices. Instead of trying to remember dozens of passwords, you only need **one master password** to unlock your vault.
+
+      ✅ Just download the **Bitwarden app** on your phone or desktop, or use the **Bitwarden browser extension** --- it works perfectly with Vaultwarden.
+
       You can save:
       • Login info (email + password)
       • Credit cards
       • Notes
       • 2FA codes
-      
+
       Everything is **encrypted**, and only you can see your data.
-      
+
       🧱 **Why choose Vaultwarden?**
+
       **Vaultwarden** is a lightweight version of Bitwarden that runs on your own server. Think of it like having your own personal password bank instead of using someone else's.
-      
+
       Why choose Vaultwarden?
-      • **Your data stays with you** — no third-party companies involved
-      • **Faster and lighter** — uses less resources than the official version
-      • **Same features** — works with all Bitwarden apps and browsers
-      
+      • **Your data stays with you** --- no third-party companies involved
+      • **Faster and lighter** --- uses less resources than the official version
+      • **Same features** --- works with all Bitwarden apps and browsers
+
       With Vaultwarden on **Yundera**, you can:
       • Run your own password manager server
       • Access your passwords from any device (mobile, browser, desktop)
       • Share access with your team or family (if you want)
-      • Keep your data private — it never leaves your server
+      • Keep your data private --- it never leaves your server
+    en_gb: |
+      🔐 **What is Vaultwarden?**
+
+      **Vaultwarden, known as Bitwarden** is a secure password manager that helps you **store, organise, and access your passwords** easily across all your devices. Instead of trying to remember dozens of passwords, you only need **one master password** to unlock your vault.
+
+      ✅ Just download the **Bitwarden app** on your phone or desktop, or use the **Bitwarden browser extension** --- it works perfectly with Vaultwarden.
+
+      You can save:
+      • Login info (email + password)
+      • Credit cards
+      • Notes
+      • 2FA codes
+
+      Everything is **encrypted**, and only you can see your data.
+
+      🧱 **Why choose Vaultwarden?**
+
+      **Vaultwarden** is a lightweight version of Bitwarden that runs on your own server. Think of it like having your own personal password bank instead of using someone else's.
+
+      Why choose Vaultwarden?
+      • **Your data stays with you** --- no third-party companies involved
+      • **Faster and lighter** --- uses less resources than the official version
+      • **Same features** --- works with all Bitwarden apps and browsers
+
+      With Vaultwarden on **Yundera**, you can:
+      • Run your own password manager server
+      • Access your passwords from any device (mobile, browser, desktop)
+      • Share access with your team or family (if you want)
+      • Keep your data private --- it never leaves your server
     ko_kr: |
       🔐 **Vaultwarden이란?**
-      **Vaultwarden**은 모든 기기에서 **비밀번호를 저장, 정리, 접근**할 수 있도록 도와주는 안전한 비밀번호 관리자입니다. 수십 개의 비밀번호를 기억하려 하지 말고, **하나의 마스터 비밀번호**만으로 볼트를 열 수 있습니다.
-      
+
+      **Vaultwarden, Bitwarden로도 알려진**은 모든 기기에서 **비밀번호를 저장, 정리, 접근**할 수 있도록 도와주는 안전한 비밀번호 관리자입니다. 수십 개의 비밀번호를 기억하려 하지 말고, **하나의 마스터 비밀번호**만으로 볼트를 열 수 있습니다.
+
+      ✅ 휴대폰이나 데스크톱에서 **Bitwarden 앱**을 다운로드하거나, **Bitwarden 브라우저 확장 프로그램**을 사용하세요 --- Vaultwarden과 완벽하게 작동합니다.
+
       저장 가능한 항목:
       • 로그인 정보 (이메일 + 비밀번호)
       • 신용카드
       • 메모
       • 2FA 코드
-      
+
       모든 것이 **암호화**되어 있으며, 오직 당신만이 데이터를 볼 수 있습니다.
-      
+
       🧱 **왜 Vaultwarden을 선택해야 할까요?**
-      **Vaultwarden**은 당신의 서버에서 돌아가는 가벼운 버전의 비밀번호 관리자입니다. 남의 은행 대신 자신만의 개인 비밀번호 금고를 갖는 것과 같습니다.
-      
+
+      **Vaultwarden**은 당신의 서버에서 돌아가는 가벼운 버전의 Bitwarden입니다. 남의 은행 대신 자신만의 개인 비밀번호 금고를 갖는 것과 같습니다.
+
       Vaultwarden을 선택하는 이유:
-      • **내 데이터는 내가 관리** — 제3자 회사가 개입하지 않음
-      • **더 빠르고 가벼움** — 공식 버전보다 적은 자원 사용
-      • **동일한 기능** — 모든 Bitwarden 앱과 브라우저에서 작동
-      
+      • **내 데이터는 내가 관리** --- 제3자 회사가 개입하지 않음
+      • **더 빠르고 가벼움** --- 공식 버전보다 적은 자원 사용
+      • **동일한 기능** --- 모든 Bitwarden 앱과 브라우저에서 작동
+
       **Yundera**의 Vaultwarden으로 할 수 있는 것:
       • 자신만의 비밀번호 관리 서버 운영
       • 모든 기기에서 비밀번호 접근 (모바일, 브라우저, 데스크톱)
       • 팀이나 가족과 접근 권한 공유 (원하는 경우)
-      • 데이터 프라이버시 유지 — 데이터가 서버를 떠나지 않음
-      
+      • 데이터 프라이버시 유지 --- 데이터가 서버를 떠나지 않음
     zh_cn: |
-      🔐 **什么是 Bitwarden？**
-      **Bitwarden** 是一个安全的密码管理器，帮助您在所有设备上轻松**存储、整理和访问密码**。无需记住数十个密码，您只需要**一个主密码**来解锁您的保险库。
-      
+      🔐 **什么是Vaultwarden？**
+
+      **Vaultwarden，也被称为Bitwarden**是一个安全的密码管理器，帮助您在所有设备上轻松**存储、整理和访问密码**。无需记住数十个密码，您只需要**一个主密码**来解锁您的保险库。
+
+      ✅ 只需在手机或桌面上下载**Bitwarden应用**，或使用**Bitwarden浏览器扩展程序** --- 它与Vaultwarden完美配合。
+
       您可以保存：
       • 登录信息（邮箱 + 密码）
       • 信用卡
       • 笔记
-      • 2FA 代码
-      
+      • 2FA代码
+
       一切都经过**加密**，只有您能看到您的数据。
-      
-      🧱 **什么是 Vaultwarden？**
-      **Vaultwarden** 是在您自己服务器上运行的轻量版 Bitwarden。就像拥有自己的个人密码银行，而不是使用别人的。
-      
-      为什么选择 Vaultwarden？
-      • **数据由您掌控** — 无第三方公司参与
-      • **更快更轻** — 比官方版本占用更少资源
-      • **功能相同** — 兼容所有 Bitwarden 应用和浏览器
-      
-      在 **Yundera** 上使用 Vaultwarden，您可以：
+
+      🧱 **为什么选择Vaultwarden？**
+
+      **Vaultwarden**是在您自己服务器上运行的轻量版Bitwarden。就像拥有自己的个人密码银行，而不是使用别人的。
+
+      选择Vaultwarden的原因：
+      • **数据由您掌控** --- 无第三方公司参与
+      • **更快更轻** --- 比官方版本占用更少资源
+      • **功能相同** --- 兼容所有Bitwarden应用和浏览器
+
+      在**Yundera**上使用Vaultwarden，您可以：
       • 运行自己的密码管理服务器
       • 从任何设备访问密码（移动端、浏览器、桌面端）
       • 与团队或家人分享访问权限（如果您愿意）
-      • 保持数据隐私 — 数据永不离开您的服务器
-      
+      • 保持数据隐私 --- 数据永不离开您的服务器
     fr_fr: |
-      🔐 **Qu'est-ce que Bitwarden ?**
-      **Bitwarden** est un gestionnaire de mots de passe sécurisé qui vous aide à **stocker, organiser et accéder à vos mots de passe** facilement sur tous vos appareils. Au lieu d'essayer de mémoriser des dizaines de mots de passe, vous n'avez besoin que d'**un mot de passe principal** pour déverrouiller votre coffre.
-      
+      🔐 **Qu'est-ce que Vaultwarden ?**
+
+      **Vaultwarden, connu sous le nom de Bitwarden** est un gestionnaire de mots de passe sécurisé qui vous aide à **stocker, organiser et accéder à vos mots de passe** facilement sur tous vos appareils. Au lieu d'essayer de mémoriser des dizaines de mots de passe, vous n'avez besoin que d'**un mot de passe principal** pour déverrouiller votre coffre.
+
+      ✅ Téléchargez simplement l'**application Bitwarden** sur votre téléphone ou ordinateur, ou utilisez l'**extension de navigateur Bitwarden** --- elle fonctionne parfaitement avec Vaultwarden.
+
       Vous pouvez sauvegarder :
       • Informations de connexion (email + mot de passe)
       • Cartes de crédit
       • Notes
       • Codes 2FA
-      
+
       Tout est **chiffré**, et vous seul pouvez voir vos données.
-      
-      🧱 **Qu'est-ce que Vaultwarden ?**
+
+      🧱 **Pourquoi choisir Vaultwarden ?**
+
       **Vaultwarden** est une version légère de Bitwarden qui fonctionne sur votre propre serveur. C'est comme avoir votre propre banque de mots de passe personnelle au lieu d'utiliser celle de quelqu'un d'autre.
-      
+
       Pourquoi choisir Vaultwarden ?
-      • **Vos données restent chez vous** — aucune entreprise tierce impliquée
-      • **Plus rapide et plus léger** — utilise moins de ressources que la version officielle
-      • **Mêmes fonctionnalités** — fonctionne avec toutes les applications et navigateurs Bitwarden
-      
+      • **Vos données restent chez vous** --- aucune entreprise tierce impliquée
+      • **Plus rapide et plus léger** --- utilise moins de ressources que la version officielle
+      • **Mêmes fonctionnalités** --- fonctionne avec toutes les applications et navigateurs Bitwarden
+
       Avec Vaultwarden sur **Yundera**, vous pouvez :
       • Faire fonctionner votre propre serveur de gestionnaire de mots de passe
       • Accéder à vos mots de passe depuis n'importe quel appareil (mobile, navigateur, bureau)
       • Partager l'accès avec votre équipe ou famille (si vous le souhaitez)
-      • Garder vos données privées — elles ne quittent jamais votre serveur
-      
+      • Garder vos données privées --- elles ne quittent jamais votre serveur
+    de_de: |
+      🔐 **Was ist Vaultwarden?**
+
+      **Vaultwarden, bekannt als Bitwarden** ist ein sicherer Passwort-Manager, der Ihnen hilft, Ihre **Passwörter zu speichern, zu organisieren und darauf zuzugreifen** einfach auf allen Ihren Geräten. Anstatt zu versuchen, Dutzende von Passwörtern zu merken, benötigen Sie nur **ein Master-Passwort**, um Ihren Tresor zu entsperren.
+
+      ✅ Laden Sie einfach die **Bitwarden-App** auf Ihr Telefon oder Desktop herunter, oder verwenden Sie die **Bitwarden-Browser-Erweiterung** --- sie funktioniert perfekt mit Vaultwarden.
+
+      Sie können speichern:
+      • Anmeldeinformationen (E-Mail + Passwort)
+      • Kreditkarten
+      • Notizen
+      • 2FA-Codes
+
+      Alles ist **verschlüsselt**, und nur Sie können Ihre Daten sehen.
+
+      🧱 **Warum Vaultwarden wählen?**
+
+      **Vaultwarden** ist eine leichtgewichtige Version von Bitwarden, die auf Ihrem eigenen Server läuft. Denken Sie daran wie an Ihre eigene persönliche Passwort-Bank, anstatt die von jemand anderem zu verwenden.
+
+      Warum Vaultwarden wählen?
+      • **Ihre Daten bleiben bei Ihnen** --- keine Drittunternehmen involviert
+      • **Schneller und leichter** --- verbraucht weniger Ressourcen als die offizielle Version
+      • **Gleiche Funktionen** --- funktioniert mit allen Bitwarden-Apps und Browsern
+
+      Mit Vaultwarden auf **Yundera** können Sie:
+      • Ihren eigenen Passwort-Manager-Server betreiben
+      • Von jedem Gerät auf Ihre Passwörter zugreifen (mobil, Browser, Desktop)
+      • Zugang mit Ihrem Team oder Familie teilen (wenn Sie möchten)
+      • Ihre Daten privat halten --- sie verlassen niemals Ihren Server
     es_es: |
-      🔐 **¿Qué es Bitwarden?**
-      **Bitwarden** es un gestor de contraseñas seguro que te ayuda a **almacenar, organizar y acceder a tus contraseñas** fácilmente en todos tus dispositivos. En lugar de tratar de recordar docenas de contraseñas, solo necesitas **una contraseña maestra** para desbloquear tu bóveda.
-      
+      🔐 **¿Qué es Vaultwarden?**
+
+      **Vaultwarden, conocido como Bitwarden** es un gestor de contraseñas seguro que te ayuda a **almacenar, organizar y acceder a tus contraseñas** fácilmente en todos tus dispositivos. En lugar de tratar de recordar docenas de contraseñas, solo necesitas **una contraseña maestra** para desbloquear tu bóveda.
+
+      ✅ Simplemente descarga la **aplicación Bitwarden** en tu teléfono o escritorio, o usa la **extensión de navegador Bitwarden** --- funciona perfectamente con Vaultwarden.
+
       Puedes guardar:
       • Información de inicio de sesión (email + contraseña)
       • Tarjetas de crédito
       • Notas
       • Códigos 2FA
-      
+
       Todo está **encriptado**, y solo tú puedes ver tus datos.
-      
-      🧱 **¿Qué es Vaultwarden?**
+
+      🧱 **¿Por qué elegir Vaultwarden?**
+
       **Vaultwarden** es una versión ligera de Bitwarden que funciona en tu propio servidor. Es como tener tu propio banco personal de contraseñas en lugar de usar el de otra persona.
-      
+
       ¿Por qué elegir Vaultwarden?
-      • **Tus datos se quedan contigo** — ninguna empresa externa involucrada
-      • **Más rápido y ligero** — usa menos recursos que la versión oficial
-      • **Mismas características** — funciona con todas las aplicaciones y navegadores de Bitwarden
-      
+      • **Tus datos se quedan contigo** --- ninguna empresa externa involucrada
+      • **Más rápido y ligero** --- usa menos recursos que la versión oficial
+      • **Mismas características** --- funciona con todas las aplicaciones y navegadores de Bitwarden
+
       Con Vaultwarden en **Yundera**, puedes:
       • Ejecutar tu propio servidor de gestor de contraseñas
       • Acceder a tus contraseñas desde cualquier dispositivo (móvil, navegador, escritorio)
       • Compartir acceso con tu equipo o familia (si quieres)
-      • Mantener tus datos privados — nunca salen de tu servidor
-      
+      • Mantener tus datos privados --- nunca salen de tu servidor
   developer: Vaultwarden Community
   icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Vaultwarden/icon.png
   screenshot_link:
@@ -169,77 +243,161 @@ x-casaos:
   thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Vaultwarden/screenshot-1.png
   tagline:
     en_us: Your password manager, secured on your server
+    en_gb: Your password manager, secured on your server
     ko_kr: 당신의 서버에서 보호되는 비밀번호 관리자
     zh_cn: 在您的服务器上安全保护的密码管理器
     fr_fr: Votre gestionnaire de mots de passe, sécurisé sur votre serveur
+    de_de: Ihr Passwort-Manager, gesichert auf Ihrem Server
     es_es: Tu gestor de contraseñas, protegido en tu servidor
   title:
     en_us: Vaultwarden
+    en_gb: Vaultwarden
     ko_kr: Vaultwarden
     zh_cn: Vaultwarden
     fr_fr: Vaultwarden
+    de_de: Vaultwarden
     es_es: Vaultwarden
   tips:
     before_install:
       en_us: |
         **Default Account**
+
         | Setting | Value |
         |---------|-------|
-        | Admin Panel | `/admin` |
-        | Admin Token | `$default_pwd` |
-        
+        | Admin Panel | /admin |
+        | Admin Token | $default_pwd |
+
         **First Steps:**
-        1. Create your first user account via signup
-        2. Access admin panel at `/admin` to manage users
-        3. Consider disabling signups after setup
-        
+
+        1. Create your first user account via signup, this will be your main account.
+
+        2. To access the admin panel and manage users, open your browser and go to:
+        your-domain.com/admin (Just add /admin at the end of your Vaultwarden link)
+
+        3. Once your account is ready, it's a good idea to disable new signups to keep control over who can join.
+
+        **For the App/Web extension:**
+
+        Download the Bitwarden app on your phone or desktop, or use the Bitwarden browser extension : it works perfectly with Vaultwarden.
+      en_gb: |
+        **Default Account**
+
+        | Setting | Value |
+        |---------|-------|
+        | Admin Panel | /admin |
+        | Admin Token | $default_pwd |
+
+        **First Steps:**
+
+        1. Create your first user account via signup, this will be your main account.
+
+        2. To access the admin panel and manage users, open your browser and go to:
+        your-domain.com/admin (Just add /admin at the end of your Vaultwarden link)
+
+        3. Once your account is ready, it's a good idea to disable new signups to keep control over who can join.
+
+        **For the App/Web extension:**
+
+        Download the Bitwarden app on your phone or desktop, or use the Bitwarden browser extension : it works perfectly with Vaultwarden.
       ko_kr: |
         **기본 계정**
+
         | 설정 | 값 |
         |------|-----|
-        | 관리자 패널 | `/admin` |
-        | 관리자 토큰 | `$default_pwd` |
-        
+        | 관리자 패널 | /admin |
+        | 관리자 토큰 | $default_pwd |
+
         **첫 단계:**
-        1. 가입을 통해 첫 번째 사용자 계정 생성
-        2. `/admin`에서 관리자 패널로 사용자 관리
-        3. 설정 후 가입 기능 비활성화 고려
-        
+
+        1. 가입을 통해 첫 번째 사용자 계정을 생성하세요. 이것이 메인 계정이 됩니다.
+
+        2. 관리자 패널에 접근하여 사용자를 관리하려면 브라우저를 열고 다음으로 이동하세요:
+        your-domain.com/admin (Vaultwarden 링크 끝에 /admin만 추가하면 됩니다)
+
+        3. 계정이 준비되면 누가 가입할 수 있는지 통제하기 위해 새로운 가입을 비활성화하는 것이 좋습니다.
+
+        **앱/웹 확장프로그램의 경우:**
+
+        휴대폰이나 데스크톱에서 Bitwarden 앱을 다운로드하거나 Bitwarden 브라우저 확장프로그램을 사용하세요 : Vaultwarden과 완벽하게 작동합니다.
       zh_cn: |
         **默认账户**
+
         | 设置 | 值 |
         |------|-----|
-        | 管理员面板 | `/admin` |
-        | 管理员令牌 | `$default_pwd` |
-        
+        | 管理员面板 | /admin |
+        | 管理员令牌 | $default_pwd |
+
         **首要步骤：**
-        1. 通过注册创建第一个用户账户
-        2. 在 `/admin` 访问管理员面板管理用户
-        3. 设置后考虑禁用注册功能
-        
+
+        1. 通过注册创建第一个用户账户，这将成为您的主账户。
+
+        2. 要访问管理员面板和管理用户，请打开浏览器并前往：
+        your-domain.com/admin （只需在Vaultwarden链接末尾添加/admin）
+
+        3. 账户准备好后，建议禁用新注册以控制谁可以加入。
+
+        **对于应用程序/网页扩展：**
+
+        在手机或桌面上下载Bitwarden应用，或使用Bitwarden浏览器扩展：它与Vaultwarden完美配合。
       fr_fr: |
         **Compte par Défaut**
+
         | Paramètre | Valeur |
         |-----------|--------|
-        | Panneau Admin | `/admin` |
-        | Token Admin | `$default_pwd` |
-        
+        | Panneau Admin | /admin |
+        | Token Admin | $default_pwd |
+
         **Premières Étapes :**
-        1. Créez votre premier compte via inscription
-        2. Accédez au panneau admin à `/admin` pour gérer les utilisateurs
-        3. Considérez désactiver les inscriptions après configuration
-        
+
+        1. Créez votre premier compte utilisateur via inscription, ce sera votre compte principal.
+
+        2. Pour accéder au panneau d'administration et gérer les utilisateurs, ouvrez votre navigateur et allez à :
+        your-domain.com/admin (Ajoutez simplement /admin à la fin de votre lien Vaultwarden)
+
+        3. Une fois votre compte prêt, c'est une bonne idée de désactiver les nouvelles inscriptions pour garder le contrôle sur qui peut rejoindre.
+
+        **Pour l'App/Extension Web :**
+
+        Téléchargez l'application Bitwarden sur votre téléphone ou ordinateur, ou utilisez l'extension de navigateur Bitwarden : elle fonctionne parfaitement avec Vaultwarden.
+      de_de: |
+        **Standardkonto**
+
+        | Einstellung | Wert |
+        |-------------|------|
+        | Admin-Panel | /admin |
+        | Admin-Token | $default_pwd |
+
+        **Erste Schritte:**
+
+        1. Erstellen Sie Ihr erstes Benutzerkonto über die Registrierung, dies wird Ihr Hauptkonto.
+
+        2. Um auf das Admin-Panel zuzugreifen und Benutzer zu verwalten, öffnen Sie Ihren Browser und gehen Sie zu:
+        your-domain.com/admin (Fügen Sie einfach /admin am Ende Ihres Vaultwarden-Links hinzu)
+
+        3. Sobald Ihr Konto bereit ist, ist es eine gute Idee, neue Registrierungen zu deaktivieren, um die Kontrolle darüber zu behalten, wer beitreten kann.
+
+        **Für die App/Web-Erweiterung:**
+
+        Laden Sie die Bitwarden-App auf Ihr Telefon oder Desktop herunter, oder verwenden Sie die Bitwarden-Browser-Erweiterung: sie funktioniert perfekt mit Vaultwarden.
       es_es: |
         **Cuenta por Defecto**
+
         | Configuración | Valor |
         |---------------|-------|
-        | Panel de Admin | `/admin` |
-        | Token de Admin | `$default_pwd` |
-        
+        | Panel de Admin | /admin |
+        | Token de Admin | $default_pwd |
+
         **Primeros Pasos:**
-        1. Crea tu primera cuenta mediante registro
-        2. Accede al panel de admin en `/admin` para gestionar usuarios
-        3. Considera deshabilitar registros después de la configuración
-        
+
+        1. Crea tu primera cuenta de usuario mediante registro, esta será tu cuenta principal.
+
+        2. Para acceder al panel de administración y gestionar usuarios, abre tu navegador y ve a:
+        your-domain.com/admin (Solo añade /admin al final de tu enlace de Vaultwarden)
+
+        3. Una vez que tu cuenta esté lista, es buena idea deshabilitar nuevos registros para mantener control sobre quién puede unirse.
+
+        **Para la App/Extensión Web:**
+
+        Descarga la aplicación Bitwarden en tu teléfono o escritorio, o usa la extensión de navegador Bitwarden: funciona perfectamente con Vaultwarden.
   index: /
   webui_port: 80
