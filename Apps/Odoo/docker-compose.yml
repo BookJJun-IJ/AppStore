@@ -80,4 +80,3 @@ x-casaos:
     zh_cn: 完整的业务管理套件，包含CRM、电子商务、会计、库存、销售点、项目管理等功能
     es_es: Suite completa de gestión empresarial con CRM, comercio electrónico, contabilidad, inventario, punto de venta, gestión de proyectos, etc.
   index: /
-  port_map: "80"
