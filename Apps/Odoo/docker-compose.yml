@@ -22,7 +22,6 @@ services:
 
   odoo:
     image: odoo:18.0
-    user: $PUID:$PGID
     depends_on:
       - postgres
     expose:
@@ -31,8 +30,6 @@ services:
       HOST: postgres
       USER: postgres
       PASSWORD: $default_pwd
-      PUID: $PUID
-      PGID: $PGID
       TZ: $TZ
     volumes:
       - /DATA/AppData/$AppID/web-data:/var/lib/odoo
