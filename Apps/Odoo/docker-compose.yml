@@ -45,16 +45,13 @@ services:
     restart: unless-stopped
     networks:
       - odoo-network
-    command: ["odoo", "--http-port=8069", "--without-demo=False"]
+    command: ["odoo", "--http-port=8069"]
 
 networks:
   odoo-network:
     driver: bridge
 
 x-casaos:
-  pre-install-cmd: |
-    mkdir -p /DATA/AppData/$AppID/web-data /DATA/AppData/$AppID/addons /DATA/AppData/$AppID/postgres-data &&
-    chown -R $PUID:$PGID /DATA/AppData/$AppID/web-data /DATA/AppData/$AppID/addons
   architectures:
     - amd64
     - arm64
