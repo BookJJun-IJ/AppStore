@@ -4,8 +4,8 @@ services:
   postgres:
     image: postgres:15.8
     environment:
-      POSTGRES_DB: odoo
-      POSTGRES_USER: odoo  
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres  
       POSTGRES_PASSWORD: $default_pwd
       POSTGRES_HOST_AUTH_METHOD: trust
       PGDATA: /var/lib/postgresql/data/pgdata
@@ -29,7 +29,7 @@ services:
       - 80
     environment:
       HOST: postgres
-      USER: odoo
+      USER: postgres
       PASSWORD: $default_pwd
       PUID: $PUID
       PGID: $PGID
@@ -45,7 +45,7 @@ services:
     restart: unless-stopped
     networks:
       - odoo-network
-    command: ["odoo", "--http-port=80"]
+    command: ["odoo", "--http-port=80", "--without-demo=False"]
 
 networks:
   odoo-network:
