@@ -27,9 +27,6 @@ services:
       HOST: postgres
       USER: postgres
       PASSWORD: $default_pwd
-    volumes:
-      - /DATA/AppData/$AppID/web-data:/var/lib/odoo
-      - /DATA/AppData/$AppID/addons:/mnt/extra-addons
     deploy:
       resources:
         limits:
