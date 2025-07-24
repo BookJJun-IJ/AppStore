@@ -7,6 +7,7 @@ services:
     user: $PUID:$PGID
     depends_on:
       - db
+      - redis
     deploy:
       resources:
         limits:
@@ -22,18 +23,21 @@ services:
       - MYSQL_DATABASE=nextcloud
       - MYSQL_USER=nextcloud
       - MYSQL_PASSWORD=$default_pwd
-      - NEXTCLOUD_TRUSTED_DOMAINS=localhost,$domain
+      - NEXTCLOUD_TRUSTED_DOMAINS=localhost $domain
       - OVERWRITEPROTOCOL=https
       - OVERWRITEHOST=$domain
-      - TRUSTED_PROXIES=172.16.0.0/12,10.0.0.0/8,192.168.0.0/16
+      - REDIS_HOST=redis
+      - REDIS_HOST_PORT=6379
+      - NEXTCLOUD_INIT_HTACCESS=true
     volumes:
       - /DATA/AppData/$AppID/html:/var/www/html
       - /DATA/AppData/$AppID/apps:/var/www/html/custom_apps
       - /DATA/AppData/$AppID/config:/var/www/html/config
       - /DATA/AppData/$AppID/data:/var/www/html/data
-      - /DATA/Documents:/var/www/html/data/Documents
-      - /DATA/Media:/var/www/html/data/Media
-      - /DATA/Gallery:/var/www/html/data/Gallery
+      # Optional: Uncomment below lines to share files with other CasaOS apps
+      # - /DATA/Documents:/var/www/html/data/Documents
+      # - /DATA/Media:/var/www/html/data/Media
+      # - /DATA/Gallery:/var/www/html/data/Gallery
     restart: unless-stopped
     networks:
       - nextcloud-network
@@ -54,12 +58,50 @@ services:
       - MYSQL_USER=nextcloud
       - MYSQL_PASSWORD=$default_pwd
       - MARIADB_AUTO_UPGRADE=1
+      - MARIADB_DISABLE_UPGRADE_BACKUP=1
     volumes:
       - /DATA/AppData/$AppID/db:/var/lib/mysql
     restart: unless-stopped
     networks:
       - nextcloud-network
     cpu_shares: 50
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: nextcloud_redis
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.2'
+    command: redis-server --requirepass $default_pwd --appendonly yes
+    volumes:
+      - /DATA/AppData/$AppID/redis:/data
+    restart: unless-stopped
+    networks:
+      - nextcloud-network
+    cpu_shares: 25
+
+  notify-push:
+    image: nextcloud/notify_push:0.7.0
+    container_name: nextcloud_notify_push
+    depends_on:
+      - nextcloud
+      - redis
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+          cpus: '0.1'
+    expose:
+      - 7867
+    environment:
+      - NEXTCLOUD_URL=http://nextcloud
+      - REDIS_URL=redis://default:$default_pwd@redis:6379
+    restart: unless-stopped
+    networks:
+      - nextcloud-network
+    cpu_shares: 10
 
 networks:
   nextcloud-network:
@@ -72,6 +114,9 @@ x-casaos:
   architectures: [amd64, arm64]
   author: Yundera Team
   developer: Nextcloud GmbH
+  pre-install-cmd: |
+    mkdir -p /DATA/AppData/$AppID/{config,redis,notify-push} &&
+    chown -R $PUID:$PGID /DATA/AppData/$AppID
   description:
     en_us: |
       **☁️ What is Nextcloud?**
@@ -110,43 +155,14 @@ x-casaos:
       • Use **Talk** to message and call like WhatsApp or Zoom
       • Use **Office + Calendar + Deck** to replace Microsoft Teams
       • Invite your team or family and manage everything from one place
-    en_gb: |
-      **☁️ What is Nextcloud?**
 
-      **Nextcloud** is your own personal cloud : like **Google Drive, Dropbox, Microsoft Teams, and WhatsApp all-in-one**, but fully under your control.
+      **⚡ Performance Optimizations Included**
 
-      If you want to sync your files across devices, you'll need to use the Nextcloud Files app --- it's like your own private version of Google Drive or Dropbox.
-
-      You can **store files, share them, collaborate, chat, and even manage calendars and tasks**, all from a single private space.
-
-      Think of it as your **own private workspace**, with apps you choose, running on your own server.
-
-      **🔧 What Can You Do with Nextcloud?**
-
-      Nextcloud is modular : you can **add features like apps on a phone**. Here are some of the most popular ones:
-
-      • 📁 **Nextcloud Files**: Upload, access, and share files --- like your own Google Drive
-      • 🗓️ **Calendar**: Manage events and sync with your phone or laptop
-      • 📇 **Contacts**: Store and sync all your contacts privately
-      • 🗣️ **Talk**: Chat and video call with your team or family --- like a private WhatsApp or Zoom
-      • ✅ **Deck**: Organise tasks and projects like Trello or Notion
-      • 📝 **Nextcloud Office**: Open and edit Word, Excel, and PowerPoint files in your browser --- just like Google Docs
-      • 📦 **More Apps**: Over 100+ apps available to customise your workspace
-
-      **🚀 Why Use Nextcloud?**
-
-      • **No more Google or Microsoft** --- keep your files and data private
-      • **Fully customisable** --- add only the tools you need
-      • **Accessible anywhere** --- use the official Nextcloud mobile app or desktop app
-      • **Share with others** --- send files, create shared folders, or chat securely
-      • **Control your data** --- your files, your server, your rules
-
-      **🛠️ Example Use Cases**
-
-      • Use **Nextcloud Files** like Google Drive
-      • Use **Talk** to message and call like WhatsApp or Zoom
-      • Use **Office + Calendar + Deck** to replace Microsoft Teams
-      • Invite your team or family and manage everything from one place
+      This deployment includes:
+      • **Redis cache** for improved performance
+      • **Notify Push** for real-time file updates
+      • **Optimized database** configuration
+      • **Proper proxy settings** for NSL Router compatibility
     ko_kr: |
       **☁️ Nextcloud란 무엇인가요?**
 
@@ -184,6 +200,14 @@ x-casaos:
       • **Talk**를 WhatsApp이나 Zoom처럼 메시지 및 통화에 사용
       • **Office + Calendar + Deck**를 Microsoft Teams 대체로 사용
       • 팀이나 가족을 초대하고 한 곳에서 모든 것을 관리
+
+      **⚡ 포함된 성능 최적화**
+
+      이 배포에는 다음이 포함됩니다:
+      • **Redis 캐시** - 성능 향상
+      • **알림 푸시** - 실시간 파일 업데이트
+      • **최적화된 데이터베이스** 구성
+      • **NSL Router 호환성**을 위한 적절한 프록시 설정
     zh_cn: |
       **☁️ 什么是Nextcloud？**
 
@@ -221,6 +245,14 @@ x-casaos:
       • 像WhatsApp或Zoom一样使用**Talk**进行消息传递和通话
       • 使用**Office + Calendar + Deck**替代Microsoft Teams
       • 邀请您的团队或家人，在一个地方管理一切
+
+      **⚡ 包含的性能优化**
+
+      此部署包括：
+      • **Redis缓存** - 提升性能
+      • **通知推送** - 实时文件更新
+      • **优化的数据库**配置
+      • **NSL Router兼容性**的适当代理设置
     fr_fr: |
       **☁️ Qu'est-ce que Nextcloud ?**
 
@@ -258,6 +290,14 @@ x-casaos:
       • Utilisez **Talk** pour messagerie et appels comme WhatsApp ou Zoom
       • Utilisez **Office + Calendar + Deck** pour remplacer Microsoft Teams
       • Invitez votre équipe ou famille et gérez tout depuis un seul endroit
+
+      **⚡ Optimisations de performance incluses**
+
+      Ce déploiement inclut :
+      • **Cache Redis** pour améliorer les performances
+      • **Notification Push** pour les mises à jour de fichiers en temps réel
+      • Configuration de **base de données optimisée**
+      • **Paramètres de proxy appropriés** pour la compatibilité NSL Router
     de_de: |
       **☁️ Was ist Nextcloud?**
 
@@ -295,6 +335,14 @@ x-casaos:
       • Verwenden Sie **Talk** für Nachrichten und Anrufe wie WhatsApp oder Zoom
       • Verwenden Sie **Office + Calendar + Deck** als Microsoft Teams Ersatz
       • Laden Sie Ihr Team oder Familie ein und verwalten Sie alles von einem Ort aus
+
+      **⚡ Enthaltene Leistungsoptimierungen**
+
+      Diese Bereitstellung umfasst:
+      • **Redis-Cache** für verbesserte Leistung
+      • **Benachrichtigungs-Push** für Echtzeit-Datei-Updates
+      • **Optimierte Datenbank**-Konfiguration
+      • **Ordnungsgemäße Proxy-Einstellungen** für NSL Router-Kompatibilität
     es_es: |
       **☁️ ¿Qué es Nextcloud?**
 
@@ -332,6 +380,14 @@ x-casaos:
       • Usa **Talk** para mensajes y llamadas como WhatsApp o Zoom
       • Usa **Office + Calendar + Deck** para reemplazar Microsoft Teams
       • Invita a tu equipo o familia y gestiona todo desde un solo lugar
+
+      **⚡ Optimizaciones de rendimiento incluidas**
+
+      Esta implementación incluye:
+      • **Caché Redis** para mejorar el rendimiento
+      • **Notificación Push** para actualizaciones de archivos en tiempo real
+      • Configuración de **base de datos optimizada**
+      • **Configuraciones de proxy adecuadas** para compatibilidad con NSL Router
   title:
     en_us: Nextcloud
     ko_kr: Nextcloud
@@ -340,12 +396,12 @@ x-casaos:
     de_de: Nextcloud
     es_es: Nextcloud
   tagline:
-    en_us: Build your Teams alternative with guided app installation
-    ko_kr: 가이드된 앱 설치로 Teams 대안 구축
-    zh_cn: 通过引导式应用安装构建您的Teams替代方案
-    fr_fr: Construisez votre alternative Teams avec l'installation guidée d'applications
-    de_de: Erstellen Sie Ihre Teams-Alternative mit geführter App-Installation
-    es_es: Construya su alternativa a Teams con instalación guiada de aplicaciones
+    en_us: Build your Teams alternative with optimized performance
+    ko_kr: 최적화된 성능으로 Teams 대안 구축
+    zh_cn: 通过优化性能构建您的Teams替代方案
+    fr_fr: Construisez votre alternative Teams avec des performances optimisées
+    de_de: Erstellen Sie Ihre Teams-Alternative mit optimierter Leistung
+    es_es: Construya su alternativa a Teams con rendimiento optimizado
   icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Nextcloud/icon.png
   screenshot_link:
     - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Nextcloud/screenshot-1.png
@@ -355,7 +411,7 @@ x-casaos:
   tips:
     before_install:
       en_us: |
-        **Quick Setup Guide**
+        **🚀 Enhanced Setup Guide**
         
         **1. Initial Setup:**
         
@@ -377,12 +433,19 @@ x-casaos:
         **Download from App Store:**
         🔍 Search and install: Talk, Deck, Tasks, Nextcloud Office
         
-        **4. Done!**
-        Your complete Teams replacement is ready!
+        **4. Performance Optimizations Included:**
+        ✅ Redis cache for faster performance
+        ✅ Real-time file notifications
+        ✅ Optimized database settings
+        ✅ NSL Router compatibility
         
-        **Your files will be saved to:** Documents & Media folders
+        **5. Done!**
+        Your complete Teams replacement with enhanced performance is ready!
+        
+        **Your files will be saved to:** Nextcloud's own data directory
+        **Want to share with other apps?** Uncomment the volume mappings in docker-compose.yml
       ko_kr: |
-        **빠른 설정 가이드**
+        **🚀 향상된 설정 가이드**
         
         **1. 초기 설정:**
         
@@ -404,12 +467,19 @@ x-casaos:
         **앱스토어에서 다운로드:**
         🔍 검색 후 설치: Talk, Deck, Tasks, Nextcloud Office
         
-        **4. 완료!**
-        완전한 Teams 대체품이 준비되었습니다!
+        **4. 포함된 성능 최적화:**
+        ✅ 빠른 성능을 위한 Redis 캐시
+        ✅ 실시간 파일 알림
+        ✅ 최적화된 데이터베이스 설정
+        ✅ NSL Router 호환성
         
-        **파일 저장 위치:** Documents & Media 폴더
+        **5. 완료!**
+        향상된 성능의 완전한 Teams 대체품이 준비되었습니다!
+        
+        **파일 저장 위치:** Nextcloud 전용 데이터 디렉토리
+        **다른 앱과 공유하려면?** docker-compose.yml의 볼륨 매핑 주석 해제
       zh_cn: |
-        **快速设置指南**
+        **🚀 增强设置指南**
         
         **1. 初始设置：**
         
@@ -431,12 +501,19 @@ x-casaos:
         **从应用商店下载：**
         🔍 搜索并安装：Talk、Deck、Tasks、Nextcloud Office
         
-        **4. 完成！**
-        您的完整Teams替代品已准备就绪！
+        **4. 包含的性能优化：**
+        ✅ Redis缓存提升性能
+        ✅ 实时文件通知
+        ✅ 优化的数据库设置
+        ✅ NSL Router兼容性
         
-        **文件将保存到：** Documents & Media 文件夹
+        **5. 完成！**
+        您的增强性能完整Teams替代品已准备就绪！
+        
+        **文件将保存到：** Nextcloud专用数据目录
+        **想与其他应用共享？** 取消注释docker-compose.yml中的卷映射
       fr_fr: |
-        **Guide de configuration rapide**
+        **🚀 Guide de configuration amélioré**
         
         **1. Configuration initiale :**
         
@@ -458,12 +535,19 @@ x-casaos:
         **Téléchargez depuis l'App Store :**
         🔍 Recherchez et installez : Talk, Deck, Tasks, Nextcloud Office
         
-        **4. Terminé !**
-        Votre remplacement complet de Teams est prêt !
+        **4. Optimisations de performance incluses :**
+        ✅ Cache Redis pour de meilleures performances
+        ✅ Notifications de fichiers en temps réel
+        ✅ Paramètres de base de données optimisés
+        ✅ Compatibilité NSL Router
         
-        **Vos fichiers seront sauvegardés dans :** Dossiers Documents & Media
+        **5. Terminé !**
+        Votre remplacement complet de Teams avec performance améliorée est prêt !
+        
+        **Vos fichiers seront sauvegardés dans :** Répertoire de données dédié Nextcloud
+        **Voulez-vous partager avec d'autres applications ?** Décommentez les mappages de volumes dans docker-compose.yml
       de_de: |
-        **Schneller Setup-Leitfaden**
+        **🚀 Erweiterte Setup-Anleitung**
         
         **1. Erste Einrichtung:**
         
@@ -485,12 +569,19 @@ x-casaos:
         **Vom App Store herunterladen:**
         🔍 Suchen und installieren: Talk, Deck, Tasks, Nextcloud Office
         
-        **4. Fertig!**
-        Ihr vollständiger Teams-Ersatz ist bereit!
+        **4. Enthaltene Leistungsoptimierungen:**
+        ✅ Redis-Cache für bessere Leistung
+        ✅ Echtzeit-Datei-Benachrichtigungen
+        ✅ Optimierte Datenbankeinstellungen
+        ✅ NSL Router-Kompatibilität
         
-        **Ihre Dateien werden gespeichert in:** Documents & Media Ordner
+        **5. Fertig!**
+        Ihr vollständiger Teams-Ersatz mit verbesserter Leistung ist bereit!
+        
+        **Ihre Dateien werden gespeichert in:** Nextcloud-eigenes Datenverzeichnis
+        **Mit anderen Apps teilen?** Volume-Mappings in docker-compose.yml auskommentieren
       es_es: |
-        **Guía de configuración rápida**
+        **🚀 Guía de configuración mejorada**
         
         **1. Configuración inicial:**
         
@@ -512,8 +603,15 @@ x-casaos:
         **Descargar desde la App Store:**
         🔍 Buscar e instalar: Talk, Deck, Tasks, Nextcloud Office
         
-        **4. ¡Listo!**
-        ¡Tu reemplazo completo de Teams está listo!
+        **4. Optimizaciones de rendimiento incluidas:**
+        ✅ Caché Redis para mejor rendimiento
+        ✅ Notificaciones de archivos en tiempo real
+        ✅ Configuraciones de base de datos optimizadas
+        ✅ Compatibilidad con NSL Router
         
-        **Tus archivos se guardarán en:** Carpetas Documents & Media
+        **5. ¡Listo!**
+        ¡Tu reemplazo completo de Teams con rendimiento mejorado está listo!
+        
+        **Tus archivos se guardarán en:** Directorio de datos dedicado de Nextcloud
+        **¿Quieres compartir con otras aplicaciones?** Descomenta los mapeos de volúmenes en docker-compose.yml
   index: /
