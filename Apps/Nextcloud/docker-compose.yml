@@ -24,11 +24,17 @@ services:
       - MYSQL_USER=nextcloud
       - MYSQL_PASSWORD=$default_pwd
       - NEXTCLOUD_TRUSTED_DOMAINS=localhost $domain
+      - TRUSTED_PROXIES=172.16.0.0/12 10.0.0.0/8 192.168.0.0/16
       - OVERWRITEPROTOCOL=https
       - OVERWRITEHOST=$domain
+      - OVERWRITEWEBROOT=/
+      - OVERWRITECONDADDR=^172\..*$|^10\..*$|^192\.168\..*$
       - REDIS_HOST=redis
       - REDIS_HOST_PORT=6379
+      - REDIS_HOST_PASSWORD=$default_pwd
       - NEXTCLOUD_INIT_HTACCESS=true
+      - APACHE_DISABLE_REWRITE_IP=1
+      - NEXTCLOUD_UPDATE=1
     volumes:
       - /DATA/AppData/$AppID/html:/var/www/html
       - /DATA/AppData/$AppID/apps:/var/www/html/custom_apps
@@ -65,6 +71,11 @@ services:
     networks:
       - nextcloud-network
     cpu_shares: 50
+    command: >
+      --innodb-buffer-pool-size=256M
+      --transaction-isolation=READ-COMMITTED
+      --binlog-format=ROW
+      --innodb-file-per-table=1
 
   redis:
     image: redis:7.2-alpine
@@ -74,7 +85,12 @@ services:
         limits:
           memory: 128M
           cpus: '0.2'
-    command: redis-server --requirepass $default_pwd --appendonly yes
+    command: >
+      redis-server
+      --requirepass $default_pwd
+      --appendonly yes
+      --maxmemory 64mb
+      --maxmemory-policy allkeys-lru
     volumes:
       - /DATA/AppData/$AppID/redis:/data
     restart: unless-stopped
@@ -98,9 +114,36 @@ services:
     environment:
       - NEXTCLOUD_URL=http://nextcloud
       - REDIS_URL=redis://default:$default_pwd@redis:6379
+      - LOG=warn
     restart: unless-stopped
     networks:
       - nextcloud-network
+    cpu_shares: 10
+
+  cron:
+    image: nextcloud:30.0.6
+    container_name: nextcloud_cron
+    user: $PUID:$PGID
+    depends_on:
+      - db
+      - redis
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.1'
+    environment:
+      - PUID=$PUID
+      - PGID=$PGID
+      - TZ=$TZ
+    volumes:
+      - /DATA/AppData/$AppID/html:/var/www/html
+      - /DATA/AppData/$AppID/config:/var/www/html/config
+      - /DATA/AppData/$AppID/data:/var/www/html/data
+    restart: unless-stopped
+    networks:
+      - nextcloud-network
+    entrypoint: /cron.sh
     cpu_shares: 10
 
 networks:
@@ -117,6 +160,26 @@ x-casaos:
   pre-install-cmd: |
     mkdir -p /DATA/AppData/$AppID/{config,redis,notify-push} &&
     chown -R $PUID:$PGID /DATA/AppData/$AppID
+  title:
+    en_us: Nextcloud
+    ko_kr: Nextcloud
+    zh_cn: Nextcloud
+    fr_fr: Nextcloud
+    de_de: Nextcloud
+    es_es: Nextcloud
+  tagline:
+    en_us: Build your Teams alternative with optimized performance
+    ko_kr: 최적화된 성능으로 Teams 대안 구축
+    zh_cn: 通过优化性能构建您的Teams替代方案
+    fr_fr: Construisez votre alternative Teams avec des performances optimisées
+    de_de: Erstellen Sie Ihre Teams-Alternative mit optimierter Leistung
+    es_es: Construya su alternativa a Teams con rendimiento optimizado
+  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Nextcloud/icon.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Nextcloud/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Nextcloud/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Nextcloud/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Nextcloud/screenshot-2.png
   description:
     en_us: |
       **☁️ What is Nextcloud?**
@@ -388,26 +451,6 @@ x-casaos:
       • **Notificación Push** para actualizaciones de archivos en tiempo real
       • Configuración de **base de datos optimizada**
       • **Configuraciones de proxy adecuadas** para compatibilidad con NSL Router
-  title:
-    en_us: Nextcloud
-    ko_kr: Nextcloud
-    zh_cn: Nextcloud
-    fr_fr: Nextcloud
-    de_de: Nextcloud
-    es_es: Nextcloud
-  tagline:
-    en_us: Build your Teams alternative with optimized performance
-    ko_kr: 최적화된 성능으로 Teams 대안 구축
-    zh_cn: 通过优化性能构建您的Teams替代方案
-    fr_fr: Construisez votre alternative Teams avec des performances optimisées
-    de_de: Erstellen Sie Ihre Teams-Alternative mit optimierter Leistung
-    es_es: Construya su alternativa a Teams con rendimiento optimizado
-  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Nextcloud/icon.png
-  screenshot_link:
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Nextcloud/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Nextcloud/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Nextcloud/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Nextcloud/screenshot-2.png
   tips:
     before_install:
       en_us: |
