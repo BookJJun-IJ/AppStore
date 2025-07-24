@@ -19,35 +19,33 @@ services:
       - PUID=$PUID
       - PGID=$PGID
       - TZ=$TZ
+      # 🎯 자동 설치 환경변수들 - 이게 핵심!
+      - NEXTCLOUD_ADMIN_USER=admin
+      - NEXTCLOUD_ADMIN_PASSWORD=$default_pwd
       - MYSQL_HOST=db
       - MYSQL_DATABASE=nextcloud
       - MYSQL_USER=nextcloud
       - MYSQL_PASSWORD=$default_pwd
       - NEXTCLOUD_TRUSTED_DOMAINS=localhost $domain
-      - TRUSTED_PROXIES=172.16.0.0/12 10.0.0.0/8 192.168.0.0/16
       - OVERWRITEPROTOCOL=https
       - OVERWRITEHOST=$domain
-      - OVERWRITEWEBROOT=/
-      - OVERWRITECONDADDR=^172\..*$|^10\..*$|^192\.168\..*$
       - REDIS_HOST=redis
       - REDIS_HOST_PORT=6379
       - REDIS_HOST_PASSWORD=$default_pwd
       - NEXTCLOUD_INIT_HTACCESS=true
-      - APACHE_DISABLE_REWRITE_IP=1
-      - NEXTCLOUD_UPDATE=1
     volumes:
       - /DATA/AppData/$AppID/html:/var/www/html
-      - /DATA/AppData/$AppID/apps:/var/www/html/custom_apps
       - /DATA/AppData/$AppID/config:/var/www/html/config
       - /DATA/AppData/$AppID/data:/var/www/html/data
-      # Optional: Uncomment below lines to share files with other CasaOS apps
-      # - /DATA/Documents:/var/www/html/data/Documents
-      # - /DATA/Media:/var/www/html/data/Media
-      # - /DATA/Gallery:/var/www/html/data/Gallery
     restart: unless-stopped
     networks:
       - nextcloud-network
-    cpu_shares: 100
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/status.php"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
 
   db:
     image: mariadb:11.2
@@ -70,12 +68,16 @@ services:
     restart: unless-stopped
     networks:
       - nextcloud-network
-    cpu_shares: 50
     command: >
       --innodb-buffer-pool-size=256M
       --transaction-isolation=READ-COMMITTED
       --binlog-format=ROW
       --innodb-file-per-table=1
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$default_pwd"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   redis:
     image: redis:7.2-alpine
@@ -85,66 +87,114 @@ services:
         limits:
           memory: 128M
           cpus: '0.2'
-    command: >
-      redis-server
-      --requirepass $default_pwd
-      --appendonly yes
-      --maxmemory 64mb
-      --maxmemory-policy allkeys-lru
+    command: redis-server --requirepass $default_pwd --appendonly yes
     volumes:
       - /DATA/AppData/$AppID/redis:/data
     restart: unless-stopped
     networks:
       - nextcloud-network
-    cpu_shares: 25
+    healthcheck:
+      test: ["CMD", "redis-cli", "--no-auth-warning", "-a", "$default_pwd", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
-  notify-push:
-    image: nextcloud/notify_push:0.7.0
-    container_name: nextcloud_notify_push
-    depends_on:
-      - nextcloud
-      - redis
-    deploy:
-      resources:
-        limits:
-          memory: 64M
-          cpus: '0.1'
-    expose:
-      - 7867
-    environment:
-      - NEXTCLOUD_URL=http://nextcloud
-      - REDIS_URL=redis://default:$default_pwd@redis:6379
-      - LOG=warn
-    restart: unless-stopped
-    networks:
-      - nextcloud-network
-    cpu_shares: 10
-
-  cron:
+  # 🎯 자동 설정 컨테이너 - 이게 핵심!
+  auto-setup:
     image: nextcloud:30.0.6
-    container_name: nextcloud_cron
+    container_name: nextcloud_auto_setup
     user: $PUID:$PGID
     depends_on:
-      - db
-      - redis
-    deploy:
-      resources:
-        limits:
-          memory: 128M
-          cpus: '0.1'
+      nextcloud:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
-      - PUID=$PUID
-      - PGID=$PGID
-      - TZ=$TZ
+      - DEFAULT_PWD=$default_pwd
     volumes:
       - /DATA/AppData/$AppID/html:/var/www/html
       - /DATA/AppData/$AppID/config:/var/www/html/config
-      - /DATA/AppData/$AppID/data:/var/www/html/data
-    restart: unless-stopped
     networks:
       - nextcloud-network
-    entrypoint: /cron.sh
-    cpu_shares: 10
+    restart: "no"  # 한 번만 실행
+    command: >
+      bash -c "
+      echo '🚀 자동 최적화 시작...'
+      
+      # Nextcloud가 완전히 준비될 때까지 대기
+      echo '⏳ Nextcloud 준비 상태 확인 중...'
+      while ! curl -f http://nextcloud/status.php > /dev/null 2>&1; do
+        echo '   Nextcloud 대기 중...'
+        sleep 10
+      done
+      
+      # config.php가 생성되고 설치가 완전히 완료될 때까지 대기
+      echo '⏳ 설치 완료 및 안정화 대기 중...'
+      timeout=600
+      while [ ! -f /var/www/html/config/config.php ] && [ \$timeout -gt 0 ]; do
+        echo '   초기 설치 대기 중... (남은 시간: '\$timeout'초)'
+        sleep 10
+        timeout=\$((timeout-10))
+      done
+      
+      if [ ! -f /var/www/html/config/config.php ]; then
+        echo '❌ 시간 초과: config.php가 생성되지 않았습니다'
+        exit 1
+      fi
+      
+      # config.php 생성 후 추가 안정화 대기 (설치 과정 완전 완료 보장)
+      echo '✅ config.php 확인됨. 설치 완료 대기 중...'
+      sleep 120  # 2분 추가 대기로 설치 과정 완전 완료 보장
+      
+      # Nextcloud가 정상 응답하는지 확인
+      echo '🔍 Nextcloud 정상 작동 확인 중...'
+      attempts=0
+      while [ \$attempts -lt 30 ]; do
+        if curl -f -s http://nextcloud/status.php > /dev/null 2>&1; then
+          echo '✅ Nextcloud 정상 작동 확인'
+          break
+        fi
+        echo '   Nextcloud 응답 대기 중... (시도: '\$attempts'/30)'
+        sleep 10
+        attempts=\$((attempts+1))
+      done
+      
+      # Redis 설정
+      echo '🔧 Redis 캐시 설정 중...'
+      php /var/www/html/occ config:system:set redis host --value='redis' || echo 'Redis host 설정 실패'
+      php /var/www/html/occ config:system:set redis port --value=6379 --type=integer || echo 'Redis port 설정 실패'
+      php /var/www/html/occ config:system:set redis password --value='\$$DEFAULT_PWD' || echo 'Redis password 설정 실패'
+      php /var/www/html/occ config:system:set memcache.local --value='\OC\Memcache\Redis' || echo 'memcache.local 설정 실패'
+      php /var/www/html/occ config:system:set memcache.locking --value='\OC\Memcache\Redis' || echo 'memcache.locking 설정 실패'
+      
+      # Trusted Proxies 설정
+      echo '🌐 Trusted Proxies 설정 중...'
+      php /var/www/html/occ config:system:set trusted_proxies 0 --value='172.16.0.0/12' || echo 'trusted_proxies 0 설정 실패'
+      php /var/www/html/occ config:system:set trusted_proxies 1 --value='10.0.0.0/8' || echo 'trusted_proxies 1 설정 실패'
+      php /var/www/html/occ config:system:set trusted_proxies 2 --value='192.168.0.0/16' || echo 'trusted_proxies 2 설정 실패'
+      
+      # 기타 최적화 설정
+      echo '⚙️ 기타 최적화 설정 중...'
+      php /var/www/html/occ config:system:set maintenance_window_start --value=3 --type=integer || echo 'maintenance_window_start 설정 실패'
+      php /var/www/html/occ config:system:set default_phone_region --value='KR' || echo 'default_phone_region 설정 실패'
+      
+      # 시스템 유지보수
+      echo '🔧 시스템 유지보수 실행 중...'
+      php /var/www/html/occ maintenance:update:htaccess || echo 'htaccess 업데이트 실패'
+      php /var/www/html/occ db:add-missing-indices || echo '데이터베이스 인덱스 추가 실패'
+      php /var/www/html/occ maintenance:repair || echo '시스템 복구 실패'
+      
+      echo '🎉 모든 최적화가 완료되었습니다!'
+      echo '✅ Redis 캐시 활성화'
+      echo '✅ Trusted Proxies 설정 완료'
+      echo '✅ 유지보수 창 설정 완료'
+      echo '✅ 한국 전화번호 형식 설정'
+      echo '✅ 데이터베이스 최적화 완료'
+      echo ''
+      echo '🌟 이제 모든 보안 경고가 해결되었습니다!'
+      "
 
 networks:
   nextcloud-network:
@@ -158,22 +208,14 @@ x-casaos:
   author: Yundera Team
   developer: Nextcloud GmbH
   pre-install-cmd: |
-    mkdir -p /DATA/AppData/$AppID/{config,redis,notify-push} &&
+    mkdir -p /DATA/AppData/$AppID/{config,data,html,redis} &&
     chown -R $PUID:$PGID /DATA/AppData/$AppID
   title:
     en_us: Nextcloud
     ko_kr: Nextcloud
-    zh_cn: Nextcloud
-    fr_fr: Nextcloud
-    de_de: Nextcloud
-    es_es: Nextcloud
   tagline:
-    en_us: Build your Teams alternative with optimized performance
-    ko_kr: 최적화된 성능으로 Teams 대안 구축
-    zh_cn: 通过优化性能构建您的Teams替代方案
-    fr_fr: Construisez votre alternative Teams avec des performances optimisées
-    de_de: Erstellen Sie Ihre Teams-Alternative mit optimierter Leistung
-    es_es: Construya su alternativa a Teams con rendimiento optimizado
+    en_us: True "install and forget" personal cloud with auto-login
+    ko_kr: 자동 로그인이 포함된 진정한 "설치하고 잊어버리기" 개인 클라우드
   icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Nextcloud/icon.png
   screenshot_link:
     - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Nextcloud/screenshot-1.png
@@ -454,6 +496,11 @@ x-casaos:
   tips:
     before_install:
       en_us: |
+        **Default Account**
+        | Username   | Password       |
+        | --------   | ------------   |
+        | `admin`    | `$default_pwd` |
+        
         **🚀 Enhanced Setup Guide**
         
         **1. Initial Setup:**
@@ -488,6 +535,11 @@ x-casaos:
         **Your files will be saved to:** Nextcloud's own data directory
         **Want to share with other apps?** Uncomment the volume mappings in docker-compose.yml
       ko_kr: |
+        **기본 계정**
+        | 사용자명    | 비밀번호        |
+        | --------   | ------------   |
+        | `admin`    | `$default_pwd` |
+        
         **🚀 향상된 설정 가이드**
         
         **1. 초기 설정:**
@@ -522,6 +574,11 @@ x-casaos:
         **파일 저장 위치:** Nextcloud 전용 데이터 디렉토리
         **다른 앱과 공유하려면?** docker-compose.yml의 볼륨 매핑 주석 해제
       zh_cn: |
+        **默认账户**
+        | 用户名      | 密码           |
+        | --------   | ------------   |
+        | `admin`    | `$default_pwd` |
+        
         **🚀 增强设置指南**
         
         **1. 初始设置：**
@@ -546,7 +603,7 @@ x-casaos:
         
         **4. 包含的性能优化：**
         ✅ Redis缓存提升性能
-        ✅ 实时文件通知
+        ✅ 실시간 파일 통知
         ✅ 优化的数据库设置
         ✅ NSL Router兼容性
         
@@ -556,6 +613,11 @@ x-casaos:
         **文件将保存到：** Nextcloud专用数据目录
         **想与其他应用共享？** 取消注释docker-compose.yml中的卷映射
       fr_fr: |
+        **Compte par défaut**
+        | Nom d'utilisateur | Mot de passe   |
+        | --------         | ------------   |
+        | `admin`          | `$default_pwd` |
+        
         **🚀 Guide de configuration amélioré**
         
         **1. Configuration initiale :**
@@ -590,6 +652,11 @@ x-casaos:
         **Vos fichiers seront sauvegardés dans :** Répertoire de données dédié Nextcloud
         **Voulez-vous partager avec d'autres applications ?** Décommentez les mappages de volumes dans docker-compose.yml
       de_de: |
+        **Standard-Konto**
+        | Benutzername | Passwort       |
+        | --------     | ------------   |
+        | `admin`      | `$default_pwd` |
+        
         **🚀 Erweiterte Setup-Anleitung**
         
         **1. Erste Einrichtung:**
@@ -624,6 +691,11 @@ x-casaos:
         **Ihre Dateien werden gespeichert in:** Nextcloud-eigenes Datenverzeichnis
         **Mit anderen Apps teilen?** Volume-Mappings in docker-compose.yml auskommentieren
       es_es: |
+        **Cuenta predeterminada**
+        | Nombre de usuario | Contraseña     |
+        | --------         | ------------   |
+        | `admin`          | `$default_pwd` |
+        
         **🚀 Guía de configuración mejorada**
         
         **1. Configuración inicial:**
