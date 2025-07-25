@@ -3,7 +3,6 @@ name: rocketchat
 services:
   mongodb:
     image: bitnami/mongodb:7.0
-    user: $PUID:$PGID
     deploy:
       resources:
         limits:
@@ -12,10 +11,20 @@ services:
     environment:
       ALLOW_EMPTY_PASSWORD: yes
       MONGODB_DISABLE_SYSTEM_LOG: false
-      PUID: $PUID
-      PGID: $PGID
+      MONGODB_REPLICA_SET_MODE: primary
+      MONGODB_REPLICA_SET_NAME: rs0
+      MONGODB_PORT_NUMBER: 27017
+      MONGODB_INITIAL_PRIMARY_HOST: mongodb
+      MONGODB_ADVERTISED_HOSTNAME: mongodb
+      MONGODB_ENABLE_JOURNAL: true
     volumes:
       - /DATA/AppData/$AppID/mongodb:/bitnami/mongodb
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
     restart: unless-stopped
 
   rocketchat:
@@ -27,9 +36,9 @@ services:
           memory: 2G
           cpus: '1.0'
     environment:
-      MONGO_URL: mongodb://mongodb:27017/rocketchat
-      MONGO_OPLOG_URL: mongodb://mongodb:27017/local
-      ROOT_URL: https://rocketchat-ikjunyundera.nsl.sh
+      MONGO_URL: mongodb://mongodb:27017/rocketchat?replicaSet=rs0
+      MONGO_OPLOG_URL: mongodb://mongodb:27017/local?replicaSet=rs0
+      ROOT_URL: https://$domain
       PORT: 80
       ADMIN_USERNAME: admin
       ADMIN_PASS: $default_pwd
@@ -37,13 +46,21 @@ services:
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
+      DEPLOY_METHOD: docker
     expose:
       - 80
     volumes:
       - /DATA/AppData/$AppID/uploads:/app/uploads
       - /DATA/AppData/$AppID/data:/app/data
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:80/api/info || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     restart: unless-stopped
 
 x-casaos:
@@ -52,12 +69,20 @@ x-casaos:
         - arm64
     main: rocketchat
     author: CasaOS Team
-    category: Backup
+    category: Communication
     description:
         en_us: Rocket.Chat is an open-source team communication platform with MongoDB replica set for real-time data synchronization and Change Stream support.
+        fr_fr: Rocket.Chat est une plateforme de communication d'équipe open-source avec replica set MongoDB pour la synchronisation de données en temps réel et le support Change Stream.
+        ko_kr: Rocket.Chat은 실시간 데이터 동기화와 Change Stream 지원을 위한 MongoDB replica set을 갖춘 오픈소스 팀 커뮤니케이션 플랫폼입니다.
+        zh_cn: Rocket.Chat 是一个开源团队通信平台，具有用于实时数据同步和 Change Stream 支持的 MongoDB 副本集。
+        es_es: Rocket.Chat es una plataforma de comunicación de equipos de código abierto con replica set de MongoDB para sincronización de datos en tiempo real y soporte de Change Stream.
     developer: Rocket.Chat Technologies Corp.
     tagline:
         en_us: Team communication with MongoDB replica set support
+        fr_fr: Communication d'équipe avec support replica set MongoDB
+        ko_kr: MongoDB replica set 지원을 갖춘 팀 커뮤니케이션
+        zh_cn: 支持 MongoDB 副本集的团队通信
+        es_es: Comunicación de equipo con soporte de replica set MongoDB
     title:
         en_us: Rocket.Chat
     tips:
@@ -68,8 +93,17 @@ x-casaos:
                 | -------- | -------- |
                 | `admin`  | `$default_pwd` |
                 
-                Stable MongoDB 7.0 replica set with healthcheck.
-                MongoDB will fully initialize before Rocket.Chat starts.
-                Initial setup takes 2-3 minutes for complete replica set configuration.
+                **Important Setup Notes:**
+                - MongoDB replica set configured for stability
+                - Initial setup takes 2-3 minutes for complete initialization  
+                - Pre-install script ensures proper directory structure
+                - MongoDB healthcheck ensures proper startup sequence
+                - Access via: `https://$domain`
+    pre-install-cmd: |
+      docker run --rm -v /DATA/AppData/$AppID:/setup ubuntu:22.04 bash -c "
+        mkdir -p /setup/mongodb /setup/uploads /setup/data &&
+        chown -R $PUID:$PGID /setup/uploads /setup/data &&
+        echo 'Rocket.Chat directories initialized successfully'
+      "
     index: /
     webui_port: 80
