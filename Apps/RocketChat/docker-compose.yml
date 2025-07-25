@@ -17,12 +17,18 @@ services:
       MONGODB_INITIAL_PRIMARY_PORT_NUMBER: 27017
       MONGODB_ADVERTISED_HOSTNAME: mongodb
       MONGODB_ENABLE_JOURNAL: true
-      ALLOW_EMPTY_PASSWORD: yes
+      MONGODB_ROOT_PASSWORD: $default_pwd
       PUID: $PUID
       PGID: $PGID
     volumes:
       - /DATA/AppData/$AppID/mongodb:/bitnami/mongodb
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.runCommand('ping').ok"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 
   rocketchat:
     image: registry.rocket.chat/rocketchat/rocket.chat:7.5.0
