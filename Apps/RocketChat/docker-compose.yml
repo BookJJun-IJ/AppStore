@@ -2,7 +2,7 @@ name: rocketchat
 
 services:
   mongodb:
-    image: bitnami/mongodb:7.0
+    image: mongo:7.0
     user: $PUID:$PGID
     deploy:
       resources:
@@ -10,12 +10,12 @@ services:
           memory: 1G
           cpus: '0.5'
     environment:
-      ALLOW_EMPTY_PASSWORD: yes
       PUID: $PUID
       PGID: $PGID
     volumes:
-      - /DATA/AppData/$AppID/mongodb:/bitnami/mongodb
+      - /DATA/AppData/$AppID/mongodb:/data/db
     restart: unless-stopped
+    command: mongod --quiet --logpath /dev/null
 
   rocketchat:
     image: registry.rocket.chat/rocketchat/rocket.chat:7.5.0
@@ -27,11 +27,11 @@ services:
           cpus: '1.0'
     environment:
       MONGO_URL: mongodb://mongodb:27017/rocketchat
-      ROOT_URL: https://$domain/
+      ROOT_URL: http://localhost:80
       PORT: 80
       ADMIN_USERNAME: admin
       ADMIN_PASS: $default_pwd
-      ADMIN_EMAIL: admin@$domain
+      ADMIN_EMAIL: admin@localhost
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
@@ -43,6 +43,7 @@ services:
     depends_on:
       - mongodb
     restart: unless-stopped
+    command: bash -c "sleep 30 && node main.js"
 
 x-casaos:
     architectures:
