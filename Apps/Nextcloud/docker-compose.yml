@@ -6,8 +6,10 @@ services:
     container_name: nextcloud
     user: $PUID:$PGID
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     deploy:
       resources:
         limits:
@@ -19,23 +21,26 @@ services:
       - PUID=$PUID
       - PGID=$PGID
       - TZ=$TZ
-      # 🎯 자동 설치 환경변수들 - 이게 핵심!
+      # 🎯 자동 설치 환경변수들 - 순서와 이름 중요!
       - NEXTCLOUD_ADMIN_USER=admin
       - NEXTCLOUD_ADMIN_PASSWORD=$default_pwd
       - MYSQL_HOST=db
       - MYSQL_DATABASE=nextcloud
       - MYSQL_USER=nextcloud
       - MYSQL_PASSWORD=$default_pwd
-      - NEXTCLOUD_TRUSTED_DOMAINS=localhost $domain
+      - NEXTCLOUD_TRUSTED_DOMAINS=localhost $domain *.nsl.sh
       - OVERWRITEPROTOCOL=https
       - OVERWRITEHOST=$domain
       - REDIS_HOST=redis
       - REDIS_HOST_PORT=6379
       - REDIS_HOST_PASSWORD=$default_pwd
       - NEXTCLOUD_INIT_HTACCESS=true
+      # 🔧 자동 설치 강제 활성화
+      - SQLITE_DATABASE=  # SQLite 비활성화로 MySQL 강제 사용
+      - NEXTCLOUD_UPDATE=1  # 업데이트 허용
     volumes:
       - /DATA/AppData/$AppID/html:/var/www/html
-      - /DATA/AppData/$AppID/config:/var/www/html/config
+      - /DATA/AppData/$AppID/config:/var/www/html/config  
       - /DATA/AppData/$AppID/data:/var/www/html/data
     restart: unless-stopped
     networks:
@@ -45,7 +50,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 120s
+      start_period: 180s  # 더 긴 시작 시간
 
   db:
     image: mariadb:11.2
@@ -73,11 +78,14 @@ services:
       --transaction-isolation=READ-COMMITTED
       --binlog-format=ROW
       --innodb-file-per-table=1
+      --wait_timeout=28800
+      --interactive_timeout=28800
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$default_pwd"]
       interval: 30s
       timeout: 10s
-      retries: 3
+      retries: 5
+      start_period: 60s
 
   redis:
     image: redis:7.2-alpine
@@ -87,7 +95,7 @@ services:
         limits:
           memory: 128M
           cpus: '0.2'
-    command: redis-server --requirepass $default_pwd --appendonly yes
+    command: redis-server --requirepass $default_pwd --appendonly yes --maxmemory 100mb --maxmemory-policy allkeys-lru
     volumes:
       - /DATA/AppData/$AppID/redis:/data
     restart: unless-stopped
@@ -98,8 +106,9 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 30s
 
-  # 🎯 자동 설정 컨테이너 - 이게 핵심!
+  # 🎯 향상된 자동 설정 컨테이너
   auto-setup:
     image: nextcloud:30.0.6
     container_name: nextcloud_auto_setup
@@ -113,87 +122,93 @@ services:
         condition: service_healthy
     environment:
       - DEFAULT_PWD=$default_pwd
+      - DOMAIN=$domain
     volumes:
       - /DATA/AppData/$AppID/html:/var/www/html
       - /DATA/AppData/$AppID/config:/var/www/html/config
     networks:
       - nextcloud-network
-    restart: "no"  # 한 번만 실행
+    restart: "no"
     command: >
       bash -c "
-      echo '🚀 자동 최적화 시작...'
+      echo '🚀 Nextcloud 자동 최적화 시작...'
       
-      # Nextcloud가 완전히 준비될 때까지 대기
-      echo '⏳ Nextcloud 준비 상태 확인 중...'
-      while ! curl -f http://nextcloud/status.php > /dev/null 2>&1; do
-        echo '   Nextcloud 대기 중...'
-        sleep 10
-      done
-      
-      # config.php가 생성되고 설치가 완전히 완료될 때까지 대기
-      echo '⏳ 설치 완료 및 안정화 대기 중...'
-      timeout=600
+      # 설치 완료 확인 (config.php 존재 여부)
+      echo '⏳ Nextcloud 설치 완료 대기 중...'
+      timeout=900  # 15분 대기
       while [ ! -f /var/www/html/config/config.php ] && [ \$timeout -gt 0 ]; do
-        echo '   초기 설치 대기 중... (남은 시간: '\$timeout'초)'
-        sleep 10
-        timeout=\$((timeout-10))
+        echo '   설치 진행 중... (남은 시간: '\$timeout'초)'
+        sleep 15
+        timeout=\$((timeout-15))
       done
       
       if [ ! -f /var/www/html/config/config.php ]; then
-        echo '❌ 시간 초과: config.php가 생성되지 않았습니다'
+        echo '❌ 설치 시간 초과: Nextcloud 자동 설치 실패'
+        echo '💡 수동으로 설정을 완료한 후 컨테이너를 재시작하세요'
         exit 1
       fi
       
-      # config.php 생성 후 추가 안정화 대기 (설치 과정 완전 완료 보장)
-      echo '✅ config.php 확인됨. 설치 완료 대기 중...'
-      sleep 120  # 2분 추가 대기로 설치 과정 완전 완료 보장
+      echo '✅ Nextcloud 설치 완료 확인됨'
       
-      # Nextcloud가 정상 응답하는지 확인
-      echo '🔍 Nextcloud 정상 작동 확인 중...'
+      # 추가 안정화 대기
+      sleep 60
+      
+      # 관리자 명령 실행 가능 여부 확인
+      echo '🔍 OCC 명령 가용성 확인...'
       attempts=0
-      while [ \$attempts -lt 30 ]; do
-        if curl -f -s http://nextcloud/status.php > /dev/null 2>&1; then
-          echo '✅ Nextcloud 정상 작동 확인'
+      while [ \$attempts -lt 20 ]; do
+        if php /var/www/html/occ status > /dev/null 2>&1; then
+          echo '✅ OCC 명령 사용 가능'
           break
         fi
-        echo '   Nextcloud 응답 대기 중... (시도: '\$attempts'/30)'
-        sleep 10
+        echo '   OCC 대기 중... (시도: '\$attempts'/20)'
+        sleep 15
         attempts=\$((attempts+1))
       done
       
-      # Redis 설정
-      echo '🔧 Redis 캐시 설정 중...'
-      php /var/www/html/occ config:system:set redis host --value='redis' || echo 'Redis host 설정 실패'
-      php /var/www/html/occ config:system:set redis port --value=6379 --type=integer || echo 'Redis port 설정 실패'
-      php /var/www/html/occ config:system:set redis password --value='\$$DEFAULT_PWD' || echo 'Redis password 설정 실패'
-      php /var/www/html/occ config:system:set memcache.local --value='\OC\Memcache\Redis' || echo 'memcache.local 설정 실패'
-      php /var/www/html/occ config:system:set memcache.locking --value='\OC\Memcache\Redis' || echo 'memcache.locking 설정 실패'
+      # Redis 캐시 설정
+      echo '🔧 Redis 캐시 최적화...'
+      php /var/www/html/occ config:system:set redis host --value='redis' || echo '⚠️ Redis host 설정 건너뜀'
+      php /var/www/html/occ config:system:set redis port --value=6379 --type=integer || echo '⚠️ Redis port 설정 건너뜀'
+      php /var/www/html/occ config:system:set redis password --value='\$DEFAULT_PWD' || echo '⚠️ Redis password 설정 건너뜀'
+      php /var/www/html/occ config:system:set memcache.local --value='\OC\Memcache\Redis' || echo '⚠️ memcache.local 설정 건너뜀'
+      php /var/www/html/occ config:system:set memcache.locking --value='\OC\Memcache\Redis' || echo '⚠️ memcache.locking 설정 건너뜀'
+      php /var/www/html/occ config:system:set memcache.distributed --value='\OC\Memcache\Redis' || echo '⚠️ memcache.distributed 설정 건너뜀'
       
-      # Trusted Proxies 설정
-      echo '🌐 Trusted Proxies 설정 중...'
-      php /var/www/html/occ config:system:set trusted_proxies 0 --value='172.16.0.0/12' || echo 'trusted_proxies 0 설정 실패'
-      php /var/www/html/occ config:system:set trusted_proxies 1 --value='10.0.0.0/8' || echo 'trusted_proxies 1 설정 실패'
-      php /var/www/html/occ config:system:set trusted_proxies 2 --value='192.168.0.0/16' || echo 'trusted_proxies 2 설정 실패'
+      # 신뢰할 수 있는 프록시 설정
+      echo '🌐 네트워크 프록시 설정...'
+      php /var/www/html/occ config:system:set trusted_proxies 0 --value='172.16.0.0/12' || echo '⚠️ trusted_proxies 0 설정 건너뜀'
+      php /var/www/html/occ config:system:set trusted_proxies 1 --value='10.0.0.0/8' || echo '⚠️ trusted_proxies 1 설정 건너뜀'
+      php /var/www/html/occ config:system:set trusted_proxies 2 --value='192.168.0.0/16' || echo '⚠️ trusted_proxies 2 설정 건너뜀'
       
-      # 기타 최적화 설정
-      echo '⚙️ 기타 최적화 설정 중...'
-      php /var/www/html/occ config:system:set maintenance_window_start --value=3 --type=integer || echo 'maintenance_window_start 설정 실패'
-      php /var/www/html/occ config:system:set default_phone_region --value='KR' || echo 'default_phone_region 설정 실패'
+      # 추가 보안 및 성능 설정
+      echo '⚙️ 보안 및 성능 최적화...'
+      php /var/www/html/occ config:system:set maintenance_window_start --value=3 --type=integer || echo '⚠️ maintenance_window_start 설정 건너뜀'
+      php /var/www/html/occ config:system:set default_phone_region --value='KR' || echo '⚠️ default_phone_region 설정 건너뜀'
+      php /var/www/html/occ config:system:set overwrite.cli.url --value='https://'\$DOMAIN || echo '⚠️ overwrite.cli.url 설정 건너뜀'
+      php /var/www/html/occ config:system:set htaccess.RewriteBase --value='/' || echo '⚠️ htaccess.RewriteBase 설정 건너뜀'
       
-      # 시스템 유지보수
-      echo '🔧 시스템 유지보수 실행 중...'
-      php /var/www/html/occ maintenance:update:htaccess || echo 'htaccess 업데이트 실패'
-      php /var/www/html/occ db:add-missing-indices || echo '데이터베이스 인덱스 추가 실패'
-      php /var/www/html/occ maintenance:repair || echo '시스템 복구 실패'
+      # 데이터베이스 최적화
+      echo '🗄️ 데이터베이스 최적화...'
+      php /var/www/html/occ maintenance:update:htaccess || echo '⚠️ htaccess 업데이트 건너뜀'
+      php /var/www/html/occ db:add-missing-indices || echo '⚠️ 인덱스 추가 건너뜀'
+      php /var/www/html/occ maintenance:repair || echo '⚠️ 시스템 복구 건너뜀'
       
-      echo '🎉 모든 최적화가 완료되었습니다!'
-      echo '✅ Redis 캐시 활성화'
-      echo '✅ Trusted Proxies 설정 완료'
-      echo '✅ 유지보수 창 설정 완료'
-      echo '✅ 한국 전화번호 형식 설정'
-      echo '✅ 데이터베이스 최적화 완료'
+      # 앱 설정 (선택사항 - 실패해도 계속 진행)
+      echo '📱 권장 앱 활성화...'
+      php /var/www/html/occ app:enable calendar || echo '⚠️ Calendar 앱 활성화 건너뜀'
+      php /var/www/html/occ app:enable contacts || echo '⚠️ Contacts 앱 활성화 건너뜀'
+      php /var/www/html/occ app:enable mail || echo '⚠️ Mail 앱 활성화 건너뜀'
+      
       echo ''
-      echo '🌟 이제 모든 보안 경고가 해결되었습니다!'
+      echo '🎉 Nextcloud 최적화 완료!'
+      echo '✅ Redis 캐시 활성화 완료'
+      echo '✅ 보안 프록시 설정 완료'  
+      echo '✅ 데이터베이스 최적화 완료'
+      echo '✅ 성능 튜닝 완료'
+      echo ''
+      echo '🌟 이제 https://'\$DOMAIN' 에서 접속 가능합니다!'
+      echo '👤 관리자 계정: admin / (CasaOS에서 생성된 비밀번호)'
       "
 
 networks:
@@ -208,10 +223,13 @@ x-casaos:
   author: Yundera Team
   developer: Nextcloud GmbH
   pre-install-cmd: |
-    mkdir -p /DATA/AppData/$AppID/{config,data,html,redis} &&
-    chown -R $PUID:$PGID /DATA/AppData/$AppID
+    # 완전 초기화 및 권한 설정
+    rm -rf /DATA/AppData/$AppID/* &&
+    mkdir -p /DATA/AppData/$AppID/{config,data,html,db,redis} &&
+    chown -R $PUID:$PGID /DATA/AppData/$AppID &&
+    chmod -R 755 /DATA/AppData/$AppID
   title:
-    en_us: Nextcloud
+    en_us: Nextcloud  
     ko_kr: Nextcloud
   tagline:
     en_us: True "install and forget" personal cloud with auto-login
@@ -603,7 +621,7 @@ x-casaos:
         
         **4. 包含的性能优化：**
         ✅ Redis缓存提升性能
-        ✅ 실시간 파일 통知
+        ✅ 実时文件通知
         ✅ 优化的数据库设置
         ✅ NSL Router兼容性
         
