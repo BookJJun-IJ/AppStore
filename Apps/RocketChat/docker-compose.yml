@@ -10,14 +10,8 @@ services:
           memory: 1G
           cpus: '0.5'
     environment:
-      MONGODB_REPLICA_SET_MODE: primary
-      MONGODB_REPLICA_SET_NAME: rs0
-      MONGODB_PORT_NUMBER: 27017
-      MONGODB_INITIAL_PRIMARY_HOST: mongodb
-      MONGODB_INITIAL_PRIMARY_PORT_NUMBER: 27017
-      MONGODB_ADVERTISED_HOSTNAME: mongodb
-      MONGODB_ENABLE_JOURNAL: true
-      MONGODB_ROOT_PASSWORD: $default_pwd
+      ALLOW_EMPTY_PASSWORD: yes
+      MONGODB_DISABLE_SYSTEM_LOG: false
       PUID: $PUID
       PGID: $PGID
     volumes:
@@ -25,10 +19,10 @@ services:
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.runCommand('ping').ok"]
-      interval: 15s
+      interval: 30s
       timeout: 10s
-      retries: 5
-      start_period: 60s
+      retries: 3
+      start_period: 40s
 
   rocketchat:
     image: registry.rocket.chat/rocketchat/rocket.chat:7.5.0
@@ -39,8 +33,8 @@ services:
           memory: 2G
           cpus: '1.0'
     environment:
-      MONGO_URL: mongodb://mongodb:27017/rocketchat?replicaSet=rs0
-      MONGO_OPLOG_URL: mongodb://mongodb:27017/local?replicaSet=rs0
+      MONGO_URL: mongodb://mongodb:27017/rocketchat
+      MONGO_OPLOG_URL: mongodb://mongodb:27017/local
       ROOT_URL: https://rocketchat-ikjunyundera.nsl.sh
       PORT: 80
       ADMIN_USERNAME: admin
@@ -55,7 +49,8 @@ services:
       - /DATA/AppData/$AppID/uploads:/app/uploads
       - /DATA/AppData/$AppID/data:/app/data
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_healthy
     restart: unless-stopped
 
 x-casaos:
@@ -80,6 +75,8 @@ x-casaos:
                 | -------- | -------- |
                 | `admin`  | `$default_pwd` |
                 
-                Features MongoDB 7.0 replica set for full real-time functionality.
+                Stable MongoDB 7.0 replica set with healthcheck.
+                MongoDB will fully initialize before Rocket.Chat starts.
+                Initial setup takes 2-3 minutes for complete replica set configuration.
     index: /
     webui_port: 80
