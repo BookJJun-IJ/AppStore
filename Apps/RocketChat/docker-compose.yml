@@ -43,7 +43,6 @@ services:
     depends_on:
       - mongodb
     restart: unless-stopped
-    command: bash -c "sleep 30 && node main.js"
 
 x-casaos:
     architectures:
