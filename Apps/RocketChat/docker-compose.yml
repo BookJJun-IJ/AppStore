@@ -2,7 +2,7 @@ name: rocketchat
 
 services:
   mongodb:
-    image: mongo:7.0
+    image: bitnami/mongodb:7.0
     user: $PUID:$PGID
     deploy:
       resources:
@@ -10,12 +10,19 @@ services:
           memory: 1G
           cpus: '0.5'
     environment:
+      MONGODB_REPLICA_SET_MODE: primary
+      MONGODB_REPLICA_SET_NAME: rs0
+      MONGODB_PORT_NUMBER: 27017
+      MONGODB_INITIAL_PRIMARY_HOST: mongodb
+      MONGODB_INITIAL_PRIMARY_PORT_NUMBER: 27017
+      MONGODB_ADVERTISED_HOSTNAME: mongodb
+      MONGODB_ENABLE_JOURNAL: true
+      ALLOW_EMPTY_PASSWORD: yes
       PUID: $PUID
       PGID: $PGID
     volumes:
-      - /DATA/AppData/$AppID/mongodb:/data/db
+      - /DATA/AppData/$AppID/mongodb:/bitnami/mongodb
     restart: unless-stopped
-    command: mongod --quiet --logpath /dev/null
 
   rocketchat:
     image: registry.rocket.chat/rocketchat/rocket.chat:7.5.0
@@ -26,8 +33,9 @@ services:
           memory: 2G
           cpus: '1.0'
     environment:
-      MONGO_URL: mongodb://mongodb:27017/rocketchat
-      ROOT_URL: http://localhost:80
+      MONGO_URL: mongodb://mongodb:27017/rocketchat?replicaSet=rs0
+      MONGO_OPLOG_URL: mongodb://mongodb:27017/local?replicaSet=rs0
+      ROOT_URL: https://rocketchat-ikjunyundera.nsl.sh
       PORT: 80
       ADMIN_USERNAME: admin
       ADMIN_PASS: $default_pwd
@@ -52,18 +60,20 @@ x-casaos:
     author: CasaOS Team
     category: Backup
     description:
-        en_us: Rocket.Chat is an open-source team communication platform. It provides chat, video conferencing, file sharing and collaboration features.
+        en_us: Rocket.Chat is an open-source team communication platform with MongoDB replica set for real-time data synchronization and Change Stream support.
     developer: Rocket.Chat Technologies Corp.
     tagline:
-        en_us: Open-source team communication platform
+        en_us: Team communication with MongoDB replica set support
     title:
         en_us: Rocket.Chat
     tips:
         before_install:
             en_us: |
                 Default Account
-                | Username   | Password       |
-                | --------   | ------------   |
-                | `admin`    | `$default_pwd` |
+                | Username | Password |
+                | -------- | -------- |
+                | `admin`  | `$default_pwd` |
+                
+                Features MongoDB 7.0 replica set for full real-time functionality.
     index: /
     webui_port: 80
