@@ -1,4 +1,4 @@
-name: rocketchat-simple
+name: rocketchat
 
 services:
   mongodb:
@@ -7,8 +7,8 @@ services:
     deploy:
       resources:
         limits:
-          memory: 512M
-          cpus: '0.3'
+          memory: 1G
+          cpus: '0.5'
     environment:
       ALLOW_EMPTY_PASSWORD: yes
       PUID: $PUID
@@ -23,8 +23,8 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1G
-          cpus: '0.5'
+          memory: 2G
+          cpus: '1.0'
     environment:
       MONGO_URL: mongodb://mongodb:27017/rocketchat
       ROOT_URL: https://$domain/
@@ -32,8 +32,6 @@ services:
       ADMIN_USERNAME: admin
       ADMIN_PASS: $default_pwd
       ADMIN_EMAIL: admin@$domain
-      DOMAIN: $domain
-      PUBLIC_IP: $public_ip
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
@@ -47,54 +45,25 @@ services:
     restart: unless-stopped
 
 x-casaos:
-  architectures:
-    - amd64
-    - arm64
-  main: rocketchat
-  webui_port: 80
-  author: Yundera Team
-  category: Communication
-  description:
-    en_us: Rocket.Chat is an open-source team communication platform with chat, video conferencing, and file sharing. Simple deployment with latest MongoDB 7.0 for modern CPUs.
-    ko_kr: Rocket.Chat은 채팅, 영상 회의, 파일 공유를 지원하는 오픈소스 팀 커뮤니케이션 플랫폼입니다. 최신 CPU용 MongoDB 7.0으로 간단하게 배포됩니다.
-    zh_cn: Rocket.Chat是一个开源团队通信平台，具有聊天、视频会议和文件共享功能。使用最新的MongoDB 7.0为现代CPU简单部署。
-    fr_fr: Rocket.Chat est une plateforme de communication d'équipe open-source avec chat, visioconférence et partage de fichiers. Déploiement simple avec MongoDB 7.0 pour les CPU modernes.
-    es_es: Rocket.Chat es una plataforma de comunicación de equipo de código abierto con chat, videoconferencia e intercambio de archivos. Implementación simple con MongoDB 7.0 para CPU modernas.
-  developer: Rocket.Chat Technologies Corp.
-  tagline:
-    en_us: Simple team communication with MongoDB 7.0
-    ko_kr: MongoDB 7.0을 사용하는 간단한 팀 커뮤니케이션
-    zh_cn: 使用MongoDB 7.0的简单团队通信
-    fr_fr: Communication d'équipe simple avec MongoDB 7.0
-    es_es: Comunicación de equipo simple con MongoDB 7.0
-  title:
-    en_us: Rocket.Chat (Simple)
-    ko_kr: Rocket.Chat (간단 버전)
-    zh_cn: Rocket.Chat (简单版)
-    fr_fr: Rocket.Chat (Simple)
-    es_es: Rocket.Chat (Simple)
-  tips:
-    before_install:
-      en_us: |
-        **Default Account**
-        | Username | Password |
-        | -------- | -------- |
-        | `admin`  | `$default_pwd` |
-        
-        **Simple Setup:**
-        - MongoDB 7.0 (modern CPUs with AVX support)
-        - Fast startup time (30-60 seconds)
-        - Perfect for development and small teams
-        - Automatic HTTPS URL via NSL Router
-      ko_kr: |
-        **기본 계정**
-        | 사용자명 | 비밀번호 |
-        | -------- | -------- |
-        | `admin`  | `$default_pwd` |
-        
-        **간단한 설정:**
-        - MongoDB 7.0 (AVX 지원 최신 CPU)
-        - 빠른 시작 시간 (30-60초)
-        - 개발 및 소규모 팀에 완벽
-        - NSL Router를 통한 자동 HTTPS URL
-  index: /
+    architectures:
+        - amd64
+        - arm64
+    main: rocketchat
+    author: CasaOS Team
+    category: Backup
+    description:
+        en_us: Rocket.Chat is an open-source team communication platform. It provides chat, video conferencing, file sharing and collaboration features.
+    developer: Rocket.Chat Technologies Corp.
+    tagline:
+        en_us: Open-source team communication platform
+    title:
+        en_us: Rocket.Chat
+    tips:
+        before_install:
+            en_us: |
+                Default Account
+                | Username   | Password       |
+                | --------   | ------------   |
+                | `admin`    | `$default_pwd` |
+    index: /
+    webui_port: 80
