@@ -2,29 +2,38 @@ name: rocketchat
 
 services:
   mongodb:
-    image: bitnami/mongodb:7.0
+    image: mongo:7.0
+    user: $PUID:$PGID
     deploy:
       resources:
         limits:
           memory: 1G
           cpus: '0.5'
+    command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27017", "--quiet"]
     environment:
-      ALLOW_EMPTY_PASSWORD: yes
-      MONGODB_DISABLE_SYSTEM_LOG: false
-      MONGODB_REPLICA_SET_MODE: primary
-      MONGODB_REPLICA_SET_NAME: rs0
-      MONGODB_PORT_NUMBER: 27017
-      MONGODB_INITIAL_PRIMARY_HOST: mongodb
-      MONGODB_ADVERTISED_HOSTNAME: mongodb
-      MONGODB_ENABLE_JOURNAL: true
+      PUID: $PUID
+      PGID: $PGID
     volumes:
-      - /DATA/AppData/$AppID/mongodb:/bitnami/mongodb
+      - /DATA/AppData/$AppID/mongodb:/data/db
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      # Replica set 초기화를 healthcheck에서 처리 (자동화)
+      test: |
+        mongosh --port 27017 --quiet --eval "
+        try { 
+          rs.status(); 
+        } catch (err) { 
+          rs.initiate({
+            _id: 'rs0',
+            members: [{
+              _id: 0,
+              host: 'mongodb:27017'
+            }]
+          }); 
+        }"
       interval: 10s
       timeout: 10s
-      retries: 5
-      start_period: 40s
+      retries: 10
+      start_period: 60s
     restart: unless-stopped
 
   rocketchat:
@@ -36,8 +45,10 @@ services:
           memory: 2G
           cpus: '1.0'
     environment:
+      # Replica set URL 사용 (필수!)
       MONGO_URL: mongodb://mongodb:27017/rocketchat?replicaSet=rs0
       MONGO_OPLOG_URL: mongodb://mongodb:27017/local?replicaSet=rs0
+      # NSL Router 호환 URL
       ROOT_URL: https://$domain
       PORT: 80
       ADMIN_USERNAME: admin
@@ -55,12 +66,6 @@ services:
     depends_on:
       mongodb:
         condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:80/api/info || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
     restart: unless-stopped
 
 x-casaos:
@@ -69,41 +74,35 @@ x-casaos:
         - arm64
     main: rocketchat
     author: CasaOS Team
-    category: Communication
+    category: Communication  # Backup -> Communication으로 수정
     description:
         en_us: Rocket.Chat is an open-source team communication platform with MongoDB replica set for real-time data synchronization and Change Stream support.
         fr_fr: Rocket.Chat est une plateforme de communication d'équipe open-source avec replica set MongoDB pour la synchronisation de données en temps réel et le support Change Stream.
         ko_kr: Rocket.Chat은 실시간 데이터 동기화와 Change Stream 지원을 위한 MongoDB replica set을 갖춘 오픈소스 팀 커뮤니케이션 플랫폼입니다.
-        zh_cn: Rocket.Chat 是一个开源团队通信平台，具有用于实时数据同步和 Change Stream 支持的 MongoDB 副本集。
+        zh_cn: Rocket.Chat 是一个开源团队通信平台，具有用于实时数据同期和 Change Stream 支持的 MongoDB 副本集。
         es_es: Rocket.Chat es una plataforma de comunicación de equipos de código abierto con replica set de MongoDB para sincronización de datos en tiempo real y soporte de Change Stream.
     developer: Rocket.Chat Technologies Corp.
     tagline:
-        en_us: Team communication with MongoDB replica set support
-        fr_fr: Communication d'équipe avec support replica set MongoDB
-        ko_kr: MongoDB replica set 지원을 갖춘 팀 커뮤니케이션
-        zh_cn: 支持 MongoDB 副本集的团队通信
-        es_es: Comunicación de equipo con soporte de replica set MongoDB
+        en_us: Open-source team communication with replica set support
+        fr_fr: Communication d'équipe open-source avec support replica set
+        ko_kr: Replica set 지원을 갖춘 오픈소스 팀 커뮤니케이션
+        zh_cn: 支持副本集的开源团队通信
+        es_es: Comunicación de equipo open-source con soporte de replica set
     title:
         en_us: Rocket.Chat
     tips:
         before_install:
             en_us: |
                 Default Account
-                | Username | Password |
-                | -------- | -------- |
-                | `admin`  | `$default_pwd` |
+                | Username   | Password       |
+                | --------   | ------------   |
+                | `admin`    | `$default_pwd` |
                 
                 **Important Setup Notes:**
-                - MongoDB replica set configured for stability
-                - Initial setup takes 2-3 minutes for complete initialization  
-                - Pre-install script ensures proper directory structure
-                - MongoDB healthcheck ensures proper startup sequence
+                - MongoDB single-node replica set configured automatically
+                - Initial setup takes 3-5 minutes for complete initialization
+                - Replica set enables all Rocket.Chat features including workspace creation
+                - Monitor progress: `docker compose logs -f mongodb`
                 - Access via: `https://$domain`
-    pre-install-cmd: |
-      docker run --rm -v /DATA/AppData/$AppID:/setup ubuntu:22.04 bash -c "
-        mkdir -p /setup/mongodb /setup/uploads /setup/data &&
-        chown -R $PUID:$PGID /setup/uploads /setup/data &&
-        echo 'Rocket.Chat directories initialized successfully'
-      "
     index: /
     webui_port: 80
