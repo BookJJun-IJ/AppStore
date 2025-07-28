@@ -35,10 +35,21 @@ services:
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
-      # Moleculer transporter 설정 - 포트 충돌 해결
+      # Moleculer 마이크로서비스 완전 비활성화 (복합 접근법)
       TRANSPORTER: ""
-      # 또는 다른 포트 사용
-      # MOLECULER_TRANSPORTER_PORT: 41874
+      MOLECULER_TRANSPORTER: ""
+      # 대체 방법들
+      MOLECULER_DISABLED: "true"
+      DISABLE_MICROSERVICES: "true" 
+      # Moleculer 포트 바인딩 제한 (localhost만)
+      BIND_IP: "127.0.0.1"
+      # Rocket.Chat 마이크로서비스 관련 설정 비활성화
+      OVERWRITE_SETTING_MICRO_SERVICES_ENABLED: "false"
+      # 추가 Moleculer 설정
+      MOL_TRANSPORTER: ""
+      MOL_CACHER: ""
+      # 로깅 레벨을 높여서 디버깅
+      LOG_LEVEL: "warn"
     expose:
       - 80
     volumes:
