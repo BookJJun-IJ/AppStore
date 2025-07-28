@@ -9,34 +9,13 @@ services:
         limits:
           memory: 1G
           cpus: '0.5'
-    command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27017", "--quiet"]
     environment:
       PUID: $PUID
       PGID: $PGID
     volumes:
       - /DATA/AppData/$AppID/mongodb:/data/db
-    healthcheck:
-      # Replica set 자동 초기화
-      test: |
-        mongosh --port 27017 --quiet --eval "
-        try { 
-          rs.status().ok; 
-          exit(0); 
-        } catch (err) { 
-          if (err.message.includes('no replset config')) {
-            rs.initiate({
-              _id: 'rs0',
-              members: [{_id: 0, host: 'mongodb:27017'}]
-            });
-            exit(0);
-          }
-          exit(1);
-        }"
-      interval: 10s
-      timeout: 10s
-      retries: 10
-      start_period: 60s
     restart: unless-stopped
+    command: mongod --quiet --logpath /dev/null
 
   rocketchat:
     image: registry.rocket.chat/rocketchat/rocket.chat:7.5.0
@@ -47,8 +26,8 @@ services:
           memory: 2G
           cpus: '1.0'
     environment:
-      MONGO_URL: mongodb://mongodb:27017/rocketchat?replicaSet=rs0
-      MONGO_OPLOG_URL: mongodb://mongodb:27017/local?replicaSet=rs0
+      MONGO_URL: mongodb://mongodb:27017/rocketchat
+      ROOT_URL: http://localhost:80
       PORT: 80
       ADMIN_USERNAME: admin
       ADMIN_PASS: $default_pwd
@@ -56,15 +35,13 @@ services:
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
-      DEPLOY_METHOD: docker
     expose:
       - 80
     volumes:
       - /DATA/AppData/$AppID/uploads:/app/uploads
       - /DATA/AppData/$AppID/data:/app/data
     depends_on:
-      mongodb:
-        condition: service_healthy
+      - mongodb
     restart: unless-stopped
 
 x-casaos:
@@ -73,20 +50,12 @@ x-casaos:
         - arm64
     main: rocketchat
     author: CasaOS Team
-    category: Communication
+    category: Backup
     description:
-        en_us: Rocket.Chat is an open-source team communication platform with MongoDB replica set for real-time data synchronization and Change Stream support.
-        fr_fr: Rocket.Chat est une plateforme de communication d'équipe open-source avec replica set MongoDB pour la synchronisation de données en temps réel et le support Change Stream.
-        ko_kr: Rocket.Chat은 실시간 데이터 동기화와 Change Stream 지원을 위한 MongoDB replica set을 갖춘 오픈소스 팀 커뮤니케이션 플랫폼입니다.
-        zh_cn: Rocket.Chat 是一个开源团队通信平台，具有用于实时数据同期和 Change Stream 支持的 MongoDB 副本集。
-        es_es: Rocket.Chat es una plataforma de comunicación de equipos de código abierto con replica set de MongoDB para sincronización de datos en tiempo real y soporte de Change Stream.
+        en_us: Rocket.Chat is an open-source team communication platform. It provides chat, video conferencing, file sharing and collaboration features.
     developer: Rocket.Chat Technologies Corp.
     tagline:
-        en_us: Open-source team communication with replica set support
-        fr_fr: Communication d'équipe open-source avec support replica set
-        ko_kr: Replica set 지원을 갖춘 오픈소스 팀 커뮤니케이션
-        zh_cn: 支持副本集的开源团队通信
-        es_es: Comunicación de equipo open-source con soporte de replica set
+        en_us: Open-source team communication platform
     title:
         en_us: Rocket.Chat
     tips:
@@ -96,11 +65,5 @@ x-casaos:
                 | Username   | Password       |
                 | --------   | ------------   |
                 | `admin`    | `$default_pwd` |
-                
-                **Automated Setup:**
-                - MongoDB replica set initializes automatically
-                - Complete setup takes 3-5 minutes
-                - Access via NSL Router URL after installation
-                - All features including workspace creation enabled
     index: /
     webui_port: 80
