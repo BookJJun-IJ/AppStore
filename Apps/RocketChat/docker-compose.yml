@@ -15,6 +15,27 @@ services:
       PGID: $PGID
     volumes:
       - /DATA/AppData/$AppID/mongodb:/data/db
+    healthcheck:
+      # Replica set 자동 초기화
+      test: |
+        mongosh --port 27017 --quiet --eval "
+        try { 
+          rs.status().ok; 
+          exit(0); 
+        } catch (err) { 
+          if (err.message.includes('no replset config')) {
+            rs.initiate({
+              _id: 'rs0',
+              members: [{_id: 0, host: 'mongodb:27017'}]
+            });
+            exit(0);
+          }
+          exit(1);
+        }"
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
     restart: unless-stopped
 
   rocketchat:
@@ -42,7 +63,8 @@ services:
       - /DATA/AppData/$AppID/uploads:/app/uploads
       - /DATA/AppData/$AppID/data:/app/data
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_healthy
     restart: unless-stopped
 
 x-casaos:
@@ -75,16 +97,10 @@ x-casaos:
                 | --------   | ------------   |
                 | `admin`    | `$default_pwd` |
                 
-                **Setup Instructions:**
-                1. Start containers: `docker compose up -d`
-                2. Initialize replica set:
-                   ```bash
-                   docker compose exec mongodb mongosh --eval "rs.initiate({_id:'rs0',members:[{_id:0,host:'mongodb:27017'}]})"
-                   ```
-                3. Wait 2-3 minutes for complete initialization
-                4. Access via NSL Router URL (automatically configured)
-                5. Complete workspace setup in web interface
-                
-                **Note**: ROOT_URL will be configured automatically by NSL Router
+                **Automated Setup:**
+                - MongoDB replica set initializes automatically
+                - Complete setup takes 3-5 minutes
+                - Access via NSL Router URL after installation
+                - All features including workspace creation enabled
     index: /
     webui_port: 80
