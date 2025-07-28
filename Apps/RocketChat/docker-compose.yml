@@ -18,7 +18,8 @@ services:
     command: mongod --quiet --logpath /dev/null
 
   rocketchat:
-    image: registry.rocket.chat/rocketchat/rocket.chat:7.5.0
+    # 안정적인 버전 사용 (Moleculer 포트 충돌 이슈 없음)
+    image: registry.rocket.chat/rocketchat/rocket.chat:6.11.0
     user: $PUID:$PGID
     deploy:
       resources:
@@ -27,29 +28,61 @@ services:
           cpus: '1.0'
     environment:
       MONGO_URL: mongodb://mongodb:27017/rocketchat
+      # NSL Router 호환 URL
       ROOT_URL: https://rocketchat-$domain/
       PORT: 80
+      
+      # 기본 관리자 계정 설정
       ADMIN_USERNAME: admin
       ADMIN_PASS: $default_pwd
-      ADMIN_EMAIL: admin@$domain
+      ADMIN_EMAIL: admin@localhost
+      
+      # 시스템 환경 변수
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
-      # Moleculer 마이크로서비스 완전 비활성화 (복합 접근법)
-      TRANSPORTER: ""
-      MOLECULER_TRANSPORTER: ""
-      # 대체 방법들
+      
+      # === 완전 오프라인 모드 설정 ===
+      # 모든 외부 연결 비활성화
+      ROCKETCHAT_REGISTRATION_ENABLED: "false"
+      ROCKETCHAT_STATISTICS_OPT_OUT: "true"
+      ROCKETCHAT_CLOUD_WORKSPACE_REGISTRATION_REQUIRED: "false"
+      
+      # 업데이트 및 클라우드 기능 비활성화
+      ROCKETCHAT_UPDATE_CHECK_ENABLED: "false"
+      ROCKETCHAT_APPS_ENGINE_ENABLED: "false"
+      ROCKETCHAT_FEDERATION_ENABLED: "false"
+      
+      # === Moleculer 마이크로서비스 완전 비활성화 ===
       MOLECULER_DISABLED: "true"
-      DISABLE_MICROSERVICES: "true" 
-      # Moleculer 포트 바인딩 제한 (localhost만)
+      DISABLE_MICROSERVICES: "true"
+      MICRO_SERVICES_ENABLED: "false"
+      
+      # 네트워크 바인딩 제한 (보안 강화)
       BIND_IP: "127.0.0.1"
-      # Rocket.Chat 마이크로서비스 관련 설정 비활성화
-      OVERWRITE_SETTING_MICRO_SERVICES_ENABLED: "false"
-      # 추가 Moleculer 설정
-      MOL_TRANSPORTER: ""
-      MOL_CACHER: ""
-      # 로깅 레벨을 높여서 디버깅
+      
+      # === 개인 서버 성능 최적화 ===
+      METEOR_DISABLE_OPTIMISTIC_CACHING: "1"
       LOG_LEVEL: "warn"
+      
+      # === UI 설정 강제 재정의 (오프라인 모드) ===
+      OVERWRITE_SETTING_CLOUD_WORKSPACE_REGISTRATION_REQUIRED: "false"
+      OVERWRITE_SETTING_STATISTICS_REPORTING: "false"
+      OVERWRITE_SETTING_APPS_ENGINE_ENABLED: "false"
+      OVERWRITE_SETTING_FEDERATION_ENABLED: "false"
+      OVERWRITE_SETTING_ACCOUNTS_REGISTRATION_FORM: "Disabled"
+      
+      # === 개인 서버에서 불필요한 기능 비활성화 ===
+      OVERWRITE_SETTING_LIVECHAT_ENABLED: "false"
+      OVERWRITE_SETTING_OMNICHANNEL_ENABLED: "false"
+      OVERWRITE_SETTING_MARKETPLACE_ENABLED: "false"
+      OVERWRITE_SETTING_APPS_MARKETPLACE_ENABLED: "false"
+      
+      # === 보안 설정 강화 ===
+      OVERWRITE_SETTING_ACCOUNTS_ALLOW_ANONYMOUS_READ: "false"
+      OVERWRITE_SETTING_ACCOUNTS_ALLOW_ANONYMOUS_WRITE: "false"
+      OVERWRITE_SETTING_API_ENABLE_CORS: "false"
+      
     expose:
       - 80
     volumes:
@@ -65,20 +98,31 @@ x-casaos:
         - arm64
     main: rocketchat
     author: CasaOS Team
-    category: Communication  # Backup에서 Communication으로 변경
+    category: Communication
     description:
-        en_us: Rocket.Chat is an open-source team communication platform. It provides chat, video conferencing, file sharing and collaboration features.
+        en_us: Rocket.Chat configured for personal/offline servers. This version is optimized for private networks without internet connectivity, with all cloud features disabled.
     developer: Rocket.Chat Technologies Corp.
     tagline:
-        en_us: Open-source team communication platform
+        en_us: Private team communication (Offline Optimized)
     title:
-        en_us: Rocket.Chat
+        en_us: Rocket.Chat (Personal Server)
     tips:
         before_install:
             en_us: |
-                Default Account
-                | Username   | Password       |
-                | --------   | ------------   |
-                | `admin`    | `$default_pwd` |
+                **개인 서버 / 오프라인 최적화 버전**  
+                모든 클라우드 연결 및 외부 통신이 비활성화되어 있습니다.
+                
+                **기본 계정**  
+                | 사용자명     | 비밀번호        |
+                | ----------- | -------------- |
+                | `admin`     | `$default_pwd` |
+                
+                **특징:**
+                - ✅ 완전 오프라인 작동
+                - ✅ 외부 인터넷 연결 불필요  
+                - ✅ 개인정보 보호 강화
+                - ✅ 빠른 로컬 네트워크 성능
+                
+                **주의:** 회원가입이 비활성화되어 있습니다. 새 사용자는 관리자가 직접 생성해야 합니다.
     index: /
     webui_port: 80
