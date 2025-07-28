@@ -15,25 +15,6 @@ services:
       PGID: $PGID
     volumes:
       - /DATA/AppData/$AppID/mongodb:/data/db
-    healthcheck:
-      # Replica set 초기화를 healthcheck에서 처리 (자동화)
-      test: |
-        mongosh --port 27017 --quiet --eval "
-        try { 
-          rs.status(); 
-        } catch (err) { 
-          rs.initiate({
-            _id: 'rs0',
-            members: [{
-              _id: 0,
-              host: 'mongodb:27017'
-            }]
-          }); 
-        }"
-      interval: 10s
-      timeout: 10s
-      retries: 10
-      start_period: 60s
     restart: unless-stopped
 
   rocketchat:
@@ -45,11 +26,8 @@ services:
           memory: 2G
           cpus: '1.0'
     environment:
-      # Replica set URL 사용 (필수!)
       MONGO_URL: mongodb://mongodb:27017/rocketchat?replicaSet=rs0
       MONGO_OPLOG_URL: mongodb://mongodb:27017/local?replicaSet=rs0
-      # NSL Router 호환 URL
-      ROOT_URL: https://$domain
       PORT: 80
       ADMIN_USERNAME: admin
       ADMIN_PASS: $default_pwd
@@ -64,8 +42,7 @@ services:
       - /DATA/AppData/$AppID/uploads:/app/uploads
       - /DATA/AppData/$AppID/data:/app/data
     depends_on:
-      mongodb:
-        condition: service_healthy
+      - mongodb
     restart: unless-stopped
 
 x-casaos:
@@ -74,7 +51,7 @@ x-casaos:
         - arm64
     main: rocketchat
     author: CasaOS Team
-    category: Communication  # Backup -> Communication으로 수정
+    category: Communication
     description:
         en_us: Rocket.Chat is an open-source team communication platform with MongoDB replica set for real-time data synchronization and Change Stream support.
         fr_fr: Rocket.Chat est une plateforme de communication d'équipe open-source avec replica set MongoDB pour la synchronisation de données en temps réel et le support Change Stream.
@@ -98,11 +75,16 @@ x-casaos:
                 | --------   | ------------   |
                 | `admin`    | `$default_pwd` |
                 
-                **Important Setup Notes:**
-                - MongoDB single-node replica set configured automatically
-                - Initial setup takes 3-5 minutes for complete initialization
-                - Replica set enables all Rocket.Chat features including workspace creation
-                - Monitor progress: `docker compose logs -f mongodb`
-                - Access via: `https://$domain`
+                **Setup Instructions:**
+                1. Start containers: `docker compose up -d`
+                2. Initialize replica set:
+                   ```bash
+                   docker compose exec mongodb mongosh --eval "rs.initiate({_id:'rs0',members:[{_id:0,host:'mongodb:27017'}]})"
+                   ```
+                3. Wait 2-3 minutes for complete initialization
+                4. Access via NSL Router URL (automatically configured)
+                5. Complete workspace setup in web interface
+                
+                **Note**: ROOT_URL will be configured automatically by NSL Router
     index: /
     webui_port: 80
