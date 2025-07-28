@@ -27,14 +27,18 @@ services:
           cpus: '1.0'
     environment:
       MONGO_URL: mongodb://mongodb:27017/rocketchat
-      ROOT_URL: http://localhost:80
+      ROOT_URL: https://rocketchat-$domain/
       PORT: 80
       ADMIN_USERNAME: admin
       ADMIN_PASS: $default_pwd
-      ADMIN_EMAIL: admin@localhost
+      ADMIN_EMAIL: admin@$domain
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
+      # Moleculer transporter 설정 - 포트 충돌 해결
+      TRANSPORTER: ""
+      # 또는 다른 포트 사용
+      # MOLECULER_TRANSPORTER_PORT: 41874
     expose:
       - 80
     volumes:
@@ -50,7 +54,7 @@ x-casaos:
         - arm64
     main: rocketchat
     author: CasaOS Team
-    category: Backup
+    category: Communication  # Backup에서 Communication으로 변경
     description:
         en_us: Rocket.Chat is an open-source team communication platform. It provides chat, video conferencing, file sharing and collaboration features.
     developer: Rocket.Chat Technologies Corp.
