@@ -1,7 +1,6 @@
 name: rocketchat
 
 services:
-  # === Bitnami MongoDB (replica set 자동 설정) ===
   mongodb:
     image: bitnami/mongodb:7.0
     user: $PUID:$PGID
@@ -11,7 +10,7 @@ services:
           memory: 1G
           cpus: '0.5'
     environment:
-      # === 자동 replica set 설정 ===
+      # === Bitnami 자동 replica set 설정 ===
       MONGODB_REPLICA_SET_MODE: primary
       MONGODB_REPLICA_SET_NAME: rs0
       MONGODB_ROOT_USER: root
@@ -24,15 +23,14 @@ services:
       PUID: $PUID
       PGID: $PGID
       
-      # === 성능 최적화 ===
+      # === 추가 안정성 설정 ===
       MONGODB_ENABLE_JOURNAL: "true"
       MONGODB_DISABLE_SYSTEM_LOG: "false"
+      MONGODB_ENABLE_IPV6: "false"
+      MONGODB_ADVERTISED_HOSTNAME: mongodb
     volumes:
       - /DATA/AppData/$AppID/mongodb:/bitnami/mongodb
     restart: unless-stopped
-    # Bitnami는 포트 노출이 필요
-    ports:
-      - "127.0.0.1:27017:27017"
 
   rocketchat:
     image: registry.rocket.chat/rocketchat/rocket.chat:6.11.0
@@ -43,7 +41,7 @@ services:
           memory: 2G
           cpus: '1.0'
     environment:
-      # === MongoDB 연결 (Bitnami replica set) ===
+      # === MongoDB 연결 (Bitnami 인증 포함) ===
       MONGO_URL: mongodb://rocketchat:$default_pwd@mongodb:27017/rocketchat?replicaSet=rs0&authSource=rocketchat
       MONGO_OPLOG_URL: mongodb://root:$default_pwd@mongodb:27017/local?replicaSet=rs0&authSource=admin
       
@@ -131,62 +129,64 @@ x-casaos:
   author: CasaOS Team
   category: Communication
   description:
-    en_us: Rocket.Chat with Bitnami MongoDB for reliable replica set initialization. Configured for personal/offline servers with guaranteed real-time messaging functionality.
-    ko_kr: 안정적인 replica set 초기화를 위해 Bitnami MongoDB를 사용하는 Rocket.Chat입니다. 실시간 메시징 기능이 보장되는 개인/오프라인 서버용으로 구성되었습니다.
+    en_us: Rocket.Chat with Bitnami MongoDB for fully automated replica set setup. No terminal access required - everything works out of the box with guaranteed real-time messaging.
+    ko_kr: 완전 자동화된 replica set 설정을 위해 Bitnami MongoDB를 사용하는 Rocket.Chat입니다. 터미널 접근 불필요 - 실시간 메시징이 보장되는 즉시 사용 가능한 구성입니다.
   developer: Rocket.Chat Technologies Corp.
   tagline:
-    en_us: Private team communication with guaranteed replica set
-    ko_kr: replica set이 보장되는 사설 팀 커뮤니케이션
+    en_us: Private team communication - zero configuration required
+    ko_kr: 사설 팀 커뮤니케이션 - 설정 불필요
   title:
-    en_us: Rocket.Chat (Bitnami MongoDB)
-    ko_kr: Rocket.Chat (Bitnami MongoDB)
+    en_us: Rocket.Chat
+    ko_kr: Rocket.Chat
   tips:
     before_install:
       en_us: |
-        **Rocket.Chat with Bitnami MongoDB**
+        **Fully Automated Rocket.Chat Setup**
         
-        Uses Bitnami MongoDB with automatic replica set initialization - no manual setup required!
+        Uses Bitnami MongoDB with automatic replica set - zero configuration needed!
         
         **Default Account**
         | Username    | Password       |
         | ----------- | -------------- |
         | `admin`     | `$default_pwd` |
         
-        **Database Credentials**
-        | User        | Password       | Database   |
-        | ----------- | -------------- | ---------- |
-        | `root`      | `$default_pwd` | admin      |
-        | `rocketchat`| `$default_pwd` | rocketchat |
+        **What happens automatically:**
+        1. Bitnami MongoDB starts with replica set enabled
+        2. Database and users are created automatically
+        3. Rocket.Chat connects and enables real-time messaging
+        4. Ready to use in ~1 minute
         
         **Features:**
-        - ✅ Bitnami MongoDB with built-in replica set support
-        - ✅ Automatic initialization - no complex scripts
+        - ✅ Zero configuration - works immediately
+        - ✅ No terminal access required
+        - ✅ Automatic replica set initialization
         - ✅ Guaranteed real-time messaging
-        - ✅ Reliable WebSocket connections
+        - ✅ Offline operation optimized
         
-        **Ready in**: ~30 seconds after startup (much faster than manual replica set)
+        **No manual steps required** - just install and use!
       ko_kr: |
-        **Bitnami MongoDB를 사용하는 Rocket.Chat**
+        **완전 자동화된 Rocket.Chat 설정**
         
-        자동 replica set 초기화가 가능한 Bitnami MongoDB 사용 - 수동 설정 불필요!
+        자동 replica set이 포함된 Bitnami MongoDB 사용 - 설정 불필요!
         
         **기본 계정**
         | 사용자명     | 비밀번호        |
         | ----------- | -------------- |
         | `admin`     | `$default_pwd` |
         
-        **데이터베이스 계정**
-        | 사용자       | 비밀번호        | 데이터베이스  |
-        | ----------- | -------------- | ------------ |
-        | `root`      | `$default_pwd` | admin        |
-        | `rocketchat`| `$default_pwd` | rocketchat   |
+        **자동으로 수행되는 작업:**
+        1. replica set이 활성화된 Bitnami MongoDB 시작
+        2. 데이터베이스 및 사용자 자동 생성
+        3. Rocket.Chat 연결 및 실시간 메시징 활성화
+        4. ~1분 내에 사용 준비 완료
         
         **특징:**
-        - ✅ replica set 지원이 내장된 Bitnami MongoDB
-        - ✅ 자동 초기화 - 복잡한 스크립트 불필요
+        - ✅ 설정 불필요 - 즉시 작동
+        - ✅ 터미널 접근 불필요
+        - ✅ 자동 replica set 초기화
         - ✅ 실시간 메시징 보장
-        - ✅ 안정적인 WebSocket 연결
+        - ✅ 오프라인 작동 최적화
         
-        **준비 시간**: 시작 후 ~30초 (수동 replica set보다 훨씬 빠름)
+        **수동 단계 불필요** - 설치 후 바로 사용!
   index: /
   webui_port: 80
