@@ -35,8 +35,8 @@ services:
     deploy:
       resources:
         limits:
-          memory: 3G        # 메모리 대폭 증가
-          cpus: '2.0'       # CPU 대폭 증가
+          memory: 2G
+          cpus: '1.0'
     environment:
       # === MongoDB 연결 (확실한 replica set) ===
       MONGO_URL: mongodb://mongodb:27017/rocketchat?replicaSet=rs0
@@ -55,10 +55,6 @@ services:
       ADMIN_PASS: $default_pwd
       ADMIN_EMAIL: admin@localhost
       
-      # === 완전 오프라인 모드 강제 설정 ===
-      ROCKETCHAT_SETUP_TYPE: "standalone"
-      ROCKETCHAT_SKIP_SETUP_WIZARD: "true"
-      
       # === 시스템 환경 변수 ===
       PUID: $PUID
       PGID: $PGID
@@ -72,8 +68,7 @@ services:
       DISABLE_MICROSERVICES: "true"
       MICRO_SERVICES_ENABLED: "false"
       
-      # === 완전 오프라인 모드 설정 ===
-      # 회원가입 완전 비활성화
+      # === 오프라인 모드 설정 ===
       ROCKETCHAT_REGISTRATION_ENABLED: "false"
       ROCKETCHAT_STATISTICS_OPT_OUT: "true"
       ROCKETCHAT_CLOUD_WORKSPACE_REGISTRATION_REQUIRED: "false"
@@ -81,60 +76,18 @@ services:
       ROCKETCHAT_APPS_ENGINE_ENABLED: "false"
       ROCKETCHAT_FEDERATION_ENABLED: "false"
       
-      # === 인터넷 연결 완전 차단 ===
-      ROCKETCHAT_OFFLINE_MODE: "true"
-      
-      # === 워크스페이스 설정 강제 오버라이드 ===
-      INITIAL_USER: admin
-      INITIAL_PASS: $default_pwd
-      INITIAL_EMAIL: admin@localhost
-      
-      # === 외부 서비스 완전 비활성화 ===
-      ROCKETCHAT_CLOUD_URL: ""
-      ROCKETCHAT_MARKETPLACE_URL: ""
-      ROCKETCHAT_LICENSE_URL: ""
-      
       # === 실시간 통신 최적화 ===
       DDP_DEFAULT_CONNECTION_REUSE_ENABLED: "true"
       
       # === 성능 최적화 ===
       METEOR_DISABLE_OPTIMISTIC_CACHING: "1"
       
-      # === UI 설정 강제 재정의 (완전 오프라인) ===
+      # === UI 설정 강제 재정의 ===
       OVERWRITE_SETTING_CLOUD_WORKSPACE_REGISTRATION_REQUIRED: "false"
       OVERWRITE_SETTING_STATISTICS_REPORTING: "false"
       OVERWRITE_SETTING_APPS_ENGINE_ENABLED: "false"
       OVERWRITE_SETTING_FEDERATION_ENABLED: "false"
       OVERWRITE_SETTING_ACCOUNTS_REGISTRATION_FORM: "Disabled"
-      
-      # === 완전 오프라인 UI 설정 ===
-      OVERWRITE_SETTING_ACCOUNTS_ALLOW_USER_AVATAR_CHANGE: "true"
-      OVERWRITE_SETTING_ACCOUNTS_ALLOW_USERNAME_CHANGE: "true"
-      OVERWRITE_SETTING_ACCOUNTS_ALLOW_EMAIL_CHANGE: "true"
-      OVERWRITE_SETTING_ACCOUNTS_EMAIL_VERIFICATION: "false"
-      OVERWRITE_SETTING_ACCOUNTS_MANUAL_APPROVAL_REQUIRED: "false"
-      OVERWRITE_SETTING_ACCOUNTS_SEND_EMAIL_WHEN_ACTIVATING: "false"
-      OVERWRITE_SETTING_ACCOUNTS_SEND_EMAIL_WHEN_DEACTIVATING: "false"
-      
-      # === 클라우드 연결 완전 차단 ===
-      OVERWRITE_SETTING_CLOUD_SERVICE_AGREE_PRIVACY_TERMS: "false"
-      OVERWRITE_SETTING_CLOUD_SERVICE_TERMS_ACCEPTED: "false"
-      OVERWRITE_SETTING_CLOUD_WORKSPACE_ID: ""
-      OVERWRITE_SETTING_CLOUD_WORKSPACE_NAME: ""
-      OVERWRITE_SETTING_CLOUD_WORKSPACE_ACCESS_TOKEN: ""
-      
-      # === 외부 서비스 URL 무효화 ===
-      OVERWRITE_SETTING_CLOUD_URL: ""
-      OVERWRITE_SETTING_MARKETPLACE_URL: ""
-      OVERWRITE_SETTING_LICENSE_URL: ""
-      OVERWRITE_SETTING_UPDATE_CHECK_URL: ""
-      
-      # === 이메일 서비스 완전 비활성화 ===
-      OVERWRITE_SETTING_SMTP_HOST: ""
-      OVERWRITE_SETTING_SMTP_PORT: ""
-      OVERWRITE_SETTING_SMTP_USERNAME: ""
-      OVERWRITE_SETTING_SMTP_PASSWORD: ""
-      OVERWRITE_SETTING_FROM_EMAIL: "noreply@localhost"
       
       # === 실시간 통신 강제 활성화 ===
       OVERWRITE_SETTING_WEBSOCKET_ENABLED: "true"
@@ -156,9 +109,6 @@ services:
       OVERWRITE_SETTING_ACCOUNTS_ALLOW_ANONYMOUS_WRITE: "false"
       OVERWRITE_SETTING_API_ENABLE_CORS: "false"
     
-    # === 직접 포트 접속 추가 (성능 문제 해결) ===
-    ports:
-      - "3000:80"           # NSL Router 우회용 직접 접속
     expose:
       - 80
     volumes:

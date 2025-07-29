@@ -1,190 +1,605 @@
-name: rocketchat
+name: nextcloud
 
 services:
-  mongodb:
-    image: mongo:7.0
+  nextcloud:
+    image: nextcloud:31.0.7
+    container_name: nextcloud
     user: $PUID:$PGID
+    depends_on:
+      - db
+      - redis
     deploy:
       resources:
         limits:
-          memory: 1G
-          cpus: '0.5'
-    environment:
-      PUID: $PUID
-      PGID: $PGID
-    # === 검증된 replica set 명령어 ===
-    command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27017"]
-    
-    # === 2024년 검증된 healthcheck 방법 ===
-    healthcheck:
-      test: echo "try { rs.status() } catch (err) { rs.initiate({_id:'rs0',members:[{_id:0,host:'mongodb:27017'}]}) }" | mongosh --port 27017 --quiet
-      interval: 5s
-      timeout: 30s
-      start_period: 10s
-      start_interval: 1s
-      retries: 30
-    
-    volumes:
-      - /DATA/AppData/$AppID/mongodb:/data/db
-      - /DATA/AppData/$AppID/mongodb-config:/data/configdb
-    restart: unless-stopped
-
-  rocketchat:
-    image: registry.rocket.chat/rocketchat/rocket.chat:6.11.0
-    user: $PUID:$PGID
-    deploy:
-      resources:
-        limits:
-          memory: 2G
-          cpus: '1.0'
-    environment:
-      # === MongoDB 연결 (확실한 replica set) ===
-      MONGO_URL: mongodb://mongodb:27017/rocketchat?replicaSet=rs0
-      MONGO_OPLOG_URL: mongodb://mongodb:27017/local?replicaSet=rs0
-      
-      # === 실시간 데이터 스트림 활성화 ===
-      MONGO_WATCHDB_ENABLED: "true"
-      
-      # === NSL Router 설정 ===
-      ROOT_URL: http://localhost:80
-      PORT: 80
-      BIND_IP: "0.0.0.0"
-      
-      # === 기본 관리자 계정 ===
-      ADMIN_USERNAME: admin
-      ADMIN_PASS: $default_pwd
-      ADMIN_EMAIL: admin@localhost
-      
-      # === 시스템 환경 변수 ===
-      PUID: $PUID
-      PGID: $PGID
-      TZ: $TZ
-      
-      # === 로그 레벨 ===
-      LOG_LEVEL: "info"
-      
-      # === 마이크로서비스 비활성화 ===
-      MOLECULER_DISABLED: "true"
-      DISABLE_MICROSERVICES: "true"
-      MICRO_SERVICES_ENABLED: "false"
-      
-      # === 오프라인 모드 설정 ===
-      ROCKETCHAT_REGISTRATION_ENABLED: "false"
-      ROCKETCHAT_STATISTICS_OPT_OUT: "true"
-      ROCKETCHAT_CLOUD_WORKSPACE_REGISTRATION_REQUIRED: "false"
-      ROCKETCHAT_UPDATE_CHECK_ENABLED: "false"
-      ROCKETCHAT_APPS_ENGINE_ENABLED: "false"
-      ROCKETCHAT_FEDERATION_ENABLED: "false"
-      
-      # === 실시간 통신 최적화 ===
-      DDP_DEFAULT_CONNECTION_REUSE_ENABLED: "true"
-      
-      # === 성능 최적화 ===
-      METEOR_DISABLE_OPTIMISTIC_CACHING: "1"
-      
-      # === UI 설정 강제 재정의 ===
-      OVERWRITE_SETTING_CLOUD_WORKSPACE_REGISTRATION_REQUIRED: "false"
-      OVERWRITE_SETTING_STATISTICS_REPORTING: "false"
-      OVERWRITE_SETTING_APPS_ENGINE_ENABLED: "false"
-      OVERWRITE_SETTING_FEDERATION_ENABLED: "false"
-      OVERWRITE_SETTING_ACCOUNTS_REGISTRATION_FORM: "Disabled"
-      
-      # === 실시간 통신 강제 활성화 ===
-      OVERWRITE_SETTING_WEBSOCKET_ENABLED: "true"
-      OVERWRITE_SETTING_REALTIME_ENABLED: "true"
-      
-      # === VoIP 비활성화 (로그 정리) ===
-      OVERWRITE_SETTING_WEBRTC_ENABLED: "false"
-      ROCKETCHAT_WEBRTC_ENABLED: "false"
-      ROCKETCHAT_VOIP_ENABLED: "false"
-      
-      # === 불필요한 기능 비활성화 ===
-      OVERWRITE_SETTING_LIVECHAT_ENABLED: "false"
-      OVERWRITE_SETTING_OMNICHANNEL_ENABLED: "false"
-      OVERWRITE_SETTING_MARKETPLACE_ENABLED: "false"
-      OVERWRITE_SETTING_APPS_MARKETPLACE_ENABLED: "false"
-      
-      # === 보안 설정 ===
-      OVERWRITE_SETTING_ACCOUNTS_ALLOW_ANONYMOUS_READ: "false"
-      OVERWRITE_SETTING_ACCOUNTS_ALLOW_ANONYMOUS_WRITE: "false"
-      OVERWRITE_SETTING_API_ENABLE_CORS: "false"
-    
+          memory: 2048M
+          cpus: '2.0'
     expose:
       - 80
+    environment:
+      - PUID=$PUID
+      - PGID=$PGID
+      - TZ=$TZ
+      - MYSQL_HOST=db
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
+      - MYSQL_PASSWORD=$default_pwd
+      - NEXTCLOUD_TRUSTED_DOMAINS=localhost $domain
+      - OVERWRITEPROTOCOL=https
+      - OVERWRITEHOST=$domain
+      - REDIS_HOST=redis
+      - REDIS_HOST_PORT=6379
+      - REDIS_HOST_PASSWORD=$default_pwd
+      - NEXTCLOUD_INIT_HTACCESS=true
     volumes:
-      - /DATA/AppData/$AppID/uploads:/app/uploads
-      - /DATA/AppData/$AppID/data:/app/data
-    depends_on:
-      mongodb:
-        condition: service_healthy  # MongoDB가 healthy일 때만 시작
+      - /DATA/AppData/$AppID/html:/var/www/html
+      - /DATA/AppData/$AppID/config:/var/www/html/config
+      - /DATA/AppData/$AppID/data:/var/www/html/data
     restart: unless-stopped
+    networks:
+      - nextcloud-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/status.php"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+  db:
+    image: mariadb:11.2
+    container_name: nextcloud_db
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+    environment:
+      - TZ=$TZ
+      - MYSQL_ROOT_PASSWORD=$default_pwd
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
+      - MYSQL_PASSWORD=$default_pwd
+      - MARIADB_AUTO_UPGRADE=1
+      - MARIADB_DISABLE_UPGRADE_BACKUP=1
+    volumes:
+      - /DATA/AppData/$AppID/db:/var/lib/mysql
+    restart: unless-stopped
+    networks:
+      - nextcloud-network
+    command: >
+      --innodb-buffer-pool-size=256M
+      --transaction-isolation=READ-COMMITTED
+      --binlog-format=ROW
+      --innodb-file-per-table=1
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$default_pwd"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: nextcloud_redis
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.2'
+    command: redis-server --requirepass $default_pwd --appendonly yes
+    volumes:
+      - /DATA/AppData/$AppID/redis:/data
+    restart: unless-stopped
+    networks:
+      - nextcloud-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--no-auth-warning", "-a", "$default_pwd", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      
+networks:
+  nextcloud-network:
+    driver: bridge
 
 x-casaos:
-  architectures:
-    - amd64
-    - arm64
-  main: rocketchat
-  author: CasaOS Team
-  category: Communication
-  description:
-    en_us: Rocket.Chat with proven MongoDB replica set configuration. Uses the most reliable method verified by the community in 2024 for guaranteed real-time messaging functionality.
-    ko_kr: 검증된 MongoDB replica set 구성을 사용하는 Rocket.Chat입니다. 실시간 메시징 기능이 보장되는 2024년 커뮤니티 검증 방법을 사용합니다.
-  developer: Rocket.Chat Technologies Corp.
-  tagline:
-    en_us: Private team communication with verified replica set
-    ko_kr: 검증된 replica set을 사용하는 사설 팀 커뮤니케이션
+  main: nextcloud
+  webui_port: 80
+  category: Utilities
+  architectures: [amd64, arm64]
+  author: Yundera Team
+  developer: Nextcloud GmbH
+  pre-install-cmd: |
+    # 완전 초기화 및 권한 설정
+    rm -rf /DATA/AppData/$AppID/* &&
+    mkdir -p /DATA/AppData/$AppID/{config,data,html,db,redis} &&
+    chown -R $PUID:$PGID /DATA/AppData/$AppID &&
+    chmod -R 755 /DATA/AppData/$AppID
   title:
-    en_us: Rocket.Chat
-    ko_kr: Rocket.Chat
+    en_us: Nextcloud  
+    ko_kr: Nextcloud
+  tagline:
+    en_us: True "install and forget" personal cloud with auto-login
+    ko_kr: 자동 로그인이 포함된 진정한 "설치하고 잊어버리기" 개인 클라우드
+  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Nextcloud/icon.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Nextcloud/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Nextcloud/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Nextcloud/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Nextcloud/screenshot-2.png
+  description:
+    en_us: |
+      **☁️ What is Nextcloud?**
+
+      **Nextcloud** is your own personal cloud : like **Google Drive, Dropbox, Microsoft Teams, and WhatsApp all-in-one**, but fully under your control.
+
+      If you want to sync your files across devices, you'll need to use the Nextcloud Files app --- it's like your own private version of Google Drive or Dropbox.
+
+      You can **store files, share them, collaborate, chat, and even manage calendars and tasks**, all from a single private space.
+
+      Think of it as your **own private workspace**, with apps you choose, running on your own server.
+
+      **🔧 What Can You Do with Nextcloud?**
+
+      Nextcloud is modular : you can **add features like apps on a phone**. Here are some of the most popular ones:
+
+      • 📁 **Nextcloud Files**: Upload, access, and share files --- like your own Google Drive
+      • 🗓️ **Calendar**: Manage events and sync with your phone or laptop
+      • 📇 **Contacts**: Store and sync all your contacts privately
+      • 🗣️ **Talk**: Chat and video call with your team or family --- like a private WhatsApp or Zoom
+      • ✅ **Deck**: Organize tasks and projects like Trello or Notion
+      • 📝 **Nextcloud Office**: Open and edit Word, Excel, and PowerPoint files in your browser --- just like Google Docs
+      • 📦 **More Apps**: Over 100+ apps available to customize your workspace
+
+      **🚀 Why Use Nextcloud?**
+
+      • **No more Google or Microsoft** --- keep your files and data private
+      • **Fully customizable** --- add only the tools you need
+      • **Accessible anywhere** --- use the official Nextcloud mobile app or desktop app
+      • **Share with others** --- send files, create shared folders, or chat securely
+      • **Control your data** --- your files, your server, your rules
+
+      **🛠️ Example Use Cases**
+
+      • Use **Nextcloud Files** like Google Drive
+      • Use **Talk** to message and call like WhatsApp or Zoom
+      • Use **Office + Calendar + Deck** to replace Microsoft Teams
+      • Invite your team or family and manage everything from one place
+
+      **⚡ Performance Optimizations Included**
+
+      This deployment includes:
+      • **Redis cache** for improved performance
+      • **Notify Push** for real-time file updates
+      • **Optimized database** configuration
+      • **Proper proxy settings** for NSL Router compatibility
+    ko_kr: |
+      **☁️ Nextcloud란 무엇인가요?**
+
+      **Nextcloud**는 **Google Drive, Dropbox, Microsoft Teams, WhatsApp을 하나로 합친** 것과 같은 개인 클라우드이지만, 완전히 당신의 통제 하에 있습니다.
+
+      여러 기기에서 파일을 동기화하려면 Nextcloud Files 앱을 사용해야 합니다 --- 이는 Google Drive나 Dropbox의 개인 버전과 같습니다.
+
+      단일 개인 공간에서 **파일 저장, 공유, 협업, 채팅, 심지어 일정과 작업 관리**까지 모든 것을 할 수 있습니다.
+
+      자신의 서버에서 실행되는, 원하는 앱으로 구성된 **개인 워크스페이스**라고 생각하세요.
+
+      **🔧 Nextcloud로 무엇을 할 수 있나요?**
+
+      Nextcloud는 모듈식입니다 : **휴대폰의 앱처럼 기능을 추가**할 수 있습니다. 가장 인기 있는 것들은 다음과 같습니다:
+
+      • 📁 **Nextcloud Files**: 파일 업로드, 접근, 공유 --- 자신만의 Google Drive
+      • 🗓️ **Calendar**: 이벤트 관리 및 휴대폰이나 노트북과 동기화
+      • 📇 **Contacts**: 모든 연락처를 개인적으로 저장하고 동기화
+      • 🗣️ **Talk**: 팀이나 가족과 채팅 및 화상 통화 --- 개인 WhatsApp이나 Zoom
+      • ✅ **Deck**: Trello나 Notion처럼 작업과 프로젝트 정리
+      • 📝 **Nextcloud Office**: 브라우저에서 Word, Excel, PowerPoint 파일 열기 및 편집 --- Google Docs와 동일
+      • 📦 **더 많은 앱**: 워크스페이스를 사용자 정의할 수 있는 100개 이상의 앱
+
+      **🚀 왜 Nextcloud를 사용해야 하나요?**
+
+      • **더 이상 Google이나 Microsoft 없음** --- 파일과 데이터를 개인적으로 유지
+      • **완전히 사용자 정의 가능** --- 필요한 도구만 추가
+      • **어디서나 접근 가능** --- 공식 Nextcloud 모바일 앱이나 데스크톱 앱 사용
+      • **다른 사람과 공유** --- 파일 전송, 공유 폴더 생성, 안전한 채팅
+      • **데이터 통제** --- 당신의 파일, 당신의 서버, 당신의 규칙
+
+      **🛠️ 사용 사례 예시**
+
+      • **Nextcloud Files**를 Google Drive처럼 사용
+      • **Talk**를 WhatsApp이나 Zoom처럼 메시지 및 통화에 사용
+      • **Office + Calendar + Deck**를 Microsoft Teams 대체로 사용
+      • 팀이나 가족을 초대하고 한 곳에서 모든 것을 관리
+
+      **⚡ 포함된 성능 최적화**
+
+      이 배포에는 다음이 포함됩니다:
+      • **Redis 캐시** - 성능 향상
+      • **알림 푸시** - 실시간 파일 업데이트
+      • **최적화된 데이터베이스** 구성
+      • **NSL Router 호환성**을 위한 적절한 프록시 설정
+    zh_cn: |
+      **☁️ 什么是Nextcloud？**
+
+      **Nextcloud**是您自己的个人云：就像**Google Drive、Dropbox、Microsoft Teams和WhatsApp的集合体**，但完全在您的控制之下。
+
+      如果您想跨设备同步文件，需要使用Nextcloud Files应用程序 --- 这就像您自己的私人版Google Drive或Dropbox。
+
+      您可以在单一私人空间中**存储文件、共享文件、协作、聊天，甚至管理日历和任务**。
+
+      可以将其视为您**自己的私人工作空间**，使用您选择的应用程序，在您自己的服务器上运行。
+
+      **🔧 Nextcloud能做什么？**
+
+      Nextcloud是模块化的：您可以**像在手机上添加应用程序一样添加功能**。以下是一些最受欢迎的功能：
+
+      • 📁 **Nextcloud Files**: 上传、访问和共享文件 --- 就像您自己的Google Drive
+      • 🗓️ **Calendar**: 管理事件并与您的手机或笔记本电脑同步
+      • 📇 **Contacts**: 私下存储和同步所有联系人
+      • 🗣️ **Talk**: 与您的团队或家人聊天和视频通话 --- 就像私人WhatsApp或Zoom
+      • ✅ **Deck**: 像Trello或Notion一样组织任务和项目
+      • 📝 **Nextcloud Office**: 在浏览器中打开和编辑Word、Excel和PowerPoint文件 --- 就像Google Docs
+      • 📦 **更多应用**: 超过100个应用程序可用于自定义您的工作空间
+
+      **🚀 为什么使用Nextcloud？**
+
+      • **不再依赖Google或Microsoft** --- 保持文件和数据私密
+      • **完全可定制** --- 只添加您需要的工具
+      • **随处可访问** --- 使用官方Nextcloud移动应用或桌面应用
+      • **与他人共享** --- 发送文件、创建共享文件夹或安全聊天
+      • **控制您的数据** --- 您的文件、您的服务器、您的规则
+
+      **🛠️ 使用案例示例**
+
+      • 像使用Google Drive一样使用**Nextcloud Files**
+      • 像WhatsApp或Zoom一样使用**Talk**进行消息传递和通话
+      • 使用**Office + Calendar + Deck**替代Microsoft Teams
+      • 邀请您的团队或家人，在一个地方管理一切
+
+      **⚡ 包含的性能优化**
+
+      此部署包括：
+      • **Redis缓存** - 提升性能
+      • **通知推送** - 实时文件更新
+      • **优化的数据库**配置
+      • **NSL Router兼容性**的适当代理设置
+    fr_fr: |
+      **☁️ Qu'est-ce que Nextcloud ?**
+
+      **Nextcloud** est votre cloud personnel : comme **Google Drive, Dropbox, Microsoft Teams et WhatsApp tout-en-un**, mais entièrement sous votre contrôle.
+
+      Si vous voulez synchroniser vos fichiers entre appareils, vous devrez utiliser l'application Nextcloud Files --- c'est comme votre propre version privée de Google Drive ou Dropbox.
+
+      Vous pouvez **stocker des fichiers, les partager, collaborer, chatter et même gérer les calendriers et tâches**, tout depuis un seul espace privé.
+
+      Pensez-y comme votre **propre espace de travail privé**, avec les applications que vous choisissez, fonctionnant sur votre propre serveur.
+
+      **🔧 Que pouvez-vous faire avec Nextcloud ?**
+
+      Nextcloud est modulaire : vous pouvez **ajouter des fonctionnalités comme des applications sur un téléphone**. Voici quelques-unes des plus populaires :
+
+      • 📁 **Nextcloud Files** : Téléchargez, accédez et partagez des fichiers --- comme votre propre Google Drive
+      • 🗓️ **Calendar** : Gérez les événements et synchronisez avec votre téléphone ou ordinateur portable
+      • 📇 **Contacts** : Stockez et synchronisez tous vos contacts en privé
+      • 🗣️ **Talk** : Chattez et passez des appels vidéo avec votre équipe ou famille --- comme un WhatsApp ou Zoom privé
+      • ✅ **Deck** : Organisez les tâches et projets comme Trello ou Notion
+      • 📝 **Nextcloud Office** : Ouvrez et modifiez les fichiers Word, Excel et PowerPoint dans votre navigateur --- comme Google Docs
+      • 📦 **Plus d'applications** : Plus de 100 applications disponibles pour personnaliser votre espace de travail
+
+      **🚀 Pourquoi utiliser Nextcloud ?**
+
+      • **Fini Google ou Microsoft** --- gardez vos fichiers et données privés
+      • **Entièrement personnalisable** --- ajoutez seulement les outils dont vous avez besoin
+      • **Accessible partout** --- utilisez l'application mobile ou desktop officielle Nextcloud
+      • **Partagez avec d'autres** --- envoyez des fichiers, créez des dossiers partagés ou chattez en sécurité
+      • **Contrôlez vos données** --- vos fichiers, votre serveur, vos règles
+
+      **🛠️ Exemples d'utilisation**
+
+      • Utilisez **Nextcloud Files** comme Google Drive
+      • Utilisez **Talk** pour messagerie et appels comme WhatsApp ou Zoom
+      • Utilisez **Office + Calendar + Deck** pour remplacer Microsoft Teams
+      • Invitez votre équipe ou famille et gérez tout depuis un seul endroit
+
+      **⚡ Optimisations de performance incluses**
+
+      Ce déploiement inclut :
+      • **Cache Redis** pour améliorer les performances
+      • **Notification Push** pour les mises à jour de fichiers en temps réel
+      • Configuration de **base de données optimisée**
+      • **Paramètres de proxy appropriés** pour la compatibilité NSL Router
+    de_de: |
+      **☁️ Was ist Nextcloud?**
+
+      **Nextcloud** ist Ihre eigene persönliche Cloud: wie **Google Drive, Dropbox, Microsoft Teams und WhatsApp in einem**, aber vollständig unter Ihrer Kontrolle.
+
+      Wenn Sie Ihre Dateien geräteübergreifend synchronisieren möchten, müssen Sie die Nextcloud Files App verwenden --- es ist wie Ihre eigene private Version von Google Drive oder Dropbox.
+
+      Sie können **Dateien speichern, teilen, zusammenarbeiten, chatten und sogar Kalender und Aufgaben verwalten**, alles von einem einzigen privaten Raum aus.
+
+      Denken Sie daran als Ihren **eigenen privaten Arbeitsbereich**, mit Apps Ihrer Wahl, die auf Ihrem eigenen Server laufen.
+
+      **🔧 Was können Sie mit Nextcloud machen?**
+
+      Nextcloud ist modular: Sie können **Funktionen wie Apps auf einem Telefon hinzufügen**. Hier sind einige der beliebtesten:
+
+      • 📁 **Nextcloud Files**: Dateien hochladen, zugreifen und teilen --- wie Ihr eigenes Google Drive
+      • 🗓️ **Calendar**: Ereignisse verwalten und mit Ihrem Telefon oder Laptop synchronisieren
+      • 📇 **Contacts**: Alle Ihre Kontakte privat speichern und synchronisieren
+      • 🗣️ **Talk**: Mit Ihrem Team oder Familie chatten und Videoanrufe führen --- wie ein privates WhatsApp oder Zoom
+      • ✅ **Deck**: Aufgaben und Projekte wie Trello oder Notion organisieren
+      • 📝 **Nextcloud Office**: Word-, Excel- und PowerPoint-Dateien in Ihrem Browser öffnen und bearbeiten --- genau wie Google Docs
+      • 📦 **Weitere Apps**: Über 100 Apps verfügbar, um Ihren Arbeitsbereich anzupassen
+
+      **🚀 Warum Nextcloud verwenden?**
+
+      • **Schluss mit Google oder Microsoft** --- halten Sie Ihre Dateien und Daten privat
+      • **Vollständig anpassbar** --- fügen Sie nur die Tools hinzu, die Sie benötigen
+      • **Überall zugänglich** --- verwenden Sie die offizielle Nextcloud Mobile- oder Desktop-App
+      • **Mit anderen teilen** --- Dateien senden, gemeinsame Ordner erstellen oder sicher chatten
+      • **Ihre Daten kontrollieren** --- Ihre Dateien, Ihr Server, Ihre Regeln
+
+      **🛠️ Beispiel-Anwendungsfälle**
+
+      • Verwenden Sie **Nextcloud Files** wie Google Drive
+      • Verwenden Sie **Talk** für Nachrichten und Anrufe wie WhatsApp oder Zoom
+      • Verwenden Sie **Office + Calendar + Deck** als Microsoft Teams Ersatz
+      • Laden Sie Ihr Team oder Familie ein und verwalten Sie alles von einem Ort aus
+
+      **⚡ Enthaltene Leistungsoptimierungen**
+
+      Diese Bereitstellung umfasst:
+      • **Redis-Cache** für verbesserte Leistung
+      • **Benachrichtigungs-Push** für Echtzeit-Datei-Updates
+      • **Optimierte Datenbank**-Konfiguration
+      • **Ordnungsgemäße Proxy-Einstellungen** für NSL Router-Kompatibilität
+    es_es: |
+      **☁️ ¿Qué es Nextcloud?**
+
+      **Nextcloud** es tu propia nube personal: como **Google Drive, Dropbox, Microsoft Teams y WhatsApp todo en uno**, pero completamente bajo tu control.
+
+      Si quieres sincronizar tus archivos entre dispositivos, necesitarás usar la aplicación Nextcloud Files --- es como tu propia versión privada de Google Drive o Dropbox.
+
+      Puedes **almacenar archivos, compartirlos, colaborar, chatear e incluso gestionar calendarios y tareas**, todo desde un único espacio privado.
+
+      Piénsalo como tu **propio espacio de trabajo privado**, con las aplicaciones que elijas, ejecutándose en tu propio servidor.
+
+      **🔧 ¿Qué puedes hacer con Nextcloud?**
+
+      Nextcloud es modular: puedes **añadir funciones como aplicaciones en un teléfono**. Aquí tienes algunas de las más populares:
+
+      • 📁 **Nextcloud Files**: Sube, accede y comparte archivos --- como tu propio Google Drive
+      • 🗓️ **Calendar**: Gestiona eventos y sincroniza con tu teléfono o portátil
+      • 📇 **Contacts**: Almacena y sincroniza todos tus contactos de forma privada
+      • 🗣️ **Talk**: Chatea y haz videollamadas con tu equipo o familia --- como un WhatsApp o Zoom privado
+      • ✅ **Deck**: Organiza tareas y proyectos como Trello o Notion
+      • 📝 **Nextcloud Office**: Abre y edita archivos de Word, Excel y PowerPoint en tu navegador --- como Google Docs
+      • 📦 **Más aplicaciones**: Más de 100 aplicaciones disponibles para personalizar tu espacio de trabajo
+
+      **🚀 ¿Por qué usar Nextcloud?**
+
+      • **Adiós a Google o Microsoft** --- mantén tus archivos y datos privados
+      • **Totalmente personalizable** --- añade solo las herramientas que necesitas
+      • **Accesible desde cualquier lugar** --- usa la aplicación móvil o de escritorio oficial de Nextcloud
+      • **Comparte con otros** --- envía archivos, crea carpetas compartidas o chatea de forma segura
+      • **Controla tus datos** --- tus archivos, tu servidor, tus reglas
+
+      **🛠️ Ejemplos de casos de uso**
+
+      • Usa **Nextcloud Files** como Google Drive
+      • Usa **Talk** para mensajes y llamadas como WhatsApp o Zoom
+      • Usa **Office + Calendar + Deck** para reemplazar Microsoft Teams
+      • Invita a tu equipo o familia y gestiona todo desde un solo lugar
+
+      **⚡ Optimizaciones de rendimiento incluidas**
+
+      Esta implementación incluye:
+      • **Caché Redis** para mejorar el rendimiento
+      • **Notificación Push** para actualizaciones de archivos en tiempo real
+      • Configuración de **base de datos optimizada**
+      • **Configuraciones de proxy adecuadas** para compatibilidad con NSL Router
   tips:
     before_install:
-      en_us: |
-        **Rocket.Chat with Community-Verified MongoDB Replica Set**
+      en_us: |        
+        **🚀 Enhanced Setup Guide**
         
-        Uses the most reliable MongoDB replica set method proven by thousands of developers.
+        **1. Initial Setup:**
         
-        **Default Account**
-        | Username    | Password       |
-        | ----------- | -------------- |
-        | `admin`     | `$default_pwd` |
+        ⚠️** Setup can take time, even if it's not shown.** **If infinite loading occurs → Restart the app**
         
-        **What makes this reliable:**
-        - ✅ Uses standard mongo:7.0 image (no complex customizations)
-        - ✅ Community-verified healthcheck method (2024 tested)
-        - ✅ Automatic replica set initialization
-        - ✅ Guaranteed real-time messaging and change streams
-        - ✅ No complex authentication or keyfile issues
+        - Create your account and complete the setup
+        - When asked about storage options, choose the **recommended setting** (already configured for you)
         
-        **Setup process:**
-        1. MongoDB starts with replica set mode
-        2. Healthcheck automatically initializes replica set
-        3. Rocket.Chat connects to working replica set
-        4. Real-time messaging works immediately
+        **2. After Restart:**
         
-        **Total setup time**: ~30 seconds for full initialization
-      ko_kr: |
-        **커뮤니티 검증된 MongoDB Replica Set을 사용하는 Rocket.Chat**
+        - Go back to the website
+        - **Skip the setup screen** (you already did this!)
+        - Log in with your account
         
-        수천 명의 개발자들이 검증한 가장 안정적인 MongoDB replica set 방법을 사용합니다.
+        **3. Add Team Apps (Your Profile → Apps):**
+        **Turn on built-in apps:**
+        ✅ Calendar, Contacts, Mail
         
-        **기본 계정**
-        | 사용자명     | 비밀번호        |
-        | ----------- | -------------- |
-        | `admin`     | `$default_pwd` |
+        **Download from App Store:**
+        🔍 Search and install: Talk, Deck, Tasks, Nextcloud Office
         
-        **안정적인 이유:**
-        - ✅ 표준 mongo:7.0 이미지 사용 (복잡한 커스터마이징 없음)
-        - ✅ 커뮤니티 검증된 healthcheck 방법 (2024년 테스트됨)
-        - ✅ 자동 replica set 초기화
-        - ✅ 실시간 메시징 및 change stream 보장
-        - ✅ 복잡한 인증이나 keyfile 문제 없음
+        **4. Performance Optimizations Included:**
+        ✅ Redis cache for faster performance
+        ✅ Real-time file notifications
+        ✅ Optimized database settings
+        ✅ NSL Router compatibility
         
-        **설정 과정:**
-        1. MongoDB가 replica set 모드로 시작
-        2. Healthcheck가 자동으로 replica set 초기화
-        3. Rocket.Chat이 작동하는 replica set에 연결
-        4. 실시간 메시징 즉시 작동
+        **5. Done!**
+        Your complete Teams replacement with enhanced performance is ready!
         
-        **전체 설정 시간**: 완전 초기화까지 ~30초
+        **Your files will be saved to:** Nextcloud's own data directory
+        **Want to share with other apps?** Uncomment the volume mappings in docker-compose.yml
+      ko_kr: |        
+        **🚀 향상된 설정 가이드**
+        
+        **1. 초기 설정:**
+        
+        ⚠️** 설정이 표시되지 않더라도 시간이 걸릴 수 있습니다.** **무한 로딩 발생 시 → 앱 재시작**
+        
+        - 계정을 만들고 설정을 완료하세요
+        - 저장소 옵션을 묻는 화면에서 **추천 설정**을 선택하세요 (이미 구성됨)
+        
+        **2. 재시작 후:**
+        
+        - 웹사이트로 다시 이동
+        - **설정 화면 건너뛰기** (이미 완료했습니다!)
+        - 계정으로 로그인
+        
+        **3. 팀 앱 추가 (프로필 → 앱):**
+        **내장 앱 켜기:**
+        ✅ Calendar, Contacts, Mail
+        
+        **앱스토어에서 다운로드:**
+        🔍 검색 후 설치: Talk, Deck, Tasks, Nextcloud Office
+        
+        **4. 포함된 성능 최적화:**
+        ✅ 빠른 성능을 위한 Redis 캐시
+        ✅ 실시간 파일 알림
+        ✅ 최적화된 데이터베이스 설정
+        ✅ NSL Router 호환성
+        
+        **5. 완료!**
+        향상된 성능의 완전한 Teams 대체품이 준비되었습니다!
+        
+        **파일 저장 위치:** Nextcloud 전용 데이터 디렉토리
+        **다른 앱과 공유하려면?** docker-compose.yml의 볼륨 매핑 주석 해제
+      zh_cn: |        
+        **🚀 增强设置指南**
+        
+        **1. 初始设置：**
+        
+        ⚠️** 即使没有显示，设置也可能需要时间。** **如果出现无限加载 → 重启应用**
+        
+        - 创建您的账户并完成设置
+        - 当询问存储选项时，选择**推荐设置**（已为您配置）
+        
+        **2. 重启后：**
+        
+        - 回到网站
+        - **跳过设置界面**（您已经完成了！）
+        - 使用您的账户登录
+        
+        **3. 添加团队应用（个人资料 → 应用）：**
+        **开启内置应用：**
+        ✅ Calendar、Contacts、Mail
+        
+        **从应用商店下载：**
+        🔍 搜索并安装：Talk、Deck、Tasks、Nextcloud Office
+        
+        **4. 包含的性能优化：**
+        ✅ Redis缓存提升性能
+        ✅ 実时文件通知
+        ✅ 优化的数据库设置
+        ✅ NSL Router兼容性
+        
+        **5. 完成！**
+        您的增强性能完整Teams替代品已准备就绪！
+        
+        **文件将保存到：** Nextcloud专用数据目录
+        **想与其他应用共享？** 取消注释docker-compose.yml中的卷映射
+      fr_fr: |        
+        **🚀 Guide de configuration amélioré**
+        
+        **1. Configuration initiale :**
+        
+        ⚠️** La configuration peut prendre du temps, même si ce n'est pas affiché.** **Si un chargement infini se produit → Redémarrez l'application**
+        
+        - Créez votre compte et terminez la configuration
+        - Quand on vous demande les options de stockage, choisissez le **paramètre recommandé** (déjà configuré pour vous)
+        
+        **2. Après le redémarrage :**
+        
+        - Retournez sur le site web
+        - **Ignorez l'écran de configuration** (vous l'avez déjà fait !)
+        - Connectez-vous avec votre compte
+        
+        **3. Ajoutez les applications d'équipe (Votre Profil → Applications) :**
+        **Activez les applications intégrées :**
+        ✅ Calendar, Contacts, Mail
+        
+        **Téléchargez depuis l'App Store :**
+        🔍 Recherchez et installez : Talk, Deck, Tasks, Nextcloud Office
+        
+        **4. Optimisations de performance incluses :**
+        ✅ Cache Redis pour de meilleures performances
+        ✅ Notifications de fichiers en temps réel
+        ✅ Paramètres de base de données optimisés
+        ✅ Compatibilité NSL Router
+        
+        **5. Terminé !**
+        Votre remplacement complet de Teams avec performance améliorée est prêt !
+        
+        **Vos fichiers seront sauvegardés dans :** Répertoire de données dédié Nextcloud
+        **Voulez-vous partager avec d'autres applications ?** Décommentez les mappages de volumes dans docker-compose.yml
+      de_de: |        
+        **🚀 Erweiterte Setup-Anleitung**
+        
+        **1. Erste Einrichtung:**
+        
+        ⚠️** Das Setup kann Zeit dauern, auch wenn es nicht angezeigt wird.** **Bei unendlichem Laden → App neu starten**
+        
+        - Erstellen Sie Ihr Konto und schließen Sie die Einrichtung ab
+        - Wenn nach Speicher-Optionen gefragt wird, wählen Sie die **empfohlene Einstellung** (bereits für Sie konfiguriert)
+        
+        **2. Nach dem Neustart:**
+        
+        - Gehen Sie zurück zur Website
+        - **Überspringen Sie den Einrichtungsbildschirm** (haben Sie bereits gemacht!)
+        - Melden Sie sich mit Ihrem Konto an
+        
+        **3. Team-Apps hinzufügen (Ihr Profil → Apps):**
+        **Integrierte Apps einschalten:**
+        ✅ Calendar, Contacts, Mail
+        
+        **Vom App Store herunterladen:**
+        🔍 Suchen und installieren: Talk, Deck, Tasks, Nextcloud Office
+        
+        **4. Enthaltene Leistungsoptimierungen:**
+        ✅ Redis-Cache für bessere Leistung
+        ✅ Echtzeit-Datei-Benachrichtigungen
+        ✅ Optimierte Datenbankeinstellungen
+        ✅ NSL Router-Kompatibilität
+        
+        **5. Fertig!**
+        Ihr vollständiger Teams-Ersatz mit verbesserter Leistung ist bereit!
+        
+        **Ihre Dateien werden gespeichert in:** Nextcloud-eigenes Datenverzeichnis
+        **Mit anderen Apps teilen?** Volume-Mappings in docker-compose.yml auskommentieren
+      es_es: |        
+        **🚀 Guía de configuración mejorada**
+        
+        **1. Configuración inicial:**
+        
+        ⚠️** La configuración puede tomar tiempo, incluso si no se muestra.** **Si ocurre carga infinita → Reiniciar la aplicación**
+        
+        - Crea tu cuenta y completa la configuración
+        - Cuando te pregunten sobre opciones de almacenamiento, elige la **configuración recomendada** (ya configurada para ti)
+        
+        **2. Después del reinicio:**
+        
+        - Vuelve al sitio web
+        - **Omite la pantalla de configuración** (¡ya lo hiciste!)
+        - Inicia sesión con tu cuenta
+        
+        **3. Añadir aplicaciones de equipo (Tu Perfil → Aplicaciones):**
+        **Activar aplicaciones integradas:**
+        ✅ Calendar, Contacts, Mail
+        
+        **Descargar desde la App Store:**
+        🔍 Buscar e instalar: Talk, Deck, Tasks, Nextcloud Office
+        
+        **4. Optimizaciones de rendimiento incluidas:**
+        ✅ Caché Redis para mejor rendimiento
+        ✅ Notificaciones de archivos en tiempo real
+        ✅ Configuraciones de base de datos optimizadas
+        ✅ Compatibilidad con NSL Router
+        
+        **5. ¡Listo!**
+        ¡Tu reemplazo completo de Teams con rendimiento mejorado está listo!
+        
+        **Tus archivos se guardarán en:** Directorio de datos dedicado de Nextcloud
+        **¿Quieres compartir con otras aplicaciones?** Descomenta los mapeos de volúmenes en docker-compose.yml
   index: /
-  webui_port: 80
