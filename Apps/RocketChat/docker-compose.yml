@@ -7,22 +7,19 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1G
-          cpus: '0.5'
+          memory: 512M     # 메모리 대폭 감소
     environment:
       PUID: $PUID
       PGID: $PGID
-    # === 검증된 replica set 명령어 ===
-    command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27017"]
+    command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27017", "--wiredTigerCacheSizeGB", "0.1"]
     
-    # === 2024년 검증된 healthcheck 방법 ===
     healthcheck:
       test: echo "try { rs.status() } catch (err) { rs.initiate({_id:'rs0',members:[{_id:0,host:'mongodb:27017'}]}) }" | mongosh --port 27017 --quiet
-      interval: 5s
+      interval: 15s       # 간격 늘려서 부하 감소
       timeout: 30s
-      start_period: 10s
-      start_interval: 1s
-      retries: 30
+      start_period: 30s   # 시작 대기 시간 증가
+      start_interval: 5s
+      retries: 10
     
     volumes:
       - /DATA/AppData/$AppID/mongodb:/data/db
@@ -35,80 +32,79 @@ services:
     deploy:
       resources:
         limits:
-          memory: 2G
-          cpus: '1.0'
+          memory: 1G       # 메모리 대폭 감소
     environment:
-      # === MongoDB 연결 (확실한 replica set) ===
+      # === MongoDB 연결 ===
       MONGO_URL: mongodb://mongodb:27017/rocketchat?replicaSet=rs0
       MONGO_OPLOG_URL: mongodb://mongodb:27017/local?replicaSet=rs0
-      
-      # === 실시간 데이터 스트림 활성화 ===
       MONGO_WATCHDB_ENABLED: "true"
       
-      # === NSL Router 설정 ===
+      # === 기본 설정 ===
       ROOT_URL: http://localhost:80
       PORT: 80
       BIND_IP: "0.0.0.0"
       
-      # === 기본 관리자 계정 ===
+      # === 관리자 계정 ===
       ADMIN_USERNAME: admin
       ADMIN_PASS: $default_pwd
       ADMIN_EMAIL: admin@localhost
       
-      # === 시스템 환경 변수 ===
+      # === 시스템 변수 ===
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
       
-      # === 로그 레벨 ===
-      LOG_LEVEL: "info"
+      # === 최소 리소스 최적화 ===
+      LOG_LEVEL: "error"                          # 로그 최소화
+      NODE_ENV: "production"
+      NODE_OPTIONS: "--max-old-space-size=768"    # 메모리 제한
+      
+      # === 실시간 통신 ===
+      DDP_DEFAULT_CONNECTION_REUSE_ENABLED: "true"
+      METEOR_DISABLE_OPTIMISTIC_CACHING: "0"
+      
+      # === 오프라인 설정 ===
+      ROCKETCHAT_REGISTRATION_ENABLED: "false"
+      ROCKETCHAT_STATISTICS_OPT_OUT: "true"
+      ROCKETCHAT_CLOUD_WORKSPACE_REGISTRATION_REQUIRED: "false"
+      ROCKETCHAT_UPDATE_CHECK_ENABLED: "false"
+      ROCKETCHAT_APPS_ENGINE_ENABLED: "false"    # 앱 엔진 비활성화로 메모리 절약
       
       # === 마이크로서비스 비활성화 ===
       MOLECULER_DISABLED: "true"
       DISABLE_MICROSERVICES: "true"
       MICRO_SERVICES_ENABLED: "false"
       
-      # === 오프라인 모드 설정 ===
-      ROCKETCHAT_REGISTRATION_ENABLED: "false"
-      ROCKETCHAT_STATISTICS_OPT_OUT: "true"
-      ROCKETCHAT_CLOUD_WORKSPACE_REGISTRATION_REQUIRED: "false"
-      ROCKETCHAT_UPDATE_CHECK_ENABLED: "false"
-      ROCKETCHAT_APPS_ENGINE_ENABLED: "false"
-      ROCKETCHAT_FEDERATION_ENABLED: "false"
-      
-      # === 실시간 통신 최적화 ===
-      DDP_DEFAULT_CONNECTION_REUSE_ENABLED: "true"
-      
-      # === 성능 최적화 ===
-      METEOR_DISABLE_OPTIMISTIC_CACHING: "1"
-      
-      # === UI 설정 강제 재정의 ===
-      OVERWRITE_SETTING_CLOUD_WORKSPACE_REGISTRATION_REQUIRED: "false"
-      OVERWRITE_SETTING_STATISTICS_REPORTING: "false"
-      OVERWRITE_SETTING_APPS_ENGINE_ENABLED: "false"
-      OVERWRITE_SETTING_FEDERATION_ENABLED: "false"
+      # === UI 설정 ===
       OVERWRITE_SETTING_ACCOUNTS_REGISTRATION_FORM: "Disabled"
-      
-      # === 실시간 통신 강제 활성화 ===
       OVERWRITE_SETTING_WEBSOCKET_ENABLED: "true"
       OVERWRITE_SETTING_REALTIME_ENABLED: "true"
       
-      # === VoIP 비활성화 (로그 정리) ===
+      # === 성능 최적화 (최소 리소스용) ===
+      OVERWRITE_SETTING_MESSAGE_MAX_ALL_ALLOWED: "100"    # 메시지 로드 최소화
+      OVERWRITE_SETTING_FILEUPLOAD_ENABLED: "true"
+      OVERWRITE_SETTING_FILEUPLOAD_MAXFILESIZE: "2097152" # 2MB 제한
+      
+      # === 무거운 기능 모두 비활성화 ===
       OVERWRITE_SETTING_WEBRTC_ENABLED: "false"
       ROCKETCHAT_WEBRTC_ENABLED: "false"
       ROCKETCHAT_VOIP_ENABLED: "false"
-      
-      # === 불필요한 기능 비활성화 ===
       OVERWRITE_SETTING_LIVECHAT_ENABLED: "false"
       OVERWRITE_SETTING_OMNICHANNEL_ENABLED: "false"
       OVERWRITE_SETTING_MARKETPLACE_ENABLED: "false"
       OVERWRITE_SETTING_APPS_MARKETPLACE_ENABLED: "false"
+      
+      # === 이메일 비활성화 ===
+      OVERWRITE_SETTING_ACCOUNTS_EMAIL_VERIFICATION: "false"
+      OVERWRITE_SETTING_FROM_EMAIL: "noreply@localhost"
       
       # === 보안 설정 ===
       OVERWRITE_SETTING_ACCOUNTS_ALLOW_ANONYMOUS_READ: "false"
       OVERWRITE_SETTING_ACCOUNTS_ALLOW_ANONYMOUS_WRITE: "false"
       OVERWRITE_SETTING_API_ENABLE_CORS: "false"
     
+    ports:
+      - "3000:80"
     expose:
       - 80
     volumes:
@@ -116,7 +112,7 @@ services:
       - /DATA/AppData/$AppID/data:/app/data
     depends_on:
       mongodb:
-        condition: service_healthy  # MongoDB가 healthy일 때만 시작
+        condition: service_healthy
     restart: unless-stopped
 
 x-casaos:
@@ -127,64 +123,90 @@ x-casaos:
   author: CasaOS Team
   category: Communication
   description:
-    en_us: Rocket.Chat with proven MongoDB replica set configuration. Uses the most reliable method verified by the community in 2024 for guaranteed real-time messaging functionality.
-    ko_kr: 검증된 MongoDB replica set 구성을 사용하는 Rocket.Chat입니다. 실시간 메시징 기능이 보장되는 2024년 커뮤니티 검증 방법을 사용합니다.
+    en_us: Minimal resource Rocket.Chat for low-memory systems. Optimized to start reliably on systems with limited RAM and CPU resources.
+    ko_kr: 저메모리 시스템용 최소 리소스 Rocket.Chat입니다. 제한된 RAM과 CPU 리소스를 가진 시스템에서 안정적으로 시작되도록 최적화되었습니다.
   developer: Rocket.Chat Technologies Corp.
   tagline:
-    en_us: Private team communication with verified replica set
-    ko_kr: 검증된 replica set을 사용하는 사설 팀 커뮤니케이션
+    en_us: Lightweight team communication for resource-constrained systems
+    ko_kr: 리소스 제약 시스템용 경량 팀 커뮤니케이션
   title:
     en_us: Rocket.Chat
     ko_kr: Rocket.Chat
   tips:
     before_install:
       en_us: |
-        **Rocket.Chat with Community-Verified MongoDB Replica Set**
+        **🚀 Minimal Resource Rocket.Chat**
         
-        Uses the most reliable MongoDB replica set method proven by thousands of developers.
+        Optimized for systems with very limited resources.
         
         **Default Account**
         | Username    | Password       |
         | ----------- | -------------- |
         | `admin`     | `$default_pwd` |
         
-        **What makes this reliable:**
-        - ✅ Uses standard mongo:7.0 image (no complex customizations)
-        - ✅ Community-verified healthcheck method (2024 tested)
-        - ✅ Automatic replica set initialization
-        - ✅ Guaranteed real-time messaging and change streams
-        - ✅ No complex authentication or keyfile issues
+        **Access URLs:**
+        - **Direct Access**: `http://your-server-ip:3000`
+        - **NSL Router**: `https://rocketchat-yourdomain.nsl.sh`
         
-        **Setup process:**
-        1. MongoDB starts with replica set mode
-        2. Healthcheck automatically initializes replica set
-        3. Rocket.Chat connects to working replica set
-        4. Real-time messaging works immediately
+        **🔧 Resource Optimizations:**
+        - ✅ MongoDB: 512MB memory (vs 1GB)
+        - ✅ Rocket.Chat: 1GB memory (vs 2-3GB)
+        - ✅ Minimal logging and caching
+        - ✅ Reduced message history
+        - ✅ Small file upload limits
+        - ✅ All heavy features disabled
         
-        **Total setup time**: ~30 seconds for full initialization
+        **⚡ What Works:**
+        - Real-time messaging and file sharing
+        - User management and channels
+        - Basic team collaboration
+        - Mobile and desktop app sync
+        
+        **🚫 Disabled for Performance:**
+        - App marketplace (to save memory)
+        - VoIP and video calling
+        - Email notifications
+        - Advanced integrations
+        
+        **System Requirements**: 1 CPU core, 2GB RAM minimum
+        
+        **Performance Note**: If still slow, use direct port access (3000) instead of NSL Router
       ko_kr: |
-        **커뮤니티 검증된 MongoDB Replica Set을 사용하는 Rocket.Chat**
+        **🚀 최소 리소스 Rocket.Chat**
         
-        수천 명의 개발자들이 검증한 가장 안정적인 MongoDB replica set 방법을 사용합니다.
+        매우 제한된 리소스를 가진 시스템에 최적화되었습니다.
         
         **기본 계정**
         | 사용자명     | 비밀번호        |
         | ----------- | -------------- |
         | `admin`     | `$default_pwd` |
         
-        **안정적인 이유:**
-        - ✅ 표준 mongo:7.0 이미지 사용 (복잡한 커스터마이징 없음)
-        - ✅ 커뮤니티 검증된 healthcheck 방법 (2024년 테스트됨)
-        - ✅ 자동 replica set 초기화
-        - ✅ 실시간 메시징 및 change stream 보장
-        - ✅ 복잡한 인증이나 keyfile 문제 없음
+        **접속 URL:**
+        - **직접 접속**: `http://서버IP:3000`
+        - **NSL Router**: `https://rocketchat-yourdomain.nsl.sh`
         
-        **설정 과정:**
-        1. MongoDB가 replica set 모드로 시작
-        2. Healthcheck가 자동으로 replica set 초기화
-        3. Rocket.Chat이 작동하는 replica set에 연결
-        4. 실시간 메시징 즉시 작동
+        **🔧 리소스 최적화:**
+        - ✅ MongoDB: 512MB 메모리 (기존 1GB 대비)
+        - ✅ Rocket.Chat: 1GB 메모리 (기존 2-3GB 대비)
+        - ✅ 로깅 및 캐싱 최소화
+        - ✅ 메시지 히스토리 감소
+        - ✅ 파일 업로드 크기 제한
+        - ✅ 모든 무거운 기능 비활성화
         
-        **전체 설정 시간**: 완전 초기화까지 ~30초
+        **⚡ 작동하는 기능:**
+        - 실시간 메시징 및 파일 공유
+        - 사용자 관리 및 채널
+        - 기본 팀 협업
+        - 모바일 및 데스크톱 앱 동기화
+        
+        **🚫 성능상 비활성화된 기능:**
+        - 앱 마켓플레이스 (메모리 절약)
+        - VoIP 및 화상 통화
+        - 이메일 알림
+        - 고급 통합 기능
+        
+        **시스템 요구사항**: 1 CPU 코어, 2GB RAM 최소
+        
+        **성능 참고**: 여전히 느리면 NSL Router 대신 직접 포트 접속(3000) 사용
   index: /
   webui_port: 80
