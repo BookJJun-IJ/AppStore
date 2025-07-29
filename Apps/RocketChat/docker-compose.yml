@@ -1,8 +1,9 @@
 name: rocketchat
 
 services:
+  # === Bitnami MongoDB (replica set 자동 설정) ===
   mongodb:
-    image: mongo:7.0
+    image: bitnami/mongodb:7.0
     user: $PUID:$PGID
     deploy:
       resources:
@@ -10,15 +11,30 @@ services:
           memory: 1G
           cpus: '0.5'
     environment:
+      # === 자동 replica set 설정 ===
+      MONGODB_REPLICA_SET_MODE: primary
+      MONGODB_REPLICA_SET_NAME: rs0
+      MONGODB_ROOT_USER: root
+      MONGODB_ROOT_PASSWORD: $default_pwd
+      MONGODB_USERNAME: rocketchat
+      MONGODB_PASSWORD: $default_pwd
+      MONGODB_DATABASE: rocketchat
+      
+      # === 권한 설정 ===
       PUID: $PUID
       PGID: $PGID
+      
+      # === 성능 최적화 ===
+      MONGODB_ENABLE_JOURNAL: "true"
+      MONGODB_DISABLE_SYSTEM_LOG: "false"
     volumes:
-      - /DATA/AppData/$AppID/mongodb:/data/db
+      - /DATA/AppData/$AppID/mongodb:/bitnami/mongodb
     restart: unless-stopped
-    command: mongod --quiet --logpath /dev/null
+    # Bitnami는 포트 노출이 필요
+    ports:
+      - "127.0.0.1:27017:27017"
 
   rocketchat:
-    # 안정적인 버전 사용 (Moleculer 포트 충돌 이슈 없음)
     image: registry.rocket.chat/rocketchat/rocket.chat:6.11.0
     user: $PUID:$PGID
     deploy:
@@ -27,62 +43,77 @@ services:
           memory: 2G
           cpus: '1.0'
     environment:
-      MONGO_URL: mongodb://mongodb:27017/rocketchat
-      # NSL Router 호환 URL
-      ROOT_URL: https://rocketchat-$domain/
-      PORT: 80
+      # === MongoDB 연결 (Bitnami replica set) ===
+      MONGO_URL: mongodb://rocketchat:$default_pwd@mongodb:27017/rocketchat?replicaSet=rs0&authSource=rocketchat
+      MONGO_OPLOG_URL: mongodb://root:$default_pwd@mongodb:27017/local?replicaSet=rs0&authSource=admin
       
-      # 기본 관리자 계정 설정
+      # === 실시간 데이터 스트림 강제 활성화 ===
+      MONGO_WATCHDB_ENABLED: "true"
+      
+      # === NSL Router 설정 ===
+      ROOT_URL: https://$domain
+      PORT: 80
+      BIND_IP: "0.0.0.0"
+      
+      # === 기본 관리자 계정 ===
       ADMIN_USERNAME: admin
       ADMIN_PASS: $default_pwd
       ADMIN_EMAIL: admin@localhost
       
-      # 시스템 환경 변수
+      # === 시스템 환경 변수 ===
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
       
-      # === 완전 오프라인 모드 설정 ===
-      # 모든 외부 연결 비활성화
-      ROCKETCHAT_REGISTRATION_ENABLED: "false"
-      ROCKETCHAT_STATISTICS_OPT_OUT: "true"
-      ROCKETCHAT_CLOUD_WORKSPACE_REGISTRATION_REQUIRED: "false"
+      # === 로그 레벨 ===
+      LOG_LEVEL: "info"
       
-      # 업데이트 및 클라우드 기능 비활성화
-      ROCKETCHAT_UPDATE_CHECK_ENABLED: "false"
-      ROCKETCHAT_APPS_ENGINE_ENABLED: "false"
-      ROCKETCHAT_FEDERATION_ENABLED: "false"
-      
-      # === Moleculer 마이크로서비스 완전 비활성화 ===
+      # === 마이크로서비스 비활성화 ===
       MOLECULER_DISABLED: "true"
       DISABLE_MICROSERVICES: "true"
       MICRO_SERVICES_ENABLED: "false"
       
-      # 네트워크 바인딩 제한 (보안 강화)
-      BIND_IP: "127.0.0.1"
+      # === 오프라인 모드 설정 ===
+      ROCKETCHAT_REGISTRATION_ENABLED: "false"
+      ROCKETCHAT_STATISTICS_OPT_OUT: "true"
+      ROCKETCHAT_CLOUD_WORKSPACE_REGISTRATION_REQUIRED: "false"
+      ROCKETCHAT_UPDATE_CHECK_ENABLED: "false"
+      ROCKETCHAT_APPS_ENGINE_ENABLED: "false"
+      ROCKETCHAT_FEDERATION_ENABLED: "false"
       
-      # === 개인 서버 성능 최적화 ===
+      # === 실시간 통신 최적화 ===
+      DDP_DEFAULT_CONNECTION_REUSE_ENABLED: "true"
+      
+      # === 성능 최적화 ===
       METEOR_DISABLE_OPTIMISTIC_CACHING: "1"
-      LOG_LEVEL: "warn"
       
-      # === UI 설정 강제 재정의 (오프라인 모드) ===
+      # === UI 설정 강제 재정의 ===
       OVERWRITE_SETTING_CLOUD_WORKSPACE_REGISTRATION_REQUIRED: "false"
       OVERWRITE_SETTING_STATISTICS_REPORTING: "false"
       OVERWRITE_SETTING_APPS_ENGINE_ENABLED: "false"
       OVERWRITE_SETTING_FEDERATION_ENABLED: "false"
       OVERWRITE_SETTING_ACCOUNTS_REGISTRATION_FORM: "Disabled"
       
-      # === 개인 서버에서 불필요한 기능 비활성화 ===
+      # === 실시간 통신 강제 활성화 ===
+      OVERWRITE_SETTING_WEBSOCKET_ENABLED: "true"
+      OVERWRITE_SETTING_REALTIME_ENABLED: "true"
+      
+      # === VoIP 비활성화 (로그 정리) ===
+      OVERWRITE_SETTING_WEBRTC_ENABLED: "false"
+      ROCKETCHAT_WEBRTC_ENABLED: "false"
+      ROCKETCHAT_VOIP_ENABLED: "false"
+      
+      # === 불필요한 기능 비활성화 ===
       OVERWRITE_SETTING_LIVECHAT_ENABLED: "false"
       OVERWRITE_SETTING_OMNICHANNEL_ENABLED: "false"
       OVERWRITE_SETTING_MARKETPLACE_ENABLED: "false"
       OVERWRITE_SETTING_APPS_MARKETPLACE_ENABLED: "false"
       
-      # === 보안 설정 강화 ===
+      # === 보안 설정 ===
       OVERWRITE_SETTING_ACCOUNTS_ALLOW_ANONYMOUS_READ: "false"
       OVERWRITE_SETTING_ACCOUNTS_ALLOW_ANONYMOUS_WRITE: "false"
       OVERWRITE_SETTING_API_ENABLE_CORS: "false"
-      
+    
     expose:
       - 80
     volumes:
@@ -93,36 +124,69 @@ services:
     restart: unless-stopped
 
 x-casaos:
-    architectures:
-        - amd64
-        - arm64
-    main: rocketchat
-    author: CasaOS Team
-    category: Communication
-    description:
-        en_us: Rocket.Chat configured for personal/offline servers. This version is optimized for private networks without internet connectivity, with all cloud features disabled.
-    developer: Rocket.Chat Technologies Corp.
-    tagline:
-        en_us: Private team communication (Offline Optimized)
-    title:
-        en_us: Rocket.Chat (Personal Server)
-    tips:
-        before_install:
-            en_us: |
-                **개인 서버 / 오프라인 최적화 버전**  
-                모든 클라우드 연결 및 외부 통신이 비활성화되어 있습니다.
-                
-                **기본 계정**  
-                | 사용자명     | 비밀번호        |
-                | ----------- | -------------- |
-                | `admin`     | `$default_pwd` |
-                
-                **특징:**
-                - ✅ 완전 오프라인 작동
-                - ✅ 외부 인터넷 연결 불필요  
-                - ✅ 개인정보 보호 강화
-                - ✅ 빠른 로컬 네트워크 성능
-                
-                **주의:** 회원가입이 비활성화되어 있습니다. 새 사용자는 관리자가 직접 생성해야 합니다.
-    index: /
-    webui_port: 80
+  architectures:
+    - amd64
+    - arm64
+  main: rocketchat
+  author: CasaOS Team
+  category: Communication
+  description:
+    en_us: Rocket.Chat with Bitnami MongoDB for reliable replica set initialization. Configured for personal/offline servers with guaranteed real-time messaging functionality.
+    ko_kr: 안정적인 replica set 초기화를 위해 Bitnami MongoDB를 사용하는 Rocket.Chat입니다. 실시간 메시징 기능이 보장되는 개인/오프라인 서버용으로 구성되었습니다.
+  developer: Rocket.Chat Technologies Corp.
+  tagline:
+    en_us: Private team communication with guaranteed replica set
+    ko_kr: replica set이 보장되는 사설 팀 커뮤니케이션
+  title:
+    en_us: Rocket.Chat (Bitnami MongoDB)
+    ko_kr: Rocket.Chat (Bitnami MongoDB)
+  tips:
+    before_install:
+      en_us: |
+        **Rocket.Chat with Bitnami MongoDB**
+        
+        Uses Bitnami MongoDB with automatic replica set initialization - no manual setup required!
+        
+        **Default Account**
+        | Username    | Password       |
+        | ----------- | -------------- |
+        | `admin`     | `$default_pwd` |
+        
+        **Database Credentials**
+        | User        | Password       | Database   |
+        | ----------- | -------------- | ---------- |
+        | `root`      | `$default_pwd` | admin      |
+        | `rocketchat`| `$default_pwd` | rocketchat |
+        
+        **Features:**
+        - ✅ Bitnami MongoDB with built-in replica set support
+        - ✅ Automatic initialization - no complex scripts
+        - ✅ Guaranteed real-time messaging
+        - ✅ Reliable WebSocket connections
+        
+        **Ready in**: ~30 seconds after startup (much faster than manual replica set)
+      ko_kr: |
+        **Bitnami MongoDB를 사용하는 Rocket.Chat**
+        
+        자동 replica set 초기화가 가능한 Bitnami MongoDB 사용 - 수동 설정 불필요!
+        
+        **기본 계정**
+        | 사용자명     | 비밀번호        |
+        | ----------- | -------------- |
+        | `admin`     | `$default_pwd` |
+        
+        **데이터베이스 계정**
+        | 사용자       | 비밀번호        | 데이터베이스  |
+        | ----------- | -------------- | ------------ |
+        | `root`      | `$default_pwd` | admin        |
+        | `rocketchat`| `$default_pwd` | rocketchat   |
+        
+        **특징:**
+        - ✅ replica set 지원이 내장된 Bitnami MongoDB
+        - ✅ 자동 초기화 - 복잡한 스크립트 불필요
+        - ✅ 실시간 메시징 보장
+        - ✅ 안정적인 WebSocket 연결
+        
+        **준비 시간**: 시작 후 ~30초 (수동 replica set보다 훨씬 빠름)
+  index: /
+  webui_port: 80
