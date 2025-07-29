@@ -107,8 +107,8 @@ x-casaos:
     en_us: Latest team communication with marketplace & MongoDB 7.0
     ko_kr: 마켓플레이스와 MongoDB 7.0을 지원하는 최신 팀 커뮤니케이션
   title:
-    en_us: Rocket.Chat 7.8.3
-    ko_kr: Rocket.Chat 7.8.3
+    en_us: Rocket.Chat
+    ko_kr: Rocket.Chat
   tips:
     before_install:
       en_us: |
