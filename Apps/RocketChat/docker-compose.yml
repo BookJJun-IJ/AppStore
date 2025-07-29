@@ -2,13 +2,13 @@ name: rocketchat
 
 services:
   mongodb:
-    image: mongo:7.0  # 6.11.0과 호환되는 버전
+    image: mongo:7.0
     user: $PUID:$PGID
     deploy:
       resources:
         limits:
           memory: 1G
-          cpus: '0.5'
+          cpus: "0.5"
     environment:
       PUID: $PUID
       PGID: $PGID
@@ -28,73 +28,56 @@ services:
     restart: unless-stopped
 
   rocketchat:
-    image: registry.rocket.chat/rocketchat/rocket.chat:7.8.3  # 최신 버전  # 최신 버전 복원
+    image: registry.rocket.chat/rocketchat/rocket.chat:7.8.3
     user: $PUID:$PGID
     deploy:
       resources:
         limits:
           memory: 2G
-          cpus: '1.0'
+          cpus: "1.0"
     environment:
-      # === MongoDB 연결 ===
       MONGO_URL: mongodb://mongodb:27017/rocketchat?replicaSet=rs0
       MONGO_OPLOG_URL: mongodb://mongodb:27017/local?replicaSet=rs0
       MONGO_WATCHDB_ENABLED: "true"
       
-      # === NSL Router 설정 ===
       ROOT_URL: http://localhost:80
       PORT: 80
       BIND_IP: "0.0.0.0"
       
-      # === 기본 관리자 계정 ===
       ADMIN_USERNAME: admin
       ADMIN_PASS: $default_pwd
       ADMIN_EMAIL: admin@localhost
       
-      # === 마켓플레이스 활성화 ===
-      ROCKETCHAT_APPS_ENGINE_ENABLED: "true"          # ✅ 앱 엔진 활성화
-      OVERWRITE_SETTING_APPS_ENGINE_ENABLED: "true"   # ✅ 앱 엔진 강제 활성화
-      OVERWRITE_SETTING_MARKETPLACE_ENABLED: "true"   # ✅ 마켓플레이스 활성화
-      
-      # === 시스템 환경 변수 ===
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
       LOG_LEVEL: "info"
       
-      # === 마이크로서비스 비활성화 ===
       MOLECULER_DISABLED: "true"
       DISABLE_MICROSERVICES: "true"
       MICRO_SERVICES_ENABLED: "false"
       
-      # === 선택적 클라우드 기능 비활성화 ===
-      ROCKETCHAT_STATISTICS_OPT_OUT: "true"           # 통계 전송 안 함
-      ROCKETCHAT_UPDATE_CHECK_ENABLED: "false"        # 업데이트 체크 안 함
-      ROCKETCHAT_FEDERATION_ENABLED: "false"          # 연합 기능 안 함
+      ROCKETCHAT_STATISTICS_OPT_OUT: "true"
+      ROCKETCHAT_UPDATE_CHECK_ENABLED: "false"
+      ROCKETCHAT_FEDERATION_ENABLED: "false"
       
-      # === 마켓플레이스 활성화 ===
-      ROCKETCHAT_APPS_ENGINE_ENABLED: "true"          # ✅ 앱 엔진 활성화
-      OVERWRITE_SETTING_APPS_ENGINE_ENABLED: "true"   # ✅ 앱 엔진 강제 활성화
-      OVERWRITE_SETTING_MARKETPLACE_ENABLED: "true"   # ✅ 마켓플레이스 활성화
+      ROCKETCHAT_APPS_ENGINE_ENABLED: "true"
+      OVERWRITE_SETTING_APPS_ENGINE_ENABLED: "true"
+      OVERWRITE_SETTING_MARKETPLACE_ENABLED: "true"
       
-      # === 등록/인증 유연하게 설정 ===
-      ROCKETCHAT_CLOUD_WORKSPACE_REGISTRATION_REQUIRED: "false"  # 클라우드 등록 필수 아님
+      ROCKETCHAT_CLOUD_WORKSPACE_REGISTRATION_REQUIRED: "false"
       OVERWRITE_SETTING_CLOUD_WORKSPACE_REGISTRATION_REQUIRED: "false"
       
-      # === 실시간 통신 활성화 ===
       OVERWRITE_SETTING_WEBSOCKET_ENABLED: "true"
       OVERWRITE_SETTING_REALTIME_ENABLED: "true"
       DDP_DEFAULT_CONNECTION_REUSE_ENABLED: "true"
       
-      # === 성능 최적화 ===
       METEOR_DISABLE_OPTIMISTIC_CACHING: "1"
       
-      # === 불필요한 기능만 비활성화 ===
-      OVERWRITE_SETTING_LIVECHAT_ENABLED: "false"     # 라이브챗 비활성화
-      OVERWRITE_SETTING_OMNICHANNEL_ENABLED: "false"  # 옴니채널 비활성화
-      OVERWRITE_SETTING_WEBRTC_ENABLED: "false"       # WebRTC 비활성화
+      OVERWRITE_SETTING_LIVECHAT_ENABLED: "false"
+      OVERWRITE_SETTING_OMNICHANNEL_ENABLED: "false"
+      OVERWRITE_SETTING_WEBRTC_ENABLED: "false"
       
-      # === 보안 설정 ===
       OVERWRITE_SETTING_ACCOUNTS_ALLOW_ANONYMOUS_READ: "false"
       OVERWRITE_SETTING_ACCOUNTS_ALLOW_ANONYMOUS_WRITE: "false"
       OVERWRITE_SETTING_API_ENABLE_CORS: "false"
