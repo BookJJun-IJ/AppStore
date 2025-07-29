@@ -2,7 +2,7 @@ name: rocketchat
 
 services:
   mongodb:
-    image: mongo:7.0
+    image: mongo:7.0  # 6.11.0과 호환되는 버전
     user: $PUID:$PGID
     deploy:
       resources:
@@ -28,7 +28,7 @@ services:
     restart: unless-stopped
 
   rocketchat:
-    image: registry.rocket.chat/rocketchat/rocket.chat:6.11.0
+    image: registry.rocket.chat/rocketchat/rocket.chat:7.8.3  # 최신 버전  # 최신 버전 복원
     user: $PUID:$PGID
     deploy:
       resources:
@@ -46,11 +46,15 @@ services:
       PORT: 80
       BIND_IP: "0.0.0.0"
       
-      # === Setup Wizard 건너뛰기 + 기본 관리자 계정 ===
-      OVERWRITE_SETTING_Show_Setup_Wizard: "completed"
+      # === 기본 관리자 계정 ===
       ADMIN_USERNAME: admin
       ADMIN_PASS: $default_pwd
       ADMIN_EMAIL: admin@localhost
+      
+      # === 마켓플레이스 활성화 ===
+      ROCKETCHAT_APPS_ENGINE_ENABLED: "true"          # ✅ 앱 엔진 활성화
+      OVERWRITE_SETTING_APPS_ENGINE_ENABLED: "true"   # ✅ 앱 엔진 강제 활성화
+      OVERWRITE_SETTING_MARKETPLACE_ENABLED: "true"   # ✅ 마켓플레이스 활성화
       
       # === 시스템 환경 변수 ===
       PUID: $PUID
@@ -113,30 +117,32 @@ x-casaos:
   author: CasaOS Team
   category: Communication
   description:
-    en_us: Rocket.Chat with marketplace enabled for team collaboration. Uses verified MongoDB replica set with apps marketplace support.
-    ko_kr: 마켓플레이스가 활성화된 팀 협업용 Rocket.Chat. 검증된 MongoDB replica set과 앱 마켓플레이스 지원.
+    en_us: Rocket.Chat 7.8.3 with marketplace enabled for team collaboration. Uses latest MongoDB 7.0 with verified replica set configuration.
+    ko_kr: 마켓플레이스가 활성화된 팀 협업용 Rocket.Chat 7.8.3. 최신 MongoDB 7.0과 검증된 replica set 구성 사용.
   developer: Rocket.Chat Technologies Corp.
   tagline:
-    en_us: Private team communication with apps marketplace
-    ko_kr: 앱 마켓플레이스를 지원하는 사설 팀 커뮤니케이션
+    en_us: Latest team communication with marketplace & MongoDB 7.0
+    ko_kr: 마켓플레이스와 MongoDB 7.0을 지원하는 최신 팀 커뮤니케이션
   title:
-    en_us: Rocket.Chat
-    ko_kr: Rocket.Chat
+    en_us: Rocket.Chat 7.8.3
+    ko_kr: Rocket.Chat 7.8.3
   tips:
     before_install:
       en_us: |
-        **Rocket.Chat with Apps Marketplace Enabled**
+        **Rocket.Chat 7.8.3 with Apps Marketplace Enabled**
         
         **Default Account**
         | Username    | Password       |
         | ----------- | -------------- |
         | `admin`     | `$default_pwd` |
         
-        **Features Enabled:**
+        **Latest Features (7.8.3):**
         - ✅ Apps Marketplace (install integrations)
+        - ✅ MongoDB 7.0 support (latest database)
+        - ✅ Node.js 20.x and Meteor 3.0 performance boost
+        - ✅ Enhanced security and stability
         - ✅ Real-time messaging with replica set
-        - ✅ File uploads and sharing
-        - ✅ Team collaboration features
+        - ✅ VoIP for Team Collaboration (beta)
         
         **Privacy Settings:**
         - ❌ Statistics reporting disabled
@@ -146,24 +152,29 @@ x-casaos:
         
         **Setup Process:**
         1. Initial setup wizard will appear
-        2. You can skip cloud registration if desired
+        2. Complete email verification for marketplace access
         3. Apps marketplace will be available in admin panel
         4. Install apps like GitHub, Jira, Google Drive integrations
         
-        **Note:** You may see an email verification step during initial setup - this is for admin account creation, not cloud registration.
+        **MongoDB 7.0 Benefits:**
+        - Better performance and scalability
+        - Enhanced security features
+        - Future-proof database version
       ko_kr: |
-        **앱 마켓플레이스가 활성화된 Rocket.Chat**
+        **앱 마켓플레이스가 활성화된 Rocket.Chat 7.8.3**
         
         **기본 계정**
         | 사용자명     | 비밀번호        |
         | ----------- | -------------- |
         | `admin`     | `$default_pwd` |
         
-        **활성화된 기능:**
+        **최신 기능 (7.8.3):**
         - ✅ 앱 마켓플레이스 (통합 앱 설치)
+        - ✅ MongoDB 7.0 지원 (최신 데이터베이스)
+        - ✅ Node.js 20.x 및 Meteor 3.0 성능 향상
+        - ✅ 강화된 보안성과 안정성
         - ✅ Replica set 실시간 메시징
-        - ✅ 파일 업로드 및 공유
-        - ✅ 팀 협업 기능
+        - ✅ 팀 협업용 VoIP (베타)
         
         **프라이버시 설정:**
         - ❌ 통계 리포팅 비활성화
@@ -173,10 +184,13 @@ x-casaos:
         
         **설정 과정:**
         1. 초기 설정 마법사가 나타남
-        2. 원한다면 클라우드 등록 건너뛰기 가능
+        2. 마켓플레이스 접근을 위한 이메일 인증 완료
         3. 관리자 패널에서 앱 마켓플레이스 사용 가능
         4. GitHub, Jira, Google Drive 통합 등 앱 설치 가능
         
-        **참고:** 초기 설정 시 이메일 인증 단계가 나올 수 있음 - 이는 클라우드 등록이 아닌 관리자 계정 생성용입니다.
+        **MongoDB 7.0 장점:**
+        - 향상된 성능과 확장성
+        - 강화된 보안 기능
+        - 미래 지향적 데이터베이스 버전
   index: /
   webui_port: 80
