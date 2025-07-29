@@ -12,10 +12,8 @@ services:
     environment:
       PUID: $PUID
       PGID: $PGID
-    # === 검증된 replica set 명령어 ===
     command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27017"]
     
-    # === 2024년 검증된 healthcheck 방법 ===
     healthcheck:
       test: echo "try { rs.status() } catch (err) { rs.initiate({_id:'rs0',members:[{_id:0,host:'mongodb:27017'}]}) }" | mongosh --port 27017 --quiet
       interval: 5s
@@ -38,11 +36,9 @@ services:
           memory: 2G
           cpus: '1.0'
     environment:
-      # === MongoDB 연결 (확실한 replica set) ===
+      # === MongoDB 연결 ===
       MONGO_URL: mongodb://mongodb:27017/rocketchat?replicaSet=rs0
       MONGO_OPLOG_URL: mongodb://mongodb:27017/local?replicaSet=rs0
-      
-      # === 실시간 데이터 스트림 활성화 ===
       MONGO_WATCHDB_ENABLED: "true"
       
       # === NSL Router 설정 ===
@@ -50,7 +46,8 @@ services:
       PORT: 80
       BIND_IP: "0.0.0.0"
       
-      # === 기본 관리자 계정 ===
+      # === Setup Wizard 건너뛰기 + 기본 관리자 계정 ===
+      OVERWRITE_SETTING_Show_Setup_Wizard: "completed"
       ADMIN_USERNAME: admin
       ADMIN_PASS: $default_pwd
       ADMIN_EMAIL: admin@localhost
@@ -59,8 +56,6 @@ services:
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
-      
-      # === 로그 레벨 ===
       LOG_LEVEL: "info"
       
       # === 마이크로서비스 비활성화 ===
@@ -68,41 +63,32 @@ services:
       DISABLE_MICROSERVICES: "true"
       MICRO_SERVICES_ENABLED: "false"
       
-      # === 오프라인 모드 설정 ===
-      ROCKETCHAT_REGISTRATION_ENABLED: "false"
-      ROCKETCHAT_STATISTICS_OPT_OUT: "true"
-      ROCKETCHAT_CLOUD_WORKSPACE_REGISTRATION_REQUIRED: "false"
-      ROCKETCHAT_UPDATE_CHECK_ENABLED: "false"
-      ROCKETCHAT_APPS_ENGINE_ENABLED: "false"
-      ROCKETCHAT_FEDERATION_ENABLED: "false"
+      # === 선택적 클라우드 기능 비활성화 ===
+      ROCKETCHAT_STATISTICS_OPT_OUT: "true"           # 통계 전송 안 함
+      ROCKETCHAT_UPDATE_CHECK_ENABLED: "false"        # 업데이트 체크 안 함
+      ROCKETCHAT_FEDERATION_ENABLED: "false"          # 연합 기능 안 함
       
-      # === 실시간 통신 최적화 ===
+      # === 마켓플레이스 활성화 ===
+      ROCKETCHAT_APPS_ENGINE_ENABLED: "true"          # ✅ 앱 엔진 활성화
+      OVERWRITE_SETTING_APPS_ENGINE_ENABLED: "true"   # ✅ 앱 엔진 강제 활성화
+      OVERWRITE_SETTING_MARKETPLACE_ENABLED: "true"   # ✅ 마켓플레이스 활성화
+      
+      # === 등록/인증 유연하게 설정 ===
+      ROCKETCHAT_CLOUD_WORKSPACE_REGISTRATION_REQUIRED: "false"  # 클라우드 등록 필수 아님
+      OVERWRITE_SETTING_CLOUD_WORKSPACE_REGISTRATION_REQUIRED: "false"
+      
+      # === 실시간 통신 활성화 ===
+      OVERWRITE_SETTING_WEBSOCKET_ENABLED: "true"
+      OVERWRITE_SETTING_REALTIME_ENABLED: "true"
       DDP_DEFAULT_CONNECTION_REUSE_ENABLED: "true"
       
       # === 성능 최적화 ===
       METEOR_DISABLE_OPTIMISTIC_CACHING: "1"
       
-      # === UI 설정 강제 재정의 ===
-      OVERWRITE_SETTING_CLOUD_WORKSPACE_REGISTRATION_REQUIRED: "false"
-      OVERWRITE_SETTING_STATISTICS_REPORTING: "false"
-      OVERWRITE_SETTING_APPS_ENGINE_ENABLED: "false"
-      OVERWRITE_SETTING_FEDERATION_ENABLED: "false"
-      OVERWRITE_SETTING_ACCOUNTS_REGISTRATION_FORM: "Disabled"
-      
-      # === 실시간 통신 강제 활성화 ===
-      OVERWRITE_SETTING_WEBSOCKET_ENABLED: "true"
-      OVERWRITE_SETTING_REALTIME_ENABLED: "true"
-      
-      # === VoIP 비활성화 (로그 정리) ===
-      OVERWRITE_SETTING_WEBRTC_ENABLED: "false"
-      ROCKETCHAT_WEBRTC_ENABLED: "false"
-      ROCKETCHAT_VOIP_ENABLED: "false"
-      
-      # === 불필요한 기능 비활성화 ===
-      OVERWRITE_SETTING_LIVECHAT_ENABLED: "false"
-      OVERWRITE_SETTING_OMNICHANNEL_ENABLED: "false"
-      OVERWRITE_SETTING_MARKETPLACE_ENABLED: "false"
-      OVERWRITE_SETTING_APPS_MARKETPLACE_ENABLED: "false"
+      # === 불필요한 기능만 비활성화 ===
+      OVERWRITE_SETTING_LIVECHAT_ENABLED: "false"     # 라이브챗 비활성화
+      OVERWRITE_SETTING_OMNICHANNEL_ENABLED: "false"  # 옴니채널 비활성화
+      OVERWRITE_SETTING_WEBRTC_ENABLED: "false"       # WebRTC 비활성화
       
       # === 보안 설정 ===
       OVERWRITE_SETTING_ACCOUNTS_ALLOW_ANONYMOUS_READ: "false"
@@ -116,7 +102,7 @@ services:
       - /DATA/AppData/$AppID/data:/app/data
     depends_on:
       mongodb:
-        condition: service_healthy  # MongoDB가 healthy일 때만 시작
+        condition: service_healthy
     restart: unless-stopped
 
 x-casaos:
@@ -127,64 +113,70 @@ x-casaos:
   author: CasaOS Team
   category: Communication
   description:
-    en_us: Rocket.Chat with proven MongoDB replica set configuration. Uses the most reliable method verified by the community in 2024 for guaranteed real-time messaging functionality.
-    ko_kr: 검증된 MongoDB replica set 구성을 사용하는 Rocket.Chat입니다. 실시간 메시징 기능이 보장되는 2024년 커뮤니티 검증 방법을 사용합니다.
+    en_us: Rocket.Chat with marketplace enabled for team collaboration. Uses verified MongoDB replica set with apps marketplace support.
+    ko_kr: 마켓플레이스가 활성화된 팀 협업용 Rocket.Chat. 검증된 MongoDB replica set과 앱 마켓플레이스 지원.
   developer: Rocket.Chat Technologies Corp.
   tagline:
-    en_us: Private team communication with verified replica set
-    ko_kr: 검증된 replica set을 사용하는 사설 팀 커뮤니케이션
+    en_us: Private team communication with apps marketplace
+    ko_kr: 앱 마켓플레이스를 지원하는 사설 팀 커뮤니케이션
   title:
     en_us: Rocket.Chat
     ko_kr: Rocket.Chat
   tips:
     before_install:
       en_us: |
-        **Rocket.Chat with Community-Verified MongoDB Replica Set**
-        
-        Uses the most reliable MongoDB replica set method proven by thousands of developers.
+        **Rocket.Chat with Apps Marketplace Enabled**
         
         **Default Account**
         | Username    | Password       |
         | ----------- | -------------- |
         | `admin`     | `$default_pwd` |
         
-        **What makes this reliable:**
-        - ✅ Uses standard mongo:7.0 image (no complex customizations)
-        - ✅ Community-verified healthcheck method (2024 tested)
-        - ✅ Automatic replica set initialization
-        - ✅ Guaranteed real-time messaging and change streams
-        - ✅ No complex authentication or keyfile issues
+        **Features Enabled:**
+        - ✅ Apps Marketplace (install integrations)
+        - ✅ Real-time messaging with replica set
+        - ✅ File uploads and sharing
+        - ✅ Team collaboration features
         
-        **Setup process:**
-        1. MongoDB starts with replica set mode
-        2. Healthcheck automatically initializes replica set
-        3. Rocket.Chat connects to working replica set
-        4. Real-time messaging works immediately
+        **Privacy Settings:**
+        - ❌ Statistics reporting disabled
+        - ❌ Automatic updates disabled  
+        - ❌ Federation disabled
+        - ✅ Your data stays on your server
         
-        **Total setup time**: ~30 seconds for full initialization
+        **Setup Process:**
+        1. Initial setup wizard will appear
+        2. You can skip cloud registration if desired
+        3. Apps marketplace will be available in admin panel
+        4. Install apps like GitHub, Jira, Google Drive integrations
+        
+        **Note:** You may see an email verification step during initial setup - this is for admin account creation, not cloud registration.
       ko_kr: |
-        **커뮤니티 검증된 MongoDB Replica Set을 사용하는 Rocket.Chat**
-        
-        수천 명의 개발자들이 검증한 가장 안정적인 MongoDB replica set 방법을 사용합니다.
+        **앱 마켓플레이스가 활성화된 Rocket.Chat**
         
         **기본 계정**
         | 사용자명     | 비밀번호        |
         | ----------- | -------------- |
         | `admin`     | `$default_pwd` |
         
-        **안정적인 이유:**
-        - ✅ 표준 mongo:7.0 이미지 사용 (복잡한 커스터마이징 없음)
-        - ✅ 커뮤니티 검증된 healthcheck 방법 (2024년 테스트됨)
-        - ✅ 자동 replica set 초기화
-        - ✅ 실시간 메시징 및 change stream 보장
-        - ✅ 복잡한 인증이나 keyfile 문제 없음
+        **활성화된 기능:**
+        - ✅ 앱 마켓플레이스 (통합 앱 설치)
+        - ✅ Replica set 실시간 메시징
+        - ✅ 파일 업로드 및 공유
+        - ✅ 팀 협업 기능
+        
+        **프라이버시 설정:**
+        - ❌ 통계 리포팅 비활성화
+        - ❌ 자동 업데이트 비활성화
+        - ❌ 연합 기능 비활성화
+        - ✅ 데이터는 사용자 서버에만 보관
         
         **설정 과정:**
-        1. MongoDB가 replica set 모드로 시작
-        2. Healthcheck가 자동으로 replica set 초기화
-        3. Rocket.Chat이 작동하는 replica set에 연결
-        4. 실시간 메시징 즉시 작동
+        1. 초기 설정 마법사가 나타남
+        2. 원한다면 클라우드 등록 건너뛰기 가능
+        3. 관리자 패널에서 앱 마켓플레이스 사용 가능
+        4. GitHub, Jira, Google Drive 통합 등 앱 설치 가능
         
-        **전체 설정 시간**: 완전 초기화까지 ~30초
+        **참고:** 초기 설정 시 이메일 인증 단계가 나올 수 있음 - 이는 클라우드 등록이 아닌 관리자 계정 생성용입니다.
   index: /
   webui_port: 80
