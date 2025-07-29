@@ -13,6 +13,7 @@ services:
       # === Bitnami 자동 replica set 설정 ===
       MONGODB_REPLICA_SET_MODE: primary
       MONGODB_REPLICA_SET_NAME: rs0
+      MONGODB_REPLICA_SET_KEY: "replicaset-key-for-auth"
       MONGODB_ROOT_USER: root
       MONGODB_ROOT_PASSWORD: $default_pwd
       MONGODB_USERNAME: rocketchat
@@ -49,7 +50,7 @@ services:
       MONGO_WATCHDB_ENABLED: "true"
       
       # === NSL Router 설정 ===
-      ROOT_URL: https://$domain
+      ROOT_URL: http://localhost:80
       PORT: 80
       BIND_IP: "0.0.0.0"
       
