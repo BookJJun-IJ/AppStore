@@ -19,6 +19,18 @@ services:
       ROCKET_ADDRESS: 0.0.0.0        # Bind to all interfaces for NSL router access
       SIGNUPS_ALLOWED: "true"        # Enable user registration for initial setup
       ADMIN_TOKEN: $default_pwd      # Admin panel access token
+      DOMAIN: https://$domain        # Full domain URL for NSL router integration
+      
+      # Optional SMTP Email Settings (uncomment and configure as needed)
+      # SMTP_HOST: smtp.gmail.com    # SMTP server hostname
+      # SMTP_FROM: vaultwarden@$domain # From email address
+      # SMTP_FROM_NAME: Vaultwarden  # From name
+      # SMTP_PORT: 587               # SMTP port (587 for TLS, 465 for SSL)
+      # SMTP_SECURITY: starttls      # starttls, force_tls, or off
+      # SMTP_USERNAME: your-email@gmail.com # SMTP username
+      # SMTP_PASSWORD: your-app-password    # SMTP password (use Gmail app password)
+      # SMTP_TIMEOUT: 15             # SMTP timeout in seconds
+      
     volumes:
       - /DATA/AppData/$AppID/data:/data
     restart: unless-stopped
@@ -235,12 +247,12 @@ x-casaos:
       • Compartir acceso con tu equipo o familia (si quieres)
       • Mantener tus datos privados --- nunca salen de tu servidor
   developer: Vaultwarden Community
-  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Vaultwarden/icon.png
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Vaultwarden/icon.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Vaultwarden/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Vaultwarden/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Vaultwarden/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Vaultwarden/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Vaultwarden/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Vaultwarden/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Vaultwarden/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Vaultwarden/thumbnail.png
   tagline:
     en_us: Your password manager, secured on your server
     en_gb: Your password manager, secured on your server
@@ -260,144 +272,214 @@ x-casaos:
   tips:
     before_install:
       en_us: |
-        **Default Account**
+        **Default Account Setup**
 
         | Setting | Value |
         |---------|-------|
-        | Admin Panel | /admin |
-        | Admin Token | $default_pwd |
+        | Admin Panel | Add `/admin` to your app URL |
+        | Admin Token | `$default_pwd` |
 
         **First Steps:**
 
-        1. Create your first user account via signup, this will be your main account.
+        1. **Create your main account**: After installation, create your first user account via signup - this will be your primary account.
 
-        2. To access the admin panel and manage users, open your browser and go to:
-        your-domain.com/admin (Just add /admin at the end of your Vaultwarden link)
+        2. **Access Admin Panel**: To manage settings and users, visit:
+           `https://vaultwarden-yourusername.nsl.sh/admin`
+           (Just add `/admin` to your Vaultwarden URL)
 
-        3. Once your account is ready, it's a good idea to disable new signups to keep control over who can join.
+        3. **Secure your instance**: Once set up, disable new signups in admin panel to control who can join.
 
-        **For the App/Web extension:**
+        **For Mobile/Desktop Apps:**
 
-        Download the Bitwarden app on your phone or desktop, or use the Bitwarden browser extension : it works perfectly with Vaultwarden.
+        Download the **Bitwarden app** on your phone/desktop or use the **Bitwarden browser extension** - works perfectly with Vaultwarden!
+
+        **Email Configuration (Optional):**
+
+        For password recovery and notifications, edit the SMTP settings in the compose file:
+        - Uncomment SMTP environment variables
+        - Configure with your email provider (Gmail, Outlook, etc.)
+        - Use app-specific passwords for security
+
+        **Important**: Your Vaultwarden URL is automatically configured for NSL router integration.
       en_gb: |
-        **Default Account**
+        **Default Account Setup**
 
         | Setting | Value |
         |---------|-------|
-        | Admin Panel | /admin |
-        | Admin Token | $default_pwd |
+        | Admin Panel | Add `/admin` to your app URL |
+        | Admin Token | `$default_pwd` |
 
         **First Steps:**
 
-        1. Create your first user account via signup, this will be your main account.
+        1. **Create your main account**: After installation, create your first user account via signup - this will be your primary account.
 
-        2. To access the admin panel and manage users, open your browser and go to:
-        your-domain.com/admin (Just add /admin at the end of your Vaultwarden link)
+        2. **Access Admin Panel**: To manage settings and users, visit:
+           `https://vaultwarden-yourusername.nsl.sh/admin`
+           (Just add `/admin` to your Vaultwarden URL)
 
-        3. Once your account is ready, it's a good idea to disable new signups to keep control over who can join.
+        3. **Secure your instance**: Once set up, disable new signups in admin panel to control who can join.
 
-        **For the App/Web extension:**
+        **For Mobile/Desktop Apps:**
 
-        Download the Bitwarden app on your phone or desktop, or use the Bitwarden browser extension : it works perfectly with Vaultwarden.
+        Download the **Bitwarden app** on your phone/desktop or use the **Bitwarden browser extension** - works perfectly with Vaultwarden!
+
+        **Email Configuration (Optional):**
+
+        For password recovery and notifications, edit the SMTP settings in the compose file:
+        - Uncomment SMTP environment variables
+        - Configure with your email provider (Gmail, Outlook, etc.)
+        - Use app-specific passwords for security
+
+        **Important**: Your Vaultwarden URL is automatically configured for NSL router integration.
       ko_kr: |
-        **기본 계정**
+        **기본 계정 설정**
 
         | 설정 | 값 |
         |------|-----|
-        | 관리자 패널 | /admin |
-        | 관리자 토큰 | $default_pwd |
+        | 관리자 패널 | 앱 URL에 `/admin` 추가 |
+        | 관리자 토큰 | `$default_pwd` |
 
-        **첫 단계:**
+        **첫 번째 단계:**
 
-        1. 가입을 통해 첫 번째 사용자 계정을 생성하세요. 이것이 메인 계정이 됩니다.
+        1. **메인 계정 생성**: 설치 후 가입을 통해 첫 번째 사용자 계정을 생성하세요 - 이것이 주요 계정이 됩니다.
 
-        2. 관리자 패널에 접근하여 사용자를 관리하려면 브라우저를 열고 다음으로 이동하세요:
-        your-domain.com/admin (Vaultwarden 링크 끝에 /admin만 추가하면 됩니다)
+        2. **관리자 패널 접근**: 설정과 사용자를 관리하려면 다음을 방문하세요:
+           `https://vaultwarden-yourusername.nsl.sh/admin`
+           (Vaultwarden URL에 `/admin`만 추가하면 됩니다)
 
-        3. 계정이 준비되면 누가 가입할 수 있는지 통제하기 위해 새로운 가입을 비활성화하는 것이 좋습니다.
+        3. **인스턴스 보안**: 설정 완료 후 관리자 패널에서 새로운 가입을 비활성화하여 누가 가입할 수 있는지 제어하세요.
 
-        **앱/웹 확장프로그램의 경우:**
+        **모바일/데스크톱 앱:**
 
-        휴대폰이나 데스크톱에서 Bitwarden 앱을 다운로드하거나 Bitwarden 브라우저 확장프로그램을 사용하세요 : Vaultwarden과 완벽하게 작동합니다.
+        휴대폰/데스크톱에서 **Bitwarden 앱**을 다운로드하거나 **Bitwarden 브라우저 확장프로그램**을 사용하세요 - Vaultwarden과 완벽하게 작동합니다!
+
+        **이메일 설정 (선택사항):**
+
+        비밀번호 복구와 알림을 위해 compose 파일에서 SMTP 설정을 편집하세요:
+        - SMTP 환경변수 주석 해제
+        - 이메일 제공업체(Gmail, Outlook 등)로 설정
+        - 보안을 위해 앱별 비밀번호 사용
+
+        **중요**: Vaultwarden URL은 NSL 라우터 통합을 위해 자동으로 설정됩니다.
       zh_cn: |
-        **默认账户**
+        **默认账户设置**
 
         | 设置 | 值 |
         |------|-----|
-        | 管理员面板 | /admin |
-        | 管理员令牌 | $default_pwd |
+        | 管理员面板 | 在应用URL后添加 `/admin` |
+        | 管理员令牌 | `$default_pwd` |
 
         **首要步骤：**
 
-        1. 通过注册创建第一个用户账户，这将成为您的主账户。
+        1. **创建主账户**: 安装后通过注册创建第一个用户账户 - 这将成为您的主要账户。
 
-        2. 要访问管理员面板和管理用户，请打开浏览器并前往：
-        your-domain.com/admin （只需在Vaultwarden链接末尾添加/admin）
+        2. **访问管理员面板**: 要管理设置和用户，请访问：
+           `https://vaultwarden-yourusername.nsl.sh/admin`
+           （只需在Vaultwarden URL后添加`/admin`）
 
-        3. 账户准备好后，建议禁用新注册以控制谁可以加入。
+        3. **保护实例安全**: 设置完成后，在管理员面板中禁用新注册以控制谁可以加入。
 
-        **对于应用程序/网页扩展：**
+        **移动端/桌面端应用：**
 
-        在手机或桌面上下载Bitwarden应用，或使用Bitwarden浏览器扩展：它与Vaultwarden完美配合。
+        在手机/桌面上下载**Bitwarden应用**或使用**Bitwarden浏览器扩展** - 与Vaultwarden完美配合！
+
+        **邮件配置（可选）：**
+
+        为了密码恢复和通知，编辑compose文件中的SMTP设置：
+        - 取消SMTP环境变量注释
+        - 配置邮件提供商（Gmail、Outlook等）
+        - 使用应用专用密码确保安全
+
+        **重要提示**: Vaultwarden URL已自动配置NSL路由器集成。
       fr_fr: |
-        **Compte par Défaut**
+        **Configuration du Compte par Défaut**
 
         | Paramètre | Valeur |
         |-----------|--------|
-        | Panneau Admin | /admin |
-        | Token Admin | $default_pwd |
+        | Panneau Admin | Ajoutez `/admin` à l'URL de votre app |
+        | Token Admin | `$default_pwd` |
 
         **Premières Étapes :**
 
-        1. Créez votre premier compte utilisateur via inscription, ce sera votre compte principal.
+        1. **Créez votre compte principal** : Après installation, créez votre premier compte utilisateur via inscription - ce sera votre compte principal.
 
-        2. Pour accéder au panneau d'administration et gérer les utilisateurs, ouvrez votre navigateur et allez à :
-        your-domain.com/admin (Ajoutez simplement /admin à la fin de votre lien Vaultwarden)
+        2. **Accédez au Panneau Admin** : Pour gérer les paramètres et utilisateurs, visitez :
+           `https://vaultwarden-yourusername.nsl.sh/admin`
+           (Ajoutez simplement `/admin` à votre URL Vaultwarden)
 
-        3. Une fois votre compte prêt, c'est une bonne idée de désactiver les nouvelles inscriptions pour garder le contrôle sur qui peut rejoindre.
+        3. **Sécurisez votre instance** : Une fois configuré, désactivez les nouvelles inscriptions dans le panneau admin pour contrôler qui peut rejoindre.
 
-        **Pour l'App/Extension Web :**
+        **Pour les Apps Mobile/Bureau :**
 
-        Téléchargez l'application Bitwarden sur votre téléphone ou ordinateur, ou utilisez l'extension de navigateur Bitwarden : elle fonctionne parfaitement avec Vaultwarden.
+        Téléchargez l'**app Bitwarden** sur votre téléphone/bureau ou utilisez l'**extension navigateur Bitwarden** - fonctionne parfaitement avec Vaultwarden !
+
+        **Configuration Email (Optionnel) :**
+
+        Pour la récupération de mot de passe et les notifications, éditez les paramètres SMTP dans le fichier compose :
+        - Décommentez les variables d'environnement SMTP
+        - Configurez avec votre fournisseur email (Gmail, Outlook, etc.)
+        - Utilisez des mots de passe spécifiques aux apps pour la sécurité
+
+        **Important** : Votre URL Vaultwarden est automatiquement configurée pour l'intégration NSL router.
       de_de: |
-        **Standardkonto**
+        **Standard-Account-Einrichtung**
 
         | Einstellung | Wert |
         |-------------|------|
-        | Admin-Panel | /admin |
-        | Admin-Token | $default_pwd |
+        | Admin-Panel | Fügen Sie `/admin` zu Ihrer App-URL hinzu |
+        | Admin-Token | `$default_pwd` |
 
         **Erste Schritte:**
 
-        1. Erstellen Sie Ihr erstes Benutzerkonto über die Registrierung, dies wird Ihr Hauptkonto.
+        1. **Erstellen Sie Ihr Hauptkonto**: Nach der Installation erstellen Sie Ihr erstes Benutzerkonto über die Registrierung - dies wird Ihr Hauptkonto.
 
-        2. Um auf das Admin-Panel zuzugreifen und Benutzer zu verwalten, öffnen Sie Ihren Browser und gehen Sie zu:
-        your-domain.com/admin (Fügen Sie einfach /admin am Ende Ihres Vaultwarden-Links hinzu)
+        2. **Zugriff auf das Admin-Panel**: Um Einstellungen und Benutzer zu verwalten, besuchen Sie:
+           `https://vaultwarden-yourusername.nsl.sh/admin`
+           (Fügen Sie einfach `/admin` zu Ihrer Vaultwarden-URL hinzu)
 
-        3. Sobald Ihr Konto bereit ist, ist es eine gute Idee, neue Registrierungen zu deaktivieren, um die Kontrolle darüber zu behalten, wer beitreten kann.
+        3. **Sichern Sie Ihre Instanz**: Nach der Einrichtung deaktivieren Sie neue Registrierungen im Admin-Panel, um zu kontrollieren, wer beitreten kann.
 
-        **Für die App/Web-Erweiterung:**
+        **Für Mobile/Desktop-Apps:**
 
-        Laden Sie die Bitwarden-App auf Ihr Telefon oder Desktop herunter, oder verwenden Sie die Bitwarden-Browser-Erweiterung: sie funktioniert perfekt mit Vaultwarden.
+        Laden Sie die **Bitwarden-App** auf Ihr Telefon/Desktop herunter oder verwenden Sie die **Bitwarden-Browser-Erweiterung** - funktioniert perfekt mit Vaultwarden!
+
+        **E-Mail-Konfiguration (Optional):**
+
+        Für Passwort-Wiederherstellung und Benachrichtigungen bearbeiten Sie die SMTP-Einstellungen in der Compose-Datei:
+        - SMTP-Umgebungsvariablen auskommentieren
+        - Mit Ihrem E-Mail-Anbieter konfigurieren (Gmail, Outlook, etc.)
+        - App-spezifische Passwörter für Sicherheit verwenden
+
+        **Wichtig**: Ihre Vaultwarden-URL ist automatisch für NSL-Router-Integration konfiguriert.
       es_es: |
-        **Cuenta por Defecto**
+        **Configuración de Cuenta por Defecto**
 
         | Configuración | Valor |
         |---------------|-------|
-        | Panel de Admin | /admin |
-        | Token de Admin | $default_pwd |
+        | Panel de Admin | Añade `/admin` a tu URL de la app |
+        | Token de Admin | `$default_pwd` |
 
         **Primeros Pasos:**
 
-        1. Crea tu primera cuenta de usuario mediante registro, esta será tu cuenta principal.
+        1. **Crea tu cuenta principal**: Después de la instalación, crea tu primera cuenta de usuario mediante registro - esta será tu cuenta principal.
 
-        2. Para acceder al panel de administración y gestionar usuarios, abre tu navegador y ve a:
-        your-domain.com/admin (Solo añade /admin al final de tu enlace de Vaultwarden)
+        2. **Accede al Panel de Admin**: Para gestionar configuraciones y usuarios, visita:
+           `https://vaultwarden-yourusername.nsl.sh/admin`
+           (Solo añade `/admin` a tu URL de Vaultwarden)
 
-        3. Una vez que tu cuenta esté lista, es buena idea deshabilitar nuevos registros para mantener control sobre quién puede unirse.
+        3. **Asegura tu instancia**: Una vez configurado, deshabilita nuevos registros en el panel de admin para controlar quién puede unirse.
 
-        **Para la App/Extensión Web:**
+        **Para Apps Móviles/Escritorio:**
 
-        Descarga la aplicación Bitwarden en tu teléfono o escritorio, o usa la extensión de navegador Bitwarden: funciona perfectamente con Vaultwarden.
+        Descarga la **app Bitwarden** en tu teléfono/escritorio o usa la **extensión de navegador Bitwarden** - ¡funciona perfectamente con Vaultwarden!
+
+        **Configuración de Email (Opcional):**
+
+        Para recuperación de contraseña y notificaciones, edita la configuración SMTP en el archivo compose:
+        - Descomenta las variables de entorno SMTP
+        - Configura con tu proveedor de email (Gmail, Outlook, etc.)
+        - Usa contraseñas específicas de apps para seguridad
+
+        **Importante**: Tu URL de Vaultwarden está automáticamente configurada para integración NSL router.
   index: /
   webui_port: 80
