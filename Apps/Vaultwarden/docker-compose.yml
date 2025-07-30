@@ -237,12 +237,12 @@ x-casaos:
       • Compartir acceso con tu equipo o familia (si quieres)
       • Mantener tus datos privados --- nunca salen de tu servidor
   developer: Vaultwarden Community
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Vaultwarden/icon.png
+  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Vaultwarden/icon.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Vaultwarden/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Vaultwarden/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Vaultwarden/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Vaultwarden/thumbnail.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Vaultwarden/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Vaultwarden/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Vaultwarden/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Vaultwarden/screenshot-1.png
   tagline:
     en_us: Your password manager, secured on your server
     en_gb: Your password manager, secured on your server
