@@ -4,6 +4,8 @@ services:
   vaultwarden:
     image: vaultwarden/server:1.32.1
     user: $PUID:$PGID
+    healthcheck:
+      test: ["NONE"]                 # Force disable healthcheck
     deploy:
       resources:
         limits:
@@ -19,7 +21,7 @@ services:
       ROCKET_ADDRESS: 0.0.0.0        # Bind to all interfaces for NSL router access
       SIGNUPS_ALLOWED: "true"        # Enable user registration for initial setup
       ADMIN_TOKEN: $default_pwd      # Admin panel access token
-      DOMAIN: https://$domain        # Full domain URL for NSL router integration
+      # DOMAIN: https://$domain      # Comment out domain to test
       
     volumes:
       - /DATA/AppData/$AppID/data:/data
