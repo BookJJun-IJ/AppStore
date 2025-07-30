@@ -4,8 +4,6 @@ services:
   vaultwarden:
     image: vaultwarden/server:1.33.0
     user: $PUID:$PGID
-    healthcheck:
-      test: ["NONE"]                 # Disable healthcheck for NSL router compatibility
     deploy:
       resources:
         limits:
@@ -288,7 +286,7 @@ x-casaos:
       **📧 Sistema de Email Integrado:**
       Esta versión incluye MailHog para funcionalidad de email sin configuración SMTP externa - ¡perfecto para recuperación de contraseñas y notificaciones!
   developer: Vaultwarden Community
-  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Vaultwarden/icon.png
+  #icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Vaultwarden/icon.png
   screenshot_link:
     - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Vaultwarden/screenshot-1.png
     - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Vaultwarden/screenshot-2.png
