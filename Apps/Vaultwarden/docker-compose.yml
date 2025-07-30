@@ -21,16 +21,6 @@ services:
       ADMIN_TOKEN: $default_pwd      # Admin panel access token
       DOMAIN: https://$domain        # Full domain URL for NSL router integration
       
-      # Optional SMTP Email Settings (uncomment and configure as needed)
-      # SMTP_HOST: smtp.gmail.com    # SMTP server hostname
-      # SMTP_FROM: vaultwarden@$domain # From email address
-      # SMTP_FROM_NAME: Vaultwarden  # From name
-      # SMTP_PORT: 587               # SMTP port (587 for TLS, 465 for SSL)
-      # SMTP_SECURITY: starttls      # starttls, force_tls, or off
-      # SMTP_USERNAME: your-email@gmail.com # SMTP username
-      # SMTP_PASSWORD: your-app-password    # SMTP password (use Gmail app password)
-      # SMTP_TIMEOUT: 15             # SMTP timeout in seconds
-      
     volumes:
       - /DATA/AppData/$AppID/data:/data
     restart: unless-stopped
@@ -295,10 +285,11 @@ x-casaos:
 
         **Email Configuration (Optional):**
 
-        For password recovery and notifications, edit the SMTP settings in the compose file:
-        - Uncomment SMTP environment variables
-        - Configure with your email provider (Gmail, Outlook, etc.)
-        - Use app-specific passwords for security
+        For password recovery and notifications, configure SMTP in the Admin Panel:
+        1. Go to Admin Panel: add `/admin` to your Vaultwarden URL
+        2. Navigate to "SMTP Email Settings"
+        3. Configure with your email provider (Gmail: smtp.gmail.com, port 587)
+        4. Use app-specific passwords for security (not your regular password)
 
         **Important**: Your Vaultwarden URL is automatically configured for NSL router integration.
       en_gb: |
@@ -355,10 +346,11 @@ x-casaos:
 
         **이메일 설정 (선택사항):**
 
-        비밀번호 복구와 알림을 위해 compose 파일에서 SMTP 설정을 편집하세요:
-        - SMTP 환경변수 주석 해제
-        - 이메일 제공업체(Gmail, Outlook 등)로 설정
-        - 보안을 위해 앱별 비밀번호 사용
+        비밀번호 복구와 알림을 위해 관리자 패널에서 SMTP를 설정하세요:
+        1. 관리자 패널로 이동: Vaultwarden URL에 `/admin` 추가
+        2. "SMTP Email Settings"로 이동
+        3. 이메일 제공업체로 설정 (Gmail: smtp.gmail.com, 포트 587)
+        4. 보안을 위해 앱별 비밀번호 사용 (일반 비밀번호 아님)
 
         **중요**: Vaultwarden URL은 NSL 라우터 통합을 위해 자동으로 설정됩니다.
       zh_cn: |
@@ -385,10 +377,11 @@ x-casaos:
 
         **邮件配置（可选）：**
 
-        为了密码恢复和通知，编辑compose文件中的SMTP设置：
-        - 取消SMTP环境变量注释
-        - 配置邮件提供商（Gmail、Outlook等）
-        - 使用应用专用密码确保安全
+        为了密码恢复和通知，在管理员面板中配置SMTP：
+        1. 前往管理员面板：在Vaultwarden URL后添加 `/admin`
+        2. 导航到 "SMTP Email Settings"
+        3. 配置邮件提供商（Gmail: smtp.gmail.com，端口 587）
+        4. 使用应用专用密码确保安全（非常规密码）
 
         **重要提示**: Vaultwarden URL已自动配置NSL路由器集成。
       fr_fr: |
@@ -415,10 +408,11 @@ x-casaos:
 
         **Configuration Email (Optionnel) :**
 
-        Pour la récupération de mot de passe et les notifications, éditez les paramètres SMTP dans le fichier compose :
-        - Décommentez les variables d'environnement SMTP
-        - Configurez avec votre fournisseur email (Gmail, Outlook, etc.)
-        - Utilisez des mots de passe spécifiques aux apps pour la sécurité
+        Pour la récupération de mot de passe et les notifications, configurez SMTP dans le Panneau Admin :
+        1. Allez au Panneau Admin : ajoutez `/admin` à votre URL Vaultwarden
+        2. Naviguez vers "SMTP Email Settings"
+        3. Configurez avec votre fournisseur email (Gmail : smtp.gmail.com, port 587)
+        4. Utilisez des mots de passe spécifiques aux apps pour la sécurité (pas votre mot de passe habituel)
 
         **Important** : Votre URL Vaultwarden est automatiquement configurée pour l'intégration NSL router.
       de_de: |
@@ -445,10 +439,11 @@ x-casaos:
 
         **E-Mail-Konfiguration (Optional):**
 
-        Für Passwort-Wiederherstellung und Benachrichtigungen bearbeiten Sie die SMTP-Einstellungen in der Compose-Datei:
-        - SMTP-Umgebungsvariablen auskommentieren
-        - Mit Ihrem E-Mail-Anbieter konfigurieren (Gmail, Outlook, etc.)
-        - App-spezifische Passwörter für Sicherheit verwenden
+        Für Passwort-Wiederherstellung und Benachrichtigungen konfigurieren Sie SMTP im Admin-Panel:
+        1. Gehen Sie zum Admin-Panel: fügen Sie `/admin` zu Ihrer Vaultwarden-URL hinzu
+        2. Navigieren Sie zu "SMTP Email Settings"
+        3. Konfigurieren Sie mit Ihrem E-Mail-Anbieter (Gmail: smtp.gmail.com, Port 587)
+        4. Verwenden Sie App-spezifische Passwörter für Sicherheit (nicht Ihr reguläres Passwort)
 
         **Wichtig**: Ihre Vaultwarden-URL ist automatisch für NSL-Router-Integration konfiguriert.
       es_es: |
@@ -475,10 +470,11 @@ x-casaos:
 
         **Configuración de Email (Opcional):**
 
-        Para recuperación de contraseña y notificaciones, edita la configuración SMTP en el archivo compose:
-        - Descomenta las variables de entorno SMTP
-        - Configura con tu proveedor de email (Gmail, Outlook, etc.)
-        - Usa contraseñas específicas de apps para seguridad
+        Para recuperación de contraseña y notificaciones, configura SMTP en el Panel de Admin:
+        1. Ve al Panel de Admin: añade `/admin` a tu URL de Vaultwarden
+        2. Navega a "SMTP Email Settings"
+        3. Configura con tu proveedor de email (Gmail: smtp.gmail.com, puerto 587)
+        4. Usa contraseñas específicas de apps para seguridad (no tu contraseña regular)
 
         **Importante**: Tu URL de Vaultwarden está automáticamente configurada para integración NSL router.
   index: /
