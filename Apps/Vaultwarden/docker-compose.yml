@@ -25,10 +25,10 @@ services:
       ROCKET_ADDRESS: 0.0.0.0        # Bind to all interfaces for NSL router access
       SIGNUPS_ALLOWED: "true"        # Enable user registration for initial setup
       ADMIN_TOKEN: $default_pwd      # Admin panel access token
-      # DOMAIN: https://$domain      # Temporarily disable domain setting
-      DOMAIN: http://$domain         # Try HTTP instead of HTTPS for NSL router
-      # DOMAIN: $domain              # Alternative: No protocol
-      # DOMAIN_ORIGIN: https://$domain # Alternative: Separate origin setting
+      
+      # Try DOMAIN without protocol for NSL router compatibility
+      DOMAIN: $domain                # Domain without https:// prefix
+      
       SMTP_HOST: mailhog             # Internal SMTP server via MailHog
       SMTP_FROM: vaultwarden@localhost # Simple from address
       SMTP_PORT: 1025                # MailHog SMTP port
@@ -340,7 +340,7 @@ x-casaos:
         2. **Access Admin Panel**: Visit your app URL + `/admin`
            Example: `https://vaultwarden-yourusername.nsl.sh/admin`
 
-        3. **Configure Domain URL**: In Admin Panel → General Settings → Domain URL, enter:
+        3. **Configure Domain (Important)**: In Admin Panel → General Settings → Domain URL, verify it shows:
            `https://vaultwarden-yourusername.nsl.sh` (your actual app URL)
 
         4. **Secure your instance**: Disable new signups in admin panel once set up.
@@ -372,7 +372,10 @@ x-casaos:
         2. **Access Admin Panel**: Visit your app URL + `/admin`
            Example: `https://vaultwarden-yourusername.nsl.sh/admin`
 
-        3. **Secure your instance**: Disable new signups in admin panel once set up.
+        3. **Configure Domain (Important)**: In Admin Panel → General Settings → Domain URL, verify it shows:
+           `https://vaultwarden-yourusername.nsl.sh` (your actual app URL)
+
+        4. **Secure your instance**: Disable new signups in admin panel once set up.
 
         **For Mobile/Desktop Apps:**
 
@@ -401,7 +404,7 @@ x-casaos:
         2. **관리자 패널 접근**: 앱 URL + `/admin`을 방문하세요
            예시: `https://vaultwarden-yourusername.nsl.sh/admin`
 
-        3. **도메인 URL 설정**: 관리자 패널 → General Settings → Domain URL에 다음을 입력하세요:
+        3. **도메인 설정 (중요)**: 관리자 패널 → General Settings → Domain URL에서 다음이 표시되는지 확인하세요:
            `https://vaultwarden-yourusername.nsl.sh` (실제 앱 URL)
 
         4. **인스턴스 보안**: 설정 완료 후 관리자 패널에서 새로운 가입을 비활성화하세요.
@@ -433,7 +436,10 @@ x-casaos:
         2. **访问管理员面板**: 访问应用URL + `/admin`
            示例: `https://vaultwarden-yourusername.nsl.sh/admin`
 
-        3. **保护实例安全**: 设置完成后在管理员面板中禁用新注册。
+        3. **配置域名（重要）**: 在管理员面板 → General Settings → Domain URL中验证显示：
+           `https://vaultwarden-yourusername.nsl.sh` (您的实际应用URL)
+
+        4. **保护实例安全**: 设置完成后在管理员面板中禁用新注册。
 
         **移动端/桌面端应用：**
 
@@ -462,7 +468,10 @@ x-casaos:
         2. **Accédez au Panneau Admin** : Visitez URL de votre app + `/admin`
            Exemple : `https://vaultwarden-yourusername.nsl.sh/admin`
 
-        3. **Sécurisez votre instance** : Désactivez les nouvelles inscriptions dans le panneau admin une fois configuré.
+        3. **Configurez le Domaine (Important)** : Dans Panneau Admin → General Settings → Domain URL, vérifiez qu'il affiche :
+           `https://vaultwarden-yourusername.nsl.sh` (votre URL d'app réelle)
+
+        4. **Sécurisez votre instance** : Désactivez les nouvelles inscriptions dans le panneau admin une fois configuré.
 
         **Pour les Apps Mobile/Bureau :**
 
@@ -491,7 +500,10 @@ x-casaos:
         2. **Zugriff auf das Admin-Panel**: Besuchen Sie Ihre App-URL + `/admin`
            Beispiel: `https://vaultwarden-yourusername.nsl.sh/admin`
 
-        3. **Sichern Sie Ihre Instanz**: Deaktivieren Sie neue Registrierungen im Admin-Panel nach der Einrichtung.
+        3. **Domain Konfigurieren (Wichtig)**: Im Admin-Panel → General Settings → Domain URL, überprüfen Sie, dass es zeigt:
+           `https://vaultwarden-yourusername.nsl.sh` (Ihre tatsächliche App-URL)
+
+        4. **Sichern Sie Ihre Instanz**: Deaktivieren Sie neue Registrierungen im Admin-Panel nach der Einrichtung.
 
         **Für Mobile/Desktop-Apps:**
 
@@ -520,7 +532,10 @@ x-casaos:
         2. **Accede al Panel de Admin**: Visita tu URL de app + `/admin`
            Ejemplo: `https://vaultwarden-yourusername.nsl.sh/admin`
 
-        3. **Asegura tu instancia**: Deshabilita nuevos registros en el panel de admin una vez configurado.
+        3. **Configura Dominio (Importante)**: En Panel de Admin → General Settings → Domain URL, verifica que muestre:
+           `https://vaultwarden-yourusername.nsl.sh` (tu URL de app real)
+
+        4. **Asegura tu instancia**: Deshabilita nuevos registros en el panel de admin una vez configurado.
 
         **Para Apps Móviles/Escritorio:**
 
