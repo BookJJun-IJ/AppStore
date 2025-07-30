@@ -26,6 +26,9 @@ services:
       SIGNUPS_ALLOWED: "true"        # Enable user registration for initial setup
       ADMIN_TOKEN: $default_pwd      # Admin panel access token
       # DOMAIN: https://$domain      # Temporarily disable domain setting
+      DOMAIN: http://$domain         # Try HTTP instead of HTTPS for NSL router
+      # DOMAIN: $domain              # Alternative: No protocol
+      # DOMAIN_ORIGIN: https://$domain # Alternative: Separate origin setting
       SMTP_HOST: mailhog             # Internal SMTP server via MailHog
       SMTP_FROM: vaultwarden@localhost # Simple from address
       SMTP_PORT: 1025                # MailHog SMTP port
