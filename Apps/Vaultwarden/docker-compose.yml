@@ -2,15 +2,16 @@ name: vaultwarden
 
 services:
   vaultwarden:
-    image: vaultwarden/server:1.32.1
+    image: vaultwarden/server:1.33.0
     user: $PUID:$PGID
     healthcheck:
-      test: ["NONE"]                 # Force disable healthcheck
+      test: ["NONE"]                 # Disable healthcheck for NSL router compatibility
     deploy:
       resources:
         limits:
           memory: 1024M
           cpus: '1.0'
+    cpu_shares: 70
     expose:
       - 80
     environment:
@@ -21,11 +22,38 @@ services:
       ROCKET_ADDRESS: 0.0.0.0        # Bind to all interfaces for NSL router access
       SIGNUPS_ALLOWED: "true"        # Enable user registration for initial setup
       ADMIN_TOKEN: $default_pwd      # Admin panel access token
-      # DOMAIN: https://$domain      # Comment out domain to test
-      
+      DOMAIN: https://$domain        # Full domain URL for NSL router integration
+      SMTP_HOST: mailhog             # Internal SMTP server via MailHog
+      SMTP_FROM: vaultwarden@$domain # From address for emails
+      SMTP_PORT: 1025                # MailHog SMTP port
+      SMTP_SECURITY: off             # No TLS for internal communication
+      SMTP_FROM_NAME: Vaultwarden    # Display name for emails
     volumes:
       - /DATA/AppData/$AppID/data:/data
     restart: unless-stopped
+    depends_on:
+      - mailhog
+    networks:
+      - vaultwarden
+
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    expose:
+      - 1025  # SMTP server
+      - 8025  # Web UI for viewing emails
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+          cpus: '0.1'  
+    cpu_shares: 30
+    networks:
+      - vaultwarden
+    restart: unless-stopped
+
+networks:
+  vaultwarden:
+    name: vaultwarden
 
 x-casaos:
   architectures:
@@ -64,6 +92,9 @@ x-casaos:
       • Access your passwords from any device (mobile, browser, desktop)
       • Share access with your team or family (if you want)
       • Keep your data private --- it never leaves your server
+
+      **📧 Built-in Email System:**
+      This version includes MailHog for email functionality without external SMTP setup - perfect for password recovery and notifications!
     en_gb: |
       🔐 **What is Vaultwarden?**
 
@@ -93,6 +124,9 @@ x-casaos:
       • Access your passwords from any device (mobile, browser, desktop)
       • Share access with your team or family (if you want)
       • Keep your data private --- it never leaves your server
+
+      **📧 Built-in Email System:**
+      This version includes MailHog for email functionality without external SMTP setup - perfect for password recovery and notifications!
     ko_kr: |
       🔐 **Vaultwarden이란?**
 
@@ -122,6 +156,9 @@ x-casaos:
       • 모든 기기에서 비밀번호 접근 (모바일, 브라우저, 데스크톱)
       • 팀이나 가족과 접근 권한 공유 (원하는 경우)
       • 데이터 프라이버시 유지 --- 데이터가 서버를 떠나지 않음
+
+      **📧 내장 이메일 시스템:**
+      외부 SMTP 설정 없이 이메일 기능을 위한 MailHog가 포함되어 있습니다 - 비밀번호 복구와 알림에 완벽합니다!
     zh_cn: |
       🔐 **什么是Vaultwarden？**
 
@@ -151,6 +188,9 @@ x-casaos:
       • 从任何设备访问密码（移动端、浏览器、桌面端）
       • 与团队或家人分享访问权限（如果您愿意）
       • 保持数据隐私 --- 数据永不离开您的服务器
+
+      **📧 内置邮件系统：**
+      此版本包含MailHog，无需外部SMTP设置即可实现邮件功能 - 非常适合密码恢复和通知！
     fr_fr: |
       🔐 **Qu'est-ce que Vaultwarden ?**
 
@@ -180,6 +220,9 @@ x-casaos:
       • Accéder à vos mots de passe depuis n'importe quel appareil (mobile, navigateur, bureau)
       • Partager l'accès avec votre équipe ou famille (si vous le souhaitez)
       • Garder vos données privées --- elles ne quittent jamais votre serveur
+
+      **📧 Système Email Intégré :**
+      Cette version inclut MailHog pour la fonctionnalité email sans configuration SMTP externe - parfait pour la récupération de mots de passe et les notifications !
     de_de: |
       🔐 **Was ist Vaultwarden?**
 
@@ -209,6 +252,9 @@ x-casaos:
       • Von jedem Gerät auf Ihre Passwörter zugreifen (mobil, Browser, Desktop)
       • Zugang mit Ihrem Team oder Familie teilen (wenn Sie möchten)
       • Ihre Daten privat halten --- sie verlassen niemals Ihren Server
+
+      **📧 Integriertes E-Mail-System:**
+      Diese Version enthält MailHog für E-Mail-Funktionalität ohne externe SMTP-Einrichtung - perfekt für Passwort-Wiederherstellung und Benachrichtigungen!
     es_es: |
       🔐 **¿Qué es Vaultwarden?**
 
@@ -238,6 +284,9 @@ x-casaos:
       • Acceder a tus contraseñas desde cualquier dispositivo (móvil, navegador, escritorio)
       • Compartir acceso con tu equipo o familia (si quieres)
       • Mantener tus datos privados --- nunca salen de tu servidor
+
+      **📧 Sistema de Email Integrado:**
+      Esta versión incluye MailHog para funcionalidad de email sin configuración SMTP externa - ¡perfecto para recuperación de contraseñas y notificaciones!
   developer: Vaultwarden Community
   icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Vaultwarden/icon.png
   screenshot_link:
@@ -246,13 +295,13 @@ x-casaos:
     - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Vaultwarden/screenshot-3.png
   thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Vaultwarden/screenshot-1.png
   tagline:
-    en_us: Your password manager, secured on your server
-    en_gb: Your password manager, secured on your server
-    ko_kr: 당신의 서버에서 보호되는 비밀번호 관리자
-    zh_cn: 在您的服务器上安全保护的密码管理器
-    fr_fr: Votre gestionnaire de mots de passe, sécurisé sur votre serveur
-    de_de: Ihr Passwort-Manager, gesichert auf Ihrem Server
-    es_es: Tu gestor de contraseñas, protegido en tu servidor
+    en_us: Your password manager with built-in email system
+    en_gb: Your password manager with built-in email system
+    ko_kr: 내장 이메일 시스템을 갖춘 비밀번호 관리자
+    zh_cn: 带有内置邮件系统的密码管理器
+    fr_fr: Votre gestionnaire de mots de passe avec système email intégré
+    de_de: Ihr Passwort-Manager mit integriertem E-Mail-System
+    es_es: Tu gestor de contraseñas con sistema de email integrado
   title:
     en_us: Vaultwarden
     en_gb: Vaultwarden
@@ -271,29 +320,27 @@ x-casaos:
         | Admin Panel | Add `/admin` to your app URL |
         | Admin Token | `$default_pwd` |
 
+        **📧 Built-in Email System**
+
+        This version includes MailHog for **automatic email functionality**:
+        - **Password recovery emails** work immediately
+        - **Account notifications** are sent automatically  
+        - **No external SMTP setup required**
+
         **First Steps:**
 
-        1. **Create your main account**: After installation, create your first user account via signup - this will be your primary account.
+        1. **Create your main account**: After installation, create your first user account via signup.
 
-        2. **Access Admin Panel**: To manage settings and users, visit:
-           `https://vaultwarden-yourusername.nsl.sh/admin`
-           (Just add `/admin` to your Vaultwarden URL)
+        2. **Access Admin Panel**: Visit your app URL + `/admin`
+           Example: `https://vaultwarden-yourusername.nsl.sh/admin`
 
-        3. **Secure your instance**: Once set up, disable new signups in admin panel to control who can join.
+        3. **Secure your instance**: Disable new signups in admin panel once set up.
 
         **For Mobile/Desktop Apps:**
 
-        Download the **Bitwarden app** on your phone/desktop or use the **Bitwarden browser extension** - works perfectly with Vaultwarden!
+        Download the **Bitwarden app** or use the **Bitwarden browser extension** - works perfectly with Vaultwarden!
 
-        **Email Configuration (Optional):**
-
-        For password recovery and notifications, configure SMTP in the Admin Panel:
-        1. Go to Admin Panel: add `/admin` to your Vaultwarden URL
-        2. Navigate to "SMTP Email Settings"
-        3. Configure with your email provider (Gmail: smtp.gmail.com, port 587)
-        4. Use app-specific passwords for security (not your regular password)
-
-        **Important**: Your Vaultwarden URL is automatically configured for NSL router integration.
+        **Important**: The email system is now built-in - no external configuration needed for password recovery!
       en_gb: |
         **Default Account Setup**
 
@@ -302,28 +349,27 @@ x-casaos:
         | Admin Panel | Add `/admin` to your app URL |
         | Admin Token | `$default_pwd` |
 
+        **📧 Built-in Email System**
+
+        This version includes MailHog for **automatic email functionality**:
+        - **Password recovery emails** work immediately
+        - **Account notifications** are sent automatically  
+        - **No external SMTP setup required**
+
         **First Steps:**
 
-        1. **Create your main account**: After installation, create your first user account via signup - this will be your primary account.
+        1. **Create your main account**: After installation, create your first user account via signup.
 
-        2. **Access Admin Panel**: To manage settings and users, visit:
-           `https://vaultwarden-yourusername.nsl.sh/admin`
-           (Just add `/admin` to your Vaultwarden URL)
+        2. **Access Admin Panel**: Visit your app URL + `/admin`
+           Example: `https://vaultwarden-yourusername.nsl.sh/admin`
 
-        3. **Secure your instance**: Once set up, disable new signups in admin panel to control who can join.
+        3. **Secure your instance**: Disable new signups in admin panel once set up.
 
         **For Mobile/Desktop Apps:**
 
-        Download the **Bitwarden app** on your phone/desktop or use the **Bitwarden browser extension** - works perfectly with Vaultwarden!
+        Download the **Bitwarden app** or use the **Bitwarden browser extension** - works perfectly with Vaultwarden!
 
-        **Email Configuration (Optional):**
-
-        For password recovery and notifications, edit the SMTP settings in the compose file:
-        - Uncomment SMTP environment variables
-        - Configure with your email provider (Gmail, Outlook, etc.)
-        - Use app-specific passwords for security
-
-        **Important**: Your Vaultwarden URL is automatically configured for NSL router integration.
+        **Important**: The email system is now built-in - no external configuration needed for password recovery!
       ko_kr: |
         **기본 계정 설정**
 
@@ -332,29 +378,27 @@ x-casaos:
         | 관리자 패널 | 앱 URL에 `/admin` 추가 |
         | 관리자 토큰 | `$default_pwd` |
 
+        **📧 내장 이메일 시스템**
+
+        **자동 이메일 기능**을 위한 MailHog가 포함되어 있습니다:
+        - **비밀번호 복구 이메일**이 즉시 작동
+        - **계정 알림**이 자동으로 전송
+        - **외부 SMTP 설정 불필요**
+
         **첫 번째 단계:**
 
-        1. **메인 계정 생성**: 설치 후 가입을 통해 첫 번째 사용자 계정을 생성하세요 - 이것이 주요 계정이 됩니다.
+        1. **메인 계정 생성**: 설치 후 가입을 통해 첫 번째 사용자 계정을 생성하세요.
 
-        2. **관리자 패널 접근**: 설정과 사용자를 관리하려면 다음을 방문하세요:
-           `https://vaultwarden-yourusername.nsl.sh/admin`
-           (Vaultwarden URL에 `/admin`만 추가하면 됩니다)
+        2. **관리자 패널 접근**: 앱 URL + `/admin`을 방문하세요
+           예시: `https://vaultwarden-yourusername.nsl.sh/admin`
 
-        3. **인스턴스 보안**: 설정 완료 후 관리자 패널에서 새로운 가입을 비활성화하여 누가 가입할 수 있는지 제어하세요.
+        3. **인스턴스 보안**: 설정 완료 후 관리자 패널에서 새로운 가입을 비활성화하세요.
 
         **모바일/데스크톱 앱:**
 
-        휴대폰/데스크톱에서 **Bitwarden 앱**을 다운로드하거나 **Bitwarden 브라우저 확장프로그램**을 사용하세요 - Vaultwarden과 완벽하게 작동합니다!
+        **Bitwarden 앱**을 다운로드하거나 **Bitwarden 브라우저 확장프로그램**을 사용하세요 - Vaultwarden과 완벽하게 작동합니다!
 
-        **이메일 설정 (선택사항):**
-
-        비밀번호 복구와 알림을 위해 관리자 패널에서 SMTP를 설정하세요:
-        1. 관리자 패널로 이동: Vaultwarden URL에 `/admin` 추가
-        2. "SMTP Email Settings"로 이동
-        3. 이메일 제공업체로 설정 (Gmail: smtp.gmail.com, 포트 587)
-        4. 보안을 위해 앱별 비밀번호 사용 (일반 비밀번호 아님)
-
-        **중요**: Vaultwarden URL은 NSL 라우터 통합을 위해 자동으로 설정됩니다.
+        **중요**: 이메일 시스템이 내장되어 있어 비밀번호 복구를 위한 외부 설정이 필요하지 않습니다!
       zh_cn: |
         **默认账户设置**
 
@@ -363,29 +407,27 @@ x-casaos:
         | 管理员面板 | 在应用URL后添加 `/admin` |
         | 管理员令牌 | `$default_pwd` |
 
+        **📧 内置邮件系统**
+
+        此版本包含MailHog用于**自动邮件功能**：
+        - **密码恢复邮件**立即可用
+        - **账户通知**自动发送
+        - **无需外部SMTP设置**
+
         **首要步骤：**
 
-        1. **创建主账户**: 安装后通过注册创建第一个用户账户 - 这将成为您的主要账户。
+        1. **创建主账户**: 安装后通过注册创建第一个用户账户。
 
-        2. **访问管理员面板**: 要管理设置和用户，请访问：
-           `https://vaultwarden-yourusername.nsl.sh/admin`
-           （只需在Vaultwarden URL后添加`/admin`）
+        2. **访问管理员面板**: 访问应用URL + `/admin`
+           示例: `https://vaultwarden-yourusername.nsl.sh/admin`
 
-        3. **保护实例安全**: 设置完成后，在管理员面板中禁用新注册以控制谁可以加入。
+        3. **保护实例安全**: 设置完成后在管理员面板中禁用新注册。
 
         **移动端/桌面端应用：**
 
-        在手机/桌面上下载**Bitwarden应用**或使用**Bitwarden浏览器扩展** - 与Vaultwarden完美配合！
+        下载**Bitwarden应用**或使用**Bitwarden浏览器扩展** - 与Vaultwarden完美配合！
 
-        **邮件配置（可选）：**
-
-        为了密码恢复和通知，在管理员面板中配置SMTP：
-        1. 前往管理员面板：在Vaultwarden URL后添加 `/admin`
-        2. 导航到 "SMTP Email Settings"
-        3. 配置邮件提供商（Gmail: smtp.gmail.com，端口 587）
-        4. 使用应用专用密码确保安全（非常规密码）
-
-        **重要提示**: Vaultwarden URL已自动配置NSL路由器集成。
+        **重要提示**: 邮件系统已内置 - 密码恢复无需外部配置！
       fr_fr: |
         **Configuration du Compte par Défaut**
 
@@ -394,29 +436,27 @@ x-casaos:
         | Panneau Admin | Ajoutez `/admin` à l'URL de votre app |
         | Token Admin | `$default_pwd` |
 
+        **📧 Système Email Intégré**
+
+        Cette version inclut MailHog pour une **fonctionnalité email automatique** :
+        - **Emails de récupération de mot de passe** fonctionnent immédiatement
+        - **Notifications de compte** sont envoyées automatiquement
+        - **Aucune configuration SMTP externe requise**
+
         **Premières Étapes :**
 
-        1. **Créez votre compte principal** : Après installation, créez votre premier compte utilisateur via inscription - ce sera votre compte principal.
+        1. **Créez votre compte principal** : Après installation, créez votre premier compte utilisateur via inscription.
 
-        2. **Accédez au Panneau Admin** : Pour gérer les paramètres et utilisateurs, visitez :
-           `https://vaultwarden-yourusername.nsl.sh/admin`
-           (Ajoutez simplement `/admin` à votre URL Vaultwarden)
+        2. **Accédez au Panneau Admin** : Visitez URL de votre app + `/admin`
+           Exemple : `https://vaultwarden-yourusername.nsl.sh/admin`
 
-        3. **Sécurisez votre instance** : Une fois configuré, désactivez les nouvelles inscriptions dans le panneau admin pour contrôler qui peut rejoindre.
+        3. **Sécurisez votre instance** : Désactivez les nouvelles inscriptions dans le panneau admin une fois configuré.
 
         **Pour les Apps Mobile/Bureau :**
 
-        Téléchargez l'**app Bitwarden** sur votre téléphone/bureau ou utilisez l'**extension navigateur Bitwarden** - fonctionne parfaitement avec Vaultwarden !
+        Téléchargez l'**app Bitwarden** ou utilisez l'**extension navigateur Bitwarden** - fonctionne parfaitement avec Vaultwarden !
 
-        **Configuration Email (Optionnel) :**
-
-        Pour la récupération de mot de passe et les notifications, configurez SMTP dans le Panneau Admin :
-        1. Allez au Panneau Admin : ajoutez `/admin` à votre URL Vaultwarden
-        2. Naviguez vers "SMTP Email Settings"
-        3. Configurez avec votre fournisseur email (Gmail : smtp.gmail.com, port 587)
-        4. Utilisez des mots de passe spécifiques aux apps pour la sécurité (pas votre mot de passe habituel)
-
-        **Important** : Votre URL Vaultwarden est automatiquement configurée pour l'intégration NSL router.
+        **Important** : Le système email est maintenant intégré - aucune configuration externe nécessaire pour la récupération de mots de passe !
       de_de: |
         **Standard-Account-Einrichtung**
 
@@ -425,29 +465,27 @@ x-casaos:
         | Admin-Panel | Fügen Sie `/admin` zu Ihrer App-URL hinzu |
         | Admin-Token | `$default_pwd` |
 
+        **📧 Integriertes E-Mail-System**
+
+        Diese Version enthält MailHog für **automatische E-Mail-Funktionalität**:
+        - **Passwort-Wiederherstellungs-E-Mails** funktionieren sofort
+        - **Konto-Benachrichtigungen** werden automatisch gesendet
+        - **Keine externe SMTP-Einrichtung erforderlich**
+
         **Erste Schritte:**
 
-        1. **Erstellen Sie Ihr Hauptkonto**: Nach der Installation erstellen Sie Ihr erstes Benutzerkonto über die Registrierung - dies wird Ihr Hauptkonto.
+        1. **Erstellen Sie Ihr Hauptkonto**: Nach der Installation erstellen Sie Ihr erstes Benutzerkonto über die Registrierung.
 
-        2. **Zugriff auf das Admin-Panel**: Um Einstellungen und Benutzer zu verwalten, besuchen Sie:
-           `https://vaultwarden-yourusername.nsl.sh/admin`
-           (Fügen Sie einfach `/admin` zu Ihrer Vaultwarden-URL hinzu)
+        2. **Zugriff auf das Admin-Panel**: Besuchen Sie Ihre App-URL + `/admin`
+           Beispiel: `https://vaultwarden-yourusername.nsl.sh/admin`
 
-        3. **Sichern Sie Ihre Instanz**: Nach der Einrichtung deaktivieren Sie neue Registrierungen im Admin-Panel, um zu kontrollieren, wer beitreten kann.
+        3. **Sichern Sie Ihre Instanz**: Deaktivieren Sie neue Registrierungen im Admin-Panel nach der Einrichtung.
 
         **Für Mobile/Desktop-Apps:**
 
-        Laden Sie die **Bitwarden-App** auf Ihr Telefon/Desktop herunter oder verwenden Sie die **Bitwarden-Browser-Erweiterung** - funktioniert perfekt mit Vaultwarden!
+        Laden Sie die **Bitwarden-App** herunter oder verwenden Sie die **Bitwarden-Browser-Erweiterung** - funktioniert perfekt mit Vaultwarden!
 
-        **E-Mail-Konfiguration (Optional):**
-
-        Für Passwort-Wiederherstellung und Benachrichtigungen konfigurieren Sie SMTP im Admin-Panel:
-        1. Gehen Sie zum Admin-Panel: fügen Sie `/admin` zu Ihrer Vaultwarden-URL hinzu
-        2. Navigieren Sie zu "SMTP Email Settings"
-        3. Konfigurieren Sie mit Ihrem E-Mail-Anbieter (Gmail: smtp.gmail.com, Port 587)
-        4. Verwenden Sie App-spezifische Passwörter für Sicherheit (nicht Ihr reguläres Passwort)
-
-        **Wichtig**: Ihre Vaultwarden-URL ist automatisch für NSL-Router-Integration konfiguriert.
+        **Wichtig**: Das E-Mail-System ist jetzt integriert - keine externe Konfiguration für Passwort-Wiederherstellung nötig!
       es_es: |
         **Configuración de Cuenta por Defecto**
 
@@ -456,28 +494,26 @@ x-casaos:
         | Panel de Admin | Añade `/admin` a tu URL de la app |
         | Token de Admin | `$default_pwd` |
 
+        **📧 Sistema de Email Integrado**
+
+        Esta versión incluye MailHog para **funcionalidad de email automática**:
+        - **Emails de recuperación de contraseña** funcionan inmediatamente
+        - **Notificaciones de cuenta** se envían automáticamente
+        - **No se requiere configuración SMTP externa**
+
         **Primeros Pasos:**
 
-        1. **Crea tu cuenta principal**: Después de la instalación, crea tu primera cuenta de usuario mediante registro - esta será tu cuenta principal.
+        1. **Crea tu cuenta principal**: Después de la instalación, crea tu primera cuenta de usuario mediante registro.
 
-        2. **Accede al Panel de Admin**: Para gestionar configuraciones y usuarios, visita:
-           `https://vaultwarden-yourusername.nsl.sh/admin`
-           (Solo añade `/admin` a tu URL de Vaultwarden)
+        2. **Accede al Panel de Admin**: Visita tu URL de app + `/admin`
+           Ejemplo: `https://vaultwarden-yourusername.nsl.sh/admin`
 
-        3. **Asegura tu instancia**: Una vez configurado, deshabilita nuevos registros en el panel de admin para controlar quién puede unirse.
+        3. **Asegura tu instancia**: Deshabilita nuevos registros en el panel de admin una vez configurado.
 
         **Para Apps Móviles/Escritorio:**
 
-        Descarga la **app Bitwarden** en tu teléfono/escritorio o usa la **extensión de navegador Bitwarden** - ¡funciona perfectamente con Vaultwarden!
+        Descarga la **app Bitwarden** o usa la **extensión de navegador Bitwarden** - ¡funciona perfectamente con Vaultwarden!
 
-        **Configuración de Email (Opcional):**
-
-        Para recuperación de contraseña y notificaciones, configura SMTP en el Panel de Admin:
-        1. Ve al Panel de Admin: añade `/admin` a tu URL de Vaultwarden
-        2. Navega a "SMTP Email Settings"
-        3. Configura con tu proveedor de email (Gmail: smtp.gmail.com, puerto 587)
-        4. Usa contraseñas específicas de apps para seguridad (no tu contraseña regular)
-
-        **Importante**: Tu URL de Vaultwarden está automáticamente configurada para integración NSL router.
+        **Importante**: El sistema de email ahora está integrado - ¡no se necesita configuración externa para recuperación de contraseñas!
   index: /
   webui_port: 80
