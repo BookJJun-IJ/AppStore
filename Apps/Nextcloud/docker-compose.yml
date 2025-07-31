@@ -146,8 +146,8 @@ x-casaos:
     chown -R $PUID:$PGID /DATA/AppData/$AppID &&
     chmod -R 755 /DATA/AppData/$AppID
   title:
-    en_us: Nextcloud with OnlyOffice
-    ko_kr: OnlyOffice가 포함된 Nextcloud
+    en_us: Nextcloud
+    ko_kr: Nextcloud
   tagline:
     en_us: Complete personal cloud with integrated document editing
     ko_kr: 통합 문서 편집 기능이 포함된 완전한 개인 클라우드
