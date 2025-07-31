@@ -8,6 +8,7 @@ services:
     depends_on:
       - db
       - redis
+      - collabora
     deploy:
       resources:
         limits:
@@ -30,7 +31,7 @@ services:
       - REDIS_HOST_PORT=6379
       - REDIS_HOST_PASSWORD=$default_pwd
       - NEXTCLOUD_INIT_HTACCESS=true
-      # Office 관련 설정 추가
+      # Office 관련 설정
       - PHP_MEMORY_LIMIT=2048M
       - PHP_UPLOAD_LIMIT=1024M
     volumes:
@@ -102,6 +103,40 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+
+  collabora:
+    image: collabora/code:24.04.9.1.1
+    container_name: nextcloud_collabora
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+          cpus: '1.0'
+    expose:
+      - 9980
+    environment:
+      - TZ=$TZ
+      # Nextcloud 도메인 설정 (정규식 형태로)
+      - aliasgroup1=https://$domain:443
+      - aliasgroup2=https://localhost:443
+      # SSL 설정 (NSL Router가 SSL 종료 처리)
+      - extra_params=--o:ssl.enable=false --o:ssl.termination=true --o:logging.level=warning --o:user_interface.mode=compact
+      # WOPI 설정
+      - username=admin
+      - password=$default_pwd
+    volumes:
+      - /DATA/AppData/$AppID/collabora:/tmp
+    restart: unless-stopped
+    networks:
+      - nextcloud-network
+    cap_add:
+      - MKNOD
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9980/hosting/discovery"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
       
 networks:
   nextcloud-network:
