@@ -8,7 +8,6 @@ services:
     depends_on:
       - db
       - redis
-      - collabora
     deploy:
       resources:
         limits:
@@ -31,17 +30,10 @@ services:
       - REDIS_HOST_PORT=6379
       - REDIS_HOST_PASSWORD=$default_pwd
       - NEXTCLOUD_INIT_HTACCESS=true
-      # Office 관련 설정
-      - PHP_MEMORY_LIMIT=2048M
-      - PHP_UPLOAD_LIMIT=1024M
     volumes:
       - /DATA/AppData/$AppID/html:/var/www/html
       - /DATA/AppData/$AppID/config:/var/www/html/config
       - /DATA/AppData/$AppID/data:/var/www/html/data
-      # 선택사항: 다른 앱과 파일 공유
-      # - /DATA/Media:/media:ro
-      # - /DATA/Documents:/documents
-      # - /DATA/Gallery:/gallery:ro
     restart: unless-stopped
     networks:
       - nextcloud-network
@@ -103,40 +95,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-
-  collabora:
-    image: collabora/code:24.04.9.1.1
-    container_name: nextcloud_collabora
-    deploy:
-      resources:
-        limits:
-          memory: 1024M
-          cpus: '1.0'
-    expose:
-      - 9980
-    environment:
-      - TZ=$TZ
-      # Nextcloud 도메인 설정 (정규식 형태로)
-      - aliasgroup1=https://$domain:443
-      - aliasgroup2=https://localhost:443
-      # SSL 설정 (NSL Router가 SSL 종료 처리)
-      - extra_params=--o:ssl.enable=false --o:ssl.termination=true --o:logging.level=warning --o:user_interface.mode=compact
-      # WOPI 설정
-      - username=admin
-      - password=$default_pwd
-    volumes:
-      - /DATA/AppData/$AppID/collabora:/tmp
-    restart: unless-stopped
-    networks:
-      - nextcloud-network
-    cap_add:
-      - MKNOD
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9980/hosting/discovery"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
       
 networks:
   nextcloud-network:
@@ -159,8 +117,8 @@ x-casaos:
     en_us: Nextcloud  
     ko_kr: Nextcloud
   tagline:
-    en_us: Complete personal cloud with built-in Office suite
-    ko_kr: 내장 오피스 스위트가 포함된 완전한 개인 클라우드
+    en_us: True "install and forget" personal cloud with auto-login
+    ko_kr: 자동 로그인이 포함된 진정한 "설치하고 잊어버리기" 개인 클라우드
   icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Nextcloud/icon.png
   screenshot_link:
     - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Nextcloud/screenshot-1.png
@@ -171,7 +129,7 @@ x-casaos:
     en_us: |
       **☁️ What is Nextcloud?**
 
-      **Nextcloud** is your own personal cloud: like **Google Drive, Dropbox, Microsoft Teams, and WhatsApp all-in-one**, but fully under your control.
+      **Nextcloud** is your own personal cloud : like **Google Drive, Dropbox, Microsoft Teams, and WhatsApp all-in-one**, but fully under your control.
 
       If you want to sync your files across devices, you'll need to use the Nextcloud Files app --- it's like your own private version of Google Drive or Dropbox.
 
@@ -181,7 +139,7 @@ x-casaos:
 
       **🔧 What Can You Do with Nextcloud?**
 
-      Nextcloud is modular: you can **add features like apps on a phone**. Here are some of the most popular ones:
+      Nextcloud is modular : you can **add features like apps on a phone**. Here are some of the most popular ones:
 
       • 📁 **Nextcloud Files**: Upload, access, and share files --- like your own Google Drive
       • 🗓️ **Calendar**: Manage events and sync with your phone or laptop
@@ -210,9 +168,9 @@ x-casaos:
 
       This deployment includes:
       • **Redis cache** for improved performance
-      • **Built-in Office suite** with Collabora Online integration
+      • **Notify Push** for real-time file updates
       • **Optimized database** configuration
-      • **NSL Router compatibility** for clean HTTPS URLs
+      • **Proper proxy settings** for NSL Router compatibility
     ko_kr: |
       **☁️ Nextcloud란 무엇인가요?**
 
@@ -226,7 +184,7 @@ x-casaos:
 
       **🔧 Nextcloud로 무엇을 할 수 있나요?**
 
-      Nextcloud는 모듈식입니다: **휴대폰의 앱처럼 기능을 추가**할 수 있습니다. 가장 인기 있는 것들은 다음과 같습니다:
+      Nextcloud는 모듈식입니다 : **휴대폰의 앱처럼 기능을 추가**할 수 있습니다. 가장 인기 있는 것들은 다음과 같습니다:
 
       • 📁 **Nextcloud Files**: 파일 업로드, 접근, 공유 --- 자신만의 Google Drive
       • 🗓️ **Calendar**: 이벤트 관리 및 휴대폰이나 노트북과 동기화
@@ -255,9 +213,9 @@ x-casaos:
 
       이 배포에는 다음이 포함됩니다:
       • **Redis 캐시** - 성능 향상
-      • **내장 오피스 스위트** - Collabora Online 통합
+      • **알림 푸시** - 실시간 파일 업데이트
       • **최적화된 데이터베이스** 구성
-      • **NSL Router 호환성** - 깔끔한 HTTPS URL
+      • **NSL Router 호환성**을 위한 적절한 프록시 설정
     zh_cn: |
       **☁️ 什么是Nextcloud？**
 
@@ -300,9 +258,9 @@ x-casaos:
 
       此部署包括：
       • **Redis缓存** - 提升性能
-      • **内置办公套件** - Collabora Online集成
+      • **通知推送** - 实时文件更新
       • **优化的数据库**配置
-      • **NSL Router兼容性** - 简洁的HTTPS URL
+      • **NSL Router兼容性**的适当代理设置
     fr_fr: |
       **☁️ Qu'est-ce que Nextcloud ?**
 
@@ -345,9 +303,9 @@ x-casaos:
 
       Ce déploiement inclut :
       • **Cache Redis** pour améliorer les performances
-      • **Suite bureautique intégrée** avec intégration Collabora Online
+      • **Notification Push** pour les mises à jour de fichiers en temps réel
       • Configuration de **base de données optimisée**
-      • **Compatibilité NSL Router** pour des URL HTTPS propres
+      • **Paramètres de proxy appropriés** pour la compatibilité NSL Router
     de_de: |
       **☁️ Was ist Nextcloud?**
 
@@ -390,9 +348,9 @@ x-casaos:
 
       Diese Bereitstellung umfasst:
       • **Redis-Cache** für verbesserte Leistung
-      • **Integrierte Office-Suite** mit Collabora Online-Integration
+      • **Benachrichtigungs-Push** für Echtzeit-Datei-Updates
       • **Optimierte Datenbank**-Konfiguration
-      • **NSL Router-Kompatibilität** für saubere HTTPS-URLs
+      • **Ordnungsgemäße Proxy-Einstellungen** für NSL Router-Kompatibilität
     es_es: |
       **☁️ ¿Qué es Nextcloud?**
 
@@ -435,351 +393,213 @@ x-casaos:
 
       Esta implementación incluye:
       • **Caché Redis** para mejorar el rendimiento
-      • **Suite de oficina integrada** con integración de Collabora Online
+      • **Notificación Push** para actualizaciones de archivos en tiempo real
       • Configuración de **base de datos optimizada**
-      • **Compatibilidad NSL Router** para URLs HTTPS limpias
+      • **Configuraciones de proxy adecuadas** para compatibilidad con NSL Router
   tips:
     before_install:
       en_us: |        
-        **🚀 Complete Setup Guide with Office Integration**
+        **🚀 Enhanced Setup Guide**
         
         **1. Initial Setup:**
         
-        ⚠️ **Setup can take time, even if progress isn't shown.** **If infinite loading occurs → Restart the app**
+        ⚠️** Setup can take time, even if it's not shown.** **If infinite loading occurs → Restart the app**
         
         - Create your account and complete the setup
         - When asked about storage options, choose the **recommended setting** (already configured for you)
         
-        **2. After First Restart:**
+        **2. After Restart:**
         
         - Go back to the website
         - **Skip the setup screen** (you already did this!)
         - Log in with your account
         
-        **3. Enable Office Suite:**
-        
-        📝 **Install Nextcloud Office:**
-        - Go to **Apps** (top menu)
-        - Search for "**Nextcloud Office**"
-        - Click **Download and enable**
-        
-        📝 **Install Built-in CODE Server:**
-        - Search for "**Collabora Online - Built-in CODE Server**"  
-        - Click **Download and enable**
-        
-        **4. Configure Office:**
-        
-        - Go to **Administration Settings** → **Office**
-        - Select "**Use the built-in CODE**"
-        - In **Advanced settings**, add to WOPI allow-list: `172.17.0.0/16`
-        - Click **Save**
-        
-        **5. Add Other Team Apps:**
-        **Built-in apps to enable:**
+        **3. Add Team Apps (Your Profile → Apps):**
+        **Turn on built-in apps:**
         ✅ Calendar, Contacts, Mail
         
-        **From App Store:**
-        🔍 Search and install: Talk, Deck, Tasks
+        **Download from App Store:**
+        🔍 Search and install: Talk, Deck, Tasks, Nextcloud Office
         
-        **6. Test Office:**
-        - Create a new document: **Files** → **+** → **New document**
-        - Should open in Nextcloud Office editor!
-        
-        **7. Performance Features:**
+        **4. Performance Optimizations Included:**
         ✅ Redis cache for faster performance
-        ✅ Built-in Office suite ready to use
+        ✅ Real-time file notifications
         ✅ Optimized database settings
         ✅ NSL Router compatibility
         
-        **8. Done!**
-        Your complete personal workspace with Office suite is ready!
+        **5. Done!**
+        Your complete Teams replacement with enhanced performance is ready!
         
-        **File Storage:** 
-        - **App files**: Nextcloud's dedicated data directory
-        - **Shared access**: Uncomment volume mappings in docker-compose.yml to share with other apps
+        **Your files will be saved to:** Nextcloud's own data directory
+        **Want to share with other apps?** Uncomment the volume mappings in docker-compose.yml
       ko_kr: |        
-        **🚀 오피스 통합이 포함된 완전한 설정 가이드**
+        **🚀 향상된 설정 가이드**
         
         **1. 초기 설정:**
         
-        ⚠️ **진행 상황이 표시되지 않더라도 설정에 시간이 걸릴 수 있습니다.** **무한 로딩 발생 시 → 앱 재시작**
+        ⚠️** 설정이 표시되지 않더라도 시간이 걸릴 수 있습니다.** **무한 로딩 발생 시 → 앱 재시작**
         
         - 계정을 만들고 설정을 완료하세요
         - 저장소 옵션을 묻는 화면에서 **추천 설정**을 선택하세요 (이미 구성됨)
         
-        **2. 첫 번째 재시작 후:**
+        **2. 재시작 후:**
         
         - 웹사이트로 다시 이동
         - **설정 화면 건너뛰기** (이미 완료했습니다!)
         - 계정으로 로그인
         
-        **3. 오피스 스위트 활성화:**
-        
-        📝 **Nextcloud Office 설치:**
-        - **앱** (상단 메뉴)으로 이동
-        - "**Nextcloud Office**" 검색
-        - **다운로드 및 활성화** 클릭
-        
-        📝 **Built-in CODE 서버 설치:**
-        - "**Collabora Online - Built-in CODE Server**" 검색  
-        - **다운로드 및 활성화** 클릭
-        
-        **4. 오피스 구성:**
-        
-        - **관리 설정** → **Office**로 이동
-        - "**Use the built-in CODE**" 선택
-        - **고급 설정**에서 WOPI 허용 목록에 추가: `172.17.0.0/16`
-        - **저장** 클릭
-        
-        **5. 다른 팀 앱 추가:**
-        **활성화할 내장 앱:**
+        **3. 팀 앱 추가 (프로필 → 앱):**
+        **내장 앱 켜기:**
         ✅ Calendar, Contacts, Mail
         
-        **앱스토어에서:**
-        🔍 검색 후 설치: Talk, Deck, Tasks
+        **앱스토어에서 다운로드:**
+        🔍 검색 후 설치: Talk, Deck, Tasks, Nextcloud Office
         
-        **6. 오피스 테스트:**
-        - 새 문서 만들기: **파일** → **+** → **새 문서**
-        - Nextcloud Office 편집기에서 열려야 합니다!
-        
-        **7. 성능 기능:**
+        **4. 포함된 성능 최적화:**
         ✅ 빠른 성능을 위한 Redis 캐시
-        ✅ 바로 사용 가능한 내장 오피스 스위트
+        ✅ 실시간 파일 알림
         ✅ 최적화된 데이터베이스 설정
         ✅ NSL Router 호환성
         
-        **8. 완료!**
-        오피스 스위트가 포함된 완전한 개인 워크스페이스가 준비되었습니다!
+        **5. 완료!**
+        향상된 성능의 완전한 Teams 대체품이 준비되었습니다!
         
-        **파일 저장:** 
-        - **앱 파일**: Nextcloud 전용 데이터 디렉토리
-        - **공유 접근**: 다른 앱과 공유하려면 docker-compose.yml의 볼륨 매핑 주석 해제
+        **파일 저장 위치:** Nextcloud 전용 데이터 디렉토리
+        **다른 앱과 공유하려면?** docker-compose.yml의 볼륨 매핑 주석 해제
       zh_cn: |        
-        **🚀 包含办公集成的完整设置指南**
+        **🚀 增强设置指南**
         
         **1. 初始设置：**
         
-        ⚠️ **即使没有显示进度，设置也可能需要时间。** **如果出现无限加载 → 重启应用**
+        ⚠️** 即使没有显示，设置也可能需要时间。** **如果出现无限加载 → 重启应用**
         
         - 创建您的账户并完成设置
         - 当询问存储选项时，选择**推荐设置**（已为您配置）
         
-        **2. 第一次重启后：**
+        **2. 重启后：**
         
         - 回到网站
         - **跳过设置界面**（您已经完成了！）
         - 使用您的账户登录
         
-        **3. 启用办公套件：**
-        
-        📝 **安装Nextcloud Office：**
-        - 转到**应用**（顶部菜单）
-        - 搜索"**Nextcloud Office**"
-        - 点击**下载并启用**
-        
-        📝 **安装内置CODE服务器：**
-        - 搜索"**Collabora Online - Built-in CODE Server**"  
-        - 点击**下载并启用**
-        
-        **4. 配置Office：**
-        
-        - 转到**管理设置** → **Office**
-        - 选择"**Use the built-in CODE**"
-        - 在**高级设置**中，添加到WOPI允许列表：`172.17.0.0/16`
-        - 点击**保存**
-        
-        **5. 添加其他团队应用：**
-        **要启用的内置应用：**
+        **3. 添加团队应用（个人资料 → 应用）：**
+        **开启内置应用：**
         ✅ Calendar、Contacts、Mail
         
-        **从应用商店：**
-        🔍 搜索并安装：Talk、Deck、Tasks
+        **从应用商店下载：**
+        🔍 搜索并安装：Talk、Deck、Tasks、Nextcloud Office
         
-        **6. 测试Office：**
-        - 创建新文档：**文件** → **+** → **新文档**
-        - 应该在Nextcloud Office编辑器中打开！
-        
-        **7. 性能功能：**
+        **4. 包含的性能优化：**
         ✅ Redis缓存提升性能
-        ✅ 内置办公套件即开即用
+        ✅ 実时文件通知
         ✅ 优化的数据库设置
         ✅ NSL Router兼容性
         
-        **8. 完成！**
-        您的包含办公套件的完整个人工作空间已准备就绪！
+        **5. 完成！**
+        您的增强性能完整Teams替代品已准备就绪！
         
-        **文件存储：** 
-        - **应用文件**：Nextcloud专用数据目录
-        - **共享访问**：要与其他应用共享，请取消注释docker-compose.yml中的卷映射
+        **文件将保存到：** Nextcloud专用数据目录
+        **想与其他应用共享？** 取消注释docker-compose.yml中的卷映射
       fr_fr: |        
-        **🚀 Guide de configuration complète avec intégration Office**
+        **🚀 Guide de configuration amélioré**
         
         **1. Configuration initiale :**
         
-        ⚠️ **La configuration peut prendre du temps, même si les progrès ne sont pas affichés.** **Si un chargement infini se produit → Redémarrez l'application**
+        ⚠️** La configuration peut prendre du temps, même si ce n'est pas affiché.** **Si un chargement infini se produit → Redémarrez l'application**
         
         - Créez votre compte et terminez la configuration
         - Quand on vous demande les options de stockage, choisissez le **paramètre recommandé** (déjà configuré pour vous)
         
-        **2. Après le premier redémarrage :**
+        **2. Après le redémarrage :**
         
         - Retournez sur le site web
         - **Ignorez l'écran de configuration** (vous l'avez déjà fait !)
         - Connectez-vous avec votre compte
         
-        **3. Activez la suite bureautique :**
-        
-        📝 **Installez Nextcloud Office :**
-        - Allez dans **Applications** (menu du haut)
-        - Recherchez "**Nextcloud Office**"
-        - Cliquez sur **Télécharger et activer**
-        
-        📝 **Installez le serveur CODE intégré :**
-        - Recherchez "**Collabora Online - Built-in CODE Server**"  
-        - Cliquez sur **Télécharger et activer**
-        
-        **4. Configurez Office :**
-        
-        - Allez dans **Paramètres d'administration** → **Office**
-        - Sélectionnez "**Use the built-in CODE**"
-        - Dans **Paramètres avancés**, ajoutez à la liste d'autorisation WOPI : `172.17.0.0/16`
-        - Cliquez sur **Enregistrer**
-        
-        **5. Ajoutez d'autres applications d'équipe :**
-        **Applications intégrées à activer :**
+        **3. Ajoutez les applications d'équipe (Votre Profil → Applications) :**
+        **Activez les applications intégrées :**
         ✅ Calendar, Contacts, Mail
         
-        **Depuis l'App Store :**
-        🔍 Recherchez et installez : Talk, Deck, Tasks
+        **Téléchargez depuis l'App Store :**
+        🔍 Recherchez et installez : Talk, Deck, Tasks, Nextcloud Office
         
-        **6. Testez Office :**
-        - Créez un nouveau document : **Fichiers** → **+** → **Nouveau document**
-        - Devrait s'ouvrir dans l'éditeur Nextcloud Office !
-        
-        **7. Fonctionnalités de performance :**
+        **4. Optimisations de performance incluses :**
         ✅ Cache Redis pour de meilleures performances
-        ✅ Suite bureautique intégrée prête à l'emploi
+        ✅ Notifications de fichiers en temps réel
         ✅ Paramètres de base de données optimisés
         ✅ Compatibilité NSL Router
         
-        **8. Terminé !**
-        Votre espace de travail personnel complet avec suite bureautique est prêt !
+        **5. Terminé !**
+        Votre remplacement complet de Teams avec performance améliorée est prêt !
         
-        **Stockage de fichiers :** 
-        - **Fichiers d'application** : Répertoire de données dédié Nextcloud
-        - **Accès partagé** : Décommentez les mappages de volumes dans docker-compose.yml pour partager avec d'autres applications
+        **Vos fichiers seront sauvegardés dans :** Répertoire de données dédié Nextcloud
+        **Voulez-vous partager avec d'autres applications ?** Décommentez les mappages de volumes dans docker-compose.yml
       de_de: |        
-        **🚀 Vollständige Setup-Anleitung mit Office-Integration**
+        **🚀 Erweiterte Setup-Anleitung**
         
         **1. Erste Einrichtung:**
         
-        ⚠️ **Das Setup kann Zeit dauern, auch wenn kein Fortschritt angezeigt wird.** **Bei unendlichem Laden → App neu starten**
+        ⚠️** Das Setup kann Zeit dauern, auch wenn es nicht angezeigt wird.** **Bei unendlichem Laden → App neu starten**
         
         - Erstellen Sie Ihr Konto und schließen Sie die Einrichtung ab
         - Wenn nach Speicher-Optionen gefragt wird, wählen Sie die **empfohlene Einstellung** (bereits für Sie konfiguriert)
         
-        **2. Nach dem ersten Neustart:**
+        **2. Nach dem Neustart:**
         
         - Gehen Sie zurück zur Website
         - **Überspringen Sie den Einrichtungsbildschirm** (haben Sie bereits gemacht!)
         - Melden Sie sich mit Ihrem Konto an
         
-        **3. Office-Suite aktivieren:**
-        
-        📝 **Nextcloud Office installieren:**
-        - Gehen Sie zu **Apps** (oberes Menü)
-        - Suchen Sie nach "**Nextcloud Office**"
-        - Klicken Sie auf **Herunterladen und aktivieren**
-        
-        📝 **Built-in CODE Server installieren:**
-        - Suchen Sie nach "**Collabora Online - Built-in CODE Server**"  
-        - Klicken Sie auf **Herunterladen und aktivieren**
-        
-        **4. Office konfigurieren:**
-        
-        - Gehen Sie zu **Verwaltungseinstellungen** → **Office**
-        - Wählen Sie "**Use the built-in CODE**"
-        - In **Erweiterte Einstellungen**, zur WOPI-Erlaubnisliste hinzufügen: `172.17.0.0/16`
-        - Klicken Sie auf **Speichern**
-        
-        **5. Andere Team-Apps hinzufügen:**
-        **Zu aktivierende integrierte Apps:**
+        **3. Team-Apps hinzufügen (Ihr Profil → Apps):**
+        **Integrierte Apps einschalten:**
         ✅ Calendar, Contacts, Mail
         
-        **Vom App Store:**
-        🔍 Suchen und installieren: Talk, Deck, Tasks
+        **Vom App Store herunterladen:**
+        🔍 Suchen und installieren: Talk, Deck, Tasks, Nextcloud Office
         
-        **6. Office testen:**
-        - Neues Dokument erstellen: **Dateien** → **+** → **Neues Dokument**
-        - Sollte im Nextcloud Office Editor öffnen!
-        
-        **7. Leistungsmerkmale:**
+        **4. Enthaltene Leistungsoptimierungen:**
         ✅ Redis-Cache für bessere Leistung
-        ✅ Integrierte Office-Suite sofort einsatzbereit
+        ✅ Echtzeit-Datei-Benachrichtigungen
         ✅ Optimierte Datenbankeinstellungen
         ✅ NSL Router-Kompatibilität
         
-        **8. Fertig!**
-        Ihr vollständiger persönlicher Arbeitsbereich mit Office-Suite ist bereit!
+        **5. Fertig!**
+        Ihr vollständiger Teams-Ersatz mit verbesserter Leistung ist bereit!
         
-        **Dateispeicherung:** 
-        - **App-Dateien**: Nextcloud-eigenes Datenverzeichnis
-        - **Geteilter Zugriff**: Volume-Mappings in docker-compose.yml auskommentieren, um mit anderen Apps zu teilen
+        **Ihre Dateien werden gespeichert in:** Nextcloud-eigenes Datenverzeichnis
+        **Mit anderen Apps teilen?** Volume-Mappings in docker-compose.yml auskommentieren
       es_es: |        
-        **🚀 Guía de configuración completa con integración Office**
+        **🚀 Guía de configuración mejorada**
         
         **1. Configuración inicial:**
         
-        ⚠️ **La configuración puede tomar tiempo, incluso si no se muestra el progreso.** **Si ocurre carga infinita → Reiniciar la aplicación**
+        ⚠️** La configuración puede tomar tiempo, incluso si no se muestra.** **Si ocurre carga infinita → Reiniciar la aplicación**
         
         - Crea tu cuenta y completa la configuración
         - Cuando te pregunten sobre opciones de almacenamiento, elige la **configuración recomendada** (ya configurada para ti)
         
-        **2. Después del primer reinicio:**
+        **2. Después del reinicio:**
         
         - Vuelve al sitio web
         - **Omite la pantalla de configuración** (¡ya lo hiciste!)
         - Inicia sesión con tu cuenta
         
-        **3. Habilitar suite de oficina:**
-        
-        📝 **Instalar Nextcloud Office:**
-        - Ve a **Aplicaciones** (menú superior)
-        - Busca "**Nextcloud Office**"
-        - Haz clic en **Descargar y habilitar**
-        
-        📝 **Instalar servidor CODE integrado:**
-        - Busca "**Collabora Online - Built-in CODE Server**"  
-        - Haz clic en **Descargar y habilitar**
-        
-        **4. Configurar Office:**
-        
-        - Ve a **Configuración de administración** → **Office**
-        - Selecciona "**Use the built-in CODE**"
-        - En **Configuración avanzada**, agregar a lista de permisos WOPI: `172.17.0.0/16`
-        - Haz clic en **Guardar**
-        
-        **5. Agregar otras aplicaciones de equipo:**
-        **Aplicaciones integradas a habilitar:**
+        **3. Añadir aplicaciones de equipo (Tu Perfil → Aplicaciones):**
+        **Activar aplicaciones integradas:**
         ✅ Calendar, Contacts, Mail
         
-        **Desde la App Store:**
-        🔍 Buscar e instalar: Talk, Deck, Tasks
+        **Descargar desde la App Store:**
+        🔍 Buscar e instalar: Talk, Deck, Tasks, Nextcloud Office
         
-        **6. Probar Office:**
-        - Crear nuevo documento: **Archivos** → **+** → **Nuevo documento**
-        - ¡Debería abrirse en el editor de Nextcloud Office!
-        
-        **7. Características de rendimiento:**
+        **4. Optimizaciones de rendimiento incluidas:**
         ✅ Caché Redis para mejor rendimiento
-        ✅ Suite de oficina integrada lista para usar
+        ✅ Notificaciones de archivos en tiempo real
         ✅ Configuraciones de base de datos optimizadas
-        ✅ Compatibilidad NSL Router
+        ✅ Compatibilidad con NSL Router
         
-        **8. ¡Listo!**
-        ¡Tu espacio de trabajo personal completo con suite de oficina está listo!
+        **5. ¡Listo!**
+        ¡Tu reemplazo completo de Teams con rendimiento mejorado está listo!
         
-        **Almacenamiento de archivos:** 
-        - **Archivos de aplicación**: Directorio de datos dedicado de Nextcloud
-        - **Acceso compartido**: Descomenta los mapeos de volúmenes en docker-compose.yml para compartir con otras aplicaciones
+        **Tus archivos se guardarán en:** Directorio de datos dedicado de Nextcloud
+        **¿Quieres compartir con otras aplicaciones?** Descomenta los mapeos de volúmenes en docker-compose.yml
   index: /
