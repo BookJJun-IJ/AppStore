@@ -8,6 +8,7 @@ services:
     depends_on:
       - db
       - redis
+      - onlyoffice
     deploy:
       resources:
         limits:
@@ -31,17 +32,12 @@ services:
       - REDIS_HOST_PORT=6379
       - REDIS_HOST_PASSWORD=$default_pwd
       - NEXTCLOUD_INIT_HTACCESS=true
-      # Office 관련 설정 추가
       - PHP_MEMORY_LIMIT=2048M
       - PHP_UPLOAD_LIMIT=1024M
     volumes:
       - /DATA/AppData/$AppID/html:/var/www/html
       - /DATA/AppData/$AppID/config:/var/www/html/config
       - /DATA/AppData/$AppID/data:/var/www/html/data
-      # 선택사항: 다른 앱과 파일 공유
-      # - /DATA/Media:/media:ro
-      # - /DATA/Documents:/documents
-      # - /DATA/Gallery:/gallery:ro
     restart: unless-stopped
     networks:
       - nextcloud-network
@@ -103,7 +99,33 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      
+
+  onlyoffice:
+    image: onlyoffice/documentserver:8.2
+    container_name: nextcloud_onlyoffice
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+          cpus: '1.0'
+    environment:
+      - TZ=$TZ
+      - JWT_ENABLED=false
+      - USE_UNAUTHORIZED_STORAGE=true
+    volumes:
+      - /DATA/AppData/$AppID/onlyoffice/data:/var/www/onlyoffice/Data
+      - /DATA/AppData/$AppID/onlyoffice/lib:/var/lib/onlyoffice
+      - /DATA/AppData/$AppID/onlyoffice/logs:/var/log/onlyoffice
+    restart: unless-stopped
+    networks:
+      - nextcloud-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/healthcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
 networks:
   nextcloud-network:
     driver: bridge
@@ -116,17 +138,17 @@ x-casaos:
   author: Yundera Team
   developer: Nextcloud GmbH
   pre-install-cmd: |
-    # 완전 초기화 및 권한 설정
     rm -rf /DATA/AppData/$AppID/* &&
     mkdir -p /DATA/AppData/$AppID/{config,data,html,db,redis} &&
+    mkdir -p /DATA/AppData/$AppID/onlyoffice/{data,lib,logs} &&
     chown -R $PUID:$PGID /DATA/AppData/$AppID &&
     chmod -R 755 /DATA/AppData/$AppID
   title:
-    en_us: Nextcloud  
-    ko_kr: Nextcloud
+    en_us: Nextcloud with OnlyOffice
+    ko_kr: OnlyOffice가 포함된 Nextcloud
   tagline:
-    en_us: Complete personal cloud with built-in Office suite
-    ko_kr: 내장 오피스 스위트가 포함된 완전한 개인 클라우드
+    en_us: Complete personal cloud with integrated document editing
+    ko_kr: 통합 문서 편집 기능이 포함된 완전한 개인 클라우드
   icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Nextcloud/icon.png
   screenshot_link:
     - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Nextcloud/screenshot-1.png
@@ -135,617 +157,131 @@ x-casaos:
   thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Nextcloud/screenshot-2.png
   description:
     en_us: |
-      **☁️ What is Nextcloud?**
+      **☁️ Nextcloud with Integrated OnlyOffice**
 
-      **Nextcloud** is your own personal cloud: like **Google Drive, Dropbox, Microsoft Teams, and WhatsApp all-in-one**, but fully under your control.
+      Complete personal cloud solution with **OnlyOffice Document Server** included for seamless document editing.
 
-      If you want to sync your files across devices, you'll need to use the Nextcloud Files app --- it's like your own private version of Google Drive or Dropbox.
+      **🚀 What's Included:**
+      • **Nextcloud** - File management, sharing, calendar, contacts
+      • **OnlyOffice Document Server** - Professional document editing engine
+      • **Redis Cache** - Optimized performance
+      • **MariaDB** - Reliable database backend
+      • **NSL Router Integration** - Clean HTTPS URLs
 
-      You can **store files, share them, collaborate, chat, and even manage calendars and tasks**, all from a single private space.
+      **📝 Office Features:**
+      • **Word Documents** (.docx, .doc) - Full editing capabilities
+      • **Excel Spreadsheets** (.xlsx, .xls) - Advanced formulas and charts
+      • **PowerPoint Presentations** (.pptx, .ppt) - Rich media support
+      • **Real-time Collaboration** - Multiple users editing simultaneously
+      • **Comment System** - Review and feedback workflow
+      • **Version History** - Track document changes
 
-      Think of it as your **own private workspace**, with apps you choose, running on your own server.
+      **🔧 Technical Advantages:**
+      • **No Mixed Content Issues** - All services properly networked
+      • **No External Dependencies** - Self-contained document server
+      • **NSL Router Optimized** - Works perfectly with HTTPS proxy
+      • **High Performance** - Dedicated OnlyOffice server
+      • **Secure** - All data stays on your server
 
-      **🔧 What Can You Do with Nextcloud?**
-
-      Nextcloud is modular: you can **add features like apps on a phone**. Here are some of the most popular ones:
-
-      • 📁 **Nextcloud Files**: Upload, access, and share files --- like your own Google Drive
-      • 🗓️ **Calendar**: Manage events and sync with your phone or laptop
-      • 📇 **Contacts**: Store and sync all your contacts privately
-      • 🗣️ **Talk**: Chat and video call with your team or family --- like a private WhatsApp or Zoom
-      • ✅ **Deck**: Organize tasks and projects like Trello or Notion
-      • 📝 **Nextcloud Office**: Open and edit Word, Excel, and PowerPoint files in your browser --- just like Google Docs
-      • 📦 **More Apps**: Over 100+ apps available to customize your workspace
-
-      **🚀 Why Use Nextcloud?**
-
-      • **No more Google or Microsoft** --- keep your files and data private
-      • **Fully customizable** --- add only the tools you need
-      • **Accessible anywhere** --- use the official Nextcloud mobile app or desktop app
-      • **Share with others** --- send files, create shared folders, or chat securely
-      • **Control your data** --- your files, your server, your rules
-
-      **🛠️ Example Use Cases**
-
-      • Use **Nextcloud Files** like Google Drive
-      • Use **Talk** to message and call like WhatsApp or Zoom
-      • Use **Office + Calendar + Deck** to replace Microsoft Teams
-      • Invite your team or family and manage everything from one place
-
-      **⚡ Performance Optimizations Included**
-
-      This deployment includes:
-      • **Redis cache** for improved performance
-      • **Built-in Office suite** with Collabora Online integration
-      • **Optimized database** configuration
-      • **NSL Router compatibility** for clean HTTPS URLs
+      **Perfect for teams and individuals who need professional document editing capabilities with complete privacy control!**
     ko_kr: |
-      **☁️ Nextcloud란 무엇인가요?**
-
-      **Nextcloud**는 **Google Drive, Dropbox, Microsoft Teams, WhatsApp을 하나로 합친** 것과 같은 개인 클라우드이지만, 완전히 당신의 통제 하에 있습니다.
-
-      여러 기기에서 파일을 동기화하려면 Nextcloud Files 앱을 사용해야 합니다 --- 이는 Google Drive나 Dropbox의 개인 버전과 같습니다.
-
-      단일 개인 공간에서 **파일 저장, 공유, 협업, 채팅, 심지어 일정과 작업 관리**까지 모든 것을 할 수 있습니다.
-
-      자신의 서버에서 실행되는, 원하는 앱으로 구성된 **개인 워크스페이스**라고 생각하세요.
-
-      **🔧 Nextcloud로 무엇을 할 수 있나요?**
-
-      Nextcloud는 모듈식입니다: **휴대폰의 앱처럼 기능을 추가**할 수 있습니다. 가장 인기 있는 것들은 다음과 같습니다:
-
-      • 📁 **Nextcloud Files**: 파일 업로드, 접근, 공유 --- 자신만의 Google Drive
-      • 🗓️ **Calendar**: 이벤트 관리 및 휴대폰이나 노트북과 동기화
-      • 📇 **Contacts**: 모든 연락처를 개인적으로 저장하고 동기화
-      • 🗣️ **Talk**: 팀이나 가족과 채팅 및 화상 통화 --- 개인 WhatsApp이나 Zoom
-      • ✅ **Deck**: Trello나 Notion처럼 작업과 프로젝트 정리
-      • 📝 **Nextcloud Office**: 브라우저에서 Word, Excel, PowerPoint 파일 열기 및 편집 --- Google Docs와 동일
-      • 📦 **더 많은 앱**: 워크스페이스를 사용자 정의할 수 있는 100개 이상의 앱
-
-      **🚀 왜 Nextcloud를 사용해야 하나요?**
-
-      • **더 이상 Google이나 Microsoft 없음** --- 파일과 데이터를 개인적으로 유지
-      • **완전히 사용자 정의 가능** --- 필요한 도구만 추가
-      • **어디서나 접근 가능** --- 공식 Nextcloud 모바일 앱이나 데스크톱 앱 사용
-      • **다른 사람과 공유** --- 파일 전송, 공유 폴더 생성, 안전한 채팅
-      • **데이터 통제** --- 당신의 파일, 당신의 서버, 당신의 규칙
-
-      **🛠️ 사용 사례 예시**
-
-      • **Nextcloud Files**를 Google Drive처럼 사용
-      • **Talk**를 WhatsApp이나 Zoom처럼 메시지 및 통화에 사용
-      • **Office + Calendar + Deck**를 Microsoft Teams 대체로 사용
-      • 팀이나 가족을 초대하고 한 곳에서 모든 것을 관리
-
-      **⚡ 포함된 성능 최적화**
-
-      이 배포에는 다음이 포함됩니다:
-      • **Redis 캐시** - 성능 향상
-      • **내장 오피스 스위트** - Collabora Online 통합
-      • **최적화된 데이터베이스** 구성
-      • **NSL Router 호환성** - 깔끔한 HTTPS URL
-    zh_cn: |
-      **☁️ 什么是Nextcloud？**
-
-      **Nextcloud**是您自己的个人云：就像**Google Drive、Dropbox、Microsoft Teams和WhatsApp的集合体**，但完全在您的控制之下。
-
-      如果您想跨设备同步文件，需要使用Nextcloud Files应用程序 --- 这就像您自己的私人版Google Drive或Dropbox。
-
-      您可以在单一私人空间中**存储文件、共享文件、协作、聊天，甚至管理日历和任务**。
-
-      可以将其视为您**自己的私人工作空间**，使用您选择的应用程序，在您自己的服务器上运行。
-
-      **🔧 Nextcloud能做什么？**
-
-      Nextcloud是模块化的：您可以**像在手机上添加应用程序一样添加功能**。以下是一些最受欢迎的功能：
-
-      • 📁 **Nextcloud Files**: 上传、访问和共享文件 --- 就像您自己的Google Drive
-      • 🗓️ **Calendar**: 管理事件并与您的手机或笔记本电脑同步
-      • 📇 **Contacts**: 私下存储和同步所有联系人
-      • 🗣️ **Talk**: 与您的团队或家人聊天和视频通话 --- 就像私人WhatsApp或Zoom
-      • ✅ **Deck**: 像Trello或Notion一样组织任务和项目
-      • 📝 **Nextcloud Office**: 在浏览器中打开和编辑Word、Excel和PowerPoint文件 --- 就像Google Docs
-      • 📦 **更多应用**: 超过100个应用程序可用于自定义您的工作空间
-
-      **🚀 为什么使用Nextcloud？**
-
-      • **不再依赖Google或Microsoft** --- 保持文件和数据私密
-      • **完全可定制** --- 只添加您需要的工具
-      • **随处可访问** --- 使用官方Nextcloud移动应用或桌面应用
-      • **与他人共享** --- 发送文件、创建共享文件夹或安全聊天
-      • **控制您的数据** --- 您的文件、您的服务器、您的规则
-
-      **🛠️ 使用案例示例**
-
-      • 像使用Google Drive一样使用**Nextcloud Files**
-      • 像WhatsApp或Zoom一样使用**Talk**进行消息传递和通话
-      • 使用**Office + Calendar + Deck**替代Microsoft Teams
-      • 邀请您的团队或家人，在一个地方管理一切
-
-      **⚡ 包含的性能优化**
-
-      此部署包括：
-      • **Redis缓存** - 提升性能
-      • **内置办公套件** - Collabora Online集成
-      • **优化的数据库**配置
-      • **NSL Router兼容性** - 简洁的HTTPS URL
-    fr_fr: |
-      **☁️ Qu'est-ce que Nextcloud ?**
-
-      **Nextcloud** est votre cloud personnel : comme **Google Drive, Dropbox, Microsoft Teams et WhatsApp tout-en-un**, mais entièrement sous votre contrôle.
-
-      Si vous voulez synchroniser vos fichiers entre appareils, vous devrez utiliser l'application Nextcloud Files --- c'est comme votre propre version privée de Google Drive ou Dropbox.
-
-      Vous pouvez **stocker des fichiers, les partager, collaborer, chatter et même gérer les calendriers et tâches**, tout depuis un seul espace privé.
-
-      Pensez-y comme votre **propre espace de travail privé**, avec les applications que vous choisissez, fonctionnant sur votre propre serveur.
-
-      **🔧 Que pouvez-vous faire avec Nextcloud ?**
-
-      Nextcloud est modulaire : vous pouvez **ajouter des fonctionnalités comme des applications sur un téléphone**. Voici quelques-unes des plus populaires :
-
-      • 📁 **Nextcloud Files** : Téléchargez, accédez et partagez des fichiers --- comme votre propre Google Drive
-      • 🗓️ **Calendar** : Gérez les événements et synchronisez avec votre téléphone ou ordinateur portable
-      • 📇 **Contacts** : Stockez et synchronisez tous vos contacts en privé
-      • 🗣️ **Talk** : Chattez et passez des appels vidéo avec votre équipe ou famille --- comme un WhatsApp ou Zoom privé
-      • ✅ **Deck** : Organisez les tâches et projets comme Trello ou Notion
-      • 📝 **Nextcloud Office** : Ouvrez et modifiez les fichiers Word, Excel et PowerPoint dans votre navigateur --- comme Google Docs
-      • 📦 **Plus d'applications** : Plus de 100 applications disponibles pour personnaliser votre espace de travail
-
-      **🚀 Pourquoi utiliser Nextcloud ?**
-
-      • **Fini Google ou Microsoft** --- gardez vos fichiers et données privés
-      • **Entièrement personnalisable** --- ajoutez seulement les outils dont vous avez besoin
-      • **Accessible partout** --- utilisez l'application mobile ou desktop officielle Nextcloud
-      • **Partagez avec d'autres** --- envoyez des fichiers, créez des dossiers partagés ou chattez en sécurité
-      • **Contrôlez vos données** --- vos fichiers, votre serveur, vos règles
-
-      **🛠️ Exemples d'utilisation**
-
-      • Utilisez **Nextcloud Files** comme Google Drive
-      • Utilisez **Talk** pour messagerie et appels comme WhatsApp ou Zoom
-      • Utilisez **Office + Calendar + Deck** pour remplacer Microsoft Teams
-      • Invitez votre équipe ou famille et gérez tout depuis un seul endroit
-
-      **⚡ Optimisations de performance incluses**
-
-      Ce déploiement inclut :
-      • **Cache Redis** pour améliorer les performances
-      • **Suite bureautique intégrée** avec intégration Collabora Online
-      • Configuration de **base de données optimisée**
-      • **Compatibilité NSL Router** pour des URL HTTPS propres
-    de_de: |
-      **☁️ Was ist Nextcloud?**
-
-      **Nextcloud** ist Ihre eigene persönliche Cloud: wie **Google Drive, Dropbox, Microsoft Teams und WhatsApp in einem**, aber vollständig unter Ihrer Kontrolle.
-
-      Wenn Sie Ihre Dateien geräteübergreifend synchronisieren möchten, müssen Sie die Nextcloud Files App verwenden --- es ist wie Ihre eigene private Version von Google Drive oder Dropbox.
-
-      Sie können **Dateien speichern, teilen, zusammenarbeiten, chatten und sogar Kalender und Aufgaben verwalten**, alles von einem einzigen privaten Raum aus.
-
-      Denken Sie daran als Ihren **eigenen privaten Arbeitsbereich**, mit Apps Ihrer Wahl, die auf Ihrem eigenen Server laufen.
-
-      **🔧 Was können Sie mit Nextcloud machen?**
-
-      Nextcloud ist modular: Sie können **Funktionen wie Apps auf einem Telefon hinzufügen**. Hier sind einige der beliebtesten:
-
-      • 📁 **Nextcloud Files**: Dateien hochladen, zugreifen und teilen --- wie Ihr eigenes Google Drive
-      • 🗓️ **Calendar**: Ereignisse verwalten und mit Ihrem Telefon oder Laptop synchronisieren
-      • 📇 **Contacts**: Alle Ihre Kontakte privat speichern und synchronisieren
-      • 🗣️ **Talk**: Mit Ihrem Team oder Familie chatten und Videoanrufe führen --- wie ein privates WhatsApp oder Zoom
-      • ✅ **Deck**: Aufgaben und Projekte wie Trello oder Notion organisieren
-      • 📝 **Nextcloud Office**: Word-, Excel- und PowerPoint-Dateien in Ihrem Browser öffnen und bearbeiten --- genau wie Google Docs
-      • 📦 **Weitere Apps**: Über 100 Apps verfügbar, um Ihren Arbeitsbereich anzupassen
-
-      **🚀 Warum Nextcloud verwenden?**
-
-      • **Schluss mit Google oder Microsoft** --- halten Sie Ihre Dateien und Daten privat
-      • **Vollständig anpassbar** --- fügen Sie nur die Tools hinzu, die Sie benötigen
-      • **Überall zugänglich** --- verwenden Sie die offizielle Nextcloud Mobile- oder Desktop-App
-      • **Mit anderen teilen** --- Dateien senden, gemeinsame Ordner erstellen oder sicher chatten
-      • **Ihre Daten kontrollieren** --- Ihre Dateien, Ihr Server, Ihre Regeln
-
-      **🛠️ Beispiel-Anwendungsfälle**
-
-      • Verwenden Sie **Nextcloud Files** wie Google Drive
-      • Verwenden Sie **Talk** für Nachrichten und Anrufe wie WhatsApp oder Zoom
-      • Verwenden Sie **Office + Calendar + Deck** als Microsoft Teams Ersatz
-      • Laden Sie Ihr Team oder Familie ein und verwalten Sie alles von einem Ort aus
-
-      **⚡ Enthaltene Leistungsoptimierungen**
-
-      Diese Bereitstellung umfasst:
-      • **Redis-Cache** für verbesserte Leistung
-      • **Integrierte Office-Suite** mit Collabora Online-Integration
-      • **Optimierte Datenbank**-Konfiguration
-      • **NSL Router-Kompatibilität** für saubere HTTPS-URLs
-    es_es: |
-      **☁️ ¿Qué es Nextcloud?**
-
-      **Nextcloud** es tu propia nube personal: como **Google Drive, Dropbox, Microsoft Teams y WhatsApp todo en uno**, pero completamente bajo tu control.
-
-      Si quieres sincronizar tus archivos entre dispositivos, necesitarás usar la aplicación Nextcloud Files --- es como tu propia versión privada de Google Drive o Dropbox.
-
-      Puedes **almacenar archivos, compartirlos, colaborar, chatear e incluso gestionar calendarios y tareas**, todo desde un único espacio privado.
-
-      Piénsalo como tu **propio espacio de trabajo privado**, con las aplicaciones que elijas, ejecutándose en tu propio servidor.
-
-      **🔧 ¿Qué puedes hacer con Nextcloud?**
-
-      Nextcloud es modular: puedes **añadir funciones como aplicaciones en un teléfono**. Aquí tienes algunas de las más populares:
-
-      • 📁 **Nextcloud Files**: Sube, accede y comparte archivos --- como tu propio Google Drive
-      • 🗓️ **Calendar**: Gestiona eventos y sincroniza con tu teléfono o portátil
-      • 📇 **Contacts**: Almacena y sincroniza todos tus contactos de forma privada
-      • 🗣️ **Talk**: Chatea y haz videollamadas con tu equipo o familia --- como un WhatsApp o Zoom privado
-      • ✅ **Deck**: Organiza tareas y proyectos como Trello o Notion
-      • 📝 **Nextcloud Office**: Abre y edita archivos de Word, Excel y PowerPoint en tu navegador --- como Google Docs
-      • 📦 **Más aplicaciones**: Más de 100 aplicaciones disponibles para personalizar tu espacio de trabajo
-
-      **🚀 ¿Por qué usar Nextcloud?**
-
-      • **Adiós a Google o Microsoft** --- mantén tus archivos y datos privados
-      • **Totalmente personalizable** --- añade solo las herramientas que necesitas
-      • **Accesible desde cualquier lugar** --- usa la aplicación móvil o de escritorio oficial de Nextcloud
-      • **Comparte con otros** --- envía archivos, crea carpetas compartidas o chatea de forma segura
-      • **Controla tus datos** --- tus archivos, tu servidor, tus reglas
-
-      **🛠️ Ejemplos de casos de uso**
-
-      • Usa **Nextcloud Files** como Google Drive
-      • Usa **Talk** para mensajes y llamadas como WhatsApp o Zoom
-      • Usa **Office + Calendar + Deck** para reemplazar Microsoft Teams
-      • Invita a tu equipo o familia y gestiona todo desde un solo lugar
-
-      **⚡ Optimizaciones de rendimiento incluidas**
-
-      Esta implementación incluye:
-      • **Caché Redis** para mejorar el rendimiento
-      • **Suite de oficina integrada** con integración de Collabora Online
-      • Configuración de **base de datos optimizada**
-      • **Compatibilidad NSL Router** para URLs HTTPS limpias
+      **☁️ OnlyOffice가 통합된 Nextcloud**
+
+      원활한 문서 편집을 위한 **OnlyOffice Document Server**가 포함된 완전한 개인 클라우드 솔루션입니다.
+
+      **🚀 포함된 기능:**
+      • **Nextcloud** - 파일 관리, 공유, 일정, 연락처
+      • **OnlyOffice Document Server** - 전문적인 문서 편집 엔진
+      • **Redis 캐시** - 최적화된 성능
+      • **MariaDB** - 안정적인 데이터베이스 백엔드
+      • **NSL Router 통합** - 깔끔한 HTTPS URL
+
+      **📝 오피스 기능:**
+      • **Word 문서** (.docx, .doc) - 완전한 편집 기능
+      • **Excel 스프레드시트** (.xlsx, .xls) - 고급 수식 및 차트
+      • **PowerPoint 프레젠테이션** (.pptx, .ppt) - 풍부한 미디어 지원
+      • **실시간 협업** - 여러 사용자가 동시에 편집
+      • **댓글 시스템** - 검토 및 피드백 워크플로
+      • **버전 기록** - 문서 변경 사항 추적
+
+      **🔧 기술적 장점:**
+      • **Mixed Content 문제 없음** - 모든 서비스가 적절히 네트워크 연결
+      • **외부 종속성 없음** - 자체 포함된 문서 서버
+      • **NSL Router 최적화** - HTTPS 프록시와 완벽하게 작동
+      • **고성능** - 전용 OnlyOffice 서버
+      • **보secure** - 모든 데이터가 서버에 보관
+
+      **완전한 개인정보 보호 통제와 함께 전문적인 문서 편집 기능이 필요한 팀과 개인에게 완벽합니다!**
   tips:
     before_install:
-      en_us: |        
-        **🚀 Complete Setup Guide with Office Integration**
-        
-        **1. Initial Setup:**
-        
-        ⚠️ **Setup can take time, even if progress isn't shown.** **If infinite loading occurs → Restart the app**
-        
-        - Create your account and complete the setup
-        - When asked about storage options, choose the **recommended setting** (already configured for you)
-        
-        **2. After First Restart:**
-        
-        - Go back to the website
-        - **Skip the setup screen** (you already did this!)
-        - Log in with your account
-        
-        **3. Enable Office Suite:**
-        
-        📝 **Install Nextcloud Office:**
-        - Go to **Apps** (top menu)
-        - Search for "**Nextcloud Office**"
-        - Click **Download and enable**
-        
-        📝 **Install Built-in CODE Server:**
-        - Search for "**Collabora Online - Built-in CODE Server**"  
-        - Click **Download and enable**
-        
-        **4. Configure Office:**
-        
-        - Go to **Administration Settings** → **Office**
-        - Select "**Use the built-in CODE**"
-        - In **Advanced settings**, add to WOPI allow-list: `172.17.0.0/16`
-        - Click **Save**
-        
-        **5. Add Other Team Apps:**
-        **Built-in apps to enable:**
-        ✅ Calendar, Contacts, Mail
-        
-        **From App Store:**
-        🔍 Search and install: Talk, Deck, Tasks
-        
-        **6. Test Office:**
-        - Create a new document: **Files** → **+** → **New document**
-        - Should open in Nextcloud Office editor!
-        
-        **7. Performance Features:**
-        ✅ Redis cache for faster performance
-        ✅ Built-in Office suite ready to use
-        ✅ Optimized database settings
-        ✅ NSL Router compatibility
-        
-        **8. Done!**
-        Your complete personal workspace with Office suite is ready!
-        
-        **File Storage:** 
-        - **App files**: Nextcloud's dedicated data directory
-        - **Shared access**: Uncomment volume mappings in docker-compose.yml to share with other apps
-      ko_kr: |        
-        **🚀 오피스 통합이 포함된 완전한 설정 가이드**
-        
-        **1. 초기 설정:**
-        
-        ⚠️ **진행 상황이 표시되지 않더라도 설정에 시간이 걸릴 수 있습니다.** **무한 로딩 발생 시 → 앱 재시작**
-        
-        - 계정을 만들고 설정을 완료하세요
-        - 저장소 옵션을 묻는 화면에서 **추천 설정**을 선택하세요 (이미 구성됨)
-        
-        **2. 첫 번째 재시작 후:**
-        
-        - 웹사이트로 다시 이동
-        - **설정 화면 건너뛰기** (이미 완료했습니다!)
-        - 계정으로 로그인
-        
-        **3. 오피스 스위트 활성화:**
-        
-        📝 **Nextcloud Office 설치:**
-        - **앱** (상단 메뉴)으로 이동
-        - "**Nextcloud Office**" 검색
-        - **다운로드 및 활성화** 클릭
-        
-        📝 **Built-in CODE 서버 설치:**
-        - "**Collabora Online - Built-in CODE Server**" 검색  
-        - **다운로드 및 활성화** 클릭
-        
-        **4. 오피스 구성:**
-        
-        - **관리 설정** → **Office**로 이동
-        - "**Use the built-in CODE**" 선택
-        - **고급 설정**에서 WOPI 허용 목록에 추가: `172.17.0.0/16`
-        - **저장** 클릭
-        
-        **5. 다른 팀 앱 추가:**
-        **활성화할 내장 앱:**
-        ✅ Calendar, Contacts, Mail
-        
-        **앱스토어에서:**
-        🔍 검색 후 설치: Talk, Deck, Tasks
-        
-        **6. 오피스 테스트:**
-        - 새 문서 만들기: **파일** → **+** → **새 문서**
-        - Nextcloud Office 편집기에서 열려야 합니다!
-        
-        **7. 성능 기능:**
-        ✅ 빠른 성능을 위한 Redis 캐시
-        ✅ 바로 사용 가능한 내장 오피스 스위트
-        ✅ 최적화된 데이터베이스 설정
-        ✅ NSL Router 호환성
-        
-        **8. 완료!**
-        오피스 스위트가 포함된 완전한 개인 워크스페이스가 준비되었습니다!
-        
-        **파일 저장:** 
-        - **앱 파일**: Nextcloud 전용 데이터 디렉토리
-        - **공유 접근**: 다른 앱과 공유하려면 docker-compose.yml의 볼륨 매핑 주석 해제
-      zh_cn: |        
-        **🚀 包含办公集成的完整设置指南**
-        
-        **1. 初始设置：**
-        
-        ⚠️ **即使没有显示进度，设置也可能需要时间。** **如果出现无限加载 → 重启应用**
-        
-        - 创建您的账户并完成设置
-        - 当询问存储选项时，选择**推荐设置**（已为您配置）
-        
-        **2. 第一次重启后：**
-        
-        - 回到网站
-        - **跳过设置界面**（您已经完成了！）
-        - 使用您的账户登录
-        
-        **3. 启用办公套件：**
-        
-        📝 **安装Nextcloud Office：**
-        - 转到**应用**（顶部菜单）
-        - 搜索"**Nextcloud Office**"
-        - 点击**下载并启用**
-        
-        📝 **安装内置CODE服务器：**
-        - 搜索"**Collabora Online - Built-in CODE Server**"  
-        - 点击**下载并启用**
-        
-        **4. 配置Office：**
-        
-        - 转到**管理设置** → **Office**
-        - 选择"**Use the built-in CODE**"
-        - 在**高级设置**中，添加到WOPI允许列表：`172.17.0.0/16`
-        - 点击**保存**
-        
-        **5. 添加其他团队应用：**
-        **要启用的内置应用：**
-        ✅ Calendar、Contacts、Mail
-        
-        **从应用商店：**
-        🔍 搜索并安装：Talk、Deck、Tasks
-        
-        **6. 测试Office：**
-        - 创建新文档：**文件** → **+** → **新文档**
-        - 应该在Nextcloud Office编辑器中打开！
-        
-        **7. 性能功能：**
-        ✅ Redis缓存提升性能
-        ✅ 内置办公套件即开即用
-        ✅ 优化的数据库设置
-        ✅ NSL Router兼容性
-        
-        **8. 完成！**
-        您的包含办公套件的完整个人工作空间已准备就绪！
-        
-        **文件存储：** 
-        - **应用文件**：Nextcloud专用数据目录
-        - **共享访问**：要与其他应用共享，请取消注释docker-compose.yml中的卷映射
-      fr_fr: |        
-        **🚀 Guide de configuration complète avec intégration Office**
-        
-        **1. Configuration initiale :**
-        
-        ⚠️ **La configuration peut prendre du temps, même si les progrès ne sont pas affichés.** **Si un chargement infini se produit → Redémarrez l'application**
-        
-        - Créez votre compte et terminez la configuration
-        - Quand on vous demande les options de stockage, choisissez le **paramètre recommandé** (déjà configuré pour vous)
-        
-        **2. Après le premier redémarrage :**
-        
-        - Retournez sur le site web
-        - **Ignorez l'écran de configuration** (vous l'avez déjà fait !)
-        - Connectez-vous avec votre compte
-        
-        **3. Activez la suite bureautique :**
-        
-        📝 **Installez Nextcloud Office :**
-        - Allez dans **Applications** (menu du haut)
-        - Recherchez "**Nextcloud Office**"
-        - Cliquez sur **Télécharger et activer**
-        
-        📝 **Installez le serveur CODE intégré :**
-        - Recherchez "**Collabora Online - Built-in CODE Server**"  
-        - Cliquez sur **Télécharger et activer**
-        
-        **4. Configurez Office :**
-        
-        - Allez dans **Paramètres d'administration** → **Office**
-        - Sélectionnez "**Use the built-in CODE**"
-        - Dans **Paramètres avancés**, ajoutez à la liste d'autorisation WOPI : `172.17.0.0/16`
-        - Cliquez sur **Enregistrer**
-        
-        **5. Ajoutez d'autres applications d'équipe :**
-        **Applications intégrées à activer :**
-        ✅ Calendar, Contacts, Mail
-        
-        **Depuis l'App Store :**
-        🔍 Recherchez et installez : Talk, Deck, Tasks
-        
-        **6. Testez Office :**
-        - Créez un nouveau document : **Fichiers** → **+** → **Nouveau document**
-        - Devrait s'ouvrir dans l'éditeur Nextcloud Office !
-        
-        **7. Fonctionnalités de performance :**
-        ✅ Cache Redis pour de meilleures performances
-        ✅ Suite bureautique intégrée prête à l'emploi
-        ✅ Paramètres de base de données optimisés
-        ✅ Compatibilité NSL Router
-        
-        **8. Terminé !**
-        Votre espace de travail personnel complet avec suite bureautique est prêt !
-        
-        **Stockage de fichiers :** 
-        - **Fichiers d'application** : Répertoire de données dédié Nextcloud
-        - **Accès partagé** : Décommentez les mappages de volumes dans docker-compose.yml pour partager avec d'autres applications
-      de_de: |        
-        **🚀 Vollständige Setup-Anleitung mit Office-Integration**
-        
-        **1. Erste Einrichtung:**
-        
-        ⚠️ **Das Setup kann Zeit dauern, auch wenn kein Fortschritt angezeigt wird.** **Bei unendlichem Laden → App neu starten**
-        
-        - Erstellen Sie Ihr Konto und schließen Sie die Einrichtung ab
-        - Wenn nach Speicher-Optionen gefragt wird, wählen Sie die **empfohlene Einstellung** (bereits für Sie konfiguriert)
-        
-        **2. Nach dem ersten Neustart:**
-        
-        - Gehen Sie zurück zur Website
-        - **Überspringen Sie den Einrichtungsbildschirm** (haben Sie bereits gemacht!)
-        - Melden Sie sich mit Ihrem Konto an
-        
-        **3. Office-Suite aktivieren:**
-        
-        📝 **Nextcloud Office installieren:**
-        - Gehen Sie zu **Apps** (oberes Menü)
-        - Suchen Sie nach "**Nextcloud Office**"
-        - Klicken Sie auf **Herunterladen und aktivieren**
-        
-        📝 **Built-in CODE Server installieren:**
-        - Suchen Sie nach "**Collabora Online - Built-in CODE Server**"  
-        - Klicken Sie auf **Herunterladen und aktivieren**
-        
-        **4. Office konfigurieren:**
-        
-        - Gehen Sie zu **Verwaltungseinstellungen** → **Office**
-        - Wählen Sie "**Use the built-in CODE**"
-        - In **Erweiterte Einstellungen**, zur WOPI-Erlaubnisliste hinzufügen: `172.17.0.0/16`
-        - Klicken Sie auf **Speichern**
-        
-        **5. Andere Team-Apps hinzufügen:**
-        **Zu aktivierende integrierte Apps:**
-        ✅ Calendar, Contacts, Mail
-        
-        **Vom App Store:**
-        🔍 Suchen und installieren: Talk, Deck, Tasks
-        
-        **6. Office testen:**
-        - Neues Dokument erstellen: **Dateien** → **+** → **Neues Dokument**
-        - Sollte im Nextcloud Office Editor öffnen!
-        
-        **7. Leistungsmerkmale:**
-        ✅ Redis-Cache für bessere Leistung
-        ✅ Integrierte Office-Suite sofort einsatzbereit
-        ✅ Optimierte Datenbankeinstellungen
-        ✅ NSL Router-Kompatibilität
-        
-        **8. Fertig!**
-        Ihr vollständiger persönlicher Arbeitsbereich mit Office-Suite ist bereit!
-        
-        **Dateispeicherung:** 
-        - **App-Dateien**: Nextcloud-eigenes Datenverzeichnis
-        - **Geteilter Zugriff**: Volume-Mappings in docker-compose.yml auskommentieren, um mit anderen Apps zu teilen
-      es_es: |        
-        **🚀 Guía de configuración completa con integración Office**
-        
-        **1. Configuración inicial:**
-        
-        ⚠️ **La configuración puede tomar tiempo, incluso si no se muestra el progreso.** **Si ocurre carga infinita → Reiniciar la aplicación**
-        
-        - Crea tu cuenta y completa la configuración
-        - Cuando te pregunten sobre opciones de almacenamiento, elige la **configuración recomendada** (ya configurada para ti)
-        
-        **2. Después del primer reinicio:**
-        
-        - Vuelve al sitio web
-        - **Omite la pantalla de configuración** (¡ya lo hiciste!)
-        - Inicia sesión con tu cuenta
-        
-        **3. Habilitar suite de oficina:**
-        
-        📝 **Instalar Nextcloud Office:**
-        - Ve a **Aplicaciones** (menú superior)
-        - Busca "**Nextcloud Office**"
-        - Haz clic en **Descargar y habilitar**
-        
-        📝 **Instalar servidor CODE integrado:**
-        - Busca "**Collabora Online - Built-in CODE Server**"  
-        - Haz clic en **Descargar y habilitar**
-        
-        **4. Configurar Office:**
-        
-        - Ve a **Configuración de administración** → **Office**
-        - Selecciona "**Use the built-in CODE**"
-        - En **Configuración avanzada**, agregar a lista de permisos WOPI: `172.17.0.0/16`
-        - Haz clic en **Guardar**
-        
-        **5. Agregar otras aplicaciones de equipo:**
-        **Aplicaciones integradas a habilitar:**
-        ✅ Calendar, Contacts, Mail
-        
-        **Desde la App Store:**
-        🔍 Buscar e instalar: Talk, Deck, Tasks
-        
-        **6. Probar Office:**
-        - Crear nuevo documento: **Archivos** → **+** → **Nuevo documento**
-        - ¡Debería abrirse en el editor de Nextcloud Office!
-        
-        **7. Características de rendimiento:**
-        ✅ Caché Redis para mejor rendimiento
-        ✅ Suite de oficina integrada lista para usar
-        ✅ Configuraciones de base de datos optimizadas
-        ✅ Compatibilidad NSL Router
-        
-        **8. ¡Listo!**
-        ¡Tu espacio de trabajo personal completo con suite de oficina está listo!
-        
-        **Almacenamiento de archivos:** 
-        - **Archivos de aplicación**: Directorio de datos dedicado de Nextcloud
-        - **Acceso compartido**: Descomenta los mapeos de volúmenes en docker-compose.yml para compartir con otras aplicaciones
+      en_us: |
+        **🚀 Nextcloud + OnlyOffice Setup Guide**
+        
+        **What This Includes:**
+        ✅ Nextcloud with full features
+        ✅ OnlyOffice Document Server (dedicated)
+        ✅ Redis cache for performance
+        ✅ MariaDB database
+        ✅ All services properly networked
+        
+        **📋 After Installation:**
+        1. **Wait 3-4 minutes** for all services to start
+        2. **Access Nextcloud:** `https://nextcloud-username.nsl.sh`
+        3. **Complete setup wizard** (create admin account)
+        4. **Install OnlyOffice app:**
+           - Go to **Apps** → Search "**OnlyOffice**"
+           - Click **Download and enable**
+        5. **Configure OnlyOffice:**
+           - Go to **Settings** → **OnlyOffice**
+           - **Server URL:** `http://onlyoffice/`
+           - **Secret key:** Leave blank or use simple key
+           - **Check:** "Disable certificate verification"
+           - Click **Save**
+        
+        **🎯 Test Office Functionality:**
+        - Go to **Files** → **+ button**
+        - You should see: **Document**, **Spreadsheet**, **Presentation**
+        - Click any option → OnlyOffice editor opens!
+        
+        **💡 Troubleshooting:**
+        - If Mixed Content error: Check "Disable certificate verification"
+        - If connection fails: Ensure all containers are running
+        - Wait a few minutes for OnlyOffice server to fully initialize
+        
+        **Perfect for professional document editing with complete privacy!**
+      ko_kr: |
+        **🚀 Nextcloud + OnlyOffice 설정 가이드**
+        
+        **포함된 기능:**
+        ✅ 모든 기능이 포함된 Nextcloud
+        ✅ OnlyOffice Document Server (전용)
+        ✅ 성능을 위한 Redis 캐시
+        ✅ MariaDB 데이터베이스
+        ✅ 모든 서비스가 적절히 네트워크 연결됨
+        
+        **📋 설치 후:**
+        1. **3-4분 대기** - 모든 서비스 시작을 위해
+        2. **Nextcloud 접속:** `https://nextcloud-사용자명.nsl.sh`
+        3. **설정 마법사 완료** (관리자 계정 생성)
+        4. **OnlyOffice 앱 설치:**
+           - **앱** → "**OnlyOffice**" 검색
+           - **다운로드 및 활성화** 클릭
+        5. **OnlyOffice 구성:**
+           - **설정** → **OnlyOffice**로 이동
+           - **서버 URL:** `http://onlyoffice/`
+           - **Secret key:** 비워두거나 간단한 키 사용
+           - **체크:** "Disable certificate verification"
+           - **저장** 클릭
+        
+        **🎯 오피스 기능 테스트:**
+        - **파일** → **+ 버튼**으로 이동
+        - 다음이 보여야 함: **문서**, **스프레드시트**, **프레젠테이션**
+        - 아무 옵션 클릭 → OnlyOffice 편집기 열림!
+        
+        **💡 문제 해결:**
+        - Mixed Content 오류 시: "Disable certificate verification" 체크
+        - 연결 실패 시: 모든 컨테이너가 실행 중인지 확인
+        - OnlyOffice 서버가 완전히 초기화될 때까지 몇 분 대기
+        
+        **완전한 개인정보 보호와 함께 전문적인 문서 편집에 완벽합니다!**
   index: /
