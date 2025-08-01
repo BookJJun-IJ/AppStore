@@ -8,11 +8,12 @@ services:
     depends_on:
       - db
       - redis
+      - collabora
     deploy:
       resources:
         limits:
-          memory: 3072M
-          cpus: '2.5'
+          memory: 2048M
+          cpus: '2.0'
     expose:
       - 80
     environment:
@@ -23,33 +24,20 @@ services:
       - MYSQL_DATABASE=nextcloud
       - MYSQL_USER=nextcloud
       - MYSQL_PASSWORD=$default_pwd
-      # NSL Router 최적화 설정
-      - NEXTCLOUD_TRUSTED_DOMAINS=localhost $domain nextcloud 127.0.0.1
+      - NEXTCLOUD_TRUSTED_DOMAINS=localhost $domain nextcloud
       - OVERWRITEPROTOCOL=https
       - OVERWRITEHOST=$domain
       - OVERWRITECONDADDR=^172\.17\..*$
-      - OVERWRITEWEBROOT=/
-      # Built-in CODE 최적화 설정
-      - APACHE_DISABLE_REWRITE_IP=1
-      - TRUSTED_PROXIES=172.17.0.0/16
-      # Redis 설정
       - REDIS_HOST=redis
       - REDIS_HOST_PORT=6379
       - REDIS_HOST_PASSWORD=$default_pwd
-      # 성능 및 메모리 설정
       - NEXTCLOUD_INIT_HTACCESS=true
-      - PHP_MEMORY_LIMIT=3072M
-      - PHP_UPLOAD_LIMIT=2048M
-      - PHP_MAX_INPUT_TIME=3600
-      - PHP_MAX_EXECUTION_TIME=3600
-      # Built-in CODE를 위한 추가 설정
-      - NEXTCLOUD_DATA_DIR=/var/www/html/data
+      - PHP_MEMORY_LIMIT=2048M
+      - PHP_UPLOAD_LIMIT=1024M
     volumes:
       - /DATA/AppData/$AppID/html:/var/www/html
       - /DATA/AppData/$AppID/config:/var/www/html/config
       - /DATA/AppData/$AppID/data:/var/www/html/data
-      # Built-in CODE를 위한 임시 디렉토리
-      - /DATA/AppData/$AppID/tmp:/tmp
     restart: unless-stopped
     networks:
       - nextcloud-network
@@ -58,7 +46,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 180s
+      start_period: 120s
 
   db:
     image: mariadb:11.2
@@ -86,7 +74,6 @@ services:
       --transaction-isolation=READ-COMMITTED
       --binlog-format=ROW
       --innodb-file-per-table=1
-      --max-connections=200
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$default_pwd"]
       interval: 30s
@@ -99,9 +86,9 @@ services:
     deploy:
       resources:
         limits:
-          memory: 256M
-          cpus: '0.3'
-    command: redis-server --requirepass $default_pwd --appendonly yes --maxmemory 200mb --maxmemory-policy allkeys-lru
+          memory: 128M
+          cpus: '0.2'
+    command: redis-server --requirepass $default_pwd --appendonly yes
     volumes:
       - /DATA/AppData/$AppID/redis:/data
     restart: unless-stopped
@@ -112,6 +99,37 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+
+  onlyoffice:
+    image: onlyoffice/documentserver:8.2
+    container_name: nextcloud_onlyoffice
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+          cpus: '1.0'
+    expose:
+      - 443
+    environment:
+      - TZ=$TZ
+      - JWT_ENABLED=false
+      - USE_UNAUTHORIZED_STORAGE=true
+      - SSL_CERTIFICATE_PATH=/var/www/onlyoffice/Data/certs/onlyoffice.crt
+      - SSL_KEY_PATH=/var/www/onlyoffice/Data/certs/onlyoffice.key
+      - SSL_DHPARAM_PATH=/var/www/onlyoffice/Data/certs/dhparam.pem
+    volumes:
+      - /DATA/AppData/$AppID/onlyoffice/data:/var/www/onlyoffice/Data
+      - /DATA/AppData/$AppID/onlyoffice/lib:/var/lib/onlyoffice
+      - /DATA/AppData/$AppID/onlyoffice/logs:/var/log/onlyoffice
+    restart: unless-stopped
+    networks:
+      - nextcloud-network
+    healthcheck:
+      test: ["CMD", "curl", "-k", "-f", "https://localhost/healthcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
 networks:
   nextcloud-network:
@@ -125,22 +143,17 @@ x-casaos:
   author: Yundera Team
   developer: Nextcloud GmbH
   pre-install-cmd: |
-    # 완전 초기화 및 권한 설정
     rm -rf /DATA/AppData/$AppID/* &&
-    mkdir -p /DATA/AppData/$AppID/{config,data,html,db,redis,tmp} &&
+    mkdir -p /DATA/AppData/$AppID/{config,data,html,db,redis} &&
+    mkdir -p /DATA/AppData/$AppID/collabora/{tmp} &&
     chown -R $PUID:$PGID /DATA/AppData/$AppID &&
-    chmod -R 755 /DATA/AppData/$AppID &&
-    
-    # Built-in CODE를 위한 임시 디렉토리 설정
-    mkdir -p /DATA/AppData/$AppID/tmp/richdocumentscode &&
-    chown -R $PUID:$PGID /DATA/AppData/$AppID/tmp &&
-    chmod -R 777 /DATA/AppData/$AppID/tmp
+    chmod -R 755 /DATA/AppData/$AppID
   title:
     en_us: Nextcloud
     ko_kr: Nextcloud
   tagline:
-    en_us: Personal cloud with built-in document editing
-    ko_kr: 내장 문서 편집 기능이 포함된 개인 클라우드
+    en_us: Complete personal cloud with Collabora document editing
+    ko_kr: Collabora 문서 편집 기능이 포함된 완전한 개인 클라우드
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/icon.png
   screenshot_link:
     - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/screenshot-1.png
@@ -149,163 +162,137 @@ x-casaos:
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/thumbnail.png
   description:
     en_us: |
-      **☁️ Nextcloud with Optimized Built-in Office**
+      **☁️ Nextcloud with Integrated Collabora**
 
-      Complete personal cloud solution with **Built-in Collabora CODE server** specifically optimized for NSL Router environments.
+      Complete personal cloud solution with **Collabora Online Document Server** included for seamless document editing.
 
-      **🚀 What's Special About This Setup:**
-      • **NSL Router Optimized** - Specially configured for Yundera's proxy environment
-      • **Built-in Office Suite** - No separate containers needed
-      • **Enhanced Performance** - 3GB RAM allocation for smooth document editing
-      • **Redis Caching** - Optimized performance with intelligent caching
-      • **MariaDB** - Reliable database backend with optimized settings
+      **🚀 What's Included:**
+      • **Nextcloud** - File management, sharing, calendar, contacts
+      • **Collabora Online Server** - Professional document editing engine
+      • **Redis Cache** - Optimized performance
+      • **MariaDB** - Reliable database backend
+      • **NSL Router Integration** - Clean HTTPS URLs
 
-      **📝 Office Capabilities:**
-      • **Word Documents** (.docx, .doc) - Full editing with collaborative features
+      **📝 Office Features:**
+      • **Word Documents** (.docx, .doc) - Full editing capabilities
       • **Excel Spreadsheets** (.xlsx, .xls) - Advanced formulas and charts
-      • **PowerPoint Presentations** (.pptx, .ppt) - Rich media and animations
+      • **PowerPoint Presentations** (.pptx, .ppt) - Rich media support
       • **Real-time Collaboration** - Multiple users editing simultaneously
-      • **Comment System** - Review workflows and feedback
-      • **Version History** - Track all document changes
+      • **Comment System** - Review and feedback workflow
+      • **Version History** - Track document changes
 
       **🔧 Technical Advantages:**
-      • **No Mixed Content Issues** - Built-in server eliminates HTTPS/HTTP conflicts
-      • **Simplified Architecture** - Single container solution
-      • **Better Resource Management** - Optimized memory and CPU allocation
-      • **NSL Router Compatible** - Designed specifically for Yundera environment
-      • **Enhanced Security** - All processing happens within Nextcloud container
+      • **Privileged Container** - Proper jail directory permissions
+      • **SSL Termination Support** - NSL Router compatibility
+      • **No External Dependencies** - Self-contained document server
+      • **High Performance** - Dedicated Collabora server
+      • **Secure** - All data stays on your server
 
-      **⚡ Performance Features:**
-      • **3GB RAM allocation** for smooth operation
-      • **Redis caching** with intelligent memory management
-      • **Optimized PHP settings** for large document handling
-      • **Enhanced database connections** for better concurrency
-
-      **Perfect for users who need reliable document editing without the complexity of multiple containers!**
+      **Perfect for teams and individuals who need professional document editing capabilities with complete privacy control!**
     ko_kr: |
-      **☁️ 최적화된 내장 오피스가 포함된 Nextcloud**
+      **☁️ OnlyOffice가 통합된 Nextcloud**
 
-      NSL Router 환경에 특별히 최적화된 **내장 Collabora CODE 서버**가 포함된 완전한 개인 클라우드 솔루션입니다.
+      원활한 문서 편집을 위한 **OnlyOffice Document Server**가 포함된 완전한 개인 클라우드 솔루션입니다.
 
-      **🚀 이 설정의 특별한 점:**
-      • **NSL Router 최적화** - Yundera 프록시 환경을 위해 특별히 구성됨
-      • **내장 오피스 스위트** - 별도 컨테이너 불필요
-      • **향상된 성능** - 부드러운 문서 편집을 위한 3GB RAM 할당
-      • **Redis 캐싱** - 지능적 캐싱으로 최적화된 성능
-      • **MariaDB** - 최적화된 설정의 안정적인 데이터베이스 백엔드
+      **🚀 포함된 기능:**
+      • **Nextcloud** - 파일 관리, 공유, 일정, 연락처
+      • **OnlyOffice Document Server** - 전문적인 문서 편집 엔진
+      • **Redis 캐시** - 최적화된 성능
+      • **MariaDB** - 안정적인 데이터베이스 백엔드
+      • **NSL Router 통합** - 깔끔한 HTTPS URL
 
       **📝 오피스 기능:**
-      • **Word 문서** (.docx, .doc) - 협업 기능이 포함된 완전한 편집
+      • **Word 문서** (.docx, .doc) - 완전한 편집 기능
       • **Excel 스프레드시트** (.xlsx, .xls) - 고급 수식 및 차트
-      • **PowerPoint 프레젠테이션** (.pptx, .ppt) - 풍부한 미디어 및 애니메이션
+      • **PowerPoint 프레젠테이션** (.pptx, .ppt) - 풍부한 미디어 지원
       • **실시간 협업** - 여러 사용자가 동시에 편집
-      • **댓글 시스템** - 검토 워크플로 및 피드백
-      • **버전 기록** - 모든 문서 변경 사항 추적
+      • **댓글 시스템** - 검토 및 피드백 워크플로
+      • **버전 기록** - 문서 변경 사항 추적
 
       **🔧 기술적 장점:**
-      • **Mixed Content 문제 없음** - 내장 서버로 HTTPS/HTTP 충돌 제거
-      • **단순화된 아키텍처** - 단일 컨테이너 솔루션
-      • **더 나은 리소스 관리** - 최적화된 메모리 및 CPU 할당
-      • **NSL Router 호환** - Yundera 환경을 위해 특별히 설계됨
-      • **향상된 보안** - 모든 처리가 Nextcloud 컨테이너 내에서 발생
+      • **Mixed Content 문제 없음** - 모든 서비스가 적절히 네트워크 연결
+      • **외부 종속성 없음** - 자체 포함된 문서 서버
+      • **NSL Router 최적화** - HTTPS 프록시와 완벽하게 작동
+      • **고성능** - 전용 OnlyOffice 서버
+      • **보secure** - 모든 데이터가 서버에 보관
 
-      **⚡ 성능 기능:**
-      • **부드러운 작업을 위한 3GB RAM 할당**
-      • **지능적 메모리 관리가 포함된 Redis 캐싱**
-      • **대용량 문서 처리를 위한 최적화된 PHP 설정**
-      • **더 나은 동시성을 위한 향상된 데이터베이스 연결**
-
-      **여러 컨테이너의 복잡성 없이 안정적인 문서 편집이 필요한 사용자에게 완벽합니다!**
+      **완전한 개인정보 보호 통제와 함께 전문적인 문서 편집 기능이 필요한 팀과 개인에게 완벽합니다!**
   tips:
     before_install:
       en_us: |
-        **🚀 Built-in CODE Setup (NSL Router Optimized)**
+        **🚀 Nextcloud + Collabora Setup Guide (Fixed!)**
         
-        **What This Setup Includes:**
-        ✅ Nextcloud with enhanced performance settings
-        ✅ Built-in Collabora CODE server (no separate containers)
-        ✅ Redis caching with optimized memory management
-        ✅ MariaDB with performance tuning
-        ✅ NSL Router specific optimizations
+        **What This Includes:**
+        ✅ Nextcloud with full features
+        ✅ Collabora Online Server (dedicated)
+        ✅ Redis cache for performance
+        ✅ MariaDB database
+        ✅ All services properly networked
         
-        **📋 After Installation (5-6 minutes setup):**
-        1. **Wait 5-6 minutes** - Built-in CODE needs more time to initialize
+        **📋 After Installation:**
+        1. **Wait 3-4 minutes** for all services to start
         2. **Access Nextcloud:** `https://nextcloud-username.nsl.sh`
         3. **Complete setup wizard** (create admin account)
-        4. **Install required apps:**
+        4. **Install Nextcloud Office app:**
            - Go to **Apps** → Search "**Nextcloud Office**"
-           - Install "**Nextcloud Office**"
-           - Install "**Collabora Online - Built-in CODE Server**"
-        5. **Configure Office (Critical Steps):**
+           - Click **Download and enable**
+        5. **Configure Office:**
            - Go to **Settings** → **Office**
-           - Select "**Use the built-in CODE**"
-           - In **Advanced settings:**
-             - Add to WOPI allow-list: `172.17.0.0/16`
-             - Add to WOPI allow-list: `127.0.0.1`
-             - Add to WOPI allow-list: `nextcloud`
+           - Select "**Use your own server**"
+           - **Server URL:** `http://collabora:9980`
+           - **Secret key:** Leave blank
+           - **Check:** "Disable certificate verification" ✅
+           - In **Advanced settings:** Add to WOPI allow-list: `172.17.0.0/16`
            - Click **Save**
         
-        **🎯 Test Built-in Office:**
+        **🎯 Test Collabora Functionality:**
         - Go to **Files** → **+ button**
         - You should see: **Document**, **Spreadsheet**, **Presentation**
-        - Click any option → Built-in editor opens (may take 30-60 seconds first time)
+        - Click any option → Collabora editor opens!
         
-        **💡 Built-in CODE Troubleshooting:**
-        - **First document load takes 1-2 minutes** (normal initialization)
-        - **If infinite loading:** Restart Nextcloud container and wait 5 minutes
-        - **WOPI allow-list is critical** - make sure all three entries are added
-        - **Memory usage is higher** - 3GB allocated for smooth operation
+        **💡 Troubleshooting:**
+        - Mixed Content error is normal - "Disable certificate verification" solves it
+        - Collabora uses privileged container for proper jail permissions
+        - Wait 3-4 minutes for Collabora server to fully initialize
+        - WOPI allow-list must include: `172.17.0.0/16`
         
-        **🔧 Why This Setup Works Better:**
-        - No Mixed Content issues (everything runs in same container)
-        - Better NSL Router compatibility
-        - Simplified networking (no container-to-container communication)
-        - Enhanced performance settings specifically for Built-in CODE
-        
-        **If this doesn't work, we'll know Built-in CODE has fundamental issues with NSL Router!**
+        **Perfect for professional document editing with complete privacy!**
       ko_kr: |
-        **🚀 Built-in CODE 설정 (NSL Router 최적화)**
+        **🚀 Nextcloud + Collabora 설정 가이드 (수정됨!)**
         
-        **이 설정에 포함된 기능:**
-        ✅ 향상된 성능 설정이 포함된 Nextcloud
-        ✅ 내장 Collabora CODE 서버 (별도 컨테이너 없음)
-        ✅ 최적화된 메모리 관리가 포함된 Redis 캐싱
-        ✅ 성능 튜닝된 MariaDB
-        ✅ NSL Router 특화 최적화
+        **포함된 기능:**
+        ✅ 모든 기능이 포함된 Nextcloud
+        ✅ Collabora Online Server (전용)
+        ✅ 성능을 위한 Redis 캐시
+        ✅ MariaDB 데이터베이스
+        ✅ 모든 서비스가 적절히 네트워크 연결됨
         
-        **📋 설치 후 (5-6분 설정):**
-        1. **5-6분 대기** - Built-in CODE 초기화에 더 많은 시간 필요
+        **📋 설치 후:**
+        1. **3-4분 대기** - 모든 서비스 시작을 위해
         2. **Nextcloud 접속:** `https://nextcloud-사용자명.nsl.sh`
         3. **설정 마법사 완료** (관리자 계정 생성)
-        4. **필수 앱 설치:**
+        4. **Nextcloud Office 앱 설치:**
            - **앱** → "**Nextcloud Office**" 검색
-           - "**Nextcloud Office**" 설치
-           - "**Collabora Online - Built-in CODE Server**" 설치
-        5. **Office 구성 (중요한 단계):**
+           - **다운로드 및 활성화** 클릭
+        5. **Office 구성:**
            - **설정** → **Office**로 이동
-           - "**Use the built-in CODE**" 선택
-           - **고급 설정**에서:
-             - WOPI 허용 목록에 추가: `172.17.0.0/16`
-             - WOPI 허용 목록에 추가: `127.0.0.1`
-             - WOPI 허용 목록에 추가: `nextcloud`
+           - "**Use your own server**" 선택
+           - **서버 URL:** `http://collabora:9980`
+           - **Secret key:** 비워두기
+           - **체크:** "Disable certificate verification" ✅
+           - **고급 설정**에서 WOPI 허용 목록: `172.17.0.0/16`
            - **저장** 클릭
         
-        **🎯 내장 오피스 테스트:**
+        **🎯 Collabora 기능 테스트:**
         - **파일** → **+ 버튼**으로 이동
         - 다음이 보여야 함: **문서**, **스프레드시트**, **프레젠테이션**
-        - 아무 옵션 클릭 → 내장 편집기 열림 (첫 번째는 30-60초 소요)
+        - 아무 옵션 클릭 → Collabora 편집기 열림!
         
-        **💡 Built-in CODE 문제 해결:**
-        - **첫 문서 로드는 1-2분 소요** (정상적인 초기화)
-        - **무한 로딩 시:** Nextcloud 컨테이너 재시작 후 5분 대기
-        - **WOPI 허용 목록이 중요** - 세 개 항목 모두 추가 확인
-        - **메모리 사용량이 높음** - 부드러운 작업을 위해 3GB 할당
+        **💡 문제 해결:**
+        - Mixed Content 오류는 정상 - "Disable certificate verification"으로 해결됨
+        - Collabora는 적절한 jail 권한을 위해 특권 컨테이너 사용
+        - Collabora 서버가 완전히 초기화될 때까지 3-4분 대기
+        - WOPI 허용 목록에 반드시 포함: `172.17.0.0/16`
         
-        **🔧 이 설정이 더 잘 작동하는 이유:**
-        - Mixed Content 문제 없음 (모든 것이 같은 컨테이너에서 실행)
-        - 더 나은 NSL Router 호환성
-        - 단순화된 네트워킹 (컨테이너 간 통신 없음)
-        - Built-in CODE 전용 향상된 성능 설정
-        
-        **이것도 안 되면, Built-in CODE가 NSL Router와 근본적인 문제가 있다는 걸 알 수 있습니다!**
+        **완전한 개인정보 보호와 함께 전문적인 문서 편집에 완벽합니다!**
   index: /
