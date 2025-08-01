@@ -11,14 +11,15 @@ services:
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
-      # 공식 Docker 환경변수 사용 (포트 맵핑)
+      
+      # 포트 설정
       BIND_IP: 0.0.0.0
       BIND_PORT: 80
       
-      # 인증 설정
-      BASIC_AUTH_ENABLED: true
-      BASIC_AUTH_USERNAME: admin
-      BASIC_AUTH_PASSWORD: $default_pwd
+      # ✅ 개선된 인증 설정 - Simple Login 사용
+      AUTH_MODE: simple_login
+      AUTH_USERNAME: admin
+      AUTH_PASSWORD: $default_pwd
       
       # 다운로드 설정
       DOWNLOAD_AS_CBZ: true
@@ -60,8 +61,8 @@ services:
       # 보안 설정
       DEBUG: false
     volumes:
-      # 공식 권장 볼륨 순서 (downloads가 먼저!)
-      - /DATA/Media/Manga:/home/suwayomi/.local/share/Tachidesk/downloads
+      # ✅ 개선된 볼륨 매핑 - 사용자 친화적 구조
+      - /DATA/Media/Mangas:/home/suwayomi/.local/share/Tachidesk/downloads/mangas
       - /DATA/AppData/$AppID/data:/home/suwayomi/.local/share/Tachidesk
     restart: unless-stopped
     deploy:
@@ -120,10 +121,14 @@ x-casaos:
   tips:
     before_install:
       en_us: |
-        **🔐 Default Login**
+        **🔐 Simple Login (No More Basic Auth!)**
         | Username | Password       |
         | -------- | -------------- |
         | `admin`  | `$default_pwd` |
+        
+        **📁 File Organization**
+        - **Manga Downloads**: `/DATA/Media/Mangas/` (Direct access!)
+        - **App Data**: `/DATA/AppData/suwayomi/` (System files)
         
         **📱 Mobile Reading Setup (One-time)**
         
