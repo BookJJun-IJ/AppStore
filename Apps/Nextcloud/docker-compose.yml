@@ -27,7 +27,6 @@ services:
       - NEXTCLOUD_TRUSTED_DOMAINS=localhost $domain nextcloud
       - OVERWRITEPROTOCOL=https
       - OVERWRITEHOST=$domain
-      - OVERWRITECONDADDR=^172\.17\..*$
       - REDIS_HOST=redis
       - REDIS_HOST_PORT=6379
       - REDIS_HOST_PASSWORD=$default_pwd
@@ -100,41 +99,42 @@ services:
       timeout: 10s
       retries: 3
 
-  onlyoffice:
-    image: onlyoffice/documentserver:8.2
-    container_name: nextcloud_onlyoffice
+  collabora:
+    image: collabora/code:24.04.9.1.1
+    container_name: nextcloud_collabora
+    privileged: true
     deploy:
       resources:
         limits:
           memory: 1024M
           cpus: '1.0'
-    expose:
-      - 443
+    ports:
+      - "9980:9980"
     environment:
       - TZ=$TZ
-      - JWT_ENABLED=false
-      - USE_UNAUTHORIZED_STORAGE=true
-      - SSL_CERTIFICATE_PATH=/var/www/onlyoffice/Data/certs/onlyoffice.crt
-      - SSL_KEY_PATH=/var/www/onlyoffice/Data/certs/onlyoffice.key
-      - SSL_DHPARAM_PATH=/var/www/onlyoffice/Data/certs/dhparam.pem
+      - aliasgroup1=https://$domain
+      - extra_params=--o:ssl.enable=false --o:ssl.termination=true --o:logging.level=warning
+      - username=admin
+      - password=$default_pwd
     volumes:
-      - /DATA/AppData/$AppID/onlyoffice/data:/var/www/onlyoffice/Data
-      - /DATA/AppData/$AppID/onlyoffice/lib:/var/lib/onlyoffice
-      - /DATA/AppData/$AppID/onlyoffice/logs:/var/log/onlyoffice
+      - /DATA/AppData/$AppID/collabora:/opt/collabora/systemplate
+      - /DATA/AppData/$AppID/collabora/tmp:/tmp
     restart: unless-stopped
     networks:
       - nextcloud-network
+    cap_add:
+      - MKNOD
+      - SYS_CHROOT
     healthcheck:
-      test: ["CMD", "curl", "-k", "-f", "https://localhost/healthcheck"]
+      test: ["CMD", "curl", "-f", "http://localhost:9980/hosting/discovery"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 60s
+      start_period: 90s
 
 networks:
   nextcloud-network:
     driver: bridge
-    name: nextcloud_default
 
 x-casaos:
   main: nextcloud
@@ -145,16 +145,15 @@ x-casaos:
   developer: Nextcloud GmbH
   pre-install-cmd: |
     rm -rf /DATA/AppData/$AppID/* &&
-    mkdir -p /DATA/AppData/$AppID/{config,data,html,db,redis} &&
-    mkdir -p /DATA/AppData/$AppID/collabora/{tmp} &&
+    mkdir -p /DATA/AppData/$AppID/{config,data,html,db,redis,collabora/tmp} &&
     chown -R $PUID:$PGID /DATA/AppData/$AppID &&
     chmod -R 755 /DATA/AppData/$AppID
   title:
     en_us: Nextcloud
     ko_kr: Nextcloud
   tagline:
-    en_us: Complete personal cloud with Collabora document editing
-    ko_kr: Collabora 문서 편집 기능이 포함된 완전한 개인 클라우드
+    en_us: Personal cloud with Collabora document editing
+    ko_kr: Collabora 문서 편집이 포함된 개인 클라우드
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/icon.png
   screenshot_link:
     - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/screenshot-1.png
@@ -163,16 +162,15 @@ x-casaos:
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/thumbnail.png
   description:
     en_us: |
-      **☁️ Nextcloud with Integrated Collabora**
+      **☁️ Nextcloud with Collabora Integration**
 
-      Complete personal cloud solution with **Collabora Online Document Server** included for seamless document editing.
+      Complete personal cloud solution with **Collabora Online** document server for professional document editing.
 
       **🚀 What's Included:**
       • **Nextcloud** - File management, sharing, calendar, contacts
-      • **Collabora Online Server** - Professional document editing engine
+      • **Collabora Online** - Professional document editing server
       • **Redis Cache** - Optimized performance
       • **MariaDB** - Reliable database backend
-      • **NSL Router Integration** - Clean HTTPS URLs
 
       **📝 Office Features:**
       • **Word Documents** (.docx, .doc) - Full editing capabilities
@@ -182,25 +180,23 @@ x-casaos:
       • **Comment System** - Review and feedback workflow
       • **Version History** - Track document changes
 
-      **🔧 Technical Advantages:**
-      • **Privileged Container** - Proper jail directory permissions
-      • **SSL Termination Support** - NSL Router compatibility
-      • **No External Dependencies** - Self-contained document server
-      • **High Performance** - Dedicated Collabora server
+      **🔧 Technical Features:**
+      • **NSL Router Compatible** - Clean HTTPS URLs
+      • **Privileged Container** - Proper jail permissions for Collabora
+      • **High Performance** - Dedicated resources for document editing
       • **Secure** - All data stays on your server
 
-      **Perfect for teams and individuals who need professional document editing capabilities with complete privacy control!**
+      **Perfect for teams and individuals who need professional document editing with complete privacy control!**
     ko_kr: |
-      **☁️ OnlyOffice가 통합된 Nextcloud**
+      **☁️ Collabora 통합 Nextcloud**
 
-      원활한 문서 편집을 위한 **OnlyOffice Document Server**가 포함된 완전한 개인 클라우드 솔루션입니다.
+      전문적인 문서 편집을 위한 **Collabora Online** 문서 서버가 포함된 완전한 개인 클라우드 솔루션입니다.
 
       **🚀 포함된 기능:**
       • **Nextcloud** - 파일 관리, 공유, 일정, 연락처
-      • **OnlyOffice Document Server** - 전문적인 문서 편집 엔진
+      • **Collabora Online** - 전문적인 문서 편집 서버
       • **Redis 캐시** - 최적화된 성능
       • **MariaDB** - 안정적인 데이터베이스 백엔드
-      • **NSL Router 통합** - 깔끔한 HTTPS URL
 
       **📝 오피스 기능:**
       • **Word 문서** (.docx, .doc) - 완전한 편집 기능
@@ -210,90 +206,87 @@ x-casaos:
       • **댓글 시스템** - 검토 및 피드백 워크플로
       • **버전 기록** - 문서 변경 사항 추적
 
-      **🔧 기술적 장점:**
-      • **Mixed Content 문제 없음** - 모든 서비스가 적절히 네트워크 연결
-      • **외부 종속성 없음** - 자체 포함된 문서 서버
-      • **NSL Router 최적화** - HTTPS 프록시와 완벽하게 작동
-      • **고성능** - 전용 OnlyOffice 서버
-      • **보secure** - 모든 데이터가 서버에 보관
+      **🔧 기술적 기능:**
+      • **NSL Router 호환** - 깔끔한 HTTPS URL
+      • **특권 컨테이너** - Collabora를 위한 적절한 jail 권한
+      • **고성능** - 문서 편집을 위한 전용 리소스
+      • **보안** - 모든 데이터가 서버에 보관
 
-      **완전한 개인정보 보호 통제와 함께 전문적인 문서 편집 기능이 필요한 팀과 개인에게 완벽합니다!**
+      **완전한 개인정보 보호 통제와 함께 전문적인 문서 편집이 필요한 팀과 개인에게 완벽합니다!**
   tips:
     before_install:
       en_us: |
-        **🚀 Nextcloud + Collabora Setup Guide (Fixed!)**
+        **🚀 Nextcloud + Collabora Setup Guide**
         
         **What This Includes:**
-        ✅ Nextcloud with full features
-        ✅ Collabora Online Server (dedicated)
+        ✅ Nextcloud with all features
+        ✅ Collabora Online server (dedicated)
         ✅ Redis cache for performance
         ✅ MariaDB database
-        ✅ All services properly networked
+        ✅ NSL Router optimized configuration
         
         **📋 After Installation:**
-        1. **Wait 3-4 minutes** for all services to start
+        1. **Wait 4-5 minutes** for Collabora to fully initialize
         2. **Access Nextcloud:** `https://nextcloud-username.nsl.sh`
         3. **Complete setup wizard** (create admin account)
         4. **Install Nextcloud Office app:**
            - Go to **Apps** → Search "**Nextcloud Office**"
            - Click **Download and enable**
-        5. **Configure Office:**
+        5. **Configure Collabora:**
            - Go to **Settings** → **Office**
            - Select "**Use your own server**"
            - **Server URL:** `https://9980-nextcloud-username.nsl.sh/`
            - **Secret key:** Leave blank
            - **Check:** "Disable certificate verification" ✅
-           - In **Advanced settings:** Add to WOPI allow-list: `172.17.0.0/16`
+           - **Advanced settings:** Add WOPI allow-list: `172.17.0.0/16`
            - Click **Save**
         
-        **🎯 Test Collabora Functionality:**
+        **🎯 Test Collabora:**
         - Go to **Files** → **+ button**
         - You should see: **Document**, **Spreadsheet**, **Presentation**
         - Click any option → Collabora editor opens!
         
         **💡 Troubleshooting:**
-        - Mixed Content error is normal - "Disable certificate verification" solves it
-        - Collabora uses privileged container for proper jail permissions
-        - Wait 3-4 minutes for Collabora server to fully initialize
-        - WOPI allow-list must include: `172.17.0.0/16`
+        - First document load takes 1-2 minutes (normal)
+        - If connection fails, wait longer - Collabora needs time
+        - Collabora runs on external port 9980 for NSL Router access
         
-        **Perfect for professional document editing with complete privacy!**
+        **Fixed the TRUSTED_PROXIES error that caused 502 Bad Gateway!**
       ko_kr: |
-        **🚀 Nextcloud + Collabora 설정 가이드 (수정됨!)**
+        **🚀 Nextcloud + Collabora 설정 가이드**
         
         **포함된 기능:**
         ✅ 모든 기능이 포함된 Nextcloud
-        ✅ Collabora Online Server (전용)
+        ✅ Collabora Online 서버 (전용)
         ✅ 성능을 위한 Redis 캐시
         ✅ MariaDB 데이터베이스
-        ✅ 모든 서비스가 적절히 네트워크 연결됨
+        ✅ NSL Router 최적화 구성
         
         **📋 설치 후:**
-        1. **3-4분 대기** - 모든 서비스 시작을 위해
+        1. **4-5분 대기** - Collabora 완전 초기화를 위해
         2. **Nextcloud 접속:** `https://nextcloud-사용자명.nsl.sh`
         3. **설정 마법사 완료** (관리자 계정 생성)
         4. **Nextcloud Office 앱 설치:**
            - **앱** → "**Nextcloud Office**" 검색
            - **다운로드 및 활성화** 클릭
-        5. **Office 구성:**
+        5. **Collabora 구성:**
            - **설정** → **Office**로 이동
            - "**Use your own server**" 선택
            - **서버 URL:** `https://9980-nextcloud-사용자명.nsl.sh/`
            - **Secret key:** 비워두기
            - **체크:** "Disable certificate verification" ✅
-           - **고급 설정**에서 WOPI 허용 목록: `172.17.0.0/16`
+           - **고급 설정:** WOPI 허용 목록에 `172.17.0.0/16` 추가
            - **저장** 클릭
         
-        **🎯 Collabora 기능 테스트:**
+        **🎯 Collabora 테스트:**
         - **파일** → **+ 버튼**으로 이동
         - 다음이 보여야 함: **문서**, **스프레드시트**, **프레젠테이션**
         - 아무 옵션 클릭 → Collabora 편집기 열림!
         
         **💡 문제 해결:**
-        - Mixed Content 오류는 정상 - "Disable certificate verification"으로 해결됨
-        - Collabora는 적절한 jail 권한을 위해 특권 컨테이너 사용
-        - Collabora 서버가 완전히 초기화될 때까지 3-4분 대기
-        - WOPI 허용 목록에 반드시 포함: `172.17.0.0/16`
+        - 첫 문서 로드는 1-2분 소요 (정상)
+        - 연결 실패 시 더 기다리기 - Collabora 초기화 시간 필요
+        - Collabora는 NSL Router 접근을 위해 외부 포트 9980에서 실행
         
-        **완전한 개인정보 보호와 함께 전문적인 문서 편집에 완벽합니다!**
+        **502 Bad Gateway를 일으키던 TRUSTED_PROXIES 오류를 수정했습니다!**
   index: /
