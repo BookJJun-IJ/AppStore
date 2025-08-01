@@ -134,6 +134,7 @@ services:
 networks:
   nextcloud-network:
     driver: bridge
+    name: nextcloud_default
 
 x-casaos:
   main: nextcloud
@@ -239,7 +240,7 @@ x-casaos:
         5. **Configure Office:**
            - Go to **Settings** → **Office**
            - Select "**Use your own server**"
-           - **Server URL:** `http://collabora:9980`
+           - **Server URL:** `https://9980-nextcloud-username.nsl.sh/`
            - **Secret key:** Leave blank
            - **Check:** "Disable certificate verification" ✅
            - In **Advanced settings:** Add to WOPI allow-list: `172.17.0.0/16`
@@ -277,7 +278,7 @@ x-casaos:
         5. **Office 구성:**
            - **설정** → **Office**로 이동
            - "**Use your own server**" 선택
-           - **서버 URL:** `http://collabora:9980`
+           - **서버 URL:** `https://9980-nextcloud-사용자명.nsl.sh/`
            - **Secret key:** 비워두기
            - **체크:** "Disable certificate verification" ✅
            - **고급 설정**에서 WOPI 허용 목록: `172.17.0.0/16`
