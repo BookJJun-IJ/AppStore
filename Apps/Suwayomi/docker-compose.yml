@@ -62,7 +62,7 @@ services:
       DEBUG: false
     volumes:
       # ✅ 개선된 볼륨 매핑 - 사용자 친화적 구조
-      - /DATA/Media/Mangas:/home/suwayomi/.local/share/Tachidesk/downloads/mangas
+      - /DATA/Media/Manga/Mangas:/home/suwayomi/.local/share/Tachidesk/downloads/mangas
       - /DATA/AppData/$AppID/data:/home/suwayomi/.local/share/Tachidesk
     restart: unless-stopped
     deploy:
@@ -127,7 +127,7 @@ x-casaos:
         | `admin`  | `$default_pwd` |
         
         **📁 File Organization**
-        - **Manga Downloads**: `/DATA/Media/Mangas/` (Direct access!)
+        - **Manga Downloads**: `/DATA/Media/Manga/Mangas` (Direct access!)
         - **App Data**: `/DATA/AppData/suwayomi/` (System files)
         
         **📱 Mobile Reading Setup (One-time)**
