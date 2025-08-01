@@ -2,7 +2,7 @@ name: suwayomi
 
 services:
   suwayomi:
-    image: ghcr.io/suwayomi/tachidesk:v2.0.1727  # 공식 최신 이미지
+    image: ghcr.io/suwayomi/tachidesk:v2.1.1875  # 공식 최신 이미지
     user: $PUID:$PGID
     container_name: suwayomi
     expose:
@@ -16,7 +16,7 @@ services:
       BIND_IP: 0.0.0.0
       BIND_PORT: 80
       
-      # ✅ 개선된 인증 설정 - Simple Login 사용
+      # 인증 설정 - Simple Login 방식
       AUTH_MODE: simple_login
       AUTH_USERNAME: admin
       AUTH_PASSWORD: $default_pwd
@@ -121,7 +121,7 @@ x-casaos:
   tips:
     before_install:
       en_us: |
-        **🔐 Simple Login (No More Basic Auth!)**
+        **🔐 Simple Login Authentication**
         | Username | Password       |
         | -------- | -------------- |
         | `admin`  | `$default_pwd` |
