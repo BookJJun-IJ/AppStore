@@ -146,17 +146,17 @@ x-casaos:
     chown -R $PUID:$PGID /DATA/AppData/$AppID &&
     chmod -R 755 /DATA/AppData/$AppID
   title:
-    en_us: Nextcloud
-    ko_kr: Nextcloud
+    en_us: Nextcloud with OnlyOffice
+    ko_kr: OnlyOffice가 포함된 Nextcloud
   tagline:
     en_us: Complete personal cloud with integrated document editing
     ko_kr: 통합 문서 편집 기능이 포함된 완전한 개인 클라우드
-  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Nextcloud/icon.png
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/icon.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Nextcloud/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Nextcloud/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Nextcloud/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Nextcloud/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/thumbnail.png
   description:
     en_us: |
       **☁️ Nextcloud with Integrated OnlyOffice**
@@ -236,8 +236,8 @@ x-casaos:
         5. **Configure OnlyOffice:**
            - Go to **Settings** → **OnlyOffice**
            - **Server URL:** `http://onlyoffice/`
-           - **Secret key:** Leave blank or use simple key
-           - **Check:** "Disable certificate verification"
+           - **Secret key:** Leave blank
+           - **Check:** "Disable certificate verification" ✅
            - Click **Save**
         
         **🎯 Test Office Functionality:**
@@ -246,9 +246,9 @@ x-casaos:
         - Click any option → OnlyOffice editor opens!
         
         **💡 Troubleshooting:**
-        - If Mixed Content error: Check "Disable certificate verification"
-        - If connection fails: Ensure all containers are running
-        - Wait a few minutes for OnlyOffice server to fully initialize
+        - Mixed Content error is normal - "Disable certificate verification" solves it
+        - OnlyOffice uses internal Docker networking (no external ports needed)
+        - Wait 3-4 minutes for OnlyOffice server to fully initialize
         
         **Perfect for professional document editing with complete privacy!**
       ko_kr: |
@@ -271,8 +271,8 @@ x-casaos:
         5. **OnlyOffice 구성:**
            - **설정** → **OnlyOffice**로 이동
            - **서버 URL:** `http://onlyoffice/`
-           - **Secret key:** 비워두거나 간단한 키 사용
-           - **체크:** "Disable certificate verification"
+           - **Secret key:** 비워두기
+           - **체크:** "Disable certificate verification" ✅
            - **저장** 클릭
         
         **🎯 오피스 기능 테스트:**
@@ -281,9 +281,9 @@ x-casaos:
         - 아무 옵션 클릭 → OnlyOffice 편집기 열림!
         
         **💡 문제 해결:**
-        - Mixed Content 오류 시: "Disable certificate verification" 체크
-        - 연결 실패 시: 모든 컨테이너가 실행 중인지 확인
-        - OnlyOffice 서버가 완전히 초기화될 때까지 몇 분 대기
+        - Mixed Content 오류는 정상 - "Disable certificate verification"으로 해결됨
+        - OnlyOffice는 내부 Docker 네트워킹 사용 (외부 포트 불필요)
+        - OnlyOffice 서버가 완전히 초기화될 때까지 3-4분 대기
         
         **완전한 개인정보 보호와 함께 전문적인 문서 편집에 완벽합니다!**
   index: /
