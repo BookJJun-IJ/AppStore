@@ -3,6 +3,7 @@ name: excalidraw
 services:
   excalidraw:
     image: excalidraw/excalidraw:latest
+    user: "0:0"  # root 권한으로 실행 (nginx 요구사항)
     container_name: excalidraw
     restart: unless-stopped
     deploy:
@@ -15,6 +16,8 @@ services:
     environment:
       - TZ=$TZ
       - DOMAIN=$domain
+    tmpfs:
+      - /var/cache/nginx  # nginx 캐시 디렉토리를 tmpfs로 마운트
     healthcheck:
       disable: true
 
