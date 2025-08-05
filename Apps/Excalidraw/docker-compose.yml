@@ -2,8 +2,8 @@ name: excalidraw
 
 services:
   excalidraw:
-    image: excalidraw/excalidraw:latest
-    user: $PUID:$PGID
+    # 멀티 아키텍처 지원 이미지 (비공식)
+    image: ghcr.io/a-bouts/excalidraw:latest
     container_name: excalidraw
     restart: unless-stopped
     deploy:
@@ -14,15 +14,12 @@ services:
     expose:
       - 80
     environment:
-      - PUID=$PUID
-      - PGID=$PGID
       - TZ=$TZ
       - DOMAIN=$domain
     volumes:
-      - /DATA/AppData/$AppID/config:/app/config
-      - /DATA/Documents:/app/data/documents
+      - /DATA/AppData/$AppID/config:/tmp/excalidraw-config
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80"]
+      test: ["CMD-SHELL", "curl -f http://localhost:80 || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -37,41 +34,21 @@ x-casaos:
   author: CasaOS Team
   category: Productivity
   description:
-    en_us: Excalidraw는 손으로 그린 것 같은 느낌의 다이어그램을 쉽게 스케치할 수 있는 가상 협업 화이트보드 도구입니다. 간단하고 직관적이며 빠른 협업을 위해 설계되었습니다.
-    ko_kr: Excalidraw는 손으로 그린 것 같은 느낌의 다이어그램을 쉽게 스케치할 수 있는 가상 협업 화이트보드 도구입니다.
-    zh_cn: Excalidraw 是一个虚拟协作白板工具，可让您轻松绘制具有手绘感觉的图表。
-    fr_fr: Excalidraw est un outil de tableau blanc collaboratif virtuel qui vous permet de dessiner facilement des diagrammes avec une sensation de dessin à la main.
-    es_es: Excalidraw es una herramienta de pizarra colaborativa virtual que te permite dibujar fácilmente diagramas con sensación de dibujo a mano.
+    en_us: Excalidraw is a virtual collaborative whiteboard tool that lets you easily sketch diagrams that have a hand-drawn feel to them. It's designed to be simple, intuitive, and to allow rapid collaboration. Perfect for creating wireframes, diagrams, flowcharts, and visual brainstorming.
   developer: Excalidraw Team
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/icon.png
   screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/screenshot-1.png
   tagline:
     en_us: Virtual whiteboard for sketching hand-drawn like diagrams
-    ko_kr: 손으로 그린 것 같은 다이어그램을 위한 가상 화이트보드
-    zh_cn: 用于绘制手绘式图表的虚拟白板
-    fr_fr: Tableau blanc virtuel pour esquisser des diagrammes comme dessinés à la main
-    es_es: Pizarra virtual para dibujar diagramas como si fueran dibujados a mano
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/thumbnail.png
   title:
     en_us: Excalidraw
-    ko_kr: Excalidraw
-    zh_cn: Excalidraw
-    fr_fr: Excalidraw
-    es_es: Excalidraw
   tips:
     before_install:
       en_us: |
-        **참고사항**
+        **Multi-Architecture Support**
         
-        Excalidraw는 별도의 인증이 필요하지 않은 공개 도구입니다. 설치 후 즉시 사용할 수 있습니다.
+        This version uses a community-maintained image that supports both AMD64 and ARM64 architectures.
         
-        **주요 기능:**
-        - 손으로 그린 것 같은 느낌의 다이어그램 작성
-        - 무한 캔버스
-        - 다크 모드 지원
-        - 실시간 협업 (로컬 저장)
-        - 다양한 내보내기 형식 지원 (PNG, SVG, JSON)
-        
-        문서는 `/DATA/Documents` 폴더에 저장됩니다.
+        **Note:** This is not the official Excalidraw image, but it's built from the same source code.
   index: /
-  port_map: "80"
