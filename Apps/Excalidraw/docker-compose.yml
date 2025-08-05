@@ -3,7 +3,6 @@ name: excalidraw
 services:
   excalidraw:
     image: excalidraw/excalidraw:latest
-    user: $PUID:$PGID
     container_name: excalidraw
     restart: unless-stopped
     deploy:
@@ -14,13 +13,10 @@ services:
     expose:
       - 80
     environment:
-      - PUID=$PUID
-      - PGID=$PGID
       - TZ=$TZ
       - DOMAIN=$domain
-    volumes:
-      - /DATA/AppData/$AppID/config:/app/config
-      - /DATA/Documents:/app/data/documents
+    healthcheck:
+      disable: true
 
 x-casaos:
   architectures:
@@ -30,9 +26,9 @@ x-casaos:
   author: CasaOS Team
   category: Productivity
   description:
-    en_us: Excalidraw는 손으로 그린 것 같은 느낌의 다이어그램을 쉽게 스케치할 수 있는 가상 협업 화이트보드 도구입니다. 간단하고 직관적이며 빠른 협업을 위해 설계되었습니다.
-    ko_kr: Excalidraw는 손으로 그린 것 같은 느낌의 다이어그램을 쉽게 스케치할 수 있는 가상 협업 화이트보드 도구입니다.
-    zh_cn: Excalidraw 是一个虚拟协作白板工具，可让您轻松绘制具有手绘感觉的图表。
+    en_us: Excalidraw is a virtual collaborative whiteboard tool that lets you easily sketch diagrams that have a hand-drawn feel to them. It's designed to be simple, intuitive, and to allow rapid collaboration. Perfect for creating wireframes, diagrams, flowcharts, and visual brainstorming.
+    ko_kr: Excalidraw는 손으로 그린 것 같은 느낌의 다이어그램을 쉽게 스케치할 수 있는 가상 협업 화이트보드 도구입니다. 간단하고 직관적이며 빠른 협업을 위해 설계되었습니다.
+    zh_cn: Excalidraw 是一个虚拟协作白板工具，可让您轻松绘制具有手绘感觉的图表。它设计简单、直观，允许快速协作。
     fr_fr: Excalidraw est un outil de tableau blanc collaboratif virtuel qui vous permet de dessiner facilement des diagrammes avec une sensation de dessin à la main.
     es_es: Excalidraw es una herramienta de pizarra colaborativa virtual que te permite dibujar fácilmente diagramas con sensación de dibujo a mano.
   developer: Excalidraw Team
@@ -54,16 +50,34 @@ x-casaos:
   tips:
     before_install:
       en_us: |
-        **참고사항**
+        **Welcome to Excalidraw!**
         
-        Excalidraw는 별도의 인증이 필요하지 않은 공개 도구입니다. 설치 후 즉시 사용할 수 있습니다.
+        Excalidraw is a virtual whiteboard tool that doesn't require any authentication. You can start using it immediately after installation.
+        
+        **Key Features:**
+        - ✏️ Hand-drawn style diagrams
+        - 🖼️ Infinite canvas
+        - 🌙 Dark mode support  
+        - 💾 Local file saving (browser-based)
+        - 📤 Export to PNG, SVG, JSON formats
+        - 📚 Rich library ecosystem
+        
+        **Note:** This is a client-only version without real-time collaboration features.
+        All drawings are stored locally in your browser until you manually save them.
+      ko_kr: |
+        **Excalidraw에 오신 것을 환영합니다!**
+        
+        Excalidraw는 별도의 인증이 필요하지 않은 가상 화이트보드 도구입니다. 설치 후 즉시 사용할 수 있습니다.
         
         **주요 기능:**
-        - 손으로 그린 것 같은 느낌의 다이어그램 작성
-        - 무한 캔버스
-        - 다크 모드 지원
-        - 실시간 협업 (로컬 저장)
-        - 다양한 내보내기 형식 지원 (PNG, SVG, JSON)
+        - ✏️ 손으로 그린 것 같은 스타일의 다이어그램
+        - 🖼️ 무한 캔버스
+        - 🌙 다크 모드 지원
+        - 💾 로컬 파일 저장 (브라우저 기반)
+        - 📤 PNG, SVG, JSON 형식으로 내보내기
+        - 📚 풍부한 라이브러리 생태계
         
-        문서는 `/DATA/Documents` 폴더에 저장됩니다.
+        **참고:** 실시간 협업 기능이 없는 클라이언트 전용 버전입니다.
+        모든 그림은 수동으로 저장하기 전까지 브라우저에 로컬로 저장됩니다.
   index: /
+  port_map: "80"
