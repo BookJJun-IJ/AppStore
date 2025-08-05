@@ -21,12 +21,6 @@ services:
     volumes:
       - /DATA/AppData/$AppID/config:/app/config
       - /DATA/Documents:/app/data/documents
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
 
 x-casaos:
   architectures:
@@ -73,4 +67,3 @@ x-casaos:
         
         문서는 `/DATA/Documents` 폴더에 저장됩니다.
   index: /
-  port_map: "80"
