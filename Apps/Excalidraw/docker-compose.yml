@@ -1,10 +1,58 @@
-name: excalidraw
+name: excalidraw-fullstack
 
 services:
+  # Storage Backend - 그림 저장 및 공유 서버
+  storage:
+    image: kiliandeca/excalidraw-storage-backend:latest
+    container_name: excalidraw-storage
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+    environment:
+      - PORT=8081
+      - STORAGE_URI=redis://redis:6379
+      - LOG_LEVEL=info
+    expose:
+      - 8081
+    volumes:
+      - /DATA/Documents/Excalidraw:/app/data
+    depends_on:
+      - redis
+
+  # Redis - 데이터 저장소
+  redis:
+    image: redis:7-alpine
+    container_name: excalidraw-redis
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.1'
+    volumes:
+      - /DATA/AppData/$AppID/redis:/data
+    command: redis-server --appendonly yes
+
+  # Room Server - 실시간 협업 서버
+  room:
+    image: excalidraw/excalidraw-room:sha-49bf529
+    container_name: excalidraw-room
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.1'
+    expose:
+      - 80
+
+  # Excalidraw Frontend - 메인 애플리케이션 (협업 기능 포함)
   excalidraw:
-    image: excalidraw/excalidraw:latest
-    user: "0:0"  # root 권한으로 실행 (nginx 요구사항)
-    container_name: excalidraw
+    image: alswl/excalidraw:v0.17.3-fork-b1
+    container_name: excalidraw-app
     restart: unless-stopped
     deploy:
       resources:
@@ -16,8 +64,14 @@ services:
     environment:
       - TZ=$TZ
       - DOMAIN=$domain
-    tmpfs:
-      - /var/cache/nginx  # nginx 캐시 디렉토리를 tmpfs로 마운트
+      - VITE_APP_BACKEND_V2_GET_URL=http://storage:8081/api/v2/scenes/
+      - VITE_APP_BACKEND_V2_POST_URL=http://storage:8081/api/v2/scenes/
+      - VITE_APP_WS_SERVER_URL=ws://room:80
+      - VITE_APP_HTTP_STORAGE_BACKEND_URL=http://storage:8081/api/v2
+      - VITE_APP_STORAGE_BACKEND=http
+    depends_on:
+      - storage
+      - room
     healthcheck:
       disable: true
 
@@ -29,58 +83,72 @@ x-casaos:
   author: CasaOS Team
   category: Productivity
   description:
-    en_us: Excalidraw is a virtual collaborative whiteboard tool that lets you easily sketch diagrams that have a hand-drawn feel to them. It's designed to be simple, intuitive, and to allow rapid collaboration. Perfect for creating wireframes, diagrams, flowcharts, and visual brainstorming.
-    ko_kr: Excalidraw는 손으로 그린 것 같은 느낌의 다이어그램을 쉽게 스케치할 수 있는 가상 협업 화이트보드 도구입니다. 간단하고 직관적이며 빠른 협업을 위해 설계되었습니다.
-    zh_cn: Excalidraw 是一个虚拟协作白板工具，可让您轻松绘制具有手绘感觉的图表。它设计简单、直观，允许快速协作。
-    fr_fr: Excalidraw est un outil de tableau blanc collaboratif virtuel qui vous permet de dessiner facilement des diagrammes avec une sensation de dessin à la main.
-    es_es: Excalidraw es una herramienta de pizarra colaborativa virtual que te permite dibujar fácilmente diagramas con sensación de dibujo a mano.
-  developer: Excalidraw Team
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/icon.png
-  screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/screenshot-1.png
+    en_us: Full-Stack Excalidraw with real-time collaboration, server-side storage, and sharing capabilities. Create and collaborate on diagrams with multiple users simultaneously, with automatic saving to the server.
+    ko_kr: 실시간 협업, 서버 측 저장, 공유 기능을 갖춘 Full-Stack Excalidraw입니다. 여러 사용자가 동시에 다이어그램을 만들고 협업할 수 있으며, 서버에 자동으로 저장됩니다.
+    zh_cn: 具有实时协作、服务器端存储和共享功能的全栈 Excalidraw。多用户可同时创建和协作图表，自动保存到服务器。
+    fr_fr: Excalidraw Full-Stack avec collaboration en temps réel, stockage côté serveur et capacités de partage.
+    es_es: Excalidraw Full-Stack con colaboración en tiempo real, almacenamiento del lado del servidor y capacidades de compartir.
+  developer: Excalidraw Team + Community
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ExcalidrawFullStack/icon.png
+  screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ExcalidrawFullStack/screenshot-1.png
   tagline:
-    en_us: Virtual whiteboard for sketching hand-drawn like diagrams
-    ko_kr: 손으로 그린 것 같은 다이어그램을 위한 가상 화이트보드
-    zh_cn: 用于绘制手绘式图表的虚拟白板
-    fr_fr: Tableau blanc virtuel pour esquisser des diagrammes comme dessinés à la main
-    es_es: Pizarra virtual para dibujar diagramas como si fueran dibujados a mano
-  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/thumbnail.png
+    en_us: Full-featured collaborative whiteboard with server storage
+    ko_kr: 서버 저장소를 갖춘 완전한 협업 화이트보드
+    zh_cn: 具有服务器存储的全功能协作白板
+    fr_fr: Tableau blanc collaboratif complet avec stockage serveur
+    es_es: Pizarra colaborativa completa con almacenamiento en servidor
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ExcalidrawFullStack/thumbnail.png
   title:
-    en_us: Excalidraw
-    ko_kr: Excalidraw
-    zh_cn: Excalidraw
-    fr_fr: Excalidraw
-    es_es: Excalidraw
+    en_us: Excalidraw Full-Stack
+    ko_kr: Excalidraw Full-Stack
+    zh_cn: Excalidraw Full-Stack
+    fr_fr: Excalidraw Full-Stack
+    es_es: Excalidraw Full-Stack
   tips:
     before_install:
       en_us: |
-        **Welcome to Excalidraw!**
+        **🚀 Full-Stack Excalidraw Features:**
         
-        Excalidraw is a virtual whiteboard tool that doesn't require any authentication. You can start using it immediately after installation.
+        **✅ Real-time Collaboration**
+        - Multiple users can edit the same diagram simultaneously
+        - Live cursor tracking and updates
         
-        **Key Features:**
-        - ✏️ Hand-drawn style diagrams
-        - 🖼️ Infinite canvas
-        - 🌙 Dark mode support  
-        - 💾 Local file saving (browser-based)
-        - 📤 Export to PNG, SVG, JSON formats
-        - 📚 Rich library ecosystem
+        **✅ Server Storage**
+        - All drawings automatically saved to `/DATA/Documents/Excalidraw/`
+        - Persistent storage across browser sessions
+        - Automatic backup with your data
         
-        **Note:** This is a client-only version without real-time collaboration features.
-        All drawings are stored locally in your browser until you manually save them.
+        **✅ Sharing & Links**
+        - Generate shareable links for your diagrams
+        - Public and private sharing options
+        
+        **⚠️ Resource Usage:**
+        This setup uses 3 containers (Redis, Storage, Frontend) and requires more resources than the basic version.
+        
+        **🔧 Total Resources:**
+        - Memory: ~640MB (Redis: 128MB + Storage: 256MB + App: 256MB)
+        - CPU: ~0.6 cores
       ko_kr: |
-        **Excalidraw에 오신 것을 환영합니다!**
+        **🚀 Full-Stack Excalidraw 기능:**
         
-        Excalidraw는 별도의 인증이 필요하지 않은 가상 화이트보드 도구입니다. 설치 후 즉시 사용할 수 있습니다.
+        **✅ 실시간 협업**
+        - 여러 사용자가 동시에 같은 다이어그램 편집
+        - 실시간 커서 추적 및 업데이트
         
-        **주요 기능:**
-        - ✏️ 손으로 그린 것 같은 스타일의 다이어그램
-        - 🖼️ 무한 캔버스
-        - 🌙 다크 모드 지원
-        - 💾 로컬 파일 저장 (브라우저 기반)
-        - 📤 PNG, SVG, JSON 형식으로 내보내기
-        - 📚 풍부한 라이브러리 생태계
+        **✅ 서버 저장**
+        - 모든 그림이 `/DATA/Documents/Excalidraw/`에 자동 저장
+        - 브라우저 세션 간 지속적 저장
+        - 데이터와 함께 자동 백업
         
-        **참고:** 실시간 협업 기능이 없는 클라이언트 전용 버전입니다.
-        모든 그림은 수동으로 저장하기 전까지 브라우저에 로컬로 저장됩니다.
+        **✅ 공유 및 링크**
+        - 다이어그램용 공유 링크 생성
+        - 공개 및 비공개 공유 옵션
+        
+        **⚠️ 리소스 사용량:**
+        이 설정은 3개 컨테이너(Redis, Storage, Frontend)를 사용하며 기본 버전보다 많은 리소스가 필요합니다.
+        
+        **🔧 총 리소스:**
+        - 메모리: ~640MB (Redis: 128MB + Storage: 256MB + App: 256MB)
+        - CPU: ~0.6 코어
   index: /
   port_map: "80"
