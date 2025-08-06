@@ -53,7 +53,7 @@ services:
 
   # Excalidraw Frontend - 메인 애플리케이션
   excalidraw-app:
-    image: alswl/excalidraw:latest
+    image: alswl/excalidraw:v0.17.3-fork-b1
     platform: linux/amd64  # AMD64 강제 지정
     user: "0:0"  # root 권한으로 env.js 파일 생성 허용
     container_name: excalidraw-app
