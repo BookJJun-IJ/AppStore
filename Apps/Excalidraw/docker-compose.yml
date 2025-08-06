@@ -29,13 +29,19 @@ services:
     environment:
       - PORT=8081
       - STORAGE_URI=redis://redis:6379
-      - LOG_LEVEL=info
+      - LOG_LEVEL=debug  # 디버깅을 위해 상세 로그
+      - GLOBAL_PREFIX=/api/v2  # API 경로 접두사
     expose:
       - 8081
     volumes:
-      - /DATA/Documents/Excalidraw:/app/data
+      - /DATA/Documents/Excalidraw:/app/data  # 실제 파일 저장용
     depends_on:
       - redis
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8081/api/v2/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # Room Server - 실시간 협업 서버
   room:
@@ -68,11 +74,15 @@ services:
     environment:
       - TZ=$TZ
       - DOMAIN=$domain
+      # Storage Backend 연결 설정
       - VITE_APP_BACKEND_V2_GET_URL=http://storage:8081/api/v2/scenes/
       - VITE_APP_BACKEND_V2_POST_URL=http://storage:8081/api/v2/scenes/
-      - VITE_APP_WS_SERVER_URL=ws://room:80
       - VITE_APP_HTTP_STORAGE_BACKEND_URL=http://storage:8081/api/v2
       - VITE_APP_STORAGE_BACKEND=http
+      # Room Server 연결 설정  
+      - VITE_APP_WS_SERVER_URL=ws://room:80
+      # Firebase 비활성화
+      - VITE_APP_FIREBASE_CONFIG={}
     depends_on:
       - storage
       - room
