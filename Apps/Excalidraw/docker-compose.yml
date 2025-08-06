@@ -1,10 +1,10 @@
-name: excalidraw-fullstack
+name: excalidraw
 
 services:
   # Redis - 데이터 저장소
   redis:
     image: redis:7-alpine
-    container_name: excalidraw-redis
+    container_name: redis
     restart: unless-stopped
     deploy:
       resources:
@@ -19,7 +19,7 @@ services:
   storage:
     image: kiliandeca/excalidraw-storage-backend:latest
     platform: linux/amd64  # AMD64 강제 지정
-    container_name: excalidraw-storage
+    container_name: storage
     restart: unless-stopped
     deploy:
       resources:
@@ -41,7 +41,7 @@ services:
   room:
     image: excalidraw/excalidraw-room:sha-49bf529
     platform: linux/amd64  # AMD64 강제 지정
-    container_name: excalidraw-room
+    container_name: room
     restart: unless-stopped
     deploy:
       resources:
@@ -52,11 +52,11 @@ services:
       - 80
 
   # Excalidraw Frontend - 메인 애플리케이션
-  excalidraw-app:
-    image: alswl/excalidraw:v0.17.3-fork-b1
+  excalidraw:
+    image: alswl/excalidraw:v0.17.3-fork-b1  # 원래 작동하던 버전으로 복구
     platform: linux/amd64  # AMD64 강제 지정
     user: "0:0"  # root 권한으로 env.js 파일 생성 허용
-    container_name: excalidraw-app
+    container_name: excalidraw
     restart: unless-stopped
     deploy:
       resources:
@@ -87,36 +87,36 @@ x-casaos:
   architectures:
     - amd64
     - arm64  # platform 강제 지정으로 ARM64에서도 동작
-  main: excalidraw-app  # 컨테이너 이름과 정확히 일치
+  main: excalidraw  # 컨테이너 이름과 정확히 일치
   webui_port: 80
   author: CasaOS Team
   category: Productivity
   description:
-    en_us: Full-Stack Excalidraw with real-time collaboration, server-side storage, and sharing capabilities. Create and collaborate on diagrams with multiple users simultaneously, with automatic saving to the server.
-    ko_kr: 실시간 협업, 서버 측 저장, 공유 기능을 갖춘 Full-Stack Excalidraw입니다. 여러 사용자가 동시에 다이어그램을 만들고 협업할 수 있으며, 서버에 자동으로 저장됩니다.
-    zh_cn: 具有实时协作、服务器端存储和共享功能的全栈 Excalidraw。多用户可同时创建和协作图表，自动保存到服务器。
-    fr_fr: Excalidraw Full-Stack avec collaboration en temps réel, stockage côté serveur et capacités de partage.
-    es_es: Excalidraw Full-Stack con colaboración en tiempo real, almacenamiento del lado del servidor y capacidades de compartir.
-  developer: Excalidraw Team + Community
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ExcalidrawFullStack/icon.png
-  screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ExcalidrawFullStack/screenshot-1.png
+    en_us: Excalidraw is a virtual collaborative whiteboard tool with real-time collaboration, server-side storage, and sharing capabilities. Create and collaborate on diagrams with multiple users simultaneously.
+    ko_kr: 실시간 협업, 서버 저장, 공유 기능을 갖춘 가상 협업 화이트보드 도구입니다. 여러 사용자가 동시에 다이어그램을 만들고 협업할 수 있습니다.
+    zh_cn: Excalidraw 是一个具有实时协作、服务器端存储和共享功能的虚拟协作白板工具。
+    fr_fr: Excalidraw est un outil de tableau blanc collaboratif virtuel avec collaboration en temps réel et stockage côté serveur.
+    es_es: Excalidraw es una herramienta de pizarra colaborativa virtual con colaboración en tiempo real y almacenamiento del lado del servidor.
+  developer: Excalidraw Team
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/icon.png
+  screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/screenshot-1.png
   tagline:
-    en_us: Full-featured collaborative whiteboard with server storage
-    ko_kr: 서버 저장소를 갖춘 완전한 협업 화이트보드
-    zh_cn: 具有服务器存储的全功能协作白板
-    fr_fr: Tableau blanc collaboratif complet avec stockage serveur
-    es_es: Pizarra colaborativa completa con almacenamiento en servidor
-  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ExcalidrawFullStack/thumbnail.png
+    en_us: Virtual collaborative whiteboard with server storage
+    ko_kr: 서버 저장 기능을 갖춘 가상 협업 화이트보드
+    zh_cn: 具有服务器存储的虚拟协作白板
+    fr_fr: Tableau blanc collaboratif virtuel avec stockage serveur
+    es_es: Pizarra colaborativa virtual con almacenamiento en servidor
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/thumbnail.png
   title:
-    en_us: Excalidraw Full-Stack
-    ko_kr: Excalidraw Full-Stack
-    zh_cn: Excalidraw Full-Stack
-    fr_fr: Excalidraw Full-Stack
-    es_es: Excalidraw Full-Stack
+    en_us: Excalidraw
+    ko_kr: Excalidraw
+    zh_cn: Excalidraw
+    fr_fr: Excalidraw
+    es_es: Excalidraw
   tips:
     before_install:
       en_us: |
-        **🚀 Full-Stack Excalidraw Features:**
+        **🚀 Excalidraw Features:**
         
         **✅ Real-time Collaboration**
         - Multiple users can edit the same diagram simultaneously
@@ -138,7 +138,7 @@ x-casaos:
         - Memory: ~768MB (Redis: 128MB + Storage: 256MB + Room: 128MB + App: 256MB)
         - CPU: ~0.7 cores
       ko_kr: |
-        **🚀 Full-Stack Excalidraw 기능:**
+        **🚀 Excalidraw 기능:**
         
         **✅ 실시간 협업**
         - 여러 사용자가 동시에 같은 다이어그램 편집
