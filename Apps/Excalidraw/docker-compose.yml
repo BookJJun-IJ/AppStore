@@ -18,6 +18,7 @@ services:
   # Storage Backend - 그림 저장 및 공유 서버
   storage:
     image: kiliandeca/excalidraw-storage-backend:latest
+    platform: linux/amd64  # AMD64 강제 지정
     container_name: excalidraw-storage
     restart: unless-stopped
     deploy:
@@ -39,6 +40,7 @@ services:
   # Room Server - 실시간 협업 서버
   room:
     image: excalidraw/excalidraw-room:sha-49bf529
+    platform: linux/amd64  # AMD64 강제 지정
     container_name: excalidraw-room
     restart: unless-stopped
     deploy:
@@ -52,6 +54,7 @@ services:
   # Excalidraw Frontend - 메인 애플리케이션
   excalidraw-app:
     image: alswl/excalidraw:v0.17.3-fork-b1
+    platform: linux/amd64  # AMD64 강제 지정
     user: "0:0"  # root 권한으로 env.js 파일 생성 허용
     container_name: excalidraw-app
     restart: unless-stopped
@@ -74,11 +77,16 @@ services:
       - storage
       - room
     healthcheck:
-      disable: true
+      test: ["CMD-SHELL", "curl -f http://localhost:80/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
 x-casaos:
   architectures:
     - amd64
+    - arm64  # platform 강제 지정으로 ARM64에서도 동작
   main: excalidraw-app  # 컨테이너 이름과 정확히 일치
   webui_port: 80
   author: CasaOS Team
@@ -124,11 +132,11 @@ x-casaos:
         - Public and private sharing options
         
         **⚠️ Resource Usage:**
-        This setup uses 3 containers (Redis, Storage, Frontend) and requires more resources than the basic version.
+        This setup uses 4 containers (Redis, Storage, Room, Frontend) and requires more resources than the basic version.
         
         **🔧 Total Resources:**
-        - Memory: ~640MB (Redis: 128MB + Storage: 256MB + App: 256MB)
-        - CPU: ~0.6 cores
+        - Memory: ~768MB (Redis: 128MB + Storage: 256MB + Room: 128MB + App: 256MB)
+        - CPU: ~0.7 cores
       ko_kr: |
         **🚀 Full-Stack Excalidraw 기능:**
         
@@ -146,9 +154,9 @@ x-casaos:
         - 공개 및 비공개 공유 옵션
         
         **⚠️ 리소스 사용량:**
-        이 설정은 3개 컨테이너(Redis, Storage, Frontend)를 사용하며 기본 버전보다 많은 리소스가 필요합니다.
+        이 설정은 4개 컨테이너(Redis, Storage, Room, Frontend)를 사용하며 기본 버전보다 많은 리소스가 필요합니다.
         
         **🔧 총 리소스:**
-        - 메모리: ~640MB (Redis: 128MB + Storage: 256MB + App: 256MB)
-        - CPU: ~0.6 코어
+        - 메모리: ~768MB (Redis: 128MB + Storage: 256MB + Room: 128MB + App: 256MB)
+        - CPU: ~0.7 코어
   index: /
