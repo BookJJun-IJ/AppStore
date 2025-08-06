@@ -1,7 +1,26 @@
 name: excalidraw-fullstack
 
 services:
-  # Storage Backend - 그림 저장 및 공유 서버
+  # Redis - 가장 먼저 시작
+  redis:
+    image: redis:7-alpine
+    container_name: excalidraw-redis
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.1'
+    volumes:
+      - /DATA/AppData/$AppID/redis:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Storage Backend - Redis 의존
   storage:
     image: kiliandeca/excalidraw-storage-backend:latest
     container_name: excalidraw-storage
@@ -17,26 +36,20 @@ services:
       - LOG_LEVEL=info
     expose:
       - 8081
+    ports:
+      - "8081:8081"  # 디버깅용 직접 접근
     volumes:
       - /DATA/Documents/Excalidraw:/app/data
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8081/api/v2/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
-  # Redis - 데이터 저장소
-  redis:
-    image: redis:7-alpine
-    container_name: excalidraw-redis
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 128M
-          cpus: '0.1'
-    volumes:
-      - /DATA/AppData/$AppID/redis:/data
-    command: redis-server --appendonly yes
-
-  # Room Server - 실시간 협업 서버
+  # Room Server - 독립적으로 시작
   room:
     image: excalidraw/excalidraw-room:sha-49bf529
     container_name: excalidraw-room
@@ -48,9 +61,11 @@ services:
           cpus: '0.1'
     expose:
       - 80
+    ports:
+      - "8082:80"  # 디버깅용 직접 접근
 
-  # Excalidraw Frontend - 메인 애플리케이션 (협업 기능 포함)
-  excalidraw:
+  # Excalidraw Frontend - 모든 서비스 의존
+  excalidraw-app:
     image: alswl/excalidraw:v0.17.3-fork-b1
     container_name: excalidraw-app
     restart: unless-stopped
@@ -61,6 +76,8 @@ services:
           cpus: '0.25'
     expose:
       - 80
+    ports:
+      - "8080:80"  # 디버깅용 직접 접근
     environment:
       - TZ=$TZ
       - DOMAIN=$domain
@@ -70,85 +87,63 @@ services:
       - VITE_APP_HTTP_STORAGE_BACKEND_URL=http://storage:8081/api/v2
       - VITE_APP_STORAGE_BACKEND=http
     depends_on:
-      - storage
-      - room
+      storage:
+        condition: service_healthy
+      room:
+        condition: service_started
     healthcheck:
-      disable: true
+      test: ["CMD-SHELL", "curl -f http://localhost:80 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 x-casaos:
   architectures:
     - amd64
-  main: excalidraw
+  main: excalidraw-app
   webui_port: 80
   author: CasaOS Team
   category: Productivity
   description:
     en_us: Full-Stack Excalidraw with real-time collaboration, server-side storage, and sharing capabilities. Create and collaborate on diagrams with multiple users simultaneously, with automatic saving to the server.
     ko_kr: 실시간 협업, 서버 측 저장, 공유 기능을 갖춘 Full-Stack Excalidraw입니다. 여러 사용자가 동시에 다이어그램을 만들고 협업할 수 있으며, 서버에 자동으로 저장됩니다.
-    zh_cn: 具有实时协作、服务器端存储和共享功能的全栈 Excalidraw。多用户可同时创建和协作图表，自动保存到服务器。
-    fr_fr: Excalidraw Full-Stack avec collaboration en temps réel, stockage côté serveur et capacités de partage.
-    es_es: Excalidraw Full-Stack con colaboración en tiempo real, almacenamiento del lado del servidor y capacidades de compartir.
   developer: Excalidraw Team + Community
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ExcalidrawFullStack/icon.png
   screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ExcalidrawFullStack/screenshot-1.png
   tagline:
     en_us: Full-featured collaborative whiteboard with server storage
     ko_kr: 서버 저장소를 갖춘 완전한 협업 화이트보드
-    zh_cn: 具有服务器存储的全功能协作白板
-    fr_fr: Tableau blanc collaboratif complet avec stockage serveur
-    es_es: Pizarra colaborativa completa con almacenamiento en servidor
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ExcalidrawFullStack/thumbnail.png
   title:
     en_us: Excalidraw Full-Stack
     ko_kr: Excalidraw Full-Stack
-    zh_cn: Excalidraw Full-Stack
-    fr_fr: Excalidraw Full-Stack
-    es_es: Excalidraw Full-Stack
   tips:
     before_install:
       en_us: |
-        **🚀 Full-Stack Excalidraw Features:**
+        **🚀 Full-Stack Excalidraw (Debug Version)**
         
-        **✅ Real-time Collaboration**
-        - Multiple users can edit the same diagram simultaneously
-        - Live cursor tracking and updates
+        This version includes direct port access for debugging:
+        - Main App: http://localhost:8080
+        - Storage API: http://localhost:8081
+        - Room Server: http://localhost:8082
         
-        **✅ Server Storage**
-        - All drawings automatically saved to `/DATA/Documents/Excalidraw/`
-        - Persistent storage across browser sessions
-        - Automatic backup with your data
-        
-        **✅ Sharing & Links**
-        - Generate shareable links for your diagrams
-        - Public and private sharing options
-        
-        **⚠️ Resource Usage:**
-        This setup uses 3 containers (Redis, Storage, Frontend) and requires more resources than the basic version.
-        
-        **🔧 Total Resources:**
-        - Memory: ~640MB (Redis: 128MB + Storage: 256MB + App: 256MB)
-        - CPU: ~0.6 cores
+        **Features:**
+        - ✅ Real-time collaboration
+        - ✅ Server storage in `/DATA/Documents/Excalidraw/`
+        - ✅ Sharing links
+        - ✅ Health checks for better reliability
       ko_kr: |
-        **🚀 Full-Stack Excalidraw 기능:**
+        **🚀 Full-Stack Excalidraw (디버그 버전)**
         
-        **✅ 실시간 협업**
-        - 여러 사용자가 동시에 같은 다이어그램 편집
-        - 실시간 커서 추적 및 업데이트
+        디버깅을 위한 직접 포트 접근 포함:
+        - 메인 앱: http://localhost:8080
+        - 스토리지 API: http://localhost:8081
+        - Room 서버: http://localhost:8082
         
-        **✅ 서버 저장**
-        - 모든 그림이 `/DATA/Documents/Excalidraw/`에 자동 저장
-        - 브라우저 세션 간 지속적 저장
-        - 데이터와 함께 자동 백업
-        
-        **✅ 공유 및 링크**
-        - 다이어그램용 공유 링크 생성
-        - 공개 및 비공개 공유 옵션
-        
-        **⚠️ 리소스 사용량:**
-        이 설정은 3개 컨테이너(Redis, Storage, Frontend)를 사용하며 기본 버전보다 많은 리소스가 필요합니다.
-        
-        **🔧 총 리소스:**
-        - 메모리: ~640MB (Redis: 128MB + Storage: 256MB + App: 256MB)
-        - CPU: ~0.6 코어
+        **기능:**
+        - ✅ 실시간 협업
+        - ✅ `/DATA/Documents/Excalidraw/`에 서버 저장
+        - ✅ 공유 링크
+        - ✅ 안정성을 위한 Health Check
   index: /
   port_map: "80"
