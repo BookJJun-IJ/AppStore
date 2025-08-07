@@ -127,8 +127,8 @@ x-casaos:
     en_us: Team communication with free Jitsi video conferencing
     ko_kr: 무료 Jitsi 화상회의가 포함된 팀 커뮤니케이션
   title:
-    en_us: Rocket.Chat + Jitsi
-    ko_kr: Rocket.Chat + Jitsi
+    en_us: Rocket.Chat
+    ko_kr: Rocket.Chat
   tips:
     before_install:
       en_us: |
