@@ -42,7 +42,7 @@ services:
       MONGO_WATCHDB_ENABLED: "true"
       
       # Server connection settings
-      ROOT_URL: https://$domain                                      # NSL 도메인 사용
+      ROOT_URL: http://localhost:80                                      # 기본 localhost URL
       PORT: 80
       BIND_IP: "0.0.0.0"
       
@@ -127,8 +127,8 @@ x-casaos:
     en_us: Team communication with free Jitsi video conferencing
     ko_kr: 무료 Jitsi 화상회의가 포함된 팀 커뮤니케이션
   title:
-    en_us: Rocket.Chat
-    ko_kr: Rocket.Chat
+    en_us: Rocket.Chat + Jitsi
+    ko_kr: Rocket.Chat + Jitsi
   tips:
     before_install:
       en_us: |
