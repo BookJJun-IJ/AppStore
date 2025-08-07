@@ -3,11 +3,14 @@ name: odoo
 services:
   postgres:
     image: postgres:15.8
+    user: $PUID:$PGID
     environment:
       POSTGRES_DB: postgres
-      POSTGRES_USER: postgres
+      POSTGRES_USER: odoo
       POSTGRES_PASSWORD: $default_pwd
-      POSTGRES_HOST_AUTH_METHOD: trust
+      PGDATA: /var/lib/postgresql/data/pgdata
+      PUID: $PUID
+      PGID: $PGID
     volumes:
       - /DATA/AppData/$AppID/postgres-data:/var/lib/postgresql/data
     deploy:
@@ -19,14 +22,22 @@ services:
 
   odoo:
     image: odoo:18.0
+    user: $PUID:$PGID
     depends_on:
       - postgres
     expose:
       - 8069
     environment:
       HOST: postgres
-      USER: postgres
+      USER: odoo
       PASSWORD: $default_pwd
+      PUID: $PUID
+      PGID: $PGID
+      TZ: $TZ
+    volumes:
+      - /DATA/AppData/$AppID/odoo-data:/var/lib/odoo
+      - /DATA/AppData/$AppID/config:/etc/odoo
+      - /DATA/AppData/$AppID/addons:/mnt/extra-addons
     deploy:
       resources:
         limits:
@@ -46,6 +57,36 @@ x-casaos:
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Odoo/icon.png
   title:
     en_us: Odoo
+    ko_kr: 오두
   tagline:
-    en_us: Business management suite
+    en_us: Open Source ERP and CRM
+    ko_kr: 오픈소스 ERP 및 CRM 솔루션
+  description:
+    en_us: |
+      Odoo is a suite of open source business apps that cover all your company needs: CRM, eCommerce, accounting, inventory, point of sale, project management, etc. 
+      
+      Odoo's unique value proposition is to be at the same time very easy to use and fully integrated.
+    ko_kr: |
+      Odoo는 CRM, 전자상거래, 회계, 재고 관리, POS, 프로젝트 관리 등 회사의 모든 비즈니스 요구사항을 충족하는 오픈 소스 비즈니스 앱 모음입니다.
+      
+      Odoo의 고유한 가치는 사용이 매우 쉬우면서도 완전히 통합되어 있다는 점입니다.
+  tips:
+    before_install:
+      en_us: |
+        ## 초기 설정 정보
+        
+        설치 후 첫 접속시 다음 정보를 사용하여 데이터베이스를 생성하세요:
+        
+        | 항목 | 값 |
+        | --- | --- |
+        | 마스터 비밀번호 | `$default_pwd` |
+        | 데이터베이스 이름 | `odoo` |
+        | 이메일 | 관리자 이메일 주소 |
+        | 비밀번호 | 관리자 계정 비밀번호 |
+        | 언어 | 원하는 언어 선택 |
+        | 국가 | 대한민국 |
+        
+        **참고**: 
+        - 첫 설정 시 몇 분이 소요될 수 있습니다
+        - 데이터베이스 생성 후 관리자 계정으로 로그인할 수 있습니다
   index: /
