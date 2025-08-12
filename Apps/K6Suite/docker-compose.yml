@@ -46,26 +46,21 @@ services:
     user: $PUID:$PGID
     environment:
       K6_OUT: influxdb=http://influxdb:8086/k6
-      K6_WEB_DASHBOARD: "true"
-      K6_WEB_DASHBOARD_EXPORT: /results/test-report.html
-      K6_WEB_DASHBOARD_HOST: "0.0.0.0"
-      K6_WEB_DASHBOARD_PORT: "5665"
       PUID: $PUID
       PGID: $PGID
     volumes:
       - /DATA/AppData/$AppID/k6-scripts:/scripts
       - /DATA/AppData/$AppID/results:/results
-    ports:
-      - "5665:5665"
     working_dir: /scripts
+    command: tail -f /dev/null
     depends_on:
       - influxdb
-    restart: "no"
+    restart: unless-stopped
     deploy:
       resources:
         limits:
-          memory: 1G
-          cpus: '1.0'
+          memory: 256M
+          cpus: '0.3'
 
 x-casaos:
   architectures:
@@ -76,110 +71,69 @@ x-casaos:
   category: Utilities
   description:
     en_us: |
-      **K6 Performance Testing Suite** - Professional server performance testing platform.
+      K6 Performance Testing Suite with Grafana analytics. Test your server's 
+      performance with professional load testing tools. Includes pre-configured 
+      Grafana dashboards for real-time monitoring and InfluxDB for data storage.
       
-      **🚀 Features:**
-      - Real-time performance dashboard with Grafana analytics
-      - Load testing with thousands of concurrent users
-      - API endpoint testing for REST/GraphQL services
-      - Stress testing to find server breaking points
-      - HTML report generation for team sharing
-      - JavaScript-based test scripts (ES6 support)
-      
-      **📊 Test Capabilities:**
-      - Web server response times and throughput
-      - Database query performance analysis
-      - Network bandwidth and latency testing
-      - Concurrent user capacity limits
-      - System resource usage monitoring
-      
-      Perfect for developers and DevOps teams who need enterprise-level 
-      performance testing without the enterprise price tag!
+      Run tests via SSH: docker exec k6performancesuite-k6-1 k6 run script.js
     ko_kr: |
-      **K6 성능 테스트 도구** - 전문가급 서버 성능 테스트 플랫폼.
+      Grafana 분석이 포함된 K6 성능 테스트 도구입니다. 전문적인 부하 테스트 
+      도구로 서버 성능을 테스트하세요. 실시간 모니터링을 위한 사전 구성된 
+      Grafana 대시보드와 데이터 저장을 위한 InfluxDB가 포함되어 있습니다.
       
-      **🚀 주요 기능:**
-      - Grafana 분석이 포함된 실시간 성능 대시보드
-      - 수천 명의 동시 사용자 부하 테스트
-      - REST/GraphQL 서비스용 API 엔드포인트 테스트
-      - 서버 한계점을 찾는 스트레스 테스트
-      - 팀 공유용 HTML 리포트 생성
-      - JavaScript 기반 테스트 스크립트 (ES6 지원)
-      
-      **📊 테스트 기능:**
-      - 웹 서버 응답 시간 및 처리량
-      - 데이터베이스 쿼리 성능 분석
-      - 네트워크 대역폭 및 지연 시간 테스트
-      - 동시 사용자 용량 한계
-      - 시스템 리소스 사용량 모니터링
-      
-      기업급 가격 없이 기업급 성능 테스트가 필요한 개발자와 
-      DevOps 팀에게 완벽한 솔루션입니다!
-  developer: Grafana Labs & K6
+      SSH로 테스트 실행: docker exec k6performancesuite-k6-1 k6 run script.js
+  developer: Grafana Labs
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/K6PerformanceSuite/icon.png
   screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/K6PerformanceSuite/screenshot-1.png
   tagline:
-    en_us: "Professional performance testing with real-time analytics"
-    ko_kr: "실시간 분석이 포함된 전문 성능 테스트"
+    en_us: "Professional performance testing with Grafana analytics"
+    ko_kr: "Grafana 분석이 포함된 전문 성능 테스트"
   title:
     en_us: K6 Performance Suite
     ko_kr: K6 성능 테스트 도구
   tips:
     before_install:
       en_us: |
-        **🚀 Professional Performance Testing Ready!**
+        **K6 Performance Testing Suite**
         
-        **Default Login:**
-        | Component | Username | Password |
-        |-----------|----------|----------|
-        | **Grafana** | `admin` | `$default_pwd` |
+        **Login:**
+        - Grafana: admin / $default_pwd
         
-        **📍 Access URLs:**
-        - **Grafana Dashboard**: `https://k6performancesuite-username.nsl.sh/`
-        - **K6 Live Dashboard**: `https://5665-k6performancesuite-username.nsl.sh/`
+        **Access:**
+        - Grafana: https://k6performancesuite-username.nsl.sh/
         
-        **⚡ Quick Start:**
-        1. **Access Grafana**: View K6 performance metrics and create custom dashboards
-        2. **Upload Scripts**: Place K6 JavaScript files in `/scripts` folder
-        3. **Run Tests**: Use K6 Live Dashboard for real-time test execution
-        4. **Download Reports**: Get HTML reports from `/results` folder
+        **Usage:**
+        ```bash
+        # Run test via SSH
+        docker exec k6performancesuite-k6-1 k6 run /scripts/test.js
         
-        **💡 Pro Tips:**
-        - Start with small user counts (10-50) and increase gradually
-        - Monitor system resources during tests in Grafana
-        - Create custom dashboards for specific metrics
-        - Use InfluxDB queries for advanced analysis
+        # Upload test scripts to /DATA/AppData/k6performancesuite/k6-scripts/
+        ```
         
-        **⚠️ Important**: Only test systems you own or have permission to test!
+        View results in Grafana dashboard with K6 plugin pre-installed.
       ko_kr: |
-        **🚀 전문 성능 테스트 준비 완료!**
+        **K6 성능 테스트 도구**
         
-        **기본 로그인:**
-        | 구성 요소 | 사용자명 | 비밀번호 |
-        |-----------|----------|----------|
-        | **Grafana** | `admin` | `$default_pwd` |
+        **로그인:**
+        - Grafana: admin / $default_pwd
         
-        **📍 접속 URL:**
-        - **Grafana 대시보드**: `https://k6performancesuite-username.nsl.sh/`
-        - **K6 라이브 대시보드**: `https://5665-k6performancesuite-username.nsl.sh/`
+        **접속:**
+        - Grafana: https://k6performancesuite-username.nsl.sh/
         
-        **⚡ 빠른 시작:**
-        1. **Grafana 접속**: K6 성능 메트릭 확인 및 커스텀 대시보드 생성
-        2. **스크립트 업로드**: K6 JavaScript 파일을 `/scripts` 폴더에 업로드
-        3. **테스트 실행**: K6 라이브 대시보드에서 실시간 테스트 실행
-        4. **리포트 다운로드**: `/results` 폴더에서 HTML 리포트 다운로드
+        **사용법:**
+        ```bash
+        # SSH로 테스트 실행
+        docker exec k6performancesuite-k6-1 k6 run /scripts/test.js
         
-        **💡 전문가 팁:**
-        - 적은 사용자 수(10-50명)로 시작해서 점진적으로 증가
-        - Grafana에서 테스트 중 시스템 리소스 모니터링
-        - 특정 메트릭용 커스텀 대시보드 생성
-        - 고급 분석을 위해 InfluxDB 쿼리 사용
+        # 테스트 스크립트를 업로드: /DATA/AppData/k6performancesuite/k6-scripts/
+        ```
         
-        **⚠️ 중요**: 본인 소유이거나 테스트 권한이 있는 시스템만 테스트하세요!
+        K6 플러그인이 사전 설치된 Grafana 대시보드에서 결과를 확인하세요.
   index: /
   webui_port: 3000
   pre-install-cmd: |
-    docker run --rm -v /DATA/AppData/k6performancesuite:/setup alpine:latest sh -c "
+    docker run --rm -v /DATA/AppData/k6performancesuite:/setup alpine:3.19 sh -c "
       mkdir -p /setup/{grafana-data,influxdb-data,k6-scripts,results}
+      echo 'import http from \"k6/http\"; export default function() { http.get(\"https://httpbin.org/get\"); }' > /setup/k6-scripts/example.js
       chown -R 1000:1000 /setup
     "
