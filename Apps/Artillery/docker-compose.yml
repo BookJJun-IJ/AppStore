@@ -12,22 +12,33 @@ services:
       - /DATA/AppData/$AppID/tests:/tests
       - /DATA/AppData/$AppID/reports:/reports
     working_dir: /tests
-    expose:
-      - 3000
     restart: unless-stopped
-    command: sh -c "echo 'Artillery Stress Tester Ready' && echo 'Use: artillery run test.yml' && tail -f /dev/null"
+    command: tail -f /dev/null
     deploy:
       resources:
         limits:
           memory: 256M
           cpus: '0.3'
 
+  webui:
+    image: httpd:2.4-alpine
+    environment:
+      TZ: $TZ
+    expose:
+      - 80
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 32M
+          cpus: '0.1'
+
 x-casaos:
   architectures:
     - amd64
     - arm64
     - arm/v7
-  main: artillery
+  main: webui
   author: Yundera Community
   category: Utilities
   description:
@@ -69,11 +80,15 @@ x-casaos:
       en_us: |
         **Artillery Stress Tester**
         
+        **Access:** https://artillery-stress-tester-username.nsl.sh/
+        (Shows Apache welcome page - SSH required for Artillery)
+        
         **How to Use:**
-        1. Access: https://artillery-stress-tester-username.nsl.sh/
-        2. Click "Edit Test" to modify YAML configuration
-        3. Click "Run Test" to start stress testing
-        4. View beautiful HTML reports
+        1. SSH into your CasaOS server
+        2. Run: `docker exec -it artillery-stress-tester-artillery-1 /bin/sh`
+        3. Create test file: `vi /tests/my-test.yml`
+        4. Run test: `artillery run my-test.yml --output /reports/report.json`
+        5. Generate HTML report: `artillery report /reports/report.json`
         
         **Simple YAML Example:**
         ```yaml
@@ -90,21 +105,24 @@ x-casaos:
         ```
         
         **Features:**
-        - No coding required - just YAML
-        - Beautiful HTML reports
-        - Real-time stats
-        - WebSocket support
-        - CI/CD ready
+        - CLI-based load testing
+        - YAML configuration
+        - JSON and HTML reports
+        - Professional stress testing
         
-        Super simple setup!
+        CLI interface via SSH!
       ko_kr: |
         **Artillery 스트레스 테스터**
         
+        **접속:** https://artillery-stress-tester-username.nsl.sh/
+        (Apache 환영 페이지 - Artillery 사용은 SSH 필요)
+        
         **사용 방법:**
-        1. 접속: https://artillery-stress-tester-username.nsl.sh/
-        2. "Edit Test" 클릭하여 YAML 설정 수정
-        3. "Run Test" 클릭하여 스트레스 테스트 시작
-        4. 아름다운 HTML 리포트 확인
+        1. CasaOS 서버에 SSH 접속
+        2. 실행: `docker exec -it artillery-stress-tester-artillery-1 /bin/sh`
+        3. 테스트 파일 생성: `vi /tests/my-test.yml`
+        4. 테스트 실행: `artillery run my-test.yml --output /reports/report.json`
+        5. HTML 리포트 생성: `artillery report /reports/report.json`
         
         **간단한 YAML 예제:**
         ```yaml
@@ -121,12 +139,11 @@ x-casaos:
         ```
         
         **기능:**
-        - 코딩 불필요 - YAML만 사용
-        - 아름다운 HTML 리포트
-        - 실시간 통계
-        - WebSocket 지원
-        - CI/CD 준비됨
+        - CLI 기반 로드 테스트
+        - YAML 설정
+        - JSON 및 HTML 리포트
+        - 전문적인 스트레스 테스트
         
-        매우 간단한 설정!
+        SSH를 통한 CLI 인터페이스!
   index: /
   webui_port: 80
