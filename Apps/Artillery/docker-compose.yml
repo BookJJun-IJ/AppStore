@@ -1,144 +1,147 @@
-name: locust-simple-tester
+name: artillery-stress-tester
 
 services:
-  locust:
-    image: locustio/locust:2.32.3
+  artillery:
+    image: artilleryio/artillery:2.0.5
     user: $PUID:$PGID
     environment:
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
     volumes:
-      - /DATA/AppData/$AppID/scripts:/mnt/locust
-      - /DATA/AppData/$AppID/results:/results
+      - /DATA/AppData/$AppID/tests:/tests
+      - /DATA/AppData/$AppID/reports:/reports
+    working_dir: /tests
+    restart: unless-stopped
+    command: tail -f /dev/null
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.3'
+
+  nginx:
+    image: nginx:1.25.3-alpine
+    environment:
+      PUID: $PUID
+      PGID: $PGID
+      TZ: $TZ
+    volumes:
+      - /DATA/AppData/$AppID/html:/usr/share/nginx/html
     expose:
-      - 8089
-    working_dir: /mnt/locust
-    command: ["locust", "--web-host=0.0.0.0", "--web-port=8089", "--web-auth=admin:admin"]
+      - 80
     restart: unless-stopped
     deploy:
       resources:
         limits:
-          memory: 512M
-          cpus: '0.5'
+          memory: 64M
+          cpus: '0.1'
 
 x-casaos:
   architectures:
     - amd64
     - arm64
-  main: locust
+    - arm/v7
+  main: nginx
   author: Yundera Community
   category: Utilities
   description:
     en_us: |
-      Simple and easy-to-use stress testing tool with web UI and Basic Authentication. 
-      Test your website's performance without coding! Just open the web interface, 
-      enter your website URL, set user count, and click START. Real-time charts show 
-      response times, requests per second, and error rates.
+      Artillery - Simple YAML-based stress testing tool with beautiful HTML reports. 
+      No complex setup required! Just edit simple YAML files and run tests. 
+      Perfect for beginners who want professional load testing without coding.
       
-      **Security**: Protected with Basic Authentication (admin/admin).
-      
-      Perfect for beginners - no terminal commands needed!
+      Features: YAML configuration, HTML reports, WebSocket support, CI/CD ready.
     ko_kr: |
-      웹 UI와 기본 인증을 제공하는 간단하고 사용하기 쉬운 스트레스 테스트 도구입니다. 
-      코딩 없이 웹사이트 성능을 테스트하세요! 웹 인터페이스를 열고, 웹사이트 
-      URL을 입력하고, 사용자 수를 설정한 후 시작 버튼만 클릭하면 됩니다. 
-      실시간 차트로 응답 시간, 초당 요청 수, 오류율을 확인할 수 있습니다.
-      
-      **보안**: 기본 인증으로 보호됩니다 (admin/admin).
-      
-      초보자에게 완벽 - 터미널 명령어 불필요!
+      Artillery - 아름다운 HTML 리포트를 제공하는 간단한 YAML 기반 스트레스 테스트 도구입니다.
+      복잡한 설정이 필요 없습니다! 간단한 YAML 파일만 편집하고 테스트를 실행하세요.
+      코딩 없이 전문적인 로드 테스트를 원하는 초보자에게 완벽합니다.
     fr_fr: |
-      Outil de test de stress simple et facile à utiliser avec interface web et 
-      authentification de base. Testez les performances de votre site web sans codage!
+      Artillery - Outil de test de stress basé sur YAML avec de beaux rapports HTML.
+      Aucune configuration complexe requise!
     es_es: |
-      Herramienta de prueba de estrés simple y fácil de usar con interfaz web y 
-      autenticación básica. ¡Prueba el rendimiento de tu sitio web sin codificación!
+      Artillery - Herramienta de prueba de estrés basada en YAML con hermosos informes HTML.
+      ¡No se requiere configuración compleja!
     zh_cn: |
-      简单易用的压力测试工具，带有Web UI和基本身份验证。无需编码即可测试您的网站性能！
-  developer: Locust.io
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/LocustSimpleTester/icon.png
-  screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/LocustSimpleTester/screenshot-1.png
+      Artillery - 基于YAML的简单压力测试工具，生成精美的HTML报告。无需复杂设置！
+  developer: Artillery.io
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ArtilleryStressTester/icon.png
+  screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ArtilleryStressTester/screenshot-1.png
   tagline:
-    en_us: "Simple stress testing with web UI - no coding required!"
-    ko_kr: "웹 UI로 간단한 스트레스 테스트 - 코딩 불필요!"
-    fr_fr: "Tests de stress simples avec interface web - aucun codage requis!"
-    es_es: "Pruebas de estrés simples con interfaz web - ¡no se requiere codificación!"
-    zh_cn: "带Web UI的简单压力测试 - 无需编码！"
+    en_us: "Simple YAML stress testing - beautiful HTML reports!"
+    ko_kr: "간단한 YAML 스트레스 테스트 - 아름다운 HTML 리포트!"
+    fr_fr: "Tests de stress YAML simples - beaux rapports HTML!"
+    es_es: "Pruebas de estrés YAML simples - ¡hermosos informes HTML!"
+    zh_cn: "简单的YAML压力测试 - 精美的HTML报告！"
   title:
-    en_us: Locust Simple Tester
-    ko_kr: Locust 간단 테스터
-    fr_fr: Testeur Simple Locust
-    es_es: Probador Simple Locust
-    zh_cn: Locust 简单测试器
+    en_us: Artillery
+    ko_kr: Artillery
+    fr_fr: Artillery
+    es_es: Artillery
+    zh_cn: Artillery
   tips:
     before_install:
       en_us: |
-        **Locust Simple Stress Tester**
-        
-        **Default Account:**
-        | Username | Password |
-        |----------|----------|
-        | `admin`  | `admin` |
+        **Artillery Stress Tester**
         
         **How to Use:**
-        1. Access: https://locust-simple-tester-username.nsl.sh/
-        2. Login with admin / admin
-        3. Enter your website URL in the "Host" field
-        4. Set number of users (start with 10)
-        5. Set spawn rate (start with 1)
-        6. Click "Start swarming" button
+        1. Access: https://artillery-stress-tester-username.nsl.sh/
+        2. Click "Edit Test" to modify YAML configuration
+        3. Click "Run Test" to start stress testing
+        4. View beautiful HTML reports
         
-        **Sample websites to test:**
-        - https://httpbin.org (safe for testing)
-        - https://test.k6.io (demo site)
-        - Your own website
+        **Simple YAML Example:**
+        ```yaml
+        config:
+          target: https://httpbin.org
+          phases:
+            - duration: 60
+              arrivalRate: 10
+        scenarios:
+          - name: "Basic test"
+            requests:
+              - get:
+                  url: "/"
+        ```
         
-        No coding knowledge required!
+        **Features:**
+        - No coding required - just YAML
+        - Beautiful HTML reports
+        - Real-time stats
+        - WebSocket support
+        - CI/CD ready
+        
+        Super simple setup!
       ko_kr: |
-        **Locust 간단 스트레스 테스터**
-        
-        **기본 계정:**
-        | 사용자명 | 비밀번호 |
-        |---------|---------|
-        | `admin` | `admin` |
+        **Artillery 스트레스 테스터**
         
         **사용 방법:**
-        1. 접속: https://locust-simple-tester-username.nsl.sh/
-        2. admin / admin으로 로그인
-        3. "Host" 필드에 테스트할 웹사이트 URL 입력
-        4. 사용자 수 설정 (10명부터 시작)
-        5. 증가율 설정 (1로 시작)
-        6. "Start swarming" 버튼 클릭
+        1. 접속: https://artillery-stress-tester-username.nsl.sh/
+        2. "Edit Test" 클릭하여 YAML 설정 수정
+        3. "Run Test" 클릭하여 스트레스 테스트 시작
+        4. 아름다운 HTML 리포트 확인
         
-        **테스트용 샘플 사이트:**
-        - https://httpbin.org (테스트 안전)
-        - https://test.k6.io (데모 사이트)
-        - 본인 웹사이트
+        **간단한 YAML 예제:**
+        ```yaml
+        config:
+          target: https://httpbin.org
+          phases:
+            - duration: 60
+              arrivalRate: 10
+        scenarios:
+          - name: "기본 테스트"
+            requests:
+              - get:
+                  url: "/"
+        ```
         
-        코딩 지식 불필요!
+        **기능:**
+        - 코딩 불필요 - YAML만 사용
+        - 아름다운 HTML 리포트
+        - 실시간 통계
+        - WebSocket 지원
+        - CI/CD 준비됨
+        
+        매우 간단한 설정!
   index: /
-  webui_port: 8089
-  pre-install-cmd: |
-    mkdir -p /DATA/AppData/locust-simple-tester/scripts /DATA/AppData/locust-simple-tester/results &&
-    cat > /DATA/AppData/locust-simple-tester/scripts/locustfile.py << 'EOF'
-    from locust import HttpUser, task, between
-
-    class WebsiteUser(HttpUser):
-        wait_time = between(1, 3)
-        
-        @task(3)
-        def visit_homepage(self):
-            self.client.get('/')
-        
-        @task(2)  
-        def visit_about(self):
-            self.client.get('/about')
-        
-        @task(1)
-        def search_content(self):
-            self.client.get('/search?q=test')
-        
-        def on_start(self):
-            self.client.get('/')
-    EOF
+  webui_port: 80
