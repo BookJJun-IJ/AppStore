@@ -1,4 +1,4 @@
-name: k6-performance-suite
+name: k6performancesuite
 
 services:
   influxdb:
@@ -135,8 +135,8 @@ x-casaos:
         | **Grafana** | `admin` | `$default_pwd` |
         
         **📍 Access URLs:**
-        - **Grafana Dashboard**: `https://k6-performance-suite-username.nsl.sh/`
-        - **K6 Live Dashboard**: `https://5665-k6-performance-suite-username.nsl.sh/`
+        - **Grafana Dashboard**: `https://k6performancesuite-username.nsl.sh/`
+        - **K6 Live Dashboard**: `https://5665-k6performancesuite-username.nsl.sh/`
         
         **⚡ Quick Start:**
         1. **Access Grafana**: View K6 performance metrics and create custom dashboards
@@ -160,8 +160,8 @@ x-casaos:
         | **Grafana** | `admin` | `$default_pwd` |
         
         **📍 접속 URL:**
-        - **Grafana 대시보드**: `https://k6-performance-suite-username.nsl.sh/`
-        - **K6 라이브 대시보드**: `https://5665-k6-performance-suite-username.nsl.sh/`
+        - **Grafana 대시보드**: `https://k6performancesuite-username.nsl.sh/`
+        - **K6 라이브 대시보드**: `https://5665-k6performancesuite-username.nsl.sh/`
         
         **⚡ 빠른 시작:**
         1. **Grafana 접속**: K6 성능 메트릭 확인 및 커스텀 대시보드 생성
@@ -179,7 +179,7 @@ x-casaos:
   index: /
   webui_port: 3000
   pre-install-cmd: |
-    docker run --rm -v /DATA/AppData/k6-performance-suite:/setup alpine:latest sh -c "
+    docker run --rm -v /DATA/AppData/k6performancesuite:/setup alpine:latest sh -c "
       mkdir -p /setup/{grafana-data,influxdb-data,k6-scripts,results}
       chown -R 1000:1000 /setup
     "
