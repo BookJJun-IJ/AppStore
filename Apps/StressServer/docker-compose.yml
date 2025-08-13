@@ -1,0 +1,56 @@
+name: stress-server
+
+services:
+  stress-server:
+    image: dannyben/stress-server:latest
+    user: $PUID:$PGID
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '2.0'
+    expose:
+      - 3000
+    environment:
+      PUID: $PUID
+      PGID: $PGID
+      TZ: $TZ
+    volumes:
+      - /DATA/AppData/$AppID/logs:/app/logs
+    restart: unless-stopped
+
+x-casaos:
+  architectures: [amd64, arm64]
+  main: stress-server
+  webui_port: 3000
+  category: Developer
+  author: DannyBen
+  developer: DannyBen
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/StressServer/icon.png
+  screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/StressServer/screenshot-1.png
+  tagline:
+    en_us: 웹 UI를 통한 서버 리소스 스트레스 테스트 도구
+  title:
+    en_us: Stress Server
+  description:
+    en_us: |
+      웹 인터페이스를 통해 서버 리소스 스트레스 테스트를 실행할 수 있는 도구입니다. 
+      CPU, 메모리, I/O 부하를 시뮬레이션하여 시스템의 성능과 안정성을 테스트할 수 있습니다.
+      오토 스케일링 설정을 테스트하고 디버깅하는 데 유용합니다.
+  tips:
+    before_install:
+      en_us: |
+        ## 사용 방법
+        
+        설치 후 웹 UI에서 다음 엔드포인트를 사용하여 스트레스 테스트를 실행할 수 있습니다:
+        
+        - `/stress?c=1&m=1&verbose=1&t=10` - CPU 1코어, 메모리 1워커, 10초 동안 실행
+        - `/help` - stress 명령어 도움말 보기
+        
+        **주의사항:**
+        - 반드시 timeout 옵션을 설정하세요
+        - 프로덕션 환경에서는 사용하지 마세요
+        - 리소스 사용량을 모니터링하면서 사용하세요
+  port_map: "3000"
+  scheme: http
+  index: /
