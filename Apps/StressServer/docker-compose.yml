@@ -1,250 +1,282 @@
-name: performance-monitor-benchmark
-services:
-  netdata:
-    image: netdata/netdata:latest
-    container_name: performance-monitor
-    hostname: yundera-monitor
-    expose:
-      - 19999
-    environment:
-      TZ: $TZ
-      NETDATA_CLAIM_TOKEN: ""
-      NETDATA_CLAIM_ROOMS: ""
-      NETDATA_CLAIM_URL: "https://app.netdata.cloud"
-    volumes:
-      - /DATA/AppData/$AppID/netdata-config:/etc/netdata
-      - /DATA/AppData/$AppID/netdata-lib:/var/lib/netdata
-      - /DATA/AppData/$AppID/netdata-cache:/var/cache/netdata
-      - /etc/passwd:/host/etc/passwd:ro
-      - /etc/group:/host/etc/group:ro
-      - /proc:/host/proc:ro
-      - /sys:/host/sys:ro
-      - /etc/os-release:/host/etc/os-release:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - /DATA/Documents/BenchmarkReports:/reports
-    cap_add:
-      - SYS_PTRACE
-    security_opt:
-      - apparmor:unconfined
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-          cpus: '1.0'
-    restart: unless-stopped
+name: yundera-benchmark
 
-  benchmark-tools:
-    image: ubuntu:22.04
-    container_name: benchmark-tools
-    environment:
-      TZ: $TZ
-      DEBIAN_FRONTEND: noninteractive
-    volumes:
-      - /DATA/AppData/$AppID/benchmark-results:/benchmark-results
-      - /DATA/Documents/BenchmarkReports:/reports
-      - /DATA/AppData/$AppID/benchmark-scripts:/scripts
+services:
+  phoronix-pts:
+    image: ghcr.io/mshekow/pts-docker-benchmark:latest
+    user: $PUID:$PGID
     deploy:
       resources:
         limits:
-          memory: 2G
-          cpus: '1.0'
-    restart: unless-stopped
+          memory: 4G
+          cpus: '4.0'
+    environment:
+      PUID: $PUID
+      PGID: $PGID
+      TZ: $TZ
+      TEST_RESULTS_NAME: "yundera-benchmark-${HOSTNAME:-server}"
+    volumes:
+      - /DATA/AppData/$AppID/reports:/app/reports
+      - /DATA/AppData/$AppID/config:/app/config
+      - /DATA/AppData/$AppID/tmp:/tmp/benchmark
+    working_dir: /app
+    restart: "no"
     command: >
-      bash -c "
-      apt-get update &&
-      apt-get install -y stress-ng fio sysbench iperf3 curl jq &&
-      mkdir -p /benchmark-results /reports /scripts &&
-      
-      cat > /scripts/cpu-benchmark.sh << 'CPUEOF'
-      #!/bin/bash
-      REPORT_FILE=/reports/cpu-benchmark-$(date +%Y%m%d-%H%M%S).txt
-      echo '=== CPU Benchmark Report ===' > $REPORT_FILE
-      echo 'Date: '$(date) >> $REPORT_FILE
-      echo '' >> $REPORT_FILE
-      echo 'CPU Stress Test (4 cores, 60 seconds):' >> $REPORT_FILE
-      stress-ng --cpu 4 --timeout 60s --metrics-brief >> $REPORT_FILE 2>&1
-      echo '' >> $REPORT_FILE
-      echo 'Sysbench CPU Test:' >> $REPORT_FILE
-      sysbench cpu --cpu-max-prime=20000 --threads=4 run >> $REPORT_FILE 2>&1
-      echo 'CPU benchmark completed. Report saved to:' $REPORT_FILE
-      CPUEOF
-      
-      cat > /scripts/disk-benchmark.sh << 'DISKEOF'
-      #!/bin/bash
-      REPORT_FILE=/reports/disk-benchmark-$(date +%Y%m%d-%H%M%S).txt
-      echo '=== Disk I/O Benchmark Report ===' > $REPORT_FILE
-      echo 'Date: '$(date) >> $REPORT_FILE
-      echo '' >> $REPORT_FILE
-      echo 'FIO Random Read/Write Test:' >> $REPORT_FILE
-      fio --name=randreadwrite --ioengine=libaio --rw=randrw --bs=4k --size=1G --numjobs=4 --time_based --runtime=60 --group_reporting --directory=/benchmark-results >> $REPORT_FILE 2>&1
-      echo '' >> $REPORT_FILE
-      echo 'Sysbench File I/O Test:' >> $REPORT_FILE
-      cd /benchmark-results
-      sysbench fileio --file-total-size=2G --file-test-mode=rndrw --time=60 --max-requests=0 prepare >> $REPORT_FILE 2>&1
-      sysbench fileio --file-total-size=2G --file-test-mode=rndrw --time=60 --max-requests=0 run >> $REPORT_FILE 2>&1
-      sysbench fileio cleanup >> $REPORT_FILE 2>&1
-      echo 'Disk benchmark completed. Report saved to:' $REPORT_FILE
-      DISKEOF
-      
-      cat > /scripts/memory-benchmark.sh << 'MEMEOF'
-      #!/bin/bash
-      REPORT_FILE=/reports/memory-benchmark-$(date +%Y%m%d-%H%M%S).txt
-      echo '=== Memory Benchmark Report ===' > $REPORT_FILE
-      echo 'Date: '$(date) >> $REPORT_FILE
-      echo '' >> $REPORT_FILE
-      echo 'Memory Stress Test (1GB, 60 seconds):' >> $REPORT_FILE
-      stress-ng --vm 2 --vm-bytes 1G --timeout 60s --metrics-brief >> $REPORT_FILE 2>&1
-      echo '' >> $REPORT_FILE
-      echo 'Sysbench Memory Test:' >> $REPORT_FILE
-      sysbench memory --memory-block-size=1K --memory-total-size=10G run >> $REPORT_FILE 2>&1
-      echo 'Memory benchmark completed. Report saved to:' $REPORT_FILE
-      MEMEOF
-      
-      cat > /scripts/full-benchmark.sh << 'FULLEOF'
-      #!/bin/bash
-      echo 'Starting Full System Benchmark...'
-      echo 'Running CPU benchmark...'
-      /scripts/cpu-benchmark.sh
-      echo 'Running Memory benchmark...'
-      /scripts/memory-benchmark.sh  
-      echo 'Running Disk benchmark...'
-      /scripts/disk-benchmark.sh
-      echo ''
-      echo 'Full benchmark completed!'
-      echo 'Check /reports/ for detailed results.'
-      ls -la /reports/
-      FULLEOF
-      
-      chmod +x /scripts/*.sh &&
-      chmod 777 /reports /benchmark-results &&
-      
-      echo '================================================' &&
-      echo 'Benchmark tools installation completed!' &&
-      echo '================================================' &&
-      echo 'Available commands:' &&
-      echo '  docker exec benchmark-tools /scripts/full-benchmark.sh' &&
-      echo '  docker exec benchmark-tools /scripts/cpu-benchmark.sh' &&
-      echo '  docker exec benchmark-tools /scripts/memory-benchmark.sh' &&
-      echo '  docker exec benchmark-tools /scripts/disk-benchmark.sh' &&
-      echo '================================================' &&
-      
-      tail -f /dev/null
+      sh -c "
+        # Create directories
+        mkdir -p /app/reports /app/config &&
+        
+        # Install required packages for report processing
+        apk add --no-cache curl jq bc &&
+        
+        # Create configuration file
+        if [ ! -f /app/config/benchmark-config.json ]; then
+          cat > /app/config/benchmark-config.json << 'EOF'
+        {
+          \"benchmark_version\": \"2.0.0\",
+          \"engine\": \"phoronix_test_suite\",
+          \"tests\": {
+            \"enabled_suites\": [
+              \"pts/cpu\",
+              \"pts/memory\", 
+              \"pts/disk\",
+              \"pts/compression\"
+            ],
+            \"individual_tests\": [
+              \"pts/openssl\",
+              \"pts/7zip\",
+              \"pts/fio\",
+              \"pts/sysbench\"
+            ]
+          }
+        }
+        EOF
+        fi &&
+        
+        # Create comprehensive benchmark script
+        cat > /app/run-benchmark.sh << 'SCRIPT'
+        #!/bin/sh
+        
+        TIMESTAMP=\$(date +%Y%m%d_%H%M%S)
+        REPORT_DIR=\"/app/reports\"
+        REPORT_FILE=\"\$REPORT_DIR/benchmark_report_\$TIMESTAMP.json\"
+        SUMMARY_FILE=\"\$REPORT_DIR/benchmark_summary_\$TIMESTAMP.txt\"
+        CSV_FILE=\"\$REPORT_DIR/benchmark_results_\$TIMESTAMP.csv\"
+        
+        echo \"=== Yundera Professional Benchmark Started ===\" | tee \$SUMMARY_FILE
+        echo \"Engine: Phoronix Test Suite (Professional Grade)\" | tee -a \$SUMMARY_FILE
+        echo \"Start Time: \$(date)\" | tee -a \$SUMMARY_FILE
+        echo \"Hostname: \$(hostname)\" | tee -a \$SUMMARY_FILE
+        echo \"\" | tee -a \$SUMMARY_FILE
+        
+        # Set test results name for PTS
+        export TEST_RESULTS_NAME=\"yundera-benchmark-\$TIMESTAMP\"
+        
+        # Start JSON report
+        echo \"{\" > \$REPORT_FILE
+        echo \"  \\\"timestamp\\\": \\\"\$(date -Iseconds)\\\",\" >> \$REPORT_FILE
+        echo \"  \\\"hostname\\\": \\\"\$(hostname)\\\",\" >> \$REPORT_FILE
+        echo \"  \\\"benchmark_engine\\\": \\\"Phoronix Test Suite\\\",\" >> \$REPORT_FILE
+        echo \"  \\\"system_info\\\": {\" >> \$REPORT_FILE
+        echo \"    \\\"container_image\\\": \\\"ghcr.io/mshekow/pts-docker-benchmark\\\",\" >> \$REPORT_FILE
+        echo \"    \\\"base_os\\\": \\\"Alpine Linux\\\"\" >> \$REPORT_FILE
+        echo \"  },\" >> \$REPORT_FILE
+        echo \"  \\\"results\\\": {\" >> \$REPORT_FILE
+        
+        echo \"[1/4] Running CPU performance tests...\" | tee -a \$SUMMARY_FILE
+        echo \"  - OpenSSL benchmark\" | tee -a \$SUMMARY_FILE
+        echo \"  - 7-Zip compression benchmark\" | tee -a \$SUMMARY_FILE
+        
+        # Run the pre-configured test suite from the container
+        cd /phoronix-test-suite
+        ./phoronix-test-suite batch-run local/benchmark-suite > /tmp/pts_output.txt 2>&1
+        
+        # Process results and convert to CSV
+        ./phoronix-test-suite result-file-to-csv \$TEST_RESULTS_NAME > /tmp/pts_csv.txt 2>&1
+        
+        # Copy CSV to reports if generated
+        if [ -f \"/tmp/test-results/\$TEST_RESULTS_NAME.csv\" ]; then
+          cp \"/tmp/test-results/\$TEST_RESULTS_NAME.csv\" \$CSV_FILE
+          echo \"CSV results saved to: \$CSV_FILE\" | tee -a \$SUMMARY_FILE
+        fi
+        
+        # Extract key metrics from PTS output
+        if [ -f /tmp/pts_output.txt ]; then
+          echo \"[2/4] Processing CPU benchmark results...\" | tee -a \$SUMMARY_FILE
+          
+          # Extract OpenSSL results (example)
+          OPENSSL_RESULT=\$(grep -i 'openssl' /tmp/pts_output.txt | grep -E '[0-9]+\\.[0-9]+' | head -1 | awk '{print \$NF}' || echo \"0\")
+          
+          echo \"    \\\"cpu_openssl\\\": {\" >> \$REPORT_FILE
+          echo \"      \\\"score\\\": \$OPENSSL_RESULT,\" >> \$REPORT_FILE
+          echo \"      \\\"unit\\\": \\\"operations_per_second\\\",\" >> \$REPORT_FILE
+          echo \"      \\\"test\\\": \\\"pts/openssl\\\"\" >> \$REPORT_FILE
+          echo \"    },\" >> \$REPORT_FILE
+          
+          echo \"OpenSSL Score: \$OPENSSL_RESULT ops/sec\" | tee -a \$SUMMARY_FILE
+        fi
+        
+        echo \"[3/4] Processing memory and disk benchmarks...\" | tee -a \$SUMMARY_FILE
+        
+        # Extract 7-Zip results
+        SEVENZIP_RESULT=\$(grep -i '7-?zip\\|compression' /tmp/pts_output.txt | grep -E '[0-9]+\\.[0-9]+' | head -1 | awk '{print \$NF}' || echo \"0\")
+        
+        echo \"    \\\"compression_7zip\\\": {\" >> \$REPORT_FILE
+        echo \"      \\\"score\\\": \$SEVENZIP_RESULT,\" >> \$REPORT_FILE
+        echo \"      \\\"unit\\\": \\\"MIPS\\\",\" >> \$REPORT_FILE
+        echo \"      \\\"test\\\": \\\"pts/7zip\\\"\" >> \$REPORT_FILE
+        echo \"    },\" >> \$REPORT_FILE
+        
+        echo \"7-Zip Score: \$SEVENZIP_RESULT MIPS\" | tee -a \$SUMMARY_FILE
+        
+        # Extract FIO disk results if available
+        FIO_RESULT=\$(grep -i 'fio\\|disk\\|io' /tmp/pts_output.txt | grep -E '[0-9]+\\.[0-9]+' | head -1 | awk '{print \$NF}' || echo \"0\")
+        
+        echo \"    \\\"disk_io\\\": {\" >> \$REPORT_FILE
+        echo \"      \\\"score\\\": \$FIO_RESULT,\" >> \$REPORT_FILE
+        echo \"      \\\"unit\\\": \\\"MB_per_second\\\",\" >> \$REPORT_FILE
+        echo \"      \\\"test\\\": \\\"pts/fio\\\"\" >> \$REPORT_FILE
+        echo \"    }\" >> \$REPORT_FILE
+        
+        echo \"Disk I/O Score: \$FIO_RESULT MB/s\" | tee -a \$SUMMARY_FILE
+        
+        # Finish JSON report
+        echo \"  },\" >> \$REPORT_FILE
+        echo \"  \\\"raw_output_file\\\": \\\"/tmp/pts_output.txt\\\",\" >> \$REPORT_FILE
+        echo \"  \\\"csv_file\\\": \\\"\$CSV_FILE\\\"\" >> \$REPORT_FILE
+        echo \"}\" >> \$REPORT_FILE
+        
+        echo \"\" | tee -a \$SUMMARY_FILE
+        echo \"[4/4] Finalizing results...\" | tee -a \$SUMMARY_FILE
+        echo \"=== Professional Benchmark Completed ===\" | tee -a \$SUMMARY_FILE
+        echo \"End Time: \$(date)\" | tee -a \$SUMMARY_FILE
+        echo \"\" | tee -a \$SUMMARY_FILE
+        echo \"📊 Report Files Generated:\" | tee -a \$SUMMARY_FILE
+        echo \"  JSON Report: \$REPORT_FILE\" | tee -a \$SUMMARY_FILE
+        echo \"  Text Summary: \$SUMMARY_FILE\" | tee -a \$SUMMARY_FILE
+        echo \"  CSV Data: \$CSV_FILE\" | tee -a \$SUMMARY_FILE
+        echo \"\" | tee -a \$SUMMARY_FILE
+        
+        # Calculate composite score
+        if [ \"\$OPENSSL_RESULT\" != \"0\" ] && [ \"\$SEVENZIP_RESULT\" != \"0\" ]; then
+          COMPOSITE_SCORE=\$(echo \"scale=2; (\$OPENSSL_RESULT/1000 + \$SEVENZIP_RESULT/1000 + \$FIO_RESULT/100)/3\" | bc -l 2>/dev/null || echo \"N/A\")
+          echo \"🏆 Composite Performance Score: \$COMPOSITE_SCORE\" | tee -a \$SUMMARY_FILE
+        else
+          echo \"🏆 Composite Performance Score: N/A (incomplete results)\" | tee -a \$SUMMARY_FILE
+        fi
+        
+        echo \"\"
+        echo \"Professional benchmark completed!\"
+        echo \"Results available in: /DATA/AppData/yundera-benchmark/reports/\"
+        echo \"\"
+        echo \"View detailed results:\"
+        echo \"  cat \$SUMMARY_FILE\"
+        echo \"  cat \$CSV_FILE\"
+        SCRIPT
+        
+        chmod +x /app/run-benchmark.sh &&
+        
+        # Create quick test script
+        cat > /app/quick-test.sh << 'QUICKSCRIPT'
+        #!/bin/sh
+        echo \"=== Yundera Quick Performance Test ===\"
+        echo \"Engine: Phoronix Test Suite (Quick Mode)\"
+        echo \"Start Time: \$(date)\"
+        echo \"\"
+        
+        export TEST_RESULTS_NAME=\"yundera-quick-\$(date +%Y%m%d_%H%M%S)\"
+        
+        echo \"[1/2] Running quick CPU test...\"
+        cd /phoronix-test-suite
+        timeout 300 ./phoronix-test-suite run pts/openssl &
+        PID=\$!
+        
+        echo \"[2/2] Processing results...\"
+        wait \$PID
+        
+        echo \"\"
+        echo \"Quick test completed! Run /app/run-benchmark.sh for comprehensive benchmark.\"
+        QUICKSCRIPT
+        
+        chmod +x /app/quick-test.sh &&
+        
+        echo \"=== Yundera Professional Benchmark Tool Ready ===\" &&
+        echo \"\" &&
+        echo \"🚀 Powered by Phoronix Test Suite (Industry Standard)\" &&
+        echo \"\" &&
+        echo \"📊 Available commands:\" &&
+        echo \"  Full benchmark: docker exec \$HOSTNAME /app/run-benchmark.sh\" &&
+        echo \"  Quick test:     docker exec \$HOSTNAME /app/quick-test.sh\" &&
+        echo \"  Shell access:   docker exec -it \$HOSTNAME sh\" &&
+        echo \"\" &&
+        echo \"📁 Report location: /DATA/AppData/yundera-benchmark/reports/\" &&
+        echo \"⚙️  Config location: /DATA/AppData/yundera-benchmark/config/\" &&
+        echo \"\" &&
+        echo \"🏆 Professional benchmark container ready!\" &&
+        
+        # Keep container running
+        tail -f /dev/null
       "
 
 x-casaos:
-  main: netdata
-  webui_port: 19999
-  category: System
-  architectures: [amd64, arm64]
+  architectures:
+    - amd64
+    - arm64
+  main: phoronix-pts
+  category: Developer
   author: Yundera Team
-  developer: Netdata, Stress-ng, FIO
-  title:
-    en_us: Performance Monitor & Benchmark Suite
-    ko_kr: 성능 모니터 & 벤치마크 스위트
-    fr_fr: Moniteur de Performance & Suite de Benchmarks
-    es_es: Monitor de Rendimiento & Suite de Benchmarks
-    zh_cn: 性能监控与基准测试套件
   description:
-    en_us: Real-time system monitoring with Netdata dashboard plus comprehensive benchmarking tools (stress-ng, FIO, sysbench). Monitor CPU, memory, disk I/O, and network in real-time while running performance tests and generating detailed reports.
-    ko_kr: Netdata 대시보드를 통한 실시간 시스템 모니터링과 종합적인 벤치마크 도구들(stress-ng, FIO, sysbench). CPU, 메모리, 디스크 I/O, 네트워크를 실시간으로 모니터링하며 성능 테스트를 실행하고 상세한 리포트를 생성합니다.
-    fr_fr: Surveillance système en temps réel avec tableau de bord Netdata plus outils de benchmarking complets. Surveillez CPU, mémoire, E/S disque et réseau en temps réel.
-    es_es: Monitorización del sistema en tiempo real con panel Netdata más herramientas de benchmarking integrales. Supervise CPU, memoria, E/S de disco y red en tiempo real.
-    zh_cn: 通过 Netdata 仪表板进行实时系统监控，加上全面的基准测试工具。实时监控 CPU、内存、磁盘 I/O 和网络性能。
+    en_us: "Professional system performance benchmark tool using Phoronix Test Suite. Comprehensive testing of CPU, memory, disk I/O, and compression performance using industry-standard benchmarks. Generates detailed JSON reports, CSV data, and human-readable summaries. No web UI - designed for professional development use."
+    fr_fr: "Outil professionnel de test de performance système utilisant Phoronix Test Suite. Tests complets de CPU, mémoire, E/S disque et performance de compression avec des benchmarks standard de l'industrie. Génère des rapports JSON détaillés, données CSV et résumés lisibles. Pas d'interface web - conçu pour usage de développement professionnel."
+    es_es: "Herramienta profesional de evaluación de rendimiento del sistema usando Phoronix Test Suite. Pruebas integrales de CPU, memoria, E/S de disco y rendimiento de compresión usando benchmarks estándar de la industria. Genera informes JSON detallados, datos CSV y resúmenes legibles. Sin interfaz web - diseñado para uso de desarrollo profesional."
+    zh_cn: "使用Phoronix Test Suite的专业系统性能基准测试工具。使用行业标准基准对CPU、内存、磁盘I/O和压缩性能进行全面测试。生成详细的JSON报告、CSV数据和易读摘要。无Web界面 - 专为专业开发使用而设计。"
+  developer: Yundera Team  
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/YunderaBenchmark/icon.png
   tagline:
-    en_us: Monitor in real-time, benchmark with precision
-    ko_kr: 실시간 모니터링, 정밀한 벤치마크
-    fr_fr: Surveillance en temps réel, benchmarks précis
-    es_es: Monitoreo en tiempo real, benchmarks precisos
-    zh_cn: 实时监控，精确基准测试
+    en_us: "Professional benchmark suite powered by Phoronix Test Suite"
+    fr_fr: "Suite de benchmarks professionnelle alimentée par Phoronix Test Suite"
+    es_es: "Suite de evaluación profesional impulsada por Phoronix Test Suite"
+    zh_cn: "由Phoronix Test Suite驱动的专业基准测试套件"
+  title:
+    en_us: Yundera Benchmark Pro
+    fr_fr: Yundera Benchmark Pro
+    es_es: Yundera Benchmark Pro
+    zh_cn: Yundera专业基准测试
   tips:
     before_install:
       en_us: |
-        ## Performance Monitor & Benchmark Suite
-
-        This app combines real-time monitoring with comprehensive benchmarking:
-
-        ### Real-time Monitoring (Netdata):
-        - CPU, memory, disk I/O, network metrics updated every second
-        - Docker container monitoring
-        - Interactive dashboards with zoom and pan
-        - Automatic anomaly detection
-
-        ### Benchmark Tools Available:
-        - **stress-ng**: CPU and memory stress testing
-        - **FIO**: Advanced disk I/O benchmarking  
-        - **sysbench**: CPU, memory, and file I/O tests
-        - **iperf3**: Network performance testing
-
-        ### Quick Start Commands:
+        **Professional Benchmark Tool - Phoronix Test Suite**
+        
+        Industry-standard benchmarking with 130+ tests.
+        
+        **Run Comprehensive Benchmark:**
         ```bash
-        # Full system benchmark
-        docker exec benchmark-tools /scripts/full-benchmark.sh
-
-        # Individual tests
-        docker exec benchmark-tools /scripts/cpu-benchmark.sh
-        docker exec benchmark-tools /scripts/memory-benchmark.sh
-        docker exec benchmark-tools /scripts/disk-benchmark.sh
-
-        # Custom stress tests
-        docker exec benchmark-tools stress-ng --cpu 4 --timeout 30s
-        docker exec benchmark-tools fio --name=test --ioengine=libaio --rw=randread --bs=4k --size=1G
+        docker exec yundera-benchmark-phoronix-pts-1 /app/run-benchmark.sh
         ```
-
-        ### Reports Location:
-        All benchmark reports are saved to `/DATA/Documents/BenchmarkReports/`
-
-        **Note**: Monitor the Netdata dashboard while running benchmarks to see real-time impact on system resources.
-      ko_kr: |
-        ## 성능 모니터 & 벤치마크 스위트
-
-        이 앱은 실시간 모니터링과 종합적인 벤치마킹을 결합합니다:
-
-        ### 실시간 모니터링 (Netdata):
-        - CPU, 메모리, 디스크 I/O, 네트워크 메트릭을 매초 업데이트
-        - Docker 컨테이너 모니터링
-        - 줌 및 팬 기능이 있는 인터랙티브 대시보드
-        - 자동 이상 감지
-
-        ### 사용 가능한 벤치마크 도구:
-        - **stress-ng**: CPU 및 메모리 스트레스 테스트
-        - **FIO**: 고급 디스크 I/O 벤치마킹
-        - **sysbench**: CPU, 메모리, 파일 I/O 테스트
-        - **iperf3**: 네트워크 성능 테스트
-
-        ### 빠른 시작 명령어:
+        
+        **Quick Performance Test:**
         ```bash
-        # 설치 후 벤치마크 도구가 준비되었는지 확인
-        docker logs benchmark-tools
-
-        # 전체 시스템 벤치마크 (권장)
-        docker exec benchmark-tools /scripts/full-benchmark.sh
-
-        # 개별 테스트
-        docker exec benchmark-tools /scripts/cpu-benchmark.sh
-        docker exec benchmark-tools /scripts/memory-benchmark.sh
-        docker exec benchmark-tools /scripts/disk-benchmark.sh
-
-        # 커스텀 스트레스 테스트 (고급 사용자용)
-        docker exec benchmark-tools stress-ng --cpu 4 --timeout 30s --metrics-brief
-        docker exec benchmark-tools fio --name=test --ioengine=libaio --rw=randread --bs=4k --size=1G
+        docker exec yundera-benchmark-phoronix-pts-1 /app/quick-test.sh
         ```
-
-        ### 리포트 위치:
-        모든 벤치마크 리포트는 `/DATA/Documents/BenchmarkReports/`에 저장됩니다
-
-        **참고**: 벤치마크 실행 중 Netdata 대시보드를 모니터링하여 시스템 리소스에 미치는 실시간 영향을 확인하세요.
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/PerformanceMonitorBenchmark/icon.png
-  screenshot:
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/PerformanceMonitorBenchmark/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/PerformanceMonitorBenchmark/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/PerformanceMonitorBenchmark/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/PerformanceMonitorBenchmark/thumbnail.png
-  index: /
-  pre-install-cmd: |
-    mkdir -p /DATA/Documents/BenchmarkReports &&
-    mkdir -p /DATA/AppData/$AppID/netdata-config &&
-    mkdir -p /DATA/AppData/$AppID/netdata-lib &&
-    mkdir -p /DATA/AppData/$AppID/netdata-cache &&
-    mkdir -p /DATA/AppData/$AppID/benchmark-results &&
-    mkdir -p /DATA/AppData/$AppID/benchmark-scripts &&
-    echo "Performance monitoring directories created"
+        
+        **Access Container:**
+        ```bash
+        docker exec -it yundera-benchmark-phoronix-pts-1 sh
+        ```
+        
+        **Generated Reports:**
+        - Location: `/DATA/AppData/yundera-benchmark/reports/`
+        - JSON Report: `benchmark_report_YYYYMMDD_HHMMSS.json`
+        - CSV Data: `benchmark_results_YYYYMMDD_HHMMSS.csv`
+        - Summary: `benchmark_summary_YYYYMMDD_HHMMSS.txt`
+        
+        **Professional Tests Include:**
+        - CPU Performance (OpenSSL, 7-Zip)
+        - Memory Throughput (Sysbench)
+        - Disk I/O (FIO)
+        - Compression Performance
+        - Multiple standardized benchmarks
+        
+        **Resource Requirements:**
+        - 4GB RAM, 4 CPU cores during testing
+        - Based on optimized Alpine Linux
+        - Professional-grade Clear Linux optimizations
