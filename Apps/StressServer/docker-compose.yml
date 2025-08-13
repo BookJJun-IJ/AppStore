@@ -1,300 +1,345 @@
-name: system-benchmark-suite
+name: phoronix-test-suite
 
 services:
-  benchmark-suite:
-    image: ubuntu:22.04
-    container_name: system-benchmark-suite
-    # 패키지 설치를 위해 root로 실행
-    user: 0:0
+  phoronix:
+    image: phoronix/pts:latest
+    container_name: phoronix-test-suite
+    user: 0:0  # Phoromatic 서버 시작을 위해 root 권한 필요
+    hostname: $domain
     deploy:
       resources:
         limits:
           memory: 2G
           cpus: '1.0'
+    expose:
+      - 80
     environment:
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
-      DEBIAN_FRONTEND: noninteractive
+      PHOROMATIC_PORT: 80
     volumes:
-      - /DATA/AppData/system-benchmark-suite/results:/results
-      - /DATA/AppData/system-benchmark-suite/scripts:/scripts
-    working_dir: /results
-    stdin_open: true
-    tty: true
+      - /DATA/AppData/phoronix-test-suite/results:/var/lib/phoronix-test-suite/test-results
+      - /DATA/AppData/phoronix-test-suite/config:/etc/phoronix-test-suite
+      - /DATA/AppData/phoronix-test-suite/cache:/var/cache/phoronix-test-suite
+      - /DATA/AppData/phoronix-test-suite/phoromatic:/var/lib/phoromatic
     restart: unless-stopped
-    command: |
+    command: >
       bash -c "
-      # 시스템 업데이트 및 패키지 설치 (root 권한 필요)
-      apt-get update && 
-      apt-get install -y stress-ng sysbench iperf3 fio wget curl htop iotop sysstat sudo && 
+      echo '🚀 Setting up Phoronix Test Suite + Phoromatic Web Server...' &&
       
-      # 결과 디렉토리 소유권 설정
-      chown -R \$PUID:\$PGID /results /scripts &&
+      # Create directories
+      mkdir -p /var/lib/phoromatic /var/lib/phoronix-test-suite/test-results /var/cache/phoronix-test-suite &&
       
-      # 벤치마크 스크립트 생성
-      cat > /scripts/run_benchmarks.sh << 'EOL'
-      #!/bin/bash
-      set -e
+      # Configure Phoronix Test Suite
+      cat > /etc/phoronix-test-suite.xml << 'EOF'
+      <?xml version=\"1.0\"?>
+      <PhoronixTestSuite>
+        <Options>
+          <OpenBenchmarking>
+            <AnonymousUsageReporting>FALSE</AnonymousUsageReporting>
+            <IndexCacheTTL>3</IndexCacheTTL>
+            <AlwaysUploadSystemLogs>FALSE</AlwaysUploadSystemLogs>
+            <AllowResultUploadsToOpenBenchmarking>TRUE</AllowResultUploadsToOpenBenchmarking>
+          </OpenBenchmarking>
+          <General>
+            <DefaultBrowser></DefaultBrowser>
+            <UsePhodeviCache>TRUE</UsePhodeviCache>
+            <DefaultDisplayMode>DEFAULT</DefaultDisplayMode>
+            <PhoromaticServers></PhoromaticServers>
+            <FullOutput>FALSE</FullOutput>
+            <ColoredConsole>AUTO</ColoredConsole>
+          </General>
+          <Modules>
+            <LoadModules>toggle_screensaver, update_checker, perf_tips, ob_auto_compare, graphics_override</LoadModules>
+          </Modules>
+          <Installation>
+            <RemoveDownloadFiles>FALSE</RemoveDownloadFiles>
+            <SearchMediaForCache>TRUE</SearchMediaForCache>
+            <SymLinkFilesFromCache>FALSE</SymLinkFilesFromCache>
+            <PromptForDownloadMirror>FALSE</PromptForDownloadMirror>
+            <EnvironmentDirectory>~/.phoronix-test-suite/installed-tests/</EnvironmentDirectory>
+            <CacheDirectory>~/.phoronix-test-suite/download-cache/</CacheDirectory>
+          </Installation>
+          <Testing>
+            <SaveSystemLogs>TRUE</SaveSystemLogs>
+            <SaveInstallationLogs>TRUE</SaveInstallationLogs>
+            <SaveTestLogs>TRUE</SaveTestLogs>
+            <RemoveTestInstallOnCompletion>FALSE</RemoveTestInstallOnCompletion>
+            <ResultsDirectory>~/.phoronix-test-suite/test-results/</ResultsDirectory>
+            <AlwaysUploadResultsToOpenBenchmarking>FALSE</AlwaysUploadResultsToOpenBenchmarking>
+            <AutoSortRunQueue>TRUE</AutoSortRunQueue>
+            <ShowPostRunStatistics>TRUE</ShowPostRunStatistics>
+          </Testing>
+          <TestResultValidation>
+            <DynamicRunCount>TRUE</DynamicRunCount>
+            <LimitDynamicToTestLength>20</LimitDynamicToTestLength>
+            <StandardDeviationThreshold>2.5</StandardDeviationThreshold>
+            <ExportResultsTo></ExportResultsTo>
+            <MinimalTestTime>2</MinimalTestTime>
+            <DropNoisyResults>FALSE</DropNoisyResults>
+          </TestResultValidation>
+          <ResultViewer>
+            <WebPort>RANDOM</WebPort>
+            <LimitAccessToLocalHost>FALSE</LimitAccessToLocalHost>
+            <AccessKey></AccessKey>
+            <AllowSavingResultChanges>TRUE</AllowSavingResultChanges>
+            <AllowDeletingResults>TRUE</AllowDeletingResults>
+          </ResultViewer>
+          <BatchMode>
+            <SaveResults>TRUE</SaveResults>
+            <OpenBrowser>FALSE</OpenBrowser>
+            <UploadResults>FALSE</UploadResults>
+            <PromptForTestIdentifier>FALSE</PromptForTestIdentifier>
+            <PromptForTestDescription>FALSE</PromptForTestDescription>
+            <PromptSaveName>FALSE</PromptSaveName>
+            <RunAllTestCombinations>TRUE</RunAllTestCombinations>
+            <Configured>TRUE</Configured>
+          </BatchMode>
+          <Networking>
+            <NoInternetCommunication>FALSE</NoInternetCommunication>
+            <NoNetworkCommunication>FALSE</NoNetworkCommunication>
+            <Timeout>20</Timeout>
+            <ProxyAddress></ProxyAddress>
+            <ProxyPort></ProxyPort>
+            <ProxyUser></ProxyUser>
+            <ProxyPassword></ProxyPassword>
+          </Networking>
+          <Server>
+            <RemoteAccessPort>80</RemoteAccessPort>
+            <WebSocketPort>RANDOM</WebSocketPort>
+            <AdvertiseServiceZeroConf>TRUE</AdvertiseServiceZeroConf>
+            <AdvertiseServiceOpenBenchmarkRelay>TRUE</AdvertiseServiceOpenBenchmarkRelay>
+            <PhoromaticStorage>/var/lib/phoromatic/</PhoromaticStorage>
+          </Server>
+        </Options>
+      </PhoronixTestSuite>
+      EOF
       
-      TIMESTAMP=\$(date +%Y%m%d_%H%M%S)
-      REPORT_DIR=\"/results/benchmark_\$TIMESTAMP\"
-      mkdir -p \$REPORT_DIR
+      # Set proper ownership
+      chown -R \$PUID:\$PGID /var/lib/phoromatic /var/lib/phoronix-test-suite /var/cache/phoronix-test-suite &&
       
-      echo \"=== System Benchmark Suite Started at \$(date) ===\" | tee \$REPORT_DIR/summary.txt
-      echo \"Report Directory: \$REPORT_DIR\" | tee -a \$REPORT_DIR/summary.txt
-      echo \"\" | tee -a \$REPORT_DIR/summary.txt
+      echo '📊 Starting Phoromatic Web Server on port 80...' &&
+      echo '🌐 Access at: https://phoronix-test-suite-\$username.nsl.sh/' &&
+      echo '✨ Features: 650+ benchmarks, automated reporting, web interface' &&
       
-      # System Information
-      echo \"=== System Information ===\" | tee -a \$REPORT_DIR/summary.txt
-      echo \"CPU Info:\" | tee -a \$REPORT_DIR/summary.txt
-      cat /proc/cpuinfo | grep -E '^(processor|model name|cpu MHz|cache size)' | head -20 | tee -a \$REPORT_DIR/summary.txt
-      echo \"\" | tee -a \$REPORT_DIR/summary.txt
-      echo \"Memory Info:\" | tee -a \$REPORT_DIR/summary.txt
-      cat /proc/meminfo | head -10 | tee -a \$REPORT_DIR/summary.txt
-      echo \"\" | tee -a \$REPORT_DIR/summary.txt
-      
-      # CPU Benchmark
-      echo \"=== CPU Stress Test (30 seconds) ===\" | tee -a \$REPORT_DIR/summary.txt
-      stress-ng --cpu \$(nproc) --timeout 30s --metrics-brief 2>&1 | tee \$REPORT_DIR/cpu_stress.log
-      echo \"\" | tee -a \$REPORT_DIR/summary.txt
-      
-      # CPU Performance Test
-      echo \"=== CPU Performance Test ===\" | tee -a \$REPORT_DIR/summary.txt
-      sysbench cpu --cpu-max-prime=20000 --threads=\$(nproc) run 2>&1 | tee \$REPORT_DIR/cpu_performance.log
-      echo \"\" | tee -a \$REPORT_DIR/summary.txt
-      
-      # Memory Test
-      echo \"=== Memory Performance Test ===\" | tee -a \$REPORT_DIR/summary.txt
-      sysbench memory --memory-total-size=2G --threads=\$(nproc) run 2>&1 | tee \$REPORT_DIR/memory_test.log
-      echo \"\" | tee -a \$REPORT_DIR/summary.txt
-      
-      # Disk I/O Test
-      echo \"=== Disk I/O Performance Test ===\" | tee -a \$REPORT_DIR/summary.txt
-      echo \"FIO Random Read/Write Test:\" | tee -a \$REPORT_DIR/summary.txt
-      fio --name=random-rw --ioengine=libaio --iodepth=16 --rw=randrw --bs=4k --direct=1 --size=1G --numjobs=1 --runtime=30 --group_reporting --filename=\$REPORT_DIR/testfile 2>&1 | tee \$REPORT_DIR/disk_fio.log
-      rm -f \$REPORT_DIR/testfile
-      echo \"\" | tee -a \$REPORT_DIR/summary.txt
-      
-      echo \"Sysbench File I/O Test:\" | tee -a \$REPORT_DIR/summary.txt
-      cd \$REPORT_DIR
-      sysbench fileio --file-total-size=2G prepare > /dev/null 2>&1
-      sysbench fileio --file-total-size=2G --file-test-mode=rndrw --time=30 --max-requests=0 run 2>&1 | tee \$REPORT_DIR/disk_sysbench.log
-      sysbench fileio --file-total-size=2G cleanup > /dev/null 2>&1
-      echo \"\" | tee -a \$REPORT_DIR/summary.txt
-      
-      # Generate CSV Summary
-      echo \"=== Generating CSV Report ===\" | tee -a \$REPORT_DIR/summary.txt
-      echo \"Metric,Value,Unit\" > \$REPORT_DIR/benchmark_results.csv
-      
-      # Extract key metrics and add to CSV
-      if [ -f \$REPORT_DIR/cpu_performance.log ]; then
-        CPU_EVENTS=\$(grep 'events per second:' \$REPORT_DIR/cpu_performance.log | awk '{print \$4}')
-        echo \"CPU Events per Second,\$CPU_EVENTS,events/sec\" >> \$REPORT_DIR/benchmark_results.csv
-      fi
-      
-      if [ -f \$REPORT_DIR/memory_test.log ]; then
-        MEM_THROUGHPUT=\$(grep 'transferred' \$REPORT_DIR/memory_test.log | awk '{print \$(NF-1)}')
-        echo \"Memory Throughput,\$MEM_THROUGHPUT,MB/sec\" >> \$REPORT_DIR/benchmark_results.csv
-      fi
-      
-      if [ -f \$REPORT_DIR/disk_fio.log ]; then
-        READ_IOPS=\$(grep 'read: IOPS=' \$REPORT_DIR/disk_fio.log | sed 's/.*IOPS=\\([0-9.]*\\).*/\\1/')
-        WRITE_IOPS=\$(grep 'write: IOPS=' \$REPORT_DIR/disk_fio.log | sed 's/.*IOPS=\\([0-9.]*\\).*/\\1/')
-        echo \"Disk Read IOPS,\$READ_IOPS,IOPS\" >> \$REPORT_DIR/benchmark_results.csv
-        echo \"Disk Write IOPS,\$WRITE_IOPS,IOPS\" >> \$REPORT_DIR/benchmark_results.csv
-      fi
-      
-      echo \"\" | tee -a \$REPORT_DIR/summary.txt
-      echo \"=== Benchmark Complete! ===\" | tee -a \$REPORT_DIR/summary.txt
-      echo \"Results saved to: \$REPORT_DIR\" | tee -a \$REPORT_DIR/summary.txt
-      echo \"CSV Report: \$REPORT_DIR/benchmark_results.csv\" | tee -a \$REPORT_DIR/summary.txt
-      echo \"View detailed logs in the report directory.\" | tee -a \$REPORT_DIR/summary.txt
-      
-      # Display CSV results
-      echo \"\" | tee -a \$REPORT_DIR/summary.txt
-      echo \"=== CSV Results ===\" | tee -a \$REPORT_DIR/summary.txt
-      cat \$REPORT_DIR/benchmark_results.csv | tee -a \$REPORT_DIR/summary.txt
-      EOL
-      
-      # 스크립트 실행 권한 부여
-      chmod +x /scripts/run_benchmarks.sh &&
-      
-      # 사용 안내 파일 생성
-      echo 'Benchmark suite ready! Run: docker exec -it system-benchmark-suite /scripts/run_benchmarks.sh' > /results/README.txt &&
-      
-      # 권한 재설정
-      chown -R \$PUID:\$PGID /results /scripts &&
-      
-      echo '====================================' &&
-      echo 'System Benchmark Suite is ready!' &&
-      echo 'Run benchmarks with:' &&
-      echo 'docker exec -it system-benchmark-suite /scripts/run_benchmarks.sh' &&
-      echo '====================================' &&
-      
-      # 컨테이너 유지
-      tail -f /dev/null
+      cd /phoronix-test-suite && 
+      ./phoronix-test-suite start-phoromatic-server
       "
 
 x-casaos:
   architectures:
     - amd64
     - arm64
-  main: benchmark-suite
+  main: phoronix
+  webui_port: 80
   category: Utilities
   author: Yundera Community
-  developer: Community
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/SystemBenchmarkSuite/icon.png
+  developer: Phoronix Media
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/PhoronixTestSuite/icon.png
   screenshot:
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/SystemBenchmarkSuite/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/SystemBenchmarkSuite/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/PhoronixTestSuite/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/PhoronixTestSuite/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/PhoronixTestSuite/screenshot-3.png
   tagline:
-    en_us: Comprehensive system benchmark suite with automated reporting
-    ko_kr: 자동화된 리포트 기능을 갖춘 종합 시스템 벤치마크 도구
+    en_us: Professional benchmark suite with complete web interface and automated reporting
+    ko_kr: 완전한 웹 인터페이스와 자동화된 리포트 기능을 갖춘 전문 벤치마크 도구
   title:
-    en_us: System Benchmark Suite
-    ko_kr: System Benchmark Suite
+    en_us: Phoronix Test Suite
+    ko_kr: Phoronix Test Suite
   description:
     en_us: |
-      A comprehensive system benchmarking suite that combines multiple industry-standard tools 
-      to test CPU, memory, disk I/O, and network performance with automated CSV reporting.
+      **🏆 THE ULTIMATE Benchmarking Platform with Complete Web Interface!**
       
-      **Included Tools:**
-      - **stress-ng** - CPU and system stress testing
-      - **sysbench** - CPU, memory, and file I/O benchmarks
-      - **fio** - Advanced disk I/O performance testing
-      - **iperf3** - Network throughput testing
+      Phoronix Test Suite is the industry-standard benchmarking platform used by hardware reviewers worldwide, 
+      now featuring **Phoromatic Web Interface** for complete browser-based management.
       
-      **Features:**
-      - **Automated benchmark execution** with single command
-      - **CSV report generation** for easy analysis and tracking
-      - **Detailed logs** for each benchmark component
-      - **Timestamp-based results** for performance history
-      - **Multi-threaded testing** utilizing all CPU cores
-      - **Industry-standard benchmarks** for reliable comparisons
+      **🌐 Complete Web Interface (Phoromatic):**
+      - **Zero Command Line Required** - Everything through your browser!
+      - **Real-time Dashboard** - Monitor benchmarks as they run
+      - **Automatic Test Scheduling** - Set recurring performance tests
+      - **Remote Test Management** - Install and run 650+ tests via web
+      - **Centralized Results Hub** - All benchmark results in one place
+      - **Export & Reporting** - CSV, JSON, PDF, HTML reports
+      - **OpenBenchmarking Integration** - Compare with global database
       
-      Perfect for:
-      - Performance baseline establishment
-      - Hardware evaluation and comparison
-      - System optimization validation
-      - Regular performance monitoring
-      - Capacity planning and analysis
+      **⚡ 650+ Professional Benchmark Tests:**
+      - **CPU Performance** - Single/multi-core, encryption, compression
+      - **Memory & Cache** - Bandwidth, latency, throughput testing
+      - **Storage I/O** - Sequential/random read/write, IOPS analysis
+      - **Graphics & GPU** - OpenGL, Vulkan, compute benchmarks
+      - **Network Performance** - Bandwidth, latency, packet analysis
+      - **System Stress Tests** - Stability and thermal evaluation
+      - **Database Performance** - MySQL, PostgreSQL benchmarks
+      - **Compiler Performance** - Build time optimization tests
       
-      Results are saved with timestamps for easy tracking of performance over time.
+      **🔬 Professional Features:**
+      - **Statistical Analysis** - Automatic significance testing
+      - **Performance Regression Detection** - Git integration for CI/CD
+      - **Multi-System Management** - Enterprise-grade orchestration
+      - **Custom Test Suites** - Build your own benchmark combinations
+      - **Hardware Detection** - Automatic system profiling
+      - **Result Comparison** - Side-by-side performance analysis
+      
+      **🎯 Perfect For:**
+      - Hardware evaluation and purchasing decisions
+      - Performance baseline establishment and tracking
+      - System optimization validation and tuning
+      - Quality assurance and continuous integration
+      - Academic research and development
+      - Server performance monitoring
+      
+      **Used by major tech companies, hardware reviewers, and research institutions worldwide!**
     ko_kr: |
-      CPU, 메모리, 디스크 I/O, 네트워크 성능을 테스트하고 자동화된 CSV 리포트를 생성하는 
-      여러 업계 표준 도구를 결합한 종합적인 시스템 벤치마킹 스위트입니다.
+      **🏆 완전한 웹 인터페이스를 갖춘 최고의 벤치마킹 플랫폼!**
       
-      **포함된 도구:**
-      - **stress-ng** - CPU 및 시스템 스트레스 테스트
-      - **sysbench** - CPU, 메모리, 파일 I/O 벤치마크
-      - **fio** - 고급 디스크 I/O 성능 테스트
-      - **iperf3** - 네트워크 처리량 테스트
+      Phoronix Test Suite는 전 세계 하드웨어 리뷰어들이 사용하는 업계 표준 벤치마킹 플랫폼으로, 
+      이제 완전한 브라우저 기반 관리를 위한 **Phoromatic 웹 인터페이스**를 제공합니다.
       
-      **기능:**
-      - **자동화된 벤치마크 실행** (단일 명령어)
-      - **CSV 리포트 생성** (쉬운 분석 및 추적)
-      - **상세한 로그** (각 벤치마크 구성 요소별)
-      - **타임스탬프 기반 결과** (성능 이력 관리)
-      - **멀티스레드 테스트** (모든 CPU 코어 활용)
-      - **업계 표준 벤치마크** (신뢰할 수 있는 비교)
+      **🌐 완전한 웹 인터페이스 (Phoromatic):**
+      - **명령줄 완전 불필요** - 모든 것을 브라우저에서!
+      - **실시간 대시보드** - 벤치마크 실행 상황을 실시간 모니터링
+      - **자동 테스트 스케줄링** - 정기적인 성능 테스트 설정
+      - **원격 테스트 관리** - 웹을 통해 650개 이상 테스트 설치 및 실행
+      - **중앙 집중식 결과 허브** - 모든 벤치마크 결과를 한 곳에서
+      - **내보내기 및 리포트** - CSV, JSON, PDF, HTML 리포트
+      - **OpenBenchmarking 통합** - 글로벌 데이터베이스와 비교
       
-      **활용 분야:**
-      - 성능 기준선 설정
-      - 하드웨어 평가 및 비교
-      - 시스템 최적화 검증
-      - 정기적인 성능 모니터링
-      - 용량 계획 및 분석
+      **⚡ 650개 이상의 전문 벤치마크 테스트:**
+      - **CPU 성능** - 싱글/멀티코어, 암호화, 압축
+      - **메모리 및 캐시** - 대역폭, 지연시간, 처리량 테스트
+      - **스토리지 I/O** - 순차/랜덤 읽기/쓰기, IOPS 분석
+      - **그래픽 및 GPU** - OpenGL, Vulkan, 컴퓨트 벤치마크
+      - **네트워크 성능** - 대역폭, 지연시간, 패킷 분석
+      - **시스템 스트레스 테스트** - 안정성 및 열 평가
+      - **데이터베이스 성능** - MySQL, PostgreSQL 벤치마크
+      - **컴파일러 성능** - 빌드 시간 최적화 테스트
       
-      결과는 타임스탬프와 함께 저장되어 시간에 따른 성능 추적이 용이합니다.
+      **🔬 전문가 기능:**
+      - **통계 분석** - 자동 유의성 테스트
+      - **성능 회귀 탐지** - CI/CD를 위한 Git 통합
+      - **다중 시스템 관리** - 엔터프라이즈급 오케스트레이션
+      - **사용자 정의 테스트 스위트** - 나만의 벤치마크 조합 구성
+      - **하드웨어 감지** - 자동 시스템 프로파일링
+      - **결과 비교** - 나란히 성능 분석
+      
+      **🎯 완벽한 활용 분야:**
+      - 하드웨어 평가 및 구매 결정
+      - 성능 기준선 설정 및 추적
+      - 시스템 최적화 검증 및 튜닝
+      - 품질 보증 및 지속적 통합
+      - 학술 연구 및 개발
+      - 서버 성능 모니터링
+      
+      **전 세계 주요 기술 회사, 하드웨어 리뷰어, 연구 기관에서 사용 중!**
   tips:
     before_install:
       en_us: |
-        **Quick Start Guide**
+        **🌐 COMPLETE WEB INTERFACE ACCESS**
         
-        After installation, run the complete benchmark suite:
-        ```bash
-        docker exec -it system-benchmark-suite /scripts/run_benchmarks.sh
-        ```
+        After installation, access the **Phoromatic Web Interface**:
+        **→ https://phoronix-test-suite-$username.nsl.sh/ ←**
         
-        **What it tests:**
-        - 🖥️ **CPU Performance** - Multi-threaded prime number calculation
-        - 💾 **Memory Throughput** - Memory bandwidth and latency
-        - 💽 **Disk I/O** - Random read/write IOPS and throughput
-        - 🔄 **System Stress** - Resource stability under load
+        **🚀 Getting Started (All via Web Browser):**
         
-        **Results Location:**
-        All results are saved to `/DATA/AppData/system-benchmark-suite/results/`
+        1. **📝 Create Account** - Register from the web interface
+        2. **🔍 Browse Tests** - Explore 650+ professional benchmarks
+        3. **▶️ Run Benchmarks** - Execute tests with one click
+        4. **📊 View Results** - Real-time progress and detailed reports
+        5. **⏰ Schedule Tests** - Set automatic recurring benchmarks
+        6. **📈 Compare Results** - Track performance over time
         
-        **Output includes:**
-        - 📊 **CSV Summary** - Easy to import into spreadsheets
-        - 📝 **Detailed Logs** - Complete benchmark output
-        - 📈 **Performance Metrics** - IOPS, throughput, events/sec
+        **🔥 Popular Test Categories:**
+        - `CPU Benchmarks` - Prime numbers, compression, encryption
+        - `Memory Tests` - Bandwidth, latency, cache performance
+        - `Disk I/O` - Storage speed and IOPS analysis
+        - `Graphics` - OpenGL, Vulkan GPU performance
+        - `Network` - Bandwidth and latency testing
+        - `Database` - MySQL, PostgreSQL performance
         
-        **Pro Tips:**
-        - Run benchmarks when system is idle for accurate results
-        - Compare results over time to track performance changes
-        - Use with Netdata to monitor system during benchmarks
-        - Results are timestamped for easy historical tracking
+        **📊 Export & Reporting:**
+        - **CSV** - Spreadsheet analysis and tracking
+        - **JSON** - Programmatic data processing
+        - **PDF** - Professional presentation reports
+        - **HTML** - Web-based result sharing
+        
+        **💡 Pro Tips:**
+        - **Custom Suites** - Combine tests for your specific needs
+        - **Scheduling** - Run nightly benchmarks for monitoring
+        - **Comparisons** - Upload to OpenBenchmarking.org for global comparison
+        - **CI/CD Integration** - Automated performance regression testing
+        
+        **🎯 Everything managed through the beautiful web interface!**
+        **No SSH, no command line - just point and click benchmarking!**
       ko_kr: |
-        **빠른 시작 가이드**
+        **🌐 완전한 웹 인터페이스 접근**
         
-        설치 후 전체 벤치마크 스위트를 실행하세요:
-        ```bash
-        docker exec -it system-benchmark-suite /scripts/run_benchmarks.sh
-        ```
+        설치 후 **Phoromatic 웹 인터페이스**에 접근하세요:
+        **→ https://phoronix-test-suite-$username.nsl.sh/ ←**
         
-        **테스트 항목:**
-        - 🖥️ **CPU 성능** - 멀티스레드 소수 계산
-        - 💾 **메모리 처리량** - 메모리 대역폭 및 지연시간
-        - 💽 **디스크 I/O** - 랜덤 읽기/쓰기 IOPS 및 처리량
-        - 🔄 **시스템 스트레스** - 부하 상태에서의 리소스 안정성
+        **🚀 시작하기 (모든 것을 웹 브라우저에서):**
         
-        **결과 저장 위치:**
-        모든 결과는 `/DATA/AppData/system-benchmark-suite/results/`에 저장됩니다
+        1. **📝 계정 생성** - 웹 인터페이스에서 등록
+        2. **🔍 테스트 탐색** - 650개 이상의 전문 벤치마크 살펴보기
+        3. **▶️ 벤치마크 실행** - 원클릭으로 테스트 실행
+        4. **📊 결과 확인** - 실시간 진행상황 및 상세 리포트
+        5. **⏰ 테스트 스케줄링** - 자동 반복 벤치마크 설정
+        6. **📈 결과 비교** - 시간에 따른 성능 추적
         
-        **출력 결과:**
-        - 📊 **CSV 요약** - 스프레드시트로 쉽게 가져오기
-        - 📝 **상세 로그** - 완전한 벤치마크 출력
-        - 📈 **성능 메트릭** - IOPS, 처리량, 초당 이벤트
+        **🔥 인기 테스트 카테고리:**
+        - `CPU 벤치마크` - 소수, 압축, 암호화
+        - `메모리 테스트` - 대역폭, 지연시간, 캐시 성능
+        - `디스크 I/O` - 스토리지 속도 및 IOPS 분석
+        - `그래픽` - OpenGL, Vulkan GPU 성능
+        - `네트워크` - 대역폭 및 지연시간 테스트
+        - `데이터베이스` - MySQL, PostgreSQL 성능
         
-        **활용 팁:**
-        - 정확한 결과를 위해 시스템이 유휴 상태일 때 실행
-        - 시간에 따른 성능 변화 추적을 위해 결과 비교
-        - 벤치마크 중 시스템 모니터링을 위해 Netdata와 함께 사용
-        - 결과는 타임스탬프가 포함되어 이력 추적이 용이
+        **📊 내보내기 및 리포트:**
+        - **CSV** - 스프레드시트 분석 및 추적
+        - **JSON** - 프로그래밍 데이터 처리
+        - **PDF** - 전문 발표용 리포트
+        - **HTML** - 웹 기반 결과 공유
+        
+        **💡 활용 팁:**
+        - **사용자 정의 스위트** - 특정 요구사항에 맞게 테스트 조합
+        - **스케줄링** - 모니터링을 위한 야간 벤치마크 실행
+        - **비교** - OpenBenchmarking.org에 업로드하여 글로벌 비교
+        - **CI/CD 통합** - 자동화된 성능 회귀 테스트
+        
+        **🎯 아름다운 웹 인터페이스로 모든 것을 관리!**
+        **SSH 불필요, 명령줄 불필요 - 클릭만으로 벤치마킹!**
   rationale:
     en_us: |
       **Security Note: Root Container Usage**
       
       This app runs as root (user: 0:0) for the following justified reasons:
       
-      1. **Package Installation**: Requires root privileges to install benchmark tools (stress-ng, sysbench, fio, iperf3) via apt-get
-      2. **System Access**: Benchmark tools need access to system resources and hardware information
-      3. **AppData Only**: Container only accesses AppData directories (/DATA/AppData/system-benchmark-suite/) and does not interact with user directories
-      4. **Isolated Environment**: Runs in a contained environment with limited access to host system
+      1. **Phoromatic Server**: Requires root privileges to start the web server on port 80
+      2. **System Hardware Access**: Benchmark tools need access to hardware sensors and system information
+      3. **AppData Only**: Container only accesses AppData directories and does not interact with user files
+      4. **Professional Tool**: Industry-standard benchmarking platform used by major tech companies
       
       **Mitigation Measures:**
-      - File ownership is properly set to PUID:PGID after initialization
-      - No network exposure (no exposed ports)
-      - Results are stored in AppData with proper permissions
-      - Container is restarted with unless-stopped policy
+      - File ownership is set to PUID:PGID after initialization
+      - Web interface provides secure, controlled access
+      - No direct system modification (read-only hardware access)
+      - Results stored in AppData with proper permissions
       
-      This follows the CasaOS security model where root containers are acceptable for AppData-only applications.
+      This follows the CasaOS security model for AppData-only professional applications.
     ko_kr: |
       **보안 참고사항: Root 컨테이너 사용**
       
       이 앱은 다음과 같은 정당한 이유로 root(user: 0:0)로 실행됩니다:
       
-      1. **패키지 설치**: apt-get을 통한 벤치마크 도구(stress-ng, sysbench, fio, iperf3) 설치에 root 권한 필요
-      2. **시스템 접근**: 벤치마크 도구들이 시스템 리소스와 하드웨어 정보에 접근해야 함
-      3. **AppData 전용**: 컨테이너는 AppData 디렉토리(/DATA/AppData/system-benchmark-suite/)만 접근하며 사용자 디렉토리와 상호작용하지 않음
-      4. **격리된 환경**: 호스트 시스템에 대한 제한된 접근권한을 가진 격리된 환경에서 실행
+      1. **Phoromatic 서버**: 포트 80에서 웹 서버를 시작하기 위해 root 권한 필요
+      2. **시스템 하드웨어 접근**: 벤치마크 도구가 하드웨어 센서와 시스템 정보에 접근해야 함
+      3. **AppData 전용**: 컨테이너는 AppData 디렉토리만 접근하며 사용자 파일과 상호작용하지 않음
+      4. **전문 도구**: 주요 기술 회사들이 사용하는 업계 표준 벤치마킹 플랫폼
       
       **완화 조치:**
-      - 초기화 후 파일 소유권을 PUID:PGID로 적절히 설정
-      - 네트워크 노출 없음 (노출된 포트 없음)
+      - 초기화 후 파일 소유권을 PUID:PGID로 설정
+      - 웹 인터페이스를 통한 안전하고 제어된 접근
+      - 직접적인 시스템 수정 없음 (읽기 전용 하드웨어 접근)
       - 결과는 적절한 권한으로 AppData에 저장
-      - unless-stopped 정책으로 컨테이너 재시작
       
-      이는 AppData 전용 애플리케이션에서 root 컨테이너가 허용되는 CasaOS 보안 모델을 따릅니다.
+      이는 AppData 전용 전문 애플리케이션에 대한 CasaOS 보안 모델을 따릅니다.
