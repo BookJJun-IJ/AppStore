@@ -2,7 +2,7 @@ name: phoronix-test-suite
 
 services:
   phoronix:
-    image: tomzo/phoromatic:latest
+    image: iotech17/phoromatic-server:latest
     container_name: phoronix-test-suite
     user: $PUID:$PGID
     hostname: $domain
@@ -12,24 +12,27 @@ services:
           memory: 2G
           cpus: '1.0'
     expose:
-      - 9090
+      - 15000
     environment:
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
     volumes:
-      - /DATA/AppData/phoronix-test-suite/results:/var/lib/phoronix-test-suite/test-results
-      - /DATA/AppData/phoronix-test-suite/config:/etc/phoronix-test-suite
-      - /DATA/AppData/phoronix-test-suite/cache:/var/cache/phoronix-test-suite/download-cache
-      - /DATA/AppData/phoronix-test-suite/phoromatic:/var/lib/phoronix-test-suite/phoromatic
+      - /DATA/AppData/phoronix-test-suite/ptsconf:/var/lib/phoronix-test-suite
+      - /DATA/AppData/phoronix-test-suite/ptscache:/var/cache/phoronix-test-suite
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-check-certificate --spider -S http://localhost:15000 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 x-casaos:
   architectures:
     - amd64
     - arm64
   main: phoronix
-  webui_port: 9090
+  webui_port: 15000
   category: Utilities
   author: Yundera Community
   developer: Phoronix Media
@@ -135,7 +138,7 @@ x-casaos:
         **🌐 COMPLETE WEB INTERFACE ACCESS**
         
         After installation, access the **Phoromatic Web Interface**:
-        **→ https://9090-phoronix-test-suite-$username.nsl.sh/ ←**
+        **→ https://15000-phoronix-test-suite-$username.nsl.sh/ ←**
         
         **🚀 Getting Started (All via Web Browser):**
         
@@ -172,7 +175,7 @@ x-casaos:
         **🌐 완전한 웹 인터페이스 접근**
         
         설치 후 **Phoromatic 웹 인터페이스**에 접근하세요:
-        **→ https://9090-phoronix-test-suite-$username.nsl.sh/ ←**
+        **→ https://15000-phoronix-test-suite-$username.nsl.sh/ ←**
         
         **🚀 시작하기 (모든 것을 웹 브라우저에서):**
         
