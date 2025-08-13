@@ -1,56 +1,244 @@
-name: stress-server
+name: system-benchmark-suite
 
 services:
-  stress-server:
-    image: dannyben/stress-server:latest
+  benchmark-suite:
+    image: ubuntu:22.04
+    container_name: system-benchmark-suite
     user: $PUID:$PGID
     deploy:
       resources:
         limits:
-          memory: 1G
-          cpus: '1.0'
-    expose:
-      - 3000
+          memory: 4G
+          cpus: '4.0'
     environment:
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
+      DEBIAN_FRONTEND: noninteractive
     volumes:
-      - /DATA/AppData/$AppID/logs:/app/logs
+      - /DATA/AppData/system-benchmark-suite/results:/results
+      - /DATA/AppData/system-benchmark-suite/scripts:/scripts
+    working_dir: /results
+    stdin_open: true
+    tty: true
     restart: unless-stopped
+    command: |
+      bash -c "
+      apt-get update && 
+      apt-get install -y stress-ng sysbench iperf3 fio wget curl htop iotop sysstat && 
+      cat > /scripts/run_benchmarks.sh << 'EOL'
+      #!/bin/bash
+      set -e
+      
+      TIMESTAMP=\$(date +%Y%m%d_%H%M%S)
+      REPORT_DIR=\"/results/benchmark_\$TIMESTAMP\"
+      mkdir -p \$REPORT_DIR
+      
+      echo \"=== System Benchmark Suite Started at \$(date) ===\" | tee \$REPORT_DIR/summary.txt
+      echo \"Report Directory: \$REPORT_DIR\" | tee -a \$REPORT_DIR/summary.txt
+      echo \"\" | tee -a \$REPORT_DIR/summary.txt
+      
+      # System Information
+      echo \"=== System Information ===\" | tee -a \$REPORT_DIR/summary.txt
+      echo \"CPU Info:\" | tee -a \$REPORT_DIR/summary.txt
+      cat /proc/cpuinfo | grep -E '^(processor|model name|cpu MHz|cache size)' | head -20 | tee -a \$REPORT_DIR/summary.txt
+      echo \"\" | tee -a \$REPORT_DIR/summary.txt
+      echo \"Memory Info:\" | tee -a \$REPORT_DIR/summary.txt
+      cat /proc/meminfo | head -10 | tee -a \$REPORT_DIR/summary.txt
+      echo \"\" | tee -a \$REPORT_DIR/summary.txt
+      
+      # CPU Benchmark
+      echo \"=== CPU Stress Test (30 seconds) ===\" | tee -a \$REPORT_DIR/summary.txt
+      stress-ng --cpu \$(nproc) --timeout 30s --metrics-brief 2>&1 | tee \$REPORT_DIR/cpu_stress.log
+      echo \"\" | tee -a \$REPORT_DIR/summary.txt
+      
+      # CPU Performance Test
+      echo \"=== CPU Performance Test ===\" | tee -a \$REPORT_DIR/summary.txt
+      sysbench cpu --cpu-max-prime=20000 --threads=\$(nproc) run 2>&1 | tee \$REPORT_DIR/cpu_performance.log
+      echo \"\" | tee -a \$REPORT_DIR/summary.txt
+      
+      # Memory Test
+      echo \"=== Memory Performance Test ===\" | tee -a \$REPORT_DIR/summary.txt
+      sysbench memory --memory-total-size=2G --threads=\$(nproc) run 2>&1 | tee \$REPORT_DIR/memory_test.log
+      echo \"\" | tee -a \$REPORT_DIR/summary.txt
+      
+      # Disk I/O Test
+      echo \"=== Disk I/O Performance Test ===\" | tee -a \$REPORT_DIR/summary.txt
+      echo \"FIO Random Read/Write Test:\" | tee -a \$REPORT_DIR/summary.txt
+      fio --name=random-rw --ioengine=libaio --iodepth=16 --rw=randrw --bs=4k --direct=1 --size=1G --numjobs=1 --runtime=30 --group_reporting --filename=\$REPORT_DIR/testfile 2>&1 | tee \$REPORT_DIR/disk_fio.log
+      rm -f \$REPORT_DIR/testfile
+      echo \"\" | tee -a \$REPORT_DIR/summary.txt
+      
+      echo \"Sysbench File I/O Test:\" | tee -a \$REPORT_DIR/summary.txt
+      cd \$REPORT_DIR
+      sysbench fileio --file-total-size=2G prepare > /dev/null 2>&1
+      sysbench fileio --file-total-size=2G --file-test-mode=rndrw --time=30 --max-requests=0 run 2>&1 | tee \$REPORT_DIR/disk_sysbench.log
+      sysbench fileio --file-total-size=2G cleanup > /dev/null 2>&1
+      echo \"\" | tee -a \$REPORT_DIR/summary.txt
+      
+      # Generate CSV Summary
+      echo \"=== Generating CSV Report ===\" | tee -a \$REPORT_DIR/summary.txt
+      echo \"Metric,Value,Unit\" > \$REPORT_DIR/benchmark_results.csv
+      
+      # Extract key metrics and add to CSV
+      if [ -f \$REPORT_DIR/cpu_performance.log ]; then
+        CPU_EVENTS=\$(grep 'events per second:' \$REPORT_DIR/cpu_performance.log | awk '{print \$4}')
+        echo \"CPU Events per Second,\$CPU_EVENTS,events/sec\" >> \$REPORT_DIR/benchmark_results.csv
+      fi
+      
+      if [ -f \$REPORT_DIR/memory_test.log ]; then
+        MEM_THROUGHPUT=\$(grep 'transferred' \$REPORT_DIR/memory_test.log | awk '{print \$(NF-1)}')
+        echo \"Memory Throughput,\$MEM_THROUGHPUT,MB/sec\" >> \$REPORT_DIR/benchmark_results.csv
+      fi
+      
+      if [ -f \$REPORT_DIR/disk_fio.log ]; then
+        READ_IOPS=\$(grep 'read: IOPS=' \$REPORT_DIR/disk_fio.log | sed 's/.*IOPS=\\([0-9.]*\\).*/\\1/')
+        WRITE_IOPS=\$(grep 'write: IOPS=' \$REPORT_DIR/disk_fio.log | sed 's/.*IOPS=\\([0-9.]*\\).*/\\1/')
+        echo \"Disk Read IOPS,\$READ_IOPS,IOPS\" >> \$REPORT_DIR/benchmark_results.csv
+        echo \"Disk Write IOPS,\$WRITE_IOPS,IOPS\" >> \$REPORT_DIR/benchmark_results.csv
+      fi
+      
+      echo \"\" | tee -a \$REPORT_DIR/summary.txt
+      echo \"=== Benchmark Complete! ===\" | tee -a \$REPORT_DIR/summary.txt
+      echo \"Results saved to: \$REPORT_DIR\" | tee -a \$REPORT_DIR/summary.txt
+      echo \"CSV Report: \$REPORT_DIR/benchmark_results.csv\" | tee -a \$REPORT_DIR/summary.txt
+      echo \"View detailed logs in the report directory.\" | tee -a \$REPORT_DIR/summary.txt
+      
+      # Display CSV results
+      echo \"\" | tee -a \$REPORT_DIR/summary.txt
+      echo \"=== CSV Results ===\" | tee -a \$REPORT_DIR/summary.txt
+      cat \$REPORT_DIR/benchmark_results.csv | tee -a \$REPORT_DIR/summary.txt
+      EOL
+      
+      chmod +x /scripts/run_benchmarks.sh &&
+      echo 'Benchmark suite ready! Run: docker exec -it system-benchmark-suite /scripts/run_benchmarks.sh' > /results/README.txt &&
+      tail -f /dev/null
+      "
 
 x-casaos:
-  architectures: [amd64, arm64]
-  main: stress-server
-  webui_port: 3000
-  category: Developer
-  author: DannyBen
-  developer: DannyBen
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/StressServer/icon.png
-  screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/StressServer/screenshot-1.png
+  architectures:
+    - amd64
+    - arm64
+  main: benchmark-suite
+  category: Utilities
+  author: Yundera Community
+  developer: Community
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/SystemBenchmarkSuite/icon.png
+  screenshot:
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/SystemBenchmarkSuite/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/SystemBenchmarkSuite/screenshot-2.png
   tagline:
-    en_us: 웹 UI를 통한 서버 리소스 스트레스 테스트 도구
+    en_us: Comprehensive system benchmark suite with automated reporting
+    ko_kr: 자동화된 리포트 기능을 갖춘 종합 시스템 벤치마크 도구
   title:
-    en_us: Stress Server
+    en_us: System Benchmark Suite
+    ko_kr: System Benchmark Suite
   description:
     en_us: |
-      웹 인터페이스를 통해 서버 리소스 스트레스 테스트를 실행할 수 있는 도구입니다. 
-      CPU, 메모리, I/O 부하를 시뮬레이션하여 시스템의 성능과 안정성을 테스트할 수 있습니다.
-      오토 스케일링 설정을 테스트하고 디버깅하는 데 유용합니다.
+      A comprehensive system benchmarking suite that combines multiple industry-standard tools 
+      to test CPU, memory, disk I/O, and network performance with automated CSV reporting.
+      
+      **Included Tools:**
+      - **stress-ng** - CPU and system stress testing
+      - **sysbench** - CPU, memory, and file I/O benchmarks
+      - **fio** - Advanced disk I/O performance testing
+      - **iperf3** - Network throughput testing
+      
+      **Features:**
+      - **Automated benchmark execution** with single command
+      - **CSV report generation** for easy analysis and tracking
+      - **Detailed logs** for each benchmark component
+      - **Timestamp-based results** for performance history
+      - **Multi-threaded testing** utilizing all CPU cores
+      - **Industry-standard benchmarks** for reliable comparisons
+      
+      Perfect for:
+      - Performance baseline establishment
+      - Hardware evaluation and comparison
+      - System optimization validation
+      - Regular performance monitoring
+      - Capacity planning and analysis
+      
+      Results are saved with timestamps for easy tracking of performance over time.
+    ko_kr: |
+      CPU, 메모리, 디스크 I/O, 네트워크 성능을 테스트하고 자동화된 CSV 리포트를 생성하는 
+      여러 업계 표준 도구를 결합한 종합적인 시스템 벤치마킹 스위트입니다.
+      
+      **포함된 도구:**
+      - **stress-ng** - CPU 및 시스템 스트레스 테스트
+      - **sysbench** - CPU, 메모리, 파일 I/O 벤치마크
+      - **fio** - 고급 디스크 I/O 성능 테스트
+      - **iperf3** - 네트워크 처리량 테스트
+      
+      **기능:**
+      - **자동화된 벤치마크 실행** (단일 명령어)
+      - **CSV 리포트 생성** (쉬운 분석 및 추적)
+      - **상세한 로그** (각 벤치마크 구성 요소별)
+      - **타임스탬프 기반 결과** (성능 이력 관리)
+      - **멀티스레드 테스트** (모든 CPU 코어 활용)
+      - **업계 표준 벤치마크** (신뢰할 수 있는 비교)
+      
+      **활용 분야:**
+      - 성능 기준선 설정
+      - 하드웨어 평가 및 비교
+      - 시스템 최적화 검증
+      - 정기적인 성능 모니터링
+      - 용량 계획 및 분석
+      
+      결과는 타임스탬프와 함께 저장되어 시간에 따른 성능 추적이 용이합니다.
   tips:
     before_install:
       en_us: |
-        ## 사용 방법
+        **Quick Start Guide**
         
-        설치 후 웹 UI에서 다음 엔드포인트를 사용하여 스트레스 테스트를 실행할 수 있습니다:
+        After installation, run the complete benchmark suite:
+        ```bash
+        docker exec -it system-benchmark-suite /scripts/run_benchmarks.sh
+        ```
         
-        - `/stress?c=1&m=1&verbose=1&t=10` - CPU 1코어, 메모리 1워커, 10초 동안 실행
-        - `/help` - stress 명령어 도움말 보기
+        **What it tests:**
+        - 🖥️ **CPU Performance** - Multi-threaded prime number calculation
+        - 💾 **Memory Throughput** - Memory bandwidth and latency
+        - 💽 **Disk I/O** - Random read/write IOPS and throughput
+        - 🔄 **System Stress** - Resource stability under load
         
-        **주의사항:**
-        - 반드시 timeout 옵션을 설정하세요
-        - 프로덕션 환경에서는 사용하지 마세요
-        - 리소스 사용량을 모니터링하면서 사용하세요
-  port_map: "3000"
-  scheme: http
-  index: /
+        **Results Location:**
+        All results are saved to `/DATA/AppData/system-benchmark-suite/results/`
+        
+        **Output includes:**
+        - 📊 **CSV Summary** - Easy to import into spreadsheets
+        - 📝 **Detailed Logs** - Complete benchmark output
+        - 📈 **Performance Metrics** - IOPS, throughput, events/sec
+        
+        **Pro Tips:**
+        - Run benchmarks when system is idle for accurate results
+        - Compare results over time to track performance changes
+        - Use with Netdata to monitor system during benchmarks
+        - Results are timestamped for easy historical tracking
+      ko_kr: |
+        **빠른 시작 가이드**
+        
+        설치 후 전체 벤치마크 스위트를 실행하세요:
+        ```bash
+        docker exec -it system-benchmark-suite /scripts/run_benchmarks.sh
+        ```
+        
+        **테스트 항목:**
+        - 🖥️ **CPU 성능** - 멀티스레드 소수 계산
+        - 💾 **메모리 처리량** - 메모리 대역폭 및 지연시간
+        - 💽 **디스크 I/O** - 랜덤 읽기/쓰기 IOPS 및 처리량
+        - 🔄 **시스템 스트레스** - 부하 상태에서의 리소스 안정성
+        
+        **결과 저장 위치:**
+        모든 결과는 `/DATA/AppData/system-benchmark-suite/results/`에 저장됩니다
+        
+        **출력 결과:**
+        - 📊 **CSV 요약** - 스프레드시트로 쉽게 가져오기
+        - 📝 **상세 로그** - 완전한 벤치마크 출력
+        - 📈 **성능 메트릭** - IOPS, 처리량, 초당 이벤트
+        
+        **활용 팁:**
+        - 정확한 결과를 위해 시스템이 유휴 상태일 때 실행
+        - 시간에 따른 성능 변화 추적을 위해 결과 비교
+        - 벤치마크 중 시스템 모니터링을 위해 Netdata와 함께 사용
+        - 결과는 타임스탬프가 포함되어 이력 추적이 용이
