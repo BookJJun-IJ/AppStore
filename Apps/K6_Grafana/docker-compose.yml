@@ -52,7 +52,7 @@ services:
       - /DATA/AppData/$AppID/k6-scripts:/scripts
       - /DATA/AppData/$AppID/results:/results
     working_dir: /scripts
-    command: sh -c "echo 'Waiting for InfluxDB to be ready...' && sleep 30 && while true; do echo 'Starting automated K6 load test...' && k6 run --vus 10 --duration 60s /scripts/example.js && echo 'Test completed. Next test in 3 minutes...' && sleep 180; done"
+    command: sh -c "echo 'import http from \"k6/http\"; import { check, sleep } from \"k6\"; export default function() { const response = http.get(\"https://httpbin.org/get\"); check(response, { \"status is 200\": (r) => r.status === 200, \"response time < 500ms\": (r) => r.timings.duration < 500 }); sleep(1); }' > /scripts/test.js && echo 'Waiting for InfluxDB...' && sleep 30 && while true; do echo 'Starting K6 test...' && k6 run --vus 10 --duration 60s /scripts/test.js && echo 'Test done. Next in 3 minutes.' && sleep 180; done"
     depends_on:
       - influxdb
     restart: unless-stopped
@@ -71,99 +71,85 @@ x-casaos:
   category: Utilities
   description:
     en_us: |
-      K6 Performance Testing Suite with Grafana analytics - AUTOMATED VERSION!
-      K6 automatically runs load tests every 3 minutes, no SSH required.
-      Professional load testing tools with pre-configured Grafana dashboards 
-      for real-time monitoring and InfluxDB for data storage.
-      
-      Tests run automatically - just open Grafana and watch!
+      K6 Performance Testing Suite with Grafana analytics. 
+      K6 automatically runs tests every 3 minutes.
+      Use Grafana web interface to add InfluxDB and create dashboards.
     ko_kr: |
-      Grafana 분석이 포함된 K6 성능 테스트 도구 - 자동화 버전!
-      K6가 3분마다 자동으로 로드 테스트를 실행하며, SSH가 필요 없습니다.
-      실시간 모니터링을 위한 사전 구성된 Grafana 대시보드와 
-      데이터 저장을 위한 InfluxDB가 포함된 전문적인 부하 테스트 도구입니다.
-      
-      테스트가 자동으로 실행됩니다 - Grafana를 열고 확인하세요!
+      Grafana 분석이 포함된 K6 성능 테스트 도구입니다.
+      K6가 3분마다 자동으로 테스트를 실행합니다.
+      Grafana 웹 인터페이스에서 InfluxDB를 추가하고 대시보드를 만드세요.
   developer: Grafana Labs
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/K6PerformanceSuite/icon.png
   screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/K6PerformanceSuite/screenshot-1.png
   tagline:
-    en_us: "Automated performance testing with Grafana analytics"
-    ko_kr: "Grafana 분석이 포함된 자동화 성능 테스트"
+    en_us: "Automated K6 testing with Grafana dashboards"
+    ko_kr: "Grafana 대시보드와 함께하는 자동화 K6 테스트"
   title:
-    en_us: K6 Performance Suite (Auto)
-    ko_kr: K6 성능 테스트 도구 (자동)
+    en_us: K6 Performance Suite
+    ko_kr: K6 성능 테스트 도구
   tips:
     before_install:
       en_us: |
-        **K6 Performance Testing Suite - AUTOMATED**
+        **K6 Performance Testing Suite**
         
-        **Login:**
-        - Grafana: admin / $default_pwd
+        **Access:** https://k6performancesuite-username.nsl.sh/
+        **Login:** admin / $default_pwd
         
-        **Access:**
-        - Grafana: https://k6performancesuite-username.nsl.sh/
+        **🚀 Setup (One-time only):**
+        1. Open Grafana dashboard
+        2. Go to Configuration → Data sources
+        3. Add InfluxDB data source:
+           - URL: http://influxdb:8086
+           - Database: k6
+           - (Leave user/password empty)
+        4. Create new dashboard
+        5. Add panels with queries:
+           - FROM: http_req_duration (response time)
+           - FROM: http_reqs (requests count)
+           - FROM: vus (virtual users)
         
-        **🚀 AUTOMATED OPERATION (No SSH Required!):**
-        1. K6 automatically starts load tests every 3 minutes
-        2. Tests target https://httpbin.org/get by default
-        3. Results automatically appear in Grafana dashboards
-        4. Just open Grafana and watch real-time charts!
-        
-        **📊 What You'll See:**
-        - Live response time charts
-        - Requests per second graphs
-        - Success/failure rate metrics
-        - Virtual users activity
-        - Error rate monitoring
-        
-        **🎯 Default Test Configuration:**
+        **✨ K6 Auto-Testing:**
+        - Tests run automatically every 3 minutes
         - Target: https://httpbin.org/get
-        - Virtual Users: 10
-        - Duration: 60 seconds
-        - Frequency: Every 3 minutes
+        - 10 virtual users for 60 seconds
         
-        **🔧 Customization (Optional):**
-        Edit: /DATA/AppData/k6performancesuite/k6-scripts/example.js
+        **📊 Available metrics:**
+        - http_req_duration (response times)
+        - http_reqs (request count)
+        - vus (virtual users)
+        - checks (success/failure)
         
-        Just install and watch automated tests in Grafana! 📊✨
+        Simple setup, powerful results! 🎯
       ko_kr: |
-        **K6 성능 테스트 도구 - 자동화**
+        **K6 성능 테스트 도구**
         
-        **로그인:**
-        - Grafana: admin / $default_pwd
+        **접속:** https://k6performancesuite-username.nsl.sh/
+        **로그인:** admin / $default_pwd
         
-        **접속:**
-        - Grafana: https://k6performancesuite-username.nsl.sh/
+        **🚀 설정 (최초 1회만):**
+        1. Grafana 대시보드 열기
+        2. Configuration → Data sources 이동
+        3. InfluxDB 데이터소스 추가:
+           - URL: http://influxdb:8086
+           - Database: k6
+           - (사용자/비밀번호는 비워둠)
+        4. 새 대시보드 생성
+        5. 쿼리로 패널 추가:
+           - FROM: http_req_duration (응답시간)
+           - FROM: http_reqs (요청 수)
+           - FROM: vus (가상 사용자)
         
-        **🚀 자동화 동작 (SSH 불필요!):**
-        1. K6가 3분마다 자동으로 로드 테스트 시작
-        2. 기본적으로 https://httpbin.org/get을 대상으로 테스트
-        3. 결과가 자동으로 Grafana 대시보드에 나타남
-        4. Grafana를 열고 실시간 차트를 확인하세요!
-        
-        **📊 확인할 수 있는 것들:**
-        - 실시간 응답 시간 차트
-        - 초당 요청 수 그래프
-        - 성공/실패율 메트릭
-        - 가상 사용자 활동
-        - 오류율 모니터링
-        
-        **🎯 기본 테스트 설정:**
+        **✨ K6 자동 테스트:**
+        - 3분마다 자동으로 테스트 실행
         - 대상: https://httpbin.org/get
-        - 가상 사용자: 10명
-        - 지속 시간: 60초
-        - 빈도: 3분마다
+        - 60초 동안 10명의 가상 사용자
         
-        **🔧 커스터마이징 (선택사항):**
-        편집: /DATA/AppData/k6performancesuite/k6-scripts/example.js
+        **📊 사용 가능한 메트릭:**
+        - http_req_duration (응답시간)
+        - http_reqs (요청 수)
+        - vus (가상 사용자)
+        - checks (성공/실패)
         
-        설치만 하고 Grafana에서 자동화된 테스트를 확인하세요! 📊✨
+        간단한 설정, 강력한 결과! 🎯
   index: /
   webui_port: 3000
-  pre-install-cmd: |
-    docker run --rm -v /DATA/AppData/k6performancesuite:/setup alpine:3.19 sh -c "
-      mkdir -p /setup/{grafana-data,influxdb-data,k6-scripts,results}
-      echo 'import http from \"k6/http\"; import { check, sleep } from \"k6\"; export default function() { const response = http.get(\"https://httpbin.org/get\"); check(response, { \"status is 200\": (r) => r.status === 200, \"response time < 500ms\": (r) => r.timings.duration < 500 }); sleep(1); }' > /setup/k6-scripts/example.js
-      chown -R 1000:1000 /setup
-    "
