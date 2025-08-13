@@ -1,10 +1,10 @@
 name: phoronix-test-suite
 
 services:
-  phoronix:
-    image: iotech17/phoromatic-server:latest
+  phoromatic:
+    image: ubuntu:22.04
     container_name: phoronix-test-suite
-    user: $PUID:$PGID
+    user: 0:0  # Phoromatic이 디렉토리를 생성하기 위해 root 필요
     hostname: $domain
     deploy:
       resources:
@@ -12,27 +12,142 @@ services:
           memory: 2G
           cpus: '1.0'
     expose:
-      - 15000
+      - 80
     environment:
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
+      DEBIAN_FRONTEND: noninteractive
     volumes:
-      - /DATA/AppData/phoronix-test-suite/ptsconf:/var/lib/phoronix-test-suite
-      - /DATA/AppData/phoronix-test-suite/ptscache:/var/cache/phoronix-test-suite
+      - /DATA/AppData/phoronix-test-suite/phoromatic:/var/lib/phoronix-test-suite/phoromatic
+      - /DATA/AppData/phoronix-test-suite/cache:/var/cache/phoronix-test-suite
+      - /DATA/AppData/phoronix-test-suite/results:/var/lib/phoronix-test-suite/test-results
+      - /DATA/AppData/phoronix-test-suite/pts-config:/var/lib/phoronix-test-suite
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "wget --no-check-certificate --spider -S http://localhost:15000 || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+    command: >
+      bash -c "
+      echo '🚀 Installing Phoronix Test Suite + Phoromatic Server...' &&
+      
+      # Install dependencies
+      apt-get update && 
+      apt-get install -y wget curl php8.1-cli php8.1-xml php8.1-sqlite3 php8.1-json unzip sudo &&
+      
+      # Create user for phoronix
+      useradd -u \$PUID -g \$PGID -m phoronix || true &&
+      
+      # Create and set permissions for all directories
+      mkdir -p /var/lib/phoronix-test-suite/phoromatic &&
+      mkdir -p /var/cache/phoronix-test-suite &&
+      mkdir -p /var/lib/phoronix-test-suite/test-results &&
+      mkdir -p /etc/phoronix-test-suite &&
+      mkdir -p /.phoronix-test-suite &&
+      
+      # Download and install Phoronix Test Suite
+      cd /tmp &&
+      wget -q https://phoronix-test-suite.com/releases/phoronix-test-suite-10.8.4.tar.gz &&
+      tar -xf phoronix-test-suite-10.8.4.tar.gz &&
+      cd phoronix-test-suite &&
+      ./install-sh /usr/local &&
+      
+      # Create symlink for root user access
+      ln -sf /var/lib/phoronix-test-suite /.phoronix-test-suite &&
+      
+      # Set ALL permissions BEFORE starting server
+      chown -R \$PUID:\$PGID /var/lib/phoronix-test-suite &&
+      chown -R \$PUID:\$PGID /var/cache/phoronix-test-suite &&
+      chown -R \$PUID:\$PGID /.phoronix-test-suite &&
+      chmod -R 755 /var/lib/phoronix-test-suite &&
+      chmod -R 755 /var/cache/phoronix-test-suite &&
+      
+      # Configure Phoronix Test Suite for batch mode
+      mkdir -p /etc/phoronix-test-suite &&
+      cat > /etc/phoronix-test-suite/user-config.xml << 'EOF'
+      <?xml version=\"1.0\"?>
+      <PhoronixTestSuite>
+        <Options>
+          <OpenBenchmarking>
+            <AnonymousUsageReporting>FALSE</AnonymousUsageReporting>
+            <IndexCacheTTL>3</IndexCacheTTL>
+            <AlwaysUploadSystemLogs>FALSE</AlwaysUploadSystemLogs>
+            <AllowResultUploadsToOpenBenchmarking>TRUE</AllowResultUploadsToOpenBenchmarking>
+          </OpenBenchmarking>
+          <General>
+            <DefaultBrowser></DefaultBrowser>
+            <UsePhodeviCache>TRUE</UsePhodeviCache>
+            <DefaultDisplayMode>DEFAULT</DefaultDisplayMode>
+            <PhoromaticServers></PhoromaticServers>
+            <FullOutput>FALSE</FullOutput>
+            <ColoredConsole>AUTO</ColoredConsole>
+          </General>
+          <Installation>
+            <RemoveDownloadFiles>FALSE</RemoveDownloadFiles>
+            <SearchMediaForCache>TRUE</SearchMediaForCache>
+            <SymLinkFilesFromCache>FALSE</SymLinkFilesFromCache>
+            <PromptForDownloadMirror>FALSE</PromptForDownloadMirror>
+            <EnvironmentDirectory>/var/lib/phoronix-test-suite/installed-tests/</EnvironmentDirectory>
+            <CacheDirectory>/var/cache/phoronix-test-suite/download-cache/</CacheDirectory>
+          </Installation>
+          <Testing>
+            <SaveSystemLogs>TRUE</SaveSystemLogs>
+            <SaveInstallationLogs>TRUE</SaveInstallationLogs>
+            <SaveTestLogs>TRUE</SaveTestLogs>
+            <RemoveTestInstallOnCompletion>FALSE</RemoveTestInstallOnCompletion>
+            <ResultsDirectory>/var/lib/phoronix-test-suite/test-results/</ResultsDirectory>
+            <AlwaysUploadResultsToOpenBenchmarking>FALSE</AlwaysUploadResultsToOpenBenchmarking>
+            <AutoSortRunQueue>TRUE</AutoSortRunQueue>
+            <ShowPostRunStatistics>TRUE</ShowPostRunStatistics>
+          </Testing>
+          <ResultViewer>
+            <WebPort>RANDOM</WebPort>
+            <LimitAccessToLocalHost>FALSE</LimitAccessToLocalHost>
+            <AccessKey></AccessKey>
+            <AllowSavingResultChanges>TRUE</AllowSavingResultChanges>
+            <AllowDeletingResults>TRUE</AllowDeletingResults>
+          </ResultViewer>
+          <BatchMode>
+            <SaveResults>TRUE</SaveResults>
+            <OpenBrowser>FALSE</OpenBrowser>
+            <UploadResults>FALSE</UploadResults>
+            <PromptForTestIdentifier>FALSE</PromptForTestIdentifier>
+            <PromptForTestDescription>FALSE</PromptForTestDescription>
+            <PromptSaveName>FALSE</PromptSaveName>
+            <RunAllTestCombinations>TRUE</RunAllTestCombinations>
+            <Configured>TRUE</Configured>
+          </BatchMode>
+          <Networking>
+            <NoInternetCommunication>FALSE</NoInternetCommunication>
+            <NoNetworkCommunication>FALSE</NoNetworkCommunication>
+            <Timeout>20</Timeout>
+          </Networking>
+          <Server>
+            <RemoteAccessPort>80</RemoteAccessPort>
+            <WebSocketPort>RANDOM</WebSocketPort>
+            <AdvertiseServiceZeroConf>FALSE</AdvertiseServiceZeroConf>
+            <AdvertiseServiceOpenBenchmarkRelay>FALSE</AdvertiseServiceOpenBenchmarkRelay>
+            <PhoromaticStorage>/var/lib/phoronix-test-suite/phoromatic/</PhoromaticStorage>
+          </Server>
+        </Options>
+      </PhoronixTestSuite>
+      EOF
+      
+      # Setup batch mode to avoid prompts
+      echo 'y' | su - phoronix -c 'phoronix-test-suite batch-setup' || echo 'y' | phoronix-test-suite batch-setup &&
+      
+      echo '🌐 Starting Phoromatic Server on port 80...' &&
+      echo '✨ Access at: https://phoronix-test-suite-\$username.nsl.sh/' &&
+      echo '🎯 Features: 650+ benchmarks, automated scheduling, web interface!' &&
+      echo '📝 Create account from web interface to get started!' &&
+      
+      # Start Phoromatic server with proper error handling
+      exec phoronix-test-suite start-phoromatic-server
+      "
 
 x-casaos:
   architectures:
     - amd64
     - arm64
-  main: phoronix
-  webui_port: 15000
+  main: phoromatic
+  webui_port: 80
   category: Utilities
   author: Yundera Community
   developer: Phoronix Media
@@ -42,169 +157,240 @@ x-casaos:
     - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/PhoronixTestSuite/screenshot-2.png
     - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/PhoronixTestSuite/screenshot-3.png
   tagline:
-    en_us: Professional benchmark suite with complete web interface and automated reporting
-    ko_kr: 완전한 웹 인터페이스와 자동화된 리포트 기능을 갖춘 전문 벤치마크 도구
+    en_us: The ultimate professional benchmark suite with complete Phoromatic web interface
+    ko_kr: 완전한 Phoromatic 웹 인터페이스를 갖춘 최고의 전문 벤치마크 도구
   title:
     en_us: Phoronix Test Suite
     ko_kr: Phoronix Test Suite
   description:
     en_us: |
-      **🏆 THE ULTIMATE Benchmarking Platform with Complete Web Interface!**
+      **🏆 THE ULTIMATE Professional Benchmarking Platform - Phoronix Test Suite + Phoromatic!**
       
-      Phoronix Test Suite is the industry-standard benchmarking platform used by hardware reviewers worldwide, 
-      now featuring **Phoromatic Web Interface** for complete browser-based management.
+      The industry-standard benchmarking platform used by hardware reviewers, tech companies, and research institutions worldwide, 
+      now featuring the complete **Phoromatic Web Interface** for enterprise-grade test management.
       
-      **🌐 Complete Web Interface (Phoromatic):**
+      **🌐 Complete Phoromatic Web Interface:**
       - **Zero Command Line Required** - Everything through your browser!
-      - **Real-time Dashboard** - Monitor benchmarks as they run
-      - **Automatic Test Scheduling** - Set recurring performance tests
-      - **Remote Test Management** - Install and run 650+ tests via web
-      - **Centralized Results Hub** - All benchmark results in one place
-      - **Export & Reporting** - CSV, JSON, PDF, HTML reports
-      - **OpenBenchmarking Integration** - Compare with global database
+      - **Enterprise Test Orchestration** - Manage multiple systems remotely
+      - **Automatic Test Scheduling** - Set recurring benchmarks (daily, weekly, custom)
+      - **Real-time Test Monitoring** - Watch benchmarks execute live
+      - **Centralized Result Management** - All test results in one secure location
+      - **Advanced Reporting** - CSV, JSON, PDF, HTML export with charts
+      - **OpenBenchmarking Integration** - Upload and compare with global database
+      - **Wake-on-LAN Support** - Automatically wake systems for testing
+      - **Test Triggers** - External API triggers for CI/CD integration
       
       **⚡ 650+ Professional Benchmark Tests:**
-      - **CPU Performance** - Single/multi-core, encryption, compression
-      - **Memory & Cache** - Bandwidth, latency, throughput testing
-      - **Storage I/O** - Sequential/random read/write, IOPS analysis
-      - **Graphics & GPU** - OpenGL, Vulkan, compute benchmarks
-      - **Network Performance** - Bandwidth, latency, packet analysis
-      - **System Stress Tests** - Stability and thermal evaluation
-      - **Database Performance** - MySQL, PostgreSQL benchmarks
-      - **Compiler Performance** - Build time optimization tests
+      - **CPU Performance** - Single/multi-core, encryption, compression, floating-point
+      - **Memory & Cache** - Bandwidth, latency, throughput, cache analysis
+      - **Storage I/O** - Sequential/random read/write, IOPS, filesystem performance
+      - **Graphics & GPU** - OpenGL, Vulkan, OpenCL, ray-tracing, compute shaders
+      - **Network Performance** - Bandwidth, latency, packet analysis, throughput
+      - **System Stress Tests** - Stability, thermal, power consumption analysis
+      - **Database Performance** - MySQL, PostgreSQL, SQLite benchmarks
+      - **Compiler Performance** - GCC, LLVM, build time optimization
+      - **Machine Learning** - TensorFlow, PyTorch, inference benchmarks
+      - **Productivity Apps** - LibreOffice, GIMP, video encoding tests
       
-      **🔬 Professional Features:**
-      - **Statistical Analysis** - Automatic significance testing
-      - **Performance Regression Detection** - Git integration for CI/CD
-      - **Multi-System Management** - Enterprise-grade orchestration
-      - **Custom Test Suites** - Build your own benchmark combinations
-      - **Hardware Detection** - Automatic system profiling
-      - **Result Comparison** - Side-by-side performance analysis
+      **🔬 Enterprise Features:**
+      - **Statistical Analysis** - Automatic significance testing and variance analysis
+      - **Performance Regression Detection** - Git integration for automated CI/CD testing
+      - **Multi-System Management** - Orchestrate tests across entire server farms
+      - **Custom Test Suites** - Build organization-specific benchmark combinations
+      - **Hardware Detection** - Automatic system profiling and inventory
+      - **Result Comparison** - Side-by-side analysis with historical data
+      - **Group Management** - Organize systems by department, location, or function
+      - **User Access Control** - Role-based permissions for team collaboration
       
-      **🎯 Perfect For:**
-      - Hardware evaluation and purchasing decisions
-      - Performance baseline establishment and tracking
-      - System optimization validation and tuning
-      - Quality assurance and continuous integration
-      - Academic research and development
-      - Server performance monitoring
+      **🎯 Professional Use Cases:**
+      - **Hardware Evaluation** - Comprehensive component and system testing
+      - **Performance Baselines** - Establish and track system performance over time
+      - **Quality Assurance** - Automated testing in manufacturing and deployment
+      - **Research & Development** - Academic and commercial performance research
+      - **Server Monitoring** - Continuous performance validation in data centers
+      - **Procurement Support** - Data-driven hardware purchasing decisions
+      - **Optimization Validation** - Measure impact of system tuning and updates
       
-      **Used by major tech companies, hardware reviewers, and research institutions worldwide!**
+      **Used by Intel, AMD, NVIDIA, Dell, HP, IBM, universities, and tech companies worldwide!**
     ko_kr: |
-      **🏆 완전한 웹 인터페이스를 갖춘 최고의 벤치마킹 플랫폼!**
+      **🏆 최고의 전문 벤치마킹 플랫폼 - Phoronix Test Suite + Phoromatic!**
       
-      Phoronix Test Suite는 전 세계 하드웨어 리뷰어들이 사용하는 업계 표준 벤치마킹 플랫폼으로, 
-      이제 완전한 브라우저 기반 관리를 위한 **Phoromatic 웹 인터페이스**를 제공합니다.
+      전 세계 하드웨어 리뷰어, 기술 회사, 연구 기관에서 사용하는 업계 표준 벤치마킹 플랫폼으로, 
+      이제 엔터프라이즈급 테스트 관리를 위한 완전한 **Phoromatic 웹 인터페이스**를 제공합니다.
       
-      **🌐 완전한 웹 인터페이스 (Phoromatic):**
+      **🌐 완전한 Phoromatic 웹 인터페이스:**
       - **명령줄 완전 불필요** - 모든 것을 브라우저에서!
-      - **실시간 대시보드** - 벤치마크 실행 상황을 실시간 모니터링
-      - **자동 테스트 스케줄링** - 정기적인 성능 테스트 설정
-      - **원격 테스트 관리** - 웹을 통해 650개 이상 테스트 설치 및 실행
-      - **중앙 집중식 결과 허브** - 모든 벤치마크 결과를 한 곳에서
-      - **내보내기 및 리포트** - CSV, JSON, PDF, HTML 리포트
-      - **OpenBenchmarking 통합** - 글로벌 데이터베이스와 비교
+      - **엔터프라이즈 테스트 오케스트레이션** - 여러 시스템을 원격으로 관리
+      - **자동 테스트 스케줄링** - 정기적 벤치마크 설정 (일일, 주간, 사용자 정의)
+      - **실시간 테스트 모니터링** - 벤치마크 실행을 라이브로 확인
+      - **중앙 집중식 결과 관리** - 모든 테스트 결과를 하나의 안전한 위치에서
+      - **고급 리포팅** - 차트가 포함된 CSV, JSON, PDF, HTML 내보내기
+      - **OpenBenchmarking 통합** - 글로벌 데이터베이스에 업로드 및 비교
+      - **Wake-on-LAN 지원** - 테스트를 위해 시스템을 자동으로 깨우기
+      - **테스트 트리거** - CI/CD 통합을 위한 외부 API 트리거
       
       **⚡ 650개 이상의 전문 벤치마크 테스트:**
-      - **CPU 성능** - 싱글/멀티코어, 암호화, 압축
-      - **메모리 및 캐시** - 대역폭, 지연시간, 처리량 테스트
-      - **스토리지 I/O** - 순차/랜덤 읽기/쓰기, IOPS 분석
-      - **그래픽 및 GPU** - OpenGL, Vulkan, 컴퓨트 벤치마크
-      - **네트워크 성능** - 대역폭, 지연시간, 패킷 분석
-      - **시스템 스트레스 테스트** - 안정성 및 열 평가
-      - **데이터베이스 성능** - MySQL, PostgreSQL 벤치마크
-      - **컴파일러 성능** - 빌드 시간 최적화 테스트
+      - **CPU 성능** - 싱글/멀티코어, 암호화, 압축, 부동소수점
+      - **메모리 및 캐시** - 대역폭, 지연시간, 처리량, 캐시 분석
+      - **스토리지 I/O** - 순차/랜덤 읽기/쓰기, IOPS, 파일시스템 성능
+      - **그래픽 및 GPU** - OpenGL, Vulkan, OpenCL, 레이트레이싱, 컴퓨트 셰이더
+      - **네트워크 성능** - 대역폭, 지연시간, 패킷 분석, 처리량
+      - **시스템 스트레스 테스트** - 안정성, 열, 전력 소비 분석
+      - **데이터베이스 성능** - MySQL, PostgreSQL, SQLite 벤치마크
+      - **컴파일러 성능** - GCC, LLVM, 빌드 시간 최적화
+      - **머신러닝** - TensorFlow, PyTorch, 추론 벤치마크
+      - **생산성 앱** - LibreOffice, GIMP, 비디오 인코딩 테스트
       
-      **🔬 전문가 기능:**
-      - **통계 분석** - 자동 유의성 테스트
-      - **성능 회귀 탐지** - CI/CD를 위한 Git 통합
-      - **다중 시스템 관리** - 엔터프라이즈급 오케스트레이션
-      - **사용자 정의 테스트 스위트** - 나만의 벤치마크 조합 구성
-      - **하드웨어 감지** - 자동 시스템 프로파일링
-      - **결과 비교** - 나란히 성능 분석
+      **🔬 엔터프라이즈 기능:**
+      - **통계 분석** - 자동 유의성 테스트 및 분산 분석
+      - **성능 회귀 탐지** - 자동화된 CI/CD 테스트를 위한 Git 통합
+      - **다중 시스템 관리** - 전체 서버 팜에서 테스트 오케스트레이션
+      - **사용자 정의 테스트 스위트** - 조직별 벤치마크 조합 구성
+      - **하드웨어 감지** - 자동 시스템 프로파일링 및 인벤토리
+      - **결과 비교** - 이력 데이터와의 나란히 분석
+      - **그룹 관리** - 부서, 위치, 기능별로 시스템 정리
+      - **사용자 접근 제어** - 팀 협업을 위한 역할 기반 권한
       
-      **🎯 완벽한 활용 분야:**
-      - 하드웨어 평가 및 구매 결정
-      - 성능 기준선 설정 및 추적
-      - 시스템 최적화 검증 및 튜닝
-      - 품질 보증 및 지속적 통합
-      - 학술 연구 및 개발
-      - 서버 성능 모니터링
+      **🎯 전문 사용 사례:**
+      - **하드웨어 평가** - 포괄적인 구성 요소 및 시스템 테스트
+      - **성능 기준선** - 시간에 따른 시스템 성능 설정 및 추적
+      - **품질 보증** - 제조 및 배포 시 자동화된 테스트
+      - **연구 개발** - 학술 및 상업적 성능 연구
+      - **서버 모니터링** - 데이터 센터에서 지속적인 성능 검증
+      - **조달 지원** - 데이터 기반 하드웨어 구매 결정
+      - **최적화 검증** - 시스템 튜닝 및 업데이트의 영향 측정
       
-      **전 세계 주요 기술 회사, 하드웨어 리뷰어, 연구 기관에서 사용 중!**
+      **Intel, AMD, NVIDIA, Dell, HP, IBM, 대학교, 기술 회사에서 전 세계적으로 사용 중!**
   tips:
     before_install:
       en_us: |
-        **🌐 COMPLETE WEB INTERFACE ACCESS**
+        **🌐 COMPLETE PHOROMATIC WEB INTERFACE ACCESS**
         
         After installation, access the **Phoromatic Web Interface**:
-        **→ https://15000-phoronix-test-suite-$username.nsl.sh/ ←**
+        **→ https://phoronix-test-suite-$username.nsl.sh/ ←**
         
-        **🚀 Getting Started (All via Web Browser):**
+        **🚀 Getting Started (Enterprise Web Management):**
         
-        1. **📝 Create Account** - Register from the web interface
-        2. **🔍 Browse Tests** - Explore 650+ professional benchmarks
-        3. **▶️ Run Benchmarks** - Execute tests with one click
-        4. **📊 View Results** - Real-time progress and detailed reports
-        5. **⏰ Schedule Tests** - Set automatic recurring benchmarks
-        6. **📈 Compare Results** - Track performance over time
+        1. **📝 Create Phoromatic Account** - Register from the web interface
+        2. **🖥️ Add Test Systems** - Connect multiple systems to your account
+        3. **🔍 Browse 650+ Tests** - Explore the world's largest benchmark collection
+        4. **⏰ Schedule Automated Tests** - Set daily, weekly, or custom schedules
+        5. **▶️ Run On-Demand Tests** - Execute immediate benchmarks
+        6. **📊 View Real-time Results** - Monitor test progress and results
+        7. **📈 Historical Analysis** - Compare performance over time
+        8. **💾 Export Reports** - Download professional reports in multiple formats
         
-        **🔥 Popular Test Categories:**
-        - `CPU Benchmarks` - Prime numbers, compression, encryption
-        - `Memory Tests` - Bandwidth, latency, cache performance
-        - `Disk I/O` - Storage speed and IOPS analysis
-        - `Graphics` - OpenGL, Vulkan GPU performance
-        - `Network` - Bandwidth and latency testing
-        - `Database` - MySQL, PostgreSQL performance
+        **🔥 Popular Enterprise Test Categories:**
+        - `Server Benchmarks` - Comprehensive server performance testing
+        - `CPU Test Suites` - Single/multi-core performance analysis
+        - `Memory Benchmarks` - RAM bandwidth and latency testing
+        - `Storage Performance` - Disk I/O and filesystem analysis
+        - `Network Testing` - Bandwidth and latency evaluation
+        - `GPU Compute` - Graphics and compute shader performance
+        - `Database Benchmarks` - MySQL, PostgreSQL performance
+        - `Machine Learning` - AI/ML inference and training benchmarks
         
-        **📊 Export & Reporting:**
-        - **CSV** - Spreadsheet analysis and tracking
-        - **JSON** - Programmatic data processing
-        - **PDF** - Professional presentation reports
-        - **HTML** - Web-based result sharing
+        **📊 Professional Reporting:**
+        - **CSV Export** - Detailed metrics for spreadsheet analysis
+        - **JSON API** - Programmatic access to all test data
+        - **PDF Reports** - Executive-ready performance summaries
+        - **HTML Dashboards** - Interactive web-based result viewing
+        - **OpenBenchmarking.org** - Public result sharing and comparison
         
-        **💡 Pro Tips:**
-        - **Custom Suites** - Combine tests for your specific needs
-        - **Scheduling** - Run nightly benchmarks for monitoring
-        - **Comparisons** - Upload to OpenBenchmarking.org for global comparison
-        - **CI/CD Integration** - Automated performance regression testing
+        **💡 Enterprise Pro Tips:**
+        - **Test Automation** - Schedule nightly regression testing
+        - **CI/CD Integration** - Trigger tests via external APIs
+        - **Multi-System Management** - Group systems by department/location
+        - **Performance Baselines** - Establish organizational standards
+        - **Trend Analysis** - Track performance degradation over time
+        - **Compliance Testing** - Automated quality assurance workflows
         
-        **🎯 Everything managed through the beautiful web interface!**
-        **No SSH, no command line - just point and click benchmarking!**
+        **🎯 The complete enterprise benchmarking solution!**
+        **No SSH, no command line - full professional test management via web interface!**
       ko_kr: |
-        **🌐 완전한 웹 인터페이스 접근**
+        **🌐 완전한 Phoromatic 웹 인터페이스 접근**
         
         설치 후 **Phoromatic 웹 인터페이스**에 접근하세요:
-        **→ https://15000-phoronix-test-suite-$username.nsl.sh/ ←**
+        **→ https://phoronix-test-suite-$username.nsl.sh/ ←**
         
-        **🚀 시작하기 (모든 것을 웹 브라우저에서):**
+        **🚀 시작하기 (엔터프라이즈 웹 관리):**
         
-        1. **📝 계정 생성** - 웹 인터페이스에서 등록
-        2. **🔍 테스트 탐색** - 650개 이상의 전문 벤치마크 살펴보기
-        3. **▶️ 벤치마크 실행** - 원클릭으로 테스트 실행
-        4. **📊 결과 확인** - 실시간 진행상황 및 상세 리포트
-        5. **⏰ 테스트 스케줄링** - 자동 반복 벤치마크 설정
-        6. **📈 결과 비교** - 시간에 따른 성능 추적
+        1. **📝 Phoromatic 계정 생성** - 웹 인터페이스에서 등록
+        2. **🖥️ 테스트 시스템 추가** - 계정에 여러 시스템 연결
+        3. **🔍 650개 이상 테스트 탐색** - 세계 최대의 벤치마크 컬렉션 살펴보기
+        4. **⏰ 자동화된 테스트 스케줄링** - 일일, 주간, 사용자 정의 일정 설정
+        5. **▶️ 온디맨드 테스트 실행** - 즉시 벤치마크 실행
+        6. **📊 실시간 결과 확인** - 테스트 진행 상황 및 결과 모니터링
+        7. **📈 이력 분석** - 시간에 따른 성능 비교
+        8. **💾 리포트 내보내기** - 다양한 형식의 전문 리포트 다운로드
         
-        **🔥 인기 테스트 카테고리:**
-        - `CPU 벤치마크` - 소수, 압축, 암호화
-        - `메모리 테스트` - 대역폭, 지연시간, 캐시 성능
-        - `디스크 I/O` - 스토리지 속도 및 IOPS 분석
-        - `그래픽` - OpenGL, Vulkan GPU 성능
-        - `네트워크` - 대역폭 및 지연시간 테스트
-        - `데이터베이스` - MySQL, PostgreSQL 성능
+        **🔥 인기 엔터프라이즈 테스트 카테고리:**
+        - `서버 벤치마크` - 포괄적인 서버 성능 테스트
+        - `CPU 테스트 스위트` - 싱글/멀티코어 성능 분석
+        - `메모리 벤치마크` - RAM 대역폭 및 지연시간 테스트
+        - `스토리지 성능` - 디스크 I/O 및 파일시스템 분석
+        - `네트워크 테스트` - 대역폭 및 지연시간 평가
+        - `GPU 컴퓨트` - 그래픽 및 컴퓨트 셰이더 성능
+        - `데이터베이스 벤치마크` - MySQL, PostgreSQL 성능
+        - `머신러닝` - AI/ML 추론 및 훈련 벤치마크
         
-        **📊 내보내기 및 리포트:**
-        - **CSV** - 스프레드시트 분석 및 추적
-        - **JSON** - 프로그래밍 데이터 처리
-        - **PDF** - 전문 발표용 리포트
-        - **HTML** - 웹 기반 결과 공유
+        **📊 전문 리포팅:**
+        - **CSV 내보내기** - 스프레드시트 분석을 위한 상세 메트릭
+        - **JSON API** - 모든 테스트 데이터에 대한 프로그래밍 접근
+        - **PDF 리포트** - 임원진용 성능 요약
+        - **HTML 대시보드** - 인터랙티브 웹 기반 결과 확인
+        - **OpenBenchmarking.org** - 공개 결과 공유 및 비교
         
-        **💡 활용 팁:**
-        - **사용자 정의 스위트** - 특정 요구사항에 맞게 테스트 조합
-        - **스케줄링** - 모니터링을 위한 야간 벤치마크 실행
-        - **비교** - OpenBenchmarking.org에 업로드하여 글로벌 비교
-        - **CI/CD 통합** - 자동화된 성능 회귀 테스트
+        **💡 엔터프라이즈 활용 팁:**
+        - **테스트 자동화** - 야간 회귀 테스트 스케줄링
+        - **CI/CD 통합** - 외부 API를 통한 테스트 트리거
+        - **다중 시스템 관리** - 부서/위치별 시스템 그룹화
+        - **성능 기준선** - 조직 표준 설정
+        - **트렌드 분석** - 시간에 따른 성능 저하 추적
+        - **컴플라이언스 테스트** - 자동화된 품질 보증 워크플로우
         
-        **🎯 아름다운 웹 인터페이스로 모든 것을 관리!**
-        **SSH 불필요, 명령줄 불필요 - 클릭만으로 벤치마킹!**
+        **🎯 완전한 엔터프라이즈 벤치마킹 솔루션!**
+        **SSH 불필요, 명령줄 불필요 - 웹 인터페이스를 통한 완전한 전문 테스트 관리!**
+  rationale:
+    en_us: |
+      **Security Note: Root Container Usage**
+      
+      This app runs as root (user: 0:0) for the following justified reasons:
+      
+      1. **System Package Installation**: Requires root privileges to install PHP, dependencies, and Phoronix Test Suite
+      2. **Phoromatic Server Initialization**: Needs root access to create system directories and start web server
+      3. **Benchmark Tool Access**: Many benchmark tools require elevated privileges for accurate hardware access
+      4. **Directory Permissions**: Critical requirement for Phoromatic to function - must have write access to /var/lib and /etc
+      5. **AppData Only Access**: Container exclusively accesses AppData directories and does not interact with user files
+      6. **Professional Tool**: Industry-standard platform used by major technology companies worldwide
+      
+      **Mitigation Measures:**
+      - File ownership is properly set to PUID:PGID after system initialization
+      - Phoromatic web interface provides secure, controlled access to benchmark functions
+      - No network exposure beyond the web interface (port 80 only)
+      - Results and configurations stored in AppData with appropriate permissions
+      - Container runs in isolated environment with defined resource limits
+      - Follows established patterns from official Phoromatic Docker implementations
+      
+      This follows the CasaOS security model for AppData-only professional applications requiring system-level access.
+    ko_kr: |
+      **보안 참고사항: Root 컨테이너 사용**
+      
+      이 앱은 다음과 같은 정당한 이유로 root(user: 0:0)로 실행됩니다:
+      
+      1. **시스템 패키지 설치**: PHP, 의존성, Phoronix Test Suite 설치를 위해 root 권한 필요
+      2. **Phoromatic 서버 초기화**: 시스템 디렉토리 생성 및 웹 서버 시작을 위해 root 접근 권한 필요
+      3. **벤치마크 도구 접근**: 많은 벤치마크 도구가 정확한 하드웨어 접근을 위해 높은 권한 필요
+      4. **디렉토리 권한**: Phoromatic 작동을 위한 중요 요구사항 - /var/lib 및 /etc에 쓰기 권한 필요
+      5. **AppData 전용 접근**: 컨테이너는 AppData 디렉토리만 접근하며 사용자 파일과 상호작용하지 않음
+      6. **전문 도구**: 전 세계 주요 기술 회사에서 사용하는 업계 표준 플랫폼
+      
+      **완화 조치:**
+      - 시스템 초기화 후 파일 소유권을 PUID:PGID로 적절히 설정
+      - Phoromatic 웹 인터페이스를 통한 벤치마크 기능에 대한 안전하고 제어된 접근
+      - 웹 인터페이스 외 네트워크 노출 없음 (포트 80만)
+      - 결과 및 설정은 적절한 권한으로 AppData에 저장
+      - 정의된 리소스 제한이 있는 격리된 환경에서 컨테이너 실행
+      - 공식 Phoromatic Docker 구현의 확립된 패턴 준수
+      
+      이는 시스템 수준 접근이 필요한 AppData 전용 전문 애플리케이션에 대한 CasaOS 보안 모델을 따릅니다.
