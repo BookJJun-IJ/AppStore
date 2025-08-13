@@ -1,10 +1,10 @@
-name: phoronix-test-suite
+name: system-benchmark-suite
 
 services:
-  phoromatic:
-    image: austriancoder/phoromatic:latest
-    container_name: phoronix-test-suite
-    user: $PUID:$PGID
+  benchmark-suite:
+    image: ubuntu:22.04
+    container_name: system-benchmark-suite
+    user: 0:0  # 패키지 설치를 위해 root 권한 필요
     hostname: $domain
     deploy:
       resources:
@@ -12,223 +12,790 @@ services:
           memory: 2G
           cpus: '1.0'
     expose:
-      - 9090
+      - 80
     environment:
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
+      DEBIAN_FRONTEND: noninteractive
     volumes:
-      - /DATA/AppData/phoronix-test-suite/cache:/var/cache/phoronix-test-suite/download-cache
-      - /DATA/AppData/phoronix-test-suite/phoromatic:/var/lib/phoronix-test-suite/phoromatic
-      - /DATA/AppData/phoronix-test-suite/results:/var/lib/phoronix-test-suite/test-results
+      - /DATA/AppData/system-benchmark-suite/results:/app/results
+      - /DATA/AppData/system-benchmark-suite/logs:/app/logs
+    working_dir: /app
     restart: unless-stopped
+    command: |
+      bash -c "
+      echo '🚀 Installing System Benchmark Suite with Web UI...' &&
+      
+      apt-get update && 
+      apt-get install -y stress-ng sysbench iperf3 fio wget curl htop iotop sysstat python3 python3-pip &&
+      
+      pip3 install flask &&
+      
+      mkdir -p /app/results /app/logs /app/templates /app/static &&
+      
+      cat > /app/benchmark.py << 'EOF'
+      #!/usr/bin/env python3
+      import subprocess
+      import json
+      import csv
+      import os
+      from datetime import datetime
+      import threading
+      import time
+      
+      class BenchmarkRunner:
+          def __init__(self):
+              self.running = False
+              self.current_test = ''
+              self.progress = 0
+              self.results = {}
+              
+          def run_command(self, cmd, log_file):
+              result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+              with open(log_file, 'w') as f:
+                  f.write(f'Command: {cmd}\\n')
+                  f.write(f'Return Code: {result.returncode}\\n')
+                  f.write(f'STDOUT:\\n{result.stdout}\\n')
+                  f.write(f'STDERR:\\n{result.stderr}\\n')
+              return result
+              
+          def extract_metrics(self, test_logs):
+              metrics = {}
+              
+              if os.path.exists(test_logs['cpu']):
+                  with open(test_logs['cpu'], 'r') as f:
+                      content = f.read()
+                      if 'events per second:' in content:
+                          for line in content.split('\\n'):
+                              if 'events per second:' in line:
+                                  try:
+                                      metrics['CPU Events/sec'] = float(line.split()[-1])
+                                  except:
+                                      pass
+              
+              if os.path.exists(test_logs['memory']):
+                  with open(test_logs['memory'], 'r') as f:
+                      content = f.read()
+                      if 'transferred' in content:
+                          for line in content.split('\\n'):
+                              if 'transferred' in line and 'MB/sec' in line:
+                                  try:
+                                      parts = line.split()
+                                      for i, part in enumerate(parts):
+                                          if 'MB/sec' in part and i > 0:
+                                              metrics['Memory MB/sec'] = float(parts[i-1].replace('(', '').replace(',', ''))
+                                              break
+                                  except:
+                                      pass
+              
+              if os.path.exists(test_logs['disk']):
+                  with open(test_logs['disk'], 'r') as f:
+                      content = f.read()
+                      if 'read: IOPS=' in content:
+                          try:
+                              import re
+                              read_match = re.search(r'read: IOPS=([0-9.]+)', content)
+                              write_match = re.search(r'write: IOPS=([0-9.]+)', content)
+                              if read_match:
+                                  metrics['Disk Read IOPS'] = float(read_match.group(1))
+                              if write_match:
+                                  metrics['Disk Write IOPS'] = float(write_match.group(1))
+                          except:
+                              pass
+              
+              return metrics
+              
+          def run_benchmarks(self):
+              self.running = True
+              self.progress = 0
+              timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+              result_dir = f'/app/results/benchmark_{timestamp}'
+              os.makedirs(result_dir, exist_ok=True)
+              
+              test_logs = {
+                  'cpu': f'{result_dir}/cpu_test.log',
+                  'memory': f'{result_dir}/memory_test.log', 
+                  'disk': f'{result_dir}/disk_test.log',
+                  'stress': f'{result_dir}/stress_test.log'
+              }
+              
+              tests = [
+                  ('CPU Stress Test', f'stress-ng --cpu {os.cpu_count()} --timeout 30s --metrics-brief', test_logs['stress']),
+                  ('CPU Performance Test', f'sysbench cpu --cpu-max-prime=20000 --threads={os.cpu_count()} run', test_logs['cpu']),
+                  ('Memory Performance Test', f'sysbench memory --memory-total-size=2G --threads={os.cpu_count()} run', test_logs['memory']),
+                  ('Disk I/O Test', f'fio --name=benchmark --ioengine=libaio --iodepth=16 --rw=randrw --bs=4k --direct=1 --size=1G --numjobs=1 --runtime=30 --group_reporting --filename={result_dir}/testfile', test_logs['disk'])
+              ]
+              
+              total_tests = len(tests)
+              
+              for i, (test_name, command, log_file) in enumerate(tests):
+                  self.current_test = test_name
+                  self.progress = int((i / total_tests) * 100)
+                  print(f'Running: {test_name}')
+                  self.run_command(command, log_file)
+                  time.sleep(1)
+              
+              metrics = self.extract_metrics(test_logs)
+              self.results = metrics
+              
+              csv_file = f'{result_dir}/benchmark_results.csv'
+              with open(csv_file, 'w', newline='') as csvfile:
+                  writer = csv.writer(csvfile)
+                  writer.writerow(['Metric', 'Value', 'Unit'])
+                  for metric, value in metrics.items():
+                      unit = 'events/sec' if 'Events' in metric else 'MB/sec' if 'MB/sec' in metric else 'IOPS' if 'IOPS' in metric else ''
+                      writer.writerow([metric, value, unit])
+              
+              json_file = f'{result_dir}/benchmark_results.json'
+              with open(json_file, 'w') as jsonfile:
+                  json.dump({
+                      'timestamp': timestamp,
+                      'system_info': {
+                          'cpu_count': os.cpu_count(),
+                          'test_date': datetime.now().isoformat()
+                      },
+                      'results': metrics
+                  }, jsonfile, indent=2)
+              
+              test_file = f'{result_dir}/testfile'
+              if os.path.exists(test_file):
+                  os.remove(test_file)
+              
+              self.current_test = 'Completed'
+              self.progress = 100
+              self.running = False
+              
+              print(f'Benchmark completed! Results saved to {result_dir}')
+      
+      benchmark_runner = BenchmarkRunner()
+      EOF
+      
+      cat > /app/app.py << 'EOF'
+      from flask import Flask, render_template, jsonify, send_file, request
+      import os
+      import json
+      import csv
+      import threading
+      from datetime import datetime
+      from benchmark import benchmark_runner
+      
+      app = Flask(__name__)
+      
+      @app.route('/')
+      def index():
+          return render_template('index.html')
+      
+      @app.route('/api/start_benchmark', methods=['POST'])
+      def start_benchmark():
+          if not benchmark_runner.running:
+              thread = threading.Thread(target=benchmark_runner.run_benchmarks)
+              thread.daemon = True
+              thread.start()
+              return jsonify({'status': 'started'})
+          else:
+              return jsonify({'status': 'already_running'})
+      
+      @app.route('/api/status')
+      def get_status():
+          return jsonify({
+              'running': benchmark_runner.running,
+              'current_test': benchmark_runner.current_test,
+              'progress': benchmark_runner.progress,
+              'results': benchmark_runner.results
+          })
+      
+      @app.route('/api/results')
+      def get_results():
+          results_dir = '/app/results'
+          if not os.path.exists(results_dir):
+              return jsonify([])
+          
+          result_list = []
+          for item in sorted(os.listdir(results_dir), reverse=True):
+              if item.startswith('benchmark_'):
+                  item_path = os.path.join(results_dir, item)
+                  if os.path.isdir(item_path):
+                      json_file = os.path.join(item_path, 'benchmark_results.json')
+                      if os.path.exists(json_file):
+                          with open(json_file, 'r') as f:
+                              data = json.load(f)
+                              result_list.append({
+                                  'id': item,
+                                  'timestamp': data.get('timestamp', ''),
+                                  'test_date': data.get('system_info', {}).get('test_date', ''),
+                                  'results': data.get('results', {})
+                              })
+          
+          return jsonify(result_list)
+      
+      @app.route('/api/download/<result_id>/<file_type>')
+      def download_result(result_id, file_type):
+          result_path = f'/app/results/{result_id}'
+          if file_type == 'csv':
+              file_path = f'{result_path}/benchmark_results.csv'
+          elif file_type == 'json':
+              file_path = f'{result_path}/benchmark_results.json'
+          else:
+              return 'Invalid file type', 400
+          
+          if os.path.exists(file_path):
+              return send_file(file_path, as_attachment=True)
+          else:
+              return 'File not found', 404
+      
+      if __name__ == '__main__':
+          app.run(host='0.0.0.0', port=80, debug=False)
+      EOF
+      
+      cat > /app/templates/index.html << 'EOF'
+      <!DOCTYPE html>
+      <html lang=\"en\">
+      <head>
+          <meta charset=\"UTF-8\">
+          <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
+          <title>🚀 System Benchmark Suite</title>
+          <style>
+              * { margin: 0; padding: 0; box-sizing: border-box; }
+              body { 
+                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif; 
+                  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                  min-height: 100vh;
+                  color: #333;
+              }
+              .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+              .header { 
+                  background: rgba(255,255,255,0.95); 
+                  color: #333; 
+                  padding: 40px; 
+                  border-radius: 20px; 
+                  margin-bottom: 30px; 
+                  text-align: center;
+                  box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+                  backdrop-filter: blur(10px);
+              }
+              .header h1 { 
+                  font-size: 3rem; 
+                  margin-bottom: 15px; 
+                  background: linear-gradient(135deg, #667eea, #764ba2);
+                  -webkit-background-clip: text;
+                  -webkit-text-fill-color: transparent;
+                  background-clip: text;
+              }
+              .header p { font-size: 1.2rem; opacity: 0.8; }
+              .card { 
+                  background: rgba(255,255,255,0.95); 
+                  border-radius: 20px; 
+                  padding: 30px; 
+                  margin-bottom: 30px; 
+                  box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+                  backdrop-filter: blur(10px);
+              }
+              .btn { 
+                  background: linear-gradient(135deg, #667eea, #764ba2); 
+                  color: white; 
+                  border: none; 
+                  padding: 18px 40px; 
+                  border-radius: 12px; 
+                  cursor: pointer; 
+                  font-size: 1.1rem; 
+                  font-weight: 600;
+                  transition: all 0.3s ease;
+                  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+              }
+              .btn:hover { 
+                  transform: translateY(-3px);
+                  box-shadow: 0 12px 30px rgba(102, 126, 234, 0.4);
+              }
+              .btn:disabled { 
+                  background: #ccc; 
+                  cursor: not-allowed; 
+                  transform: none;
+                  box-shadow: none;
+              }
+              .progress-container { margin: 25px 0; }
+              .progress-bar { 
+                  width: 100%; 
+                  height: 25px; 
+                  background: #e0e0e0; 
+                  border-radius: 15px; 
+                  overflow: hidden;
+                  box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+              }
+              .progress-fill { 
+                  height: 100%; 
+                  background: linear-gradient(90deg, #667eea, #764ba2); 
+                  transition: width 0.5s ease; 
+                  border-radius: 15px;
+                  position: relative;
+              }
+              .progress-fill::after {
+                  content: '';
+                  position: absolute;
+                  top: 0;
+                  left: 0;
+                  bottom: 0;
+                  right: 0;
+                  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+                  animation: shimmer 2s infinite;
+              }
+              @keyframes shimmer {
+                  0% { transform: translateX(-100%); }
+                  100% { transform: translateX(100%); }
+              }
+              .status { 
+                  margin: 25px 0; 
+                  padding: 20px; 
+                  border-radius: 12px; 
+                  font-weight: 500;
+              }
+              .status.running { 
+                  background: linear-gradient(135deg, #e3f2fd, #bbdefb); 
+                  border-left: 5px solid #2196f3; 
+              }
+              .status.completed { 
+                  background: linear-gradient(135deg, #e8f5e8, #c8e6c9); 
+                  border-left: 5px solid #4caf50; 
+              }
+              .results-grid { 
+                  display: grid; 
+                  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
+                  gap: 25px; 
+                  margin-top: 25px; 
+              }
+              .metric-card { 
+                  background: linear-gradient(135deg, #f8f9fa, #ffffff); 
+                  padding: 25px; 
+                  border-radius: 15px; 
+                  text-align: center; 
+                  border-left: 5px solid #667eea;
+                  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+                  transition: transform 0.3s ease;
+              }
+              .metric-card:hover {
+                  transform: translateY(-5px);
+              }
+              .metric-value { 
+                  font-size: 2.2rem; 
+                  font-weight: bold; 
+                  color: #333; 
+                  margin-bottom: 8px;
+                  background: linear-gradient(135deg, #667eea, #764ba2);
+                  -webkit-background-clip: text;
+                  -webkit-text-fill-color: transparent;
+                  background-clip: text;
+              }
+              .metric-label { color: #666; font-size: 1rem; font-weight: 500; }
+              .history-item { 
+                  background: linear-gradient(135deg, #f8f9fa, #ffffff); 
+                  padding: 20px; 
+                  border-radius: 15px; 
+                  margin-bottom: 20px;
+                  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+                  transition: transform 0.3s ease;
+              }
+              .history-item:hover {
+                  transform: translateY(-2px);
+              }
+              .download-btn { 
+                  background: linear-gradient(135deg, #28a745, #20c997); 
+                  margin-left: 12px; 
+                  padding: 10px 20px; 
+                  font-size: 0.9rem;
+                  border-radius: 8px;
+              }
+              .download-btn:hover { 
+                  background: linear-gradient(135deg, #218838, #1ea87a); 
+              }
+              .loading { 
+                  display: inline-block; 
+                  width: 22px; 
+                  height: 22px; 
+                  border: 3px solid rgba(255,255,255,0.3); 
+                  border-top: 3px solid #ffffff; 
+                  border-radius: 50%; 
+                  animation: spin 1s linear infinite; 
+                  margin-right: 12px; 
+              }
+              @keyframes spin { 
+                  0% { transform: rotate(0deg); } 
+                  100% { transform: rotate(360deg); } 
+              }
+              .feature-grid {
+                  display: grid;
+                  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                  gap: 20px;
+                  margin: 20px 0;
+              }
+              .feature-card {
+                  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+                  padding: 20px;
+                  border-radius: 12px;
+                  text-align: center;
+                  border: 1px solid rgba(102, 126, 234, 0.2);
+              }
+              .feature-icon {
+                  font-size: 2rem;
+                  margin-bottom: 10px;
+              }
+          </style>
+      </head>
+      <body>
+          <div class=\"container\">
+              <div class=\"header\">
+                  <h1>🚀 System Benchmark Suite</h1>
+                  <p>Professional system performance testing with beautiful web interface</p>
+              </div>
+              
+              <div class=\"card\">
+                  <h2 style=\"margin-bottom: 20px; color: #333;\">🔧 Comprehensive Benchmark Testing</h2>
+                  <div class=\"feature-grid\">
+                      <div class=\"feature-card\">
+                          <div class=\"feature-icon\">🖥️</div>
+                          <h4>CPU Performance</h4>
+                          <p>Multi-threaded processing power</p>
+                      </div>
+                      <div class=\"feature-card\">
+                          <div class=\"feature-icon\">💾</div>
+                          <h4>Memory Speed</h4>
+                          <p>RAM bandwidth & latency</p>
+                      </div>
+                      <div class=\"feature-card\">
+                          <div class=\"feature-icon\">💽</div>
+                          <h4>Disk I/O</h4>
+                          <p>Storage read/write performance</p>
+                      </div>
+                      <div class=\"feature-card\">
+                          <div class=\"feature-icon\">🔄</div>
+                          <h4>System Stress</h4>
+                          <p>Stability under load</p>
+                      </div>
+                  </div>
+                  <button id=\"startBtn\" class=\"btn\" onclick=\"startBenchmark()\">🚀 Start Comprehensive Benchmark</button>
+                  
+                  <div id=\"progressContainer\" class=\"progress-container\" style=\"display: none;\">
+                      <div class=\"progress-bar\">
+                          <div id=\"progressFill\" class=\"progress-fill\" style=\"width: 0%\"></div>
+                      </div>
+                      <div id=\"statusText\" class=\"status running\">Preparing benchmark suite...</div>
+                  </div>
+              </div>
+              
+              <div id=\"resultsCard\" class=\"card\" style=\"display: none;\">
+                  <h2 style=\"margin-bottom: 20px; color: #333;\">📊 Performance Results</h2>
+                  <div id=\"resultsGrid\" class=\"results-grid\"></div>
+              </div>
+              
+              <div class=\"card\">
+                  <h2 style=\"margin-bottom: 20px; color: #333;\">📈 Benchmark History</h2>
+                  <div id=\"historyList\">Loading benchmark history...</div>
+              </div>
+          </div>
+          
+          <script>
+              let updateInterval;
+              
+              function startBenchmark() {
+                  document.getElementById('startBtn').disabled = true;
+                  document.getElementById('startBtn').innerHTML = '<div class=\"loading\"></div>Starting Benchmark Suite...';
+                  document.getElementById('progressContainer').style.display = 'block';
+                  
+                  fetch('/api/start_benchmark', { method: 'POST' })
+                      .then(response => response.json())
+                      .then(data => {
+                          if (data.status === 'started') {
+                              updateInterval = setInterval(updateStatus, 1000);
+                          }
+                      });
+              }
+              
+              function updateStatus() {
+                  fetch('/api/status')
+                      .then(response => response.json())
+                      .then(data => {
+                          document.getElementById('progressFill').style.width = data.progress + '%';
+                          document.getElementById('statusText').innerHTML = 
+                              data.running ? `🔄 ${data.current_test} (${data.progress}%)` : '✅ Benchmark Suite Completed!';
+                          
+                          if (!data.running && data.progress === 100) {
+                              clearInterval(updateInterval);
+                              document.getElementById('startBtn').disabled = false;
+                              document.getElementById('startBtn').innerHTML = '🚀 Start Comprehensive Benchmark';
+                              document.getElementById('statusText').className = 'status completed';
+                              
+                              if (Object.keys(data.results).length > 0) {
+                                  displayResults(data.results);
+                              }
+                              loadHistory();
+                          }
+                      });
+              }
+              
+              function displayResults(results) {
+                  const resultsCard = document.getElementById('resultsCard');
+                  const resultsGrid = document.getElementById('resultsGrid');
+                  
+                  resultsGrid.innerHTML = '';
+                  for (const [metric, value] of Object.entries(results)) {
+                      const unit = metric.includes('Events') ? 'events/sec' : 
+                                  metric.includes('MB/sec') ? 'MB/sec' : 
+                                  metric.includes('IOPS') ? 'IOPS' : '';
+                      
+                      resultsGrid.innerHTML += `
+                          <div class=\"metric-card\">
+                              <div class=\"metric-value\">${value.toLocaleString()}</div>
+                              <div class=\"metric-label\">${metric}</div>
+                              ${unit && `<div style=\"font-size: 0.85rem; color: #888; margin-top: 5px;\">${unit}</div>`}
+                          </div>
+                      `;
+                  }
+                  
+                  resultsCard.style.display = 'block';
+              }
+              
+              function loadHistory() {
+                  fetch('/api/results')
+                      .then(response => response.json())
+                      .then(data => {
+                          const historyList = document.getElementById('historyList');
+                          
+                          if (data.length === 0) {
+                              historyList.innerHTML = '<p style=\"text-align: center; color: #666; padding: 20px;\">No benchmark results yet. Run your first benchmark to see results here! 🚀</p>';
+                              return;
+                          }
+                          
+                          historyList.innerHTML = '';
+                          data.forEach(result => {
+                              const date = new Date(result.test_date).toLocaleString();
+                              const metrics = Object.entries(result.results).map(([k, v]) => `${k}: ${v.toLocaleString()}`).join(' | ');
+                              
+                              historyList.innerHTML += `
+                                  <div class=\"history-item\">
+                                      <strong style=\"color: #333; font-size: 1.1rem;\">📅 ${date}</strong><br>
+                                      <small style=\"color: #666; margin: 10px 0; display: block;\">${metrics}</small>
+                                      <button class=\"btn download-btn\" onclick=\"downloadFile('${result.id}', 'csv')\">📊 Download CSV</button>
+                                      <button class=\"btn download-btn\" onclick=\"downloadFile('${result.id}', 'json')\">📋 Download JSON</button>
+                                  </div>
+                              `;
+                          });
+                      });
+              }
+              
+              function downloadFile(resultId, fileType) {
+                  window.open(`/api/download/${resultId}/${fileType}`);
+              }
+              
+              // Load history on page load
+              loadHistory();
+          </script>
+      </body>
+      </html>
+      EOF
+      
+      chown -R \$PUID:\$PGID /app &&
+      
+      echo '✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨' &&
+      echo '🌐 System Benchmark Suite Web Interface Ready!' &&
+      echo '✨ Access at: https://system-benchmark-suite-\$username.nsl.sh/' &&
+      echo '🎯 Features: Beautiful UI, Real-time Progress, CSV/JSON Reports!' &&
+      echo '🚀 Click \"Start Comprehensive Benchmark\" to begin testing!' &&
+      echo '✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨' &&
+      
+      cd /app && python3 app.py
+      "
 
 x-casaos:
   architectures:
     - amd64
     - arm64
-  main: phoromatic
-  webui_port: 9090
+  main: benchmark-suite
+  webui_port: 80
   category: Utilities
   author: Yundera Community
-  developer: Phoronix Media
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/PhoronixTestSuite/icon.png
+  developer: Community
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/SystemBenchmarkSuite/icon.png
   screenshot:
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/PhoronixTestSuite/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/PhoronixTestSuite/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/PhoronixTestSuite/screenshot-3.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/SystemBenchmarkSuite/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/SystemBenchmarkSuite/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/SystemBenchmarkSuite/screenshot-3.png
   tagline:
-    en_us: The ultimate professional benchmark suite with complete Phoromatic web interface
-    ko_kr: 완전한 Phoromatic 웹 인터페이스를 갖춘 최고의 전문 벤치마크 도구
+    en_us: Beautiful web-based system benchmark suite with real-time progress and professional reporting
+    ko_kr: 실시간 진행률과 전문 리포트 기능을 갖춘 아름다운 웹 기반 시스템 벤치마크 도구
   title:
-    en_us: Phoronix Test Suite
-    ko_kr: Phoronix Test Suite
+    en_us: System Benchmark Suite
+    ko_kr: System Benchmark Suite
   description:
     en_us: |
-      **🏆 THE ULTIMATE Professional Benchmarking Platform - Phoronix Test Suite + Phoromatic!**
+      **🚀 Beautiful Web-Based System Benchmark Suite!**
       
-      The industry-standard benchmarking platform used by hardware reviewers, tech companies, and research institutions worldwide, 
-      now featuring the complete **Phoromatic Web Interface** for enterprise-grade test management.
+      A comprehensive and user-friendly system benchmarking solution featuring a stunning web interface, 
+      real-time progress tracking, and professional reporting capabilities.
       
-      **🌐 Complete Phoromatic Web Interface:**
-      - **Zero Command Line Required** - Everything through your browser!
-      - **Enterprise Test Orchestration** - Manage multiple systems remotely
-      - **Automatic Test Scheduling** - Set recurring benchmarks (daily, weekly, custom)
-      - **Real-time Test Monitoring** - Watch benchmarks execute live
-      - **Centralized Result Management** - All test results in one secure location
-      - **Advanced Reporting** - CSV, JSON, PDF, HTML export with charts
-      - **OpenBenchmarking Integration** - Upload and compare with global database
-      - **Wake-on-LAN Support** - Automatically wake systems for testing
-      - **Test Triggers** - External API triggers for CI/CD integration
+      **🌐 Stunning Web Interface:**
+      - **Modern Gradient Design** - Beautiful, contemporary user interface
+      - **One-Click Testing** - Start comprehensive benchmarks with a single button
+      - **Real-time Progress** - Live progress bars with smooth animations
+      - **Interactive Results** - Beautiful charts and metric cards
+      - **Mobile Responsive** - Works perfectly on all devices
+      - **Smooth Animations** - Polished UI with engaging visual effects
       
-      **⚡ 650+ Professional Benchmark Tests:**
-      - **CPU Performance** - Single/multi-core, encryption, compression, floating-point
-      - **Memory & Cache** - Bandwidth, latency, throughput, cache analysis
-      - **Storage I/O** - Sequential/random read/write, IOPS, filesystem performance
-      - **Graphics & GPU** - OpenGL, Vulkan, OpenCL, ray-tracing, compute shaders
-      - **Network Performance** - Bandwidth, latency, packet analysis, throughput
-      - **System Stress Tests** - Stability, thermal, power consumption analysis
-      - **Database Performance** - MySQL, PostgreSQL, SQLite benchmarks
-      - **Compiler Performance** - GCC, LLVM, build time optimization
-      - **Machine Learning** - TensorFlow, PyTorch, inference benchmarks
-      - **Productivity Apps** - LibreOffice, GIMP, video encoding tests
+      **⚡ Comprehensive Benchmark Tests:**
+      - **🖥️ CPU Performance** - Multi-threaded prime number calculations
+      - **💾 Memory Speed** - RAM bandwidth and latency testing
+      - **💽 Disk I/O** - Random read/write IOPS and throughput analysis
+      - **🔄 System Stress** - Resource stability testing under load
       
-      **🔬 Enterprise Features:**
-      - **Statistical Analysis** - Automatic significance testing and variance analysis
-      - **Performance Regression Detection** - Git integration for automated CI/CD testing
-      - **Multi-System Management** - Orchestrate tests across entire server farms
-      - **Custom Test Suites** - Build organization-specific benchmark combinations
-      - **Hardware Detection** - Automatic system profiling and inventory
-      - **Result Comparison** - Side-by-side analysis with historical data
-      - **Group Management** - Organize systems by department, location, or function
-      - **User Access Control** - Role-based permissions for team collaboration
+      **📊 Professional Reporting:**
+      - **Real-time Results** - See performance metrics as tests complete
+      - **CSV Export** - Detailed data for spreadsheet analysis
+      - **JSON Download** - Structured data for programmatic processing
+      - **Historical Tracking** - Compare performance over time
+      - **Detailed Logging** - Complete test execution logs
+      - **Timestamp Management** - Easy result organization and tracking
       
-      **🎯 Professional Use Cases:**
-      - **Hardware Evaluation** - Comprehensive component and system testing
-      - **Performance Baselines** - Establish and track system performance over time
-      - **Quality Assurance** - Automated testing in manufacturing and deployment
-      - **Research & Development** - Academic and commercial performance research
-      - **Server Monitoring** - Continuous performance validation in data centers
-      - **Procurement Support** - Data-driven hardware purchasing decisions
-      - **Optimization Validation** - Measure impact of system tuning and updates
+      **🔧 Industry-Standard Tools:**
+      - **stress-ng** - Advanced CPU and system stress testing
+      - **sysbench** - Professional CPU and memory benchmarking
+      - **fio** - High-performance disk I/O testing
+      - **Multi-threaded Testing** - Utilizes all available CPU cores
       
-      **Used by Intel, AMD, NVIDIA, Dell, HP, IBM, universities, and tech companies worldwide!**
+      **🎯 Perfect For:**
+      - **Performance Baselines** - Establish system performance standards
+      - **Hardware Evaluation** - Compare different system configurations
+      - **System Optimization** - Validate tuning and optimization efforts
+      - **Regular Monitoring** - Track system performance trends
+      - **Quality Assurance** - Automated testing workflows
+      - **Capacity Planning** - Resource requirement analysis
+      
+      **✨ Key Benefits:**
+      - **Zero Command Line** - Everything through the beautiful web interface
+      - **Instant Results** - No complex setup or configuration required
+      - **Professional Quality** - Industry-standard benchmarking tools
+      - **Easy Sharing** - Download and share results with colleagues
+      - **Trend Analysis** - Historical data for performance tracking
+      
+      **Experience the future of system benchmarking with style!**
     ko_kr: |
-      **🏆 최고의 전문 벤치마킹 플랫폼 - Phoronix Test Suite + Phoromatic!**
+      **🚀 아름다운 웹 기반 시스템 벤치마크 도구!**
       
-      전 세계 하드웨어 리뷰어, 기술 회사, 연구 기관에서 사용하는 업계 표준 벤치마킹 플랫폼으로, 
-      이제 엔터프라이즈급 테스트 관리를 위한 완전한 **Phoromatic 웹 인터페이스**를 제공합니다.
+      멋진 웹 인터페이스, 실시간 진행률 추적, 전문적인 리포트 기능을 갖춘 
+      포괄적이고 사용자 친화적인 시스템 벤치마킹 솔루션입니다.
       
-      **🌐 완전한 Phoromatic 웹 인터페이스:**
-      - **명령줄 완전 불필요** - 모든 것을 브라우저에서!
-      - **엔터프라이즈 테스트 오케스트레이션** - 여러 시스템을 원격으로 관리
-      - **자동 테스트 스케줄링** - 정기적 벤치마크 설정 (일일, 주간, 사용자 정의)
-      - **실시간 테스트 모니터링** - 벤치마크 실행을 라이브로 확인
-      - **중앙 집중식 결과 관리** - 모든 테스트 결과를 하나의 안전한 위치에서
-      - **고급 리포팅** - 차트가 포함된 CSV, JSON, PDF, HTML 내보내기
-      - **OpenBenchmarking 통합** - 글로벌 데이터베이스에 업로드 및 비교
-      - **Wake-on-LAN 지원** - 테스트를 위해 시스템을 자동으로 깨우기
-      - **테스트 트리거** - CI/CD 통합을 위한 외부 API 트리거
+      **🌐 멋진 웹 인터페이스:**
+      - **모던 그라디언트 디자인** - 아름답고 현대적인 사용자 인터페이스
+      - **원클릭 테스트** - 단일 버튼으로 종합적인 벤치마크 시작
+      - **실시간 진행률** - 부드러운 애니메이션이 있는 라이브 진행률 표시줄
+      - **인터랙티브 결과** - 아름다운 차트와 메트릭 카드
+      - **모바일 반응형** - 모든 디바이스에서 완벽하게 작동
+      - **부드러운 애니메이션** - 매력적인 시각 효과가 있는 세련된 UI
       
-      **⚡ 650개 이상의 전문 벤치마크 테스트:**
-      - **CPU 성능** - 싱글/멀티코어, 암호화, 압축, 부동소수점
-      - **메모리 및 캐시** - 대역폭, 지연시간, 처리량, 캐시 분석
-      - **스토리지 I/O** - 순차/랜덤 읽기/쓰기, IOPS, 파일시스템 성능
-      - **그래픽 및 GPU** - OpenGL, Vulkan, OpenCL, 레이트레이싱, 컴퓨트 셰이더
-      - **네트워크 성능** - 대역폭, 지연시간, 패킷 분석, 처리량
-      - **시스템 스트레스 테스트** - 안정성, 열, 전력 소비 분석
-      - **데이터베이스 성능** - MySQL, PostgreSQL, SQLite 벤치마크
-      - **컴파일러 성능** - GCC, LLVM, 빌드 시간 최적화
-      - **머신러닝** - TensorFlow, PyTorch, 추론 벤치마크
-      - **생산성 앱** - LibreOffice, GIMP, 비디오 인코딩 테스트
+      **⚡ 포괄적인 벤치마크 테스트:**
+      - **🖥️ CPU 성능** - 멀티스레드 소수 계산
+      - **💾 메모리 속도** - RAM 대역폭 및 지연시간 테스트
+      - **💽 디스크 I/O** - 랜덤 읽기/쓰기 IOPS 및 처리량 분석
+      - **🔄 시스템 스트레스** - 부하 상태에서의 리소스 안정성 테스트
       
-      **🔬 엔터프라이즈 기능:**
-      - **통계 분석** - 자동 유의성 테스트 및 분산 분석
-      - **성능 회귀 탐지** - 자동화된 CI/CD 테스트를 위한 Git 통합
-      - **다중 시스템 관리** - 전체 서버 팜에서 테스트 오케스트레이션
-      - **사용자 정의 테스트 스위트** - 조직별 벤치마크 조합 구성
-      - **하드웨어 감지** - 자동 시스템 프로파일링 및 인벤토리
-      - **결과 비교** - 이력 데이터와의 나란히 분석
-      - **그룹 관리** - 부서, 위치, 기능별로 시스템 정리
-      - **사용자 접근 제어** - 팀 협업을 위한 역할 기반 권한
+      **📊 전문적인 리포트:**
+      - **실시간 결과** - 테스트 완료 시 성능 메트릭 즉시 확인
+      - **CSV 내보내기** - 스프레드시트 분석을 위한 상세 데이터
+      - **JSON 다운로드** - 프로그래밍 처리를 위한 구조화된 데이터
+      - **이력 추적** - 시간에 따른 성능 비교
+      - **상세 로깅** - 완전한 테스트 실행 로그
+      - **타임스탬프 관리** - 쉬운 결과 정리 및 추적
       
-      **🎯 전문 사용 사례:**
-      - **하드웨어 평가** - 포괄적인 구성 요소 및 시스템 테스트
-      - **성능 기준선** - 시간에 따른 시스템 성능 설정 및 추적
-      - **품질 보증** - 제조 및 배포 시 자동화된 테스트
-      - **연구 개발** - 학술 및 상업적 성능 연구
-      - **서버 모니터링** - 데이터 센터에서 지속적인 성능 검증
-      - **조달 지원** - 데이터 기반 하드웨어 구매 결정
-      - **최적화 검증** - 시스템 튜닝 및 업데이트의 영향 측정
+      **🔧 업계 표준 도구:**
+      - **stress-ng** - 고급 CPU 및 시스템 스트레스 테스트
+      - **sysbench** - 전문적인 CPU 및 메모리 벤치마킹
+      - **fio** - 고성능 디스크 I/O 테스트
+      - **멀티스레드 테스트** - 사용 가능한 모든 CPU 코어 활용
       
-      **Intel, AMD, NVIDIA, Dell, HP, IBM, 대학교, 기술 회사에서 전 세계적으로 사용 중!**
+      **🎯 완벽한 활용 분야:**
+      - **성능 기준선** - 시스템 성능 표준 설정
+      - **하드웨어 평가** - 다양한 시스템 구성 비교
+      - **시스템 최적화** - 튜닝 및 최적화 노력 검증
+      - **정기 모니터링** - 시스템 성능 트렌드 추적
+      - **품질 보증** - 자동화된 테스트 워크플로우
+      - **용량 계획** - 리소스 요구사항 분석
+      
+      **✨ 주요 장점:**
+      - **명령줄 불필요** - 아름다운 웹 인터페이스를 통한 모든 작업
+      - **즉시 결과** - 복잡한 설정이나 구성 불필요
+      - **전문적 품질** - 업계 표준 벤치마킹 도구
+      - **쉬운 공유** - 동료와 결과 다운로드 및 공유
+      - **트렌드 분석** - 성능 추적을 위한 이력 데이터
+      
+      **스타일리시한 시스템 벤치마킹의 미래를 경험하세요!**
   tips:
     before_install:
       en_us: |
-        **🌐 COMPLETE PHOROMATIC WEB INTERFACE ACCESS**
+        **🌐 BEAUTIFUL WEB INTERFACE ACCESS**
         
-        After installation, access the **Phoromatic Web Interface**:
-        **→ https://9090-phoronix-test-suite-$username.nsl.sh/ ←**
+        After installation, access the **System Benchmark Web Interface**:
+        **→ https://system-benchmark-suite-$username.nsl.sh/ ←**
         
-        **🚀 Getting Started (Enterprise Web Management):**
+        **🚀 Getting Started (Beautiful Web Experience):**
         
-        1. **📝 Create Phoromatic Account** - Register from the web interface
-        2. **🖥️ Add Test Systems** - Connect multiple systems to your account
-        3. **🔍 Browse 650+ Tests** - Explore the world's largest benchmark collection
-        4. **⏰ Schedule Automated Tests** - Set daily, weekly, or custom schedules
-        5. **▶️ Run On-Demand Tests** - Execute immediate benchmarks
-        6. **📊 View Real-time Results** - Monitor test progress and results
-        7. **📈 Historical Analysis** - Compare performance over time
-        8. **💾 Export Reports** - Download professional reports in multiple formats
+        1. **🎨 Enjoy the Interface** - Modern gradient design with smooth animations
+        2. **🚀 Click "Start Comprehensive Benchmark"** - One button starts all tests
+        3. **👀 Watch Real-time Progress** - Beautiful progress bars with live updates
+        4. **📊 View Interactive Results** - Stunning metric cards with performance data
+        5. **💾 Download Professional Reports** - CSV and JSON exports
+        6. **📈 Track Performance History** - Compare results over time
         
-        **🔥 Popular Enterprise Test Categories:**
-        - `Server Benchmarks` - Comprehensive server performance testing
-        - `CPU Test Suites` - Single/multi-core performance analysis
-        - `Memory Benchmarks` - RAM bandwidth and latency testing
-        - `Storage Performance` - Disk I/O and filesystem analysis
-        - `Network Testing` - Bandwidth and latency evaluation
-        - `GPU Compute` - Graphics and compute shader performance
-        - `Database Benchmarks` - MySQL, PostgreSQL performance
-        - `Machine Learning` - AI/ML inference and training benchmarks
+        **🔥 What Gets Tested:**
+        - **🖥️ CPU Performance** - Multi-threaded processing power
+        - **💾 Memory Speed** - RAM bandwidth and latency
+        - **💽 Disk I/O** - Storage read/write performance
+        - **🔄 System Stress** - Stability under maximum load
         
-        **📊 Professional Reporting:**
-        - **CSV Export** - Detailed metrics for spreadsheet analysis
-        - **JSON API** - Programmatic access to all test data
-        - **PDF Reports** - Executive-ready performance summaries
-        - **HTML Dashboards** - Interactive web-based result viewing
-        - **OpenBenchmarking.org** - Public result sharing and comparison
+        **📊 Professional Reports:**
+        - **Real-time Metrics** - See results as tests complete
+        - **CSV Export** - Perfect for Excel and data analysis
+        - **JSON Download** - Structured data for developers
+        - **Historical Data** - Track performance trends over time
         
-        **💡 Enterprise Pro Tips:**
-        - **Test Automation** - Schedule nightly regression testing
-        - **CI/CD Integration** - Trigger tests via external APIs
-        - **Multi-System Management** - Group systems by department/location
-        - **Performance Baselines** - Establish organizational standards
-        - **Trend Analysis** - Track performance degradation over time
-        - **Compliance Testing** - Automated quality assurance workflows
+        **💡 Pro Tips:**
+        - **Optimal Testing** - Run when system is idle for best accuracy
+        - **Regular Monitoring** - Schedule weekly benchmarks
+        - **Performance Tracking** - Compare results to identify degradation
+        - **Report Sharing** - Download and share with team members
+        - **Mobile Access** - Interface works great on phones and tablets
         
-        **🎯 The complete enterprise benchmarking solution!**
-        **No SSH, no command line - full professional test management via web interface!**
+        **🎯 Beautiful, professional, and incredibly easy to use!**
+        **No technical knowledge required - just click and benchmark!**
       ko_kr: |
-        **🌐 완전한 Phoromatic 웹 인터페이스 접근**
+        **🌐 아름다운 웹 인터페이스 접근**
         
-        설치 후 **Phoromatic 웹 인터페이스**에 접근하세요:
-        **→ https://9090-phoronix-test-suite-$username.nsl.sh/ ←**
+        설치 후 **시스템 벤치마크 웹 인터페이스**에 접근하세요:
+        **→ https://system-benchmark-suite-$username.nsl.sh/ ←**
         
-        **🚀 시작하기 (엔터프라이즈 웹 관리):**
+        **🚀 시작하기 (아름다운 웹 경험):**
         
-        1. **📝 Phoromatic 계정 생성** - 웹 인터페이스에서 등록
-        2. **🖥️ 테스트 시스템 추가** - 계정에 여러 시스템 연결
-        3. **🔍 650개 이상 테스트 탐색** - 세계 최대의 벤치마크 컬렉션 살펴보기
-        4. **⏰ 자동화된 테스트 스케줄링** - 일일, 주간, 사용자 정의 일정 설정
-        5. **▶️ 온디맨드 테스트 실행** - 즉시 벤치마크 실행
-        6. **📊 실시간 결과 확인** - 테스트 진행 상황 및 결과 모니터링
-        7. **📈 이력 분석** - 시간에 따른 성능 비교
-        8. **💾 리포트 내보내기** - 다양한 형식의 전문 리포트 다운로드
+        1. **🎨 인터페이스 감상** - 부드러운 애니메이션이 있는 모던 그라디언트 디자인
+        2. **🚀 "종합 벤치마크 시작" 클릭** - 하나의 버튼으로 모든 테스트 시작
+        3. **👀 실시간 진행률 확인** - 라이브 업데이트가 있는 아름다운 진행률 표시줄
+        4. **📊 인터랙티브 결과 확인** - 성능 데이터가 포함된 멋진 메트릭 카드
+        5. **💾 전문 리포트 다운로드** - CSV 및 JSON 내보내기
+        6. **📈 성능 이력 추적** - 시간에 따른 결과 비교
         
-        **🔥 인기 엔터프라이즈 테스트 카테고리:**
-        - `서버 벤치마크` - 포괄적인 서버 성능 테스트
-        - `CPU 테스트 스위트` - 싱글/멀티코어 성능 분석
-        - `메모리 벤치마크` - RAM 대역폭 및 지연시간 테스트
-        - `스토리지 성능` - 디스크 I/O 및 파일시스템 분석
-        - `네트워크 테스트` - 대역폭 및 지연시간 평가
-        - `GPU 컴퓨트` - 그래픽 및 컴퓨트 셰이더 성능
-        - `데이터베이스 벤치마크` - MySQL, PostgreSQL 성능
-        - `머신러닝` - AI/ML 추론 및 훈련 벤치마크
+        **🔥 테스트 항목:**
+        - **🖥️ CPU 성능** - 멀티스레드 처리 능력
+        - **💾 메모리 속도** - RAM 대역폭 및 지연시간
+        - **💽 디스크 I/O** - 스토리지 읽기/쓰기 성능
+        - **🔄 시스템 스트레스** - 최대 부하에서의 안정성
         
-        **📊 전문 리포팅:**
-        - **CSV 내보내기** - 스프레드시트 분석을 위한 상세 메트릭
-        - **JSON API** - 모든 테스트 데이터에 대한 프로그래밍 접근
-        - **PDF 리포트** - 임원진용 성능 요약
-        - **HTML 대시보드** - 인터랙티브 웹 기반 결과 확인
-        - **OpenBenchmarking.org** - 공개 결과 공유 및 비교
+        **📊 전문 리포트:**
+        - **실시간 메트릭** - 테스트 완료 시 결과 즉시 확인
+        - **CSV 내보내기** - Excel 및 데이터 분석에 완벽
+        - **JSON 다운로드** - 개발자를 위한 구조화된 데이터
+        - **이력 데이터** - 시간에 따른 성능 트렌드 추적
         
-        **💡 엔터프라이즈 활용 팁:**
-        - **테스트 자동화** - 야간 회귀 테스트 스케줄링
-        - **CI/CD 통합** - 외부 API를 통한 테스트 트리거
-        - **다중 시스템 관리** - 부서/위치별 시스템 그룹화
-        - **성능 기준선** - 조직 표준 설정
-        - **트렌드 분석** - 시간에 따른 성능 저하 추적
-        - **컴플라이언스 테스트** - 자동화된 품질 보증 워크플로우
+        **💡 활용 팁:**
+        - **최적 테스트** - 최고 정확도를 위해 시스템이 유휴 상태일 때 실행
+        - **정기 모니터링** - 주간 벤치마크 스케줄링
+        - **성능 추적** - 성능 저하를 식별하기 위한 결과 비교
+        - **리포트 공유** - 팀 멤버와 다운로드 및 공유
+        - **모바일 접근** - 폰과 태블릿에서도 훌륭하게 작동하는 인터페이스
         
-        **🎯 완전한 엔터프라이즈 벤치마킹 솔루션!**
-        **SSH 불필요, 명령줄 불필요 - 웹 인터페이스를 통한 완전한 전문 테스트 관리!**
+        **🎯 아름답고, 전문적이며, 믿을 수 없을 정도로 사용하기 쉬움!**
+        **기술적 지식 불필요 - 클릭하고 벤치마크하세요!**
