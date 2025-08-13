@@ -1,0 +1,165 @@
+name: webssh
+
+services:
+  webssh:
+    image: huashengdun/webssh:latest
+    user: $PUID:$PGID
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+    environment:
+      PUID: $PUID
+      PGID: $PGID
+      TZ: $TZ
+    volumes:
+      - /DATA/AppData/$AppID/config:/app/config
+      - /DATA/AppData/$AppID/keys:/app/keys
+    expose:
+      - 8888
+    restart: unless-stopped
+    command: >
+      sh -c "
+        # Create directories
+        mkdir -p /app/config /app/keys &&
+        
+        # Create default configuration
+        if [ ! -f /app/config/webssh.conf ]; then
+          cat > /app/config/webssh.conf << 'EOF'
+        # WebSSH Configuration
+        # Server settings
+        host = '0.0.0.0'
+        port = 8888
+        
+        # Security settings
+        xheaders = True
+        origin = 'same'
+        
+        # Connection settings
+        timeout = 3
+        delay = 3
+        maxconn = 20
+        
+        # Logging
+        logging_level = 'INFO'
+        log_file_prefix = '/app/config/webssh.log'
+        
+        # Authentication (optional)
+        # password = 'your_password_here'
+        EOF
+        fi &&
+        
+        # Create SSH keys directory structure
+        mkdir -p /app/keys/private /app/keys/public &&
+        
+        # Create README for SSH keys
+        if [ ! -f /app/keys/README.md ]; then
+          cat > /app/keys/README.md << 'EOF'
+        # SSH Keys Directory
+        
+        ## Usage
+        1. Place your private SSH keys in `/app/keys/private/`
+        2. Place your public SSH keys in `/app/keys/public/`
+        3. Set proper permissions: `chmod 600 private/key_name`
+        
+        ## Example
+        ```
+        /app/keys/
+        ├── private/
+        │   ├── id_rsa          # Private key for server access
+        │   └── yundera_key     # Custom private key
+        └── public/
+            ├── id_rsa.pub      # Corresponding public key
+            └── yundera_key.pub # Custom public key
+        ```
+        
+        ## Quick SSH Commands
+        - Connect to CasaOS: ssh user@your-casaos-server
+        - Connect with key: ssh -i /app/keys/private/id_rsa user@server
+        - Copy files: scp file.txt user@server:/path/
+        
+        ## Common CasaOS Commands
+        - Check containers: docker ps
+        - View logs: docker logs container_name
+        - Access benchmark: docker exec -it yundera-benchmark-phoronix-pts-1 sh
+        EOF
+        fi &&
+        
+        # Set proper permissions for SSH keys directory
+        chmod 755 /app/keys &&
+        chmod 755 /app/keys/private /app/keys/public &&
+        
+        # Start WebSSH with custom config
+        python -m webssh.main --config=/app/config/webssh.conf
+      "
+
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  main: webssh
+  webui_port: 8888
+  category: Developer
+  author: Yundera Team
+  description:
+    en_us: "Web-based SSH client for secure remote server access. Connect to CasaOS servers and other Linux systems directly from your browser. Perfect for managing Yundera benchmark tools, Docker containers, and system administration. Supports SSH key authentication, multiple connections, and secure terminal sessions."
+    fr_fr: "Client SSH basé sur le web pour un accès sécurisé aux serveurs distants. Connectez-vous aux serveurs CasaOS et autres systèmes Linux directement depuis votre navigateur. Parfait pour gérer les outils de benchmark Yundera, les conteneurs Docker et l'administration système. Prend en charge l'authentification par clé SSH, les connexions multiples et les sessions de terminal sécurisées."
+    es_es: "Cliente SSH basado en web para acceso seguro a servidores remotos. Conéctese a servidores CasaOS y otros sistemas Linux directamente desde su navegador. Perfecto para gestionar herramientas de benchmark Yundera, contenedores Docker y administración del sistema. Soporta autenticación por clave SSH, múltiples conexiones y sesiones de terminal seguras."
+    zh_cn: "基于Web的SSH客户端，用于安全的远程服务器访问。直接从浏览器连接到CasaOS服务器和其他Linux系统。非常适合管理Yundera基准测试工具、Docker容器和系统管理。支持SSH密钥认证、多重连接和安全终端会话。"
+  developer: Yundera Team
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/WebSSH/icon.png
+  tagline:
+    en_us: "Browser-based SSH client for server management"
+    fr_fr: "Client SSH basé sur navigateur pour la gestion de serveurs"
+    es_es: "Cliente SSH basado en navegador para gestión de servidores"
+    zh_cn: "基于浏览器的SSH客户端用于服务器管理"
+  title:
+    en_us: WebSSH Client
+    fr_fr: Client WebSSH
+    es_es: Cliente WebSSH
+    zh_cn: WebSSH客户端
+  tips:
+    before_install:
+      en_us: |
+        **Web-Based SSH Client**
+        
+        Access your servers directly from your browser!
+        
+        **Quick Start:**
+        1. Install and access via web UI
+        2. Enter server details (hostname, username, password/key)
+        3. Connect and manage your systems
+        
+        **Perfect for:**
+        - Accessing CasaOS servers remotely
+        - Running Yundera benchmark commands
+        - Docker container management
+        - System administration tasks
+        
+        **Features:**
+        - Secure SSH connections
+        - SSH key authentication support
+        - Multiple simultaneous connections
+        - File transfer capabilities
+        - Browser-based terminal
+        
+        **Common Use Cases:**
+        ```bash
+        # Test Yundera benchmarks
+        docker exec yundera-benchmark-phoronix-pts-1 /app/run-benchmark.sh
+        
+        # Check system status
+        docker ps
+        htop
+        df -h
+        
+        # Manage containers
+        docker logs container_name
+        docker restart container_name
+        ```
+        
+        **SSH Key Setup:**
+        - Upload keys to `/DATA/AppData/webssh/keys/private/`
+        - Set permissions: `chmod 600 keyfile`
+        - Use in connections for enhanced security
