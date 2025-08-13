@@ -2,9 +2,9 @@ name: phoronix-test-suite
 
 services:
   phoromatic:
-    image: ubuntu:22.04
+    image: austriancoder/phoromatic:latest
     container_name: phoronix-test-suite
-    user: 0:0  # Phoromatic이 디렉토리를 생성하기 위해 root 필요
+    user: $PUID:$PGID
     hostname: $domain
     deploy:
       resources:
@@ -12,142 +12,23 @@ services:
           memory: 2G
           cpus: '1.0'
     expose:
-      - 80
+      - 9090
     environment:
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
-      DEBIAN_FRONTEND: noninteractive
     volumes:
+      - /DATA/AppData/phoronix-test-suite/cache:/var/cache/phoronix-test-suite/download-cache
       - /DATA/AppData/phoronix-test-suite/phoromatic:/var/lib/phoronix-test-suite/phoromatic
-      - /DATA/AppData/phoronix-test-suite/cache:/var/cache/phoronix-test-suite
       - /DATA/AppData/phoronix-test-suite/results:/var/lib/phoronix-test-suite/test-results
-      - /DATA/AppData/phoronix-test-suite/pts-config:/var/lib/phoronix-test-suite
     restart: unless-stopped
-    command: >
-      bash -c "
-      echo '🚀 Installing Phoronix Test Suite + Phoromatic Server...' &&
-      
-      # Install dependencies
-      apt-get update && 
-      apt-get install -y wget curl php8.1-cli php8.1-xml php8.1-sqlite3 php8.1-json unzip sudo &&
-      
-      # Create user for phoronix
-      useradd -u \$PUID -g \$PGID -m phoronix || true &&
-      
-      # Create and set permissions for all directories
-      mkdir -p /var/lib/phoronix-test-suite/phoromatic &&
-      mkdir -p /var/cache/phoronix-test-suite &&
-      mkdir -p /var/lib/phoronix-test-suite/test-results &&
-      mkdir -p /etc/phoronix-test-suite &&
-      mkdir -p /.phoronix-test-suite &&
-      
-      # Download and install Phoronix Test Suite
-      cd /tmp &&
-      wget -q https://phoronix-test-suite.com/releases/phoronix-test-suite-10.8.4.tar.gz &&
-      tar -xf phoronix-test-suite-10.8.4.tar.gz &&
-      cd phoronix-test-suite &&
-      ./install-sh /usr/local &&
-      
-      # Create symlink for root user access
-      ln -sf /var/lib/phoronix-test-suite /.phoronix-test-suite &&
-      
-      # Set ALL permissions BEFORE starting server
-      chown -R \$PUID:\$PGID /var/lib/phoronix-test-suite &&
-      chown -R \$PUID:\$PGID /var/cache/phoronix-test-suite &&
-      chown -R \$PUID:\$PGID /.phoronix-test-suite &&
-      chmod -R 755 /var/lib/phoronix-test-suite &&
-      chmod -R 755 /var/cache/phoronix-test-suite &&
-      
-      # Configure Phoronix Test Suite for batch mode
-      mkdir -p /etc/phoronix-test-suite &&
-      cat > /etc/phoronix-test-suite/user-config.xml << 'EOF'
-      <?xml version=\"1.0\"?>
-      <PhoronixTestSuite>
-        <Options>
-          <OpenBenchmarking>
-            <AnonymousUsageReporting>FALSE</AnonymousUsageReporting>
-            <IndexCacheTTL>3</IndexCacheTTL>
-            <AlwaysUploadSystemLogs>FALSE</AlwaysUploadSystemLogs>
-            <AllowResultUploadsToOpenBenchmarking>TRUE</AllowResultUploadsToOpenBenchmarking>
-          </OpenBenchmarking>
-          <General>
-            <DefaultBrowser></DefaultBrowser>
-            <UsePhodeviCache>TRUE</UsePhodeviCache>
-            <DefaultDisplayMode>DEFAULT</DefaultDisplayMode>
-            <PhoromaticServers></PhoromaticServers>
-            <FullOutput>FALSE</FullOutput>
-            <ColoredConsole>AUTO</ColoredConsole>
-          </General>
-          <Installation>
-            <RemoveDownloadFiles>FALSE</RemoveDownloadFiles>
-            <SearchMediaForCache>TRUE</SearchMediaForCache>
-            <SymLinkFilesFromCache>FALSE</SymLinkFilesFromCache>
-            <PromptForDownloadMirror>FALSE</PromptForDownloadMirror>
-            <EnvironmentDirectory>/var/lib/phoronix-test-suite/installed-tests/</EnvironmentDirectory>
-            <CacheDirectory>/var/cache/phoronix-test-suite/download-cache/</CacheDirectory>
-          </Installation>
-          <Testing>
-            <SaveSystemLogs>TRUE</SaveSystemLogs>
-            <SaveInstallationLogs>TRUE</SaveInstallationLogs>
-            <SaveTestLogs>TRUE</SaveTestLogs>
-            <RemoveTestInstallOnCompletion>FALSE</RemoveTestInstallOnCompletion>
-            <ResultsDirectory>/var/lib/phoronix-test-suite/test-results/</ResultsDirectory>
-            <AlwaysUploadResultsToOpenBenchmarking>FALSE</AlwaysUploadResultsToOpenBenchmarking>
-            <AutoSortRunQueue>TRUE</AutoSortRunQueue>
-            <ShowPostRunStatistics>TRUE</ShowPostRunStatistics>
-          </Testing>
-          <ResultViewer>
-            <WebPort>RANDOM</WebPort>
-            <LimitAccessToLocalHost>FALSE</LimitAccessToLocalHost>
-            <AccessKey></AccessKey>
-            <AllowSavingResultChanges>TRUE</AllowSavingResultChanges>
-            <AllowDeletingResults>TRUE</AllowDeletingResults>
-          </ResultViewer>
-          <BatchMode>
-            <SaveResults>TRUE</SaveResults>
-            <OpenBrowser>FALSE</OpenBrowser>
-            <UploadResults>FALSE</UploadResults>
-            <PromptForTestIdentifier>FALSE</PromptForTestIdentifier>
-            <PromptForTestDescription>FALSE</PromptForTestDescription>
-            <PromptSaveName>FALSE</PromptSaveName>
-            <RunAllTestCombinations>TRUE</RunAllTestCombinations>
-            <Configured>TRUE</Configured>
-          </BatchMode>
-          <Networking>
-            <NoInternetCommunication>FALSE</NoInternetCommunication>
-            <NoNetworkCommunication>FALSE</NoNetworkCommunication>
-            <Timeout>20</Timeout>
-          </Networking>
-          <Server>
-            <RemoteAccessPort>80</RemoteAccessPort>
-            <WebSocketPort>RANDOM</WebSocketPort>
-            <AdvertiseServiceZeroConf>FALSE</AdvertiseServiceZeroConf>
-            <AdvertiseServiceOpenBenchmarkRelay>FALSE</AdvertiseServiceOpenBenchmarkRelay>
-            <PhoromaticStorage>/var/lib/phoronix-test-suite/phoromatic/</PhoromaticStorage>
-          </Server>
-        </Options>
-      </PhoronixTestSuite>
-      EOF
-      
-      # Setup batch mode to avoid prompts
-      echo 'y' | su - phoronix -c 'phoronix-test-suite batch-setup' || echo 'y' | phoronix-test-suite batch-setup &&
-      
-      echo '🌐 Starting Phoromatic Server on port 80...' &&
-      echo '✨ Access at: https://phoronix-test-suite-\$username.nsl.sh/' &&
-      echo '🎯 Features: 650+ benchmarks, automated scheduling, web interface!' &&
-      echo '📝 Create account from web interface to get started!' &&
-      
-      # Start Phoromatic server with proper error handling
-      exec phoronix-test-suite start-phoromatic-server
-      "
 
 x-casaos:
   architectures:
     - amd64
     - arm64
   main: phoromatic
-  webui_port: 80
+  webui_port: 9090
   category: Utilities
   author: Yundera Community
   developer: Phoronix Media
@@ -267,7 +148,7 @@ x-casaos:
         **🌐 COMPLETE PHOROMATIC WEB INTERFACE ACCESS**
         
         After installation, access the **Phoromatic Web Interface**:
-        **→ https://phoronix-test-suite-$username.nsl.sh/ ←**
+        **→ https://9090-phoronix-test-suite-$username.nsl.sh/ ←**
         
         **🚀 Getting Started (Enterprise Web Management):**
         
@@ -311,7 +192,7 @@ x-casaos:
         **🌐 완전한 Phoromatic 웹 인터페이스 접근**
         
         설치 후 **Phoromatic 웹 인터페이스**에 접근하세요:
-        **→ https://phoronix-test-suite-$username.nsl.sh/ ←**
+        **→ https://9090-phoronix-test-suite-$username.nsl.sh/ ←**
         
         **🚀 시작하기 (엔터프라이즈 웹 관리):**
         
@@ -351,46 +232,3 @@ x-casaos:
         
         **🎯 완전한 엔터프라이즈 벤치마킹 솔루션!**
         **SSH 불필요, 명령줄 불필요 - 웹 인터페이스를 통한 완전한 전문 테스트 관리!**
-  rationale:
-    en_us: |
-      **Security Note: Root Container Usage**
-      
-      This app runs as root (user: 0:0) for the following justified reasons:
-      
-      1. **System Package Installation**: Requires root privileges to install PHP, dependencies, and Phoronix Test Suite
-      2. **Phoromatic Server Initialization**: Needs root access to create system directories and start web server
-      3. **Benchmark Tool Access**: Many benchmark tools require elevated privileges for accurate hardware access
-      4. **Directory Permissions**: Critical requirement for Phoromatic to function - must have write access to /var/lib and /etc
-      5. **AppData Only Access**: Container exclusively accesses AppData directories and does not interact with user files
-      6. **Professional Tool**: Industry-standard platform used by major technology companies worldwide
-      
-      **Mitigation Measures:**
-      - File ownership is properly set to PUID:PGID after system initialization
-      - Phoromatic web interface provides secure, controlled access to benchmark functions
-      - No network exposure beyond the web interface (port 80 only)
-      - Results and configurations stored in AppData with appropriate permissions
-      - Container runs in isolated environment with defined resource limits
-      - Follows established patterns from official Phoromatic Docker implementations
-      
-      This follows the CasaOS security model for AppData-only professional applications requiring system-level access.
-    ko_kr: |
-      **보안 참고사항: Root 컨테이너 사용**
-      
-      이 앱은 다음과 같은 정당한 이유로 root(user: 0:0)로 실행됩니다:
-      
-      1. **시스템 패키지 설치**: PHP, 의존성, Phoronix Test Suite 설치를 위해 root 권한 필요
-      2. **Phoromatic 서버 초기화**: 시스템 디렉토리 생성 및 웹 서버 시작을 위해 root 접근 권한 필요
-      3. **벤치마크 도구 접근**: 많은 벤치마크 도구가 정확한 하드웨어 접근을 위해 높은 권한 필요
-      4. **디렉토리 권한**: Phoromatic 작동을 위한 중요 요구사항 - /var/lib 및 /etc에 쓰기 권한 필요
-      5. **AppData 전용 접근**: 컨테이너는 AppData 디렉토리만 접근하며 사용자 파일과 상호작용하지 않음
-      6. **전문 도구**: 전 세계 주요 기술 회사에서 사용하는 업계 표준 플랫폼
-      
-      **완화 조치:**
-      - 시스템 초기화 후 파일 소유권을 PUID:PGID로 적절히 설정
-      - Phoromatic 웹 인터페이스를 통한 벤치마크 기능에 대한 안전하고 제어된 접근
-      - 웹 인터페이스 외 네트워크 노출 없음 (포트 80만)
-      - 결과 및 설정은 적절한 권한으로 AppData에 저장
-      - 정의된 리소스 제한이 있는 격리된 환경에서 컨테이너 실행
-      - 공식 Phoromatic Docker 구현의 확립된 패턴 준수
-      
-      이는 시스템 수준 접근이 필요한 AppData 전용 전문 애플리케이션에 대한 CasaOS 보안 모델을 따릅니다.
