@@ -7,8 +7,6 @@ services:
     expose:
       - 19999
     environment:
-      PUID: $PUID
-      PGID: $PGID
       TZ: $TZ
       NETDATA_CLAIM_TOKEN: ""
       NETDATA_CLAIM_ROOMS: ""
@@ -38,10 +36,7 @@ services:
   benchmark-tools:
     image: ubuntu:22.04
     container_name: benchmark-tools
-    user: $PUID:$PGID
     environment:
-      PUID: $PUID
-      PGID: $PGID
       TZ: $TZ
       DEBIAN_FRONTEND: noninteractive
     volumes:
@@ -59,68 +54,80 @@ services:
       apt-get update &&
       apt-get install -y stress-ng fio sysbench iperf3 curl jq &&
       mkdir -p /benchmark-results /reports /scripts &&
-      cat > /scripts/cpu-benchmark.sh << 'EOF'
+      
+      cat > /scripts/cpu-benchmark.sh << 'CPUEOF'
       #!/bin/bash
-      echo '=== CPU Benchmark Report ===' > /reports/cpu-benchmark-$(date +%Y%m%d-%H%M%S).txt
-      echo 'Date: $(date)' >> /reports/cpu-benchmark-$(date +%Y%m%d-%H%M%S).txt
-      echo '' >> /reports/cpu-benchmark-$(date +%Y%m%d-%H%M%S).txt
-      echo 'CPU Stress Test (4 cores, 60 seconds):' >> /reports/cpu-benchmark-$(date +%Y%m%d-%H%M%S).txt
-      stress-ng --cpu 4 --timeout 60s --metrics-brief 2>&1 >> /reports/cpu-benchmark-$(date +%Y%m%d-%H%M%S).txt
-      echo '' >> /reports/cpu-benchmark-$(date +%Y%m%d-%H%M%S).txt
-      echo 'Sysbench CPU Test:' >> /reports/cpu-benchmark-$(date +%Y%m%d-%H%M%S).txt
-      sysbench cpu --cpu-max-prime=20000 --threads=4 run 2>&1 >> /reports/cpu-benchmark-$(date +%Y%m%d-%H%M%S).txt
-      EOF
-      &&
-      cat > /scripts/disk-benchmark.sh << 'EOF'
+      REPORT_FILE=/reports/cpu-benchmark-$(date +%Y%m%d-%H%M%S).txt
+      echo '=== CPU Benchmark Report ===' > $REPORT_FILE
+      echo 'Date: '$(date) >> $REPORT_FILE
+      echo '' >> $REPORT_FILE
+      echo 'CPU Stress Test (4 cores, 60 seconds):' >> $REPORT_FILE
+      stress-ng --cpu 4 --timeout 60s --metrics-brief >> $REPORT_FILE 2>&1
+      echo '' >> $REPORT_FILE
+      echo 'Sysbench CPU Test:' >> $REPORT_FILE
+      sysbench cpu --cpu-max-prime=20000 --threads=4 run >> $REPORT_FILE 2>&1
+      echo 'CPU benchmark completed. Report saved to:' $REPORT_FILE
+      CPUEOF
+      
+      cat > /scripts/disk-benchmark.sh << 'DISKEOF'
       #!/bin/bash
       REPORT_FILE=/reports/disk-benchmark-$(date +%Y%m%d-%H%M%S).txt
       echo '=== Disk I/O Benchmark Report ===' > $REPORT_FILE
-      echo 'Date: $(date)' >> $REPORT_FILE
+      echo 'Date: '$(date) >> $REPORT_FILE
       echo '' >> $REPORT_FILE
       echo 'FIO Random Read/Write Test:' >> $REPORT_FILE
-      fio --name=randreadwrite --ioengine=libaio --rw=randrw --bs=4k --size=1G --numjobs=4 --time_based --runtime=60 --group_reporting --directory=/benchmark-results 2>&1 >> $REPORT_FILE
+      fio --name=randreadwrite --ioengine=libaio --rw=randrw --bs=4k --size=1G --numjobs=4 --time_based --runtime=60 --group_reporting --directory=/benchmark-results >> $REPORT_FILE 2>&1
       echo '' >> $REPORT_FILE
       echo 'Sysbench File I/O Test:' >> $REPORT_FILE
-      cd /benchmark-results && sysbench fileio --file-total-size=2G --file-test-mode=rndrw --time=60 --max-requests=0 prepare && sysbench fileio --file-total-size=2G --file-test-mode=rndrw --time=60 --max-requests=0 run 2>&1 >> $REPORT_FILE && sysbench fileio cleanup
-      EOF
-      &&
-      cat > /scripts/memory-benchmark.sh << 'EOF'
+      cd /benchmark-results
+      sysbench fileio --file-total-size=2G --file-test-mode=rndrw --time=60 --max-requests=0 prepare >> $REPORT_FILE 2>&1
+      sysbench fileio --file-total-size=2G --file-test-mode=rndrw --time=60 --max-requests=0 run >> $REPORT_FILE 2>&1
+      sysbench fileio cleanup >> $REPORT_FILE 2>&1
+      echo 'Disk benchmark completed. Report saved to:' $REPORT_FILE
+      DISKEOF
+      
+      cat > /scripts/memory-benchmark.sh << 'MEMEOF'
       #!/bin/bash
       REPORT_FILE=/reports/memory-benchmark-$(date +%Y%m%d-%H%M%S).txt
       echo '=== Memory Benchmark Report ===' > $REPORT_FILE
-      echo 'Date: $(date)' >> $REPORT_FILE
+      echo 'Date: '$(date) >> $REPORT_FILE
       echo '' >> $REPORT_FILE
       echo 'Memory Stress Test (1GB, 60 seconds):' >> $REPORT_FILE
-      stress-ng --vm 2 --vm-bytes 1G --timeout 60s --metrics-brief 2>&1 >> $REPORT_FILE
+      stress-ng --vm 2 --vm-bytes 1G --timeout 60s --metrics-brief >> $REPORT_FILE 2>&1
       echo '' >> $REPORT_FILE
       echo 'Sysbench Memory Test:' >> $REPORT_FILE
-      sysbench memory --memory-block-size=1K --memory-total-size=10G run 2>&1 >> $REPORT_FILE
-      EOF
-      &&
-      cat > /scripts/network-benchmark.sh << 'EOF'
-      #!/bin/bash
-      REPORT_FILE=/reports/network-benchmark-$(date +%Y%m%d-%H%M%S).txt
-      echo '=== Network Benchmark Report ===' > $REPORT_FILE
-      echo 'Date: $(date)' >> $REPORT_FILE
-      echo '' >> $REPORT_FILE
-      echo 'Network speed test requires iperf3 server. Run manually:' >> $REPORT_FILE
-      echo 'iperf3 -c SERVER_IP' >> $REPORT_FILE
-      EOF
-      &&
-      cat > /scripts/full-benchmark.sh << 'EOF'
+      sysbench memory --memory-block-size=1K --memory-total-size=10G run >> $REPORT_FILE 2>&1
+      echo 'Memory benchmark completed. Report saved to:' $REPORT_FILE
+      MEMEOF
+      
+      cat > /scripts/full-benchmark.sh << 'FULLEOF'
       #!/bin/bash
       echo 'Starting Full System Benchmark...'
+      echo 'Running CPU benchmark...'
       /scripts/cpu-benchmark.sh
-      echo 'CPU benchmark completed.'
+      echo 'Running Memory benchmark...'
       /scripts/memory-benchmark.sh  
-      echo 'Memory benchmark completed.'
+      echo 'Running Disk benchmark...'
       /scripts/disk-benchmark.sh
-      echo 'Disk benchmark completed.'
-      echo 'Full benchmark completed. Check /reports/ for results.'
-      EOF
-      &&
+      echo ''
+      echo 'Full benchmark completed!'
+      echo 'Check /reports/ for detailed results.'
+      ls -la /reports/
+      FULLEOF
+      
       chmod +x /scripts/*.sh &&
-      echo 'Benchmark tools ready. Access via: docker exec benchmark-tools /scripts/full-benchmark.sh' &&
+      chmod 777 /reports /benchmark-results &&
+      
+      echo '================================================' &&
+      echo 'Benchmark tools installation completed!' &&
+      echo '================================================' &&
+      echo 'Available commands:' &&
+      echo '  docker exec benchmark-tools /scripts/full-benchmark.sh' &&
+      echo '  docker exec benchmark-tools /scripts/cpu-benchmark.sh' &&
+      echo '  docker exec benchmark-tools /scripts/memory-benchmark.sh' &&
+      echo '  docker exec benchmark-tools /scripts/disk-benchmark.sh' &&
+      echo '================================================' &&
+      
       tail -f /dev/null
       "
 
@@ -206,7 +213,10 @@ x-casaos:
 
         ### 빠른 시작 명령어:
         ```bash
-        # 전체 시스템 벤치마크
+        # 설치 후 벤치마크 도구가 준비되었는지 확인
+        docker logs benchmark-tools
+
+        # 전체 시스템 벤치마크 (권장)
         docker exec benchmark-tools /scripts/full-benchmark.sh
 
         # 개별 테스트
@@ -214,8 +224,8 @@ x-casaos:
         docker exec benchmark-tools /scripts/memory-benchmark.sh
         docker exec benchmark-tools /scripts/disk-benchmark.sh
 
-        # 커스텀 스트레스 테스트
-        docker exec benchmark-tools stress-ng --cpu 4 --timeout 30s
+        # 커스텀 스트레스 테스트 (고급 사용자용)
+        docker exec benchmark-tools stress-ng --cpu 4 --timeout 30s --metrics-brief
         docker exec benchmark-tools fio --name=test --ioengine=libaio --rw=randread --bs=4k --size=1G
         ```
 
@@ -232,5 +242,9 @@ x-casaos:
   index: /
   pre-install-cmd: |
     mkdir -p /DATA/Documents/BenchmarkReports &&
-    chown -R $PUID:$PGID /DATA/Documents/BenchmarkReports &&
-    echo "Benchmark reports directory created"
+    mkdir -p /DATA/AppData/$AppID/netdata-config &&
+    mkdir -p /DATA/AppData/$AppID/netdata-lib &&
+    mkdir -p /DATA/AppData/$AppID/netdata-cache &&
+    mkdir -p /DATA/AppData/$AppID/benchmark-results &&
+    mkdir -p /DATA/AppData/$AppID/benchmark-scripts &&
+    echo "Performance monitoring directories created"
