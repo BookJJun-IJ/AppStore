@@ -52,7 +52,7 @@ services:
       - /DATA/AppData/$AppID/k6-scripts:/scripts
       - /DATA/AppData/$AppID/results:/results
     working_dir: /scripts
-    command: sh -c "echo 'import http from \"k6/http\"; import { check, sleep } from \"k6\"; export default function() { const response = http.get(\"https://httpbin.org/get\"); check(response, { \"status is 200\": (r) => r.status === 200, \"response time < 500ms\": (r) => r.timings.duration < 500 }); sleep(1); }' > /scripts/test.js && echo 'Waiting for InfluxDB...' && sleep 30 && while true; do echo 'Starting K6 test...' && k6 run --vus 10 --duration 60s /scripts/test.js && echo 'Test done. Next in 3 minutes.' && sleep 180; done"
+    command: sleep infinity
     depends_on:
       - influxdb
     restart: unless-stopped
@@ -70,20 +70,14 @@ x-casaos:
   author: Yundera Community
   category: Utilities
   description:
-    en_us: |
-      K6 Performance Testing Suite with Grafana analytics. 
-      K6 automatically runs tests every 3 minutes.
-      Use Grafana web interface to add InfluxDB and create dashboards.
-    ko_kr: |
-      Grafana 분석이 포함된 K6 성능 테스트 도구입니다.
-      K6가 3분마다 자동으로 테스트를 실행합니다.
-      Grafana 웹 인터페이스에서 InfluxDB를 추가하고 대시보드를 만드세요.
+    en_us: K6 Performance Testing Suite with Grafana analytics
+    ko_kr: Grafana 분석이 포함된 K6 성능 테스트 도구
   developer: Grafana Labs
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/K6PerformanceSuite/icon.png
   screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/K6PerformanceSuite/screenshot-1.png
   tagline:
-    en_us: "Automated K6 testing with Grafana dashboards"
-    ko_kr: "Grafana 대시보드와 함께하는 자동화 K6 테스트"
+    en_us: Professional K6 testing with Grafana
+    ko_kr: Grafana와 함께하는 전문 K6 테스트
   title:
     en_us: K6 Performance Suite
     ko_kr: K6 성능 테스트 도구
@@ -92,64 +86,26 @@ x-casaos:
       en_us: |
         **K6 Performance Testing Suite**
         
-        **Access:** https://k6performancesuite-username.nsl.sh/
-        **Login:** admin / $default_pwd
+        Access: https://k6performancesuite-username.nsl.sh/
+        Login: admin / $default_pwd
         
-        **🚀 Setup (One-time only):**
-        1. Open Grafana dashboard
-        2. Go to Configuration → Data sources
-        3. Add InfluxDB data source:
-           - URL: http://influxdb:8086
-           - Database: k6
-           - (Leave user/password empty)
-        4. Create new dashboard
-        5. Add panels with queries:
-           - FROM: http_req_duration (response time)
-           - FROM: http_reqs (requests count)
-           - FROM: vus (virtual users)
+        Setup:
+        1. Add InfluxDB data source in Grafana
+        2. Create dashboards with K6 metrics
+        3. Run tests manually via K6 container
         
-        **✨ K6 Auto-Testing:**
-        - Tests run automatically every 3 minutes
-        - Target: https://httpbin.org/get
-        - 10 virtual users for 60 seconds
-        
-        **📊 Available metrics:**
-        - http_req_duration (response times)
-        - http_reqs (request count)
-        - vus (virtual users)
-        - checks (success/failure)
-        
-        Simple setup, powerful results! 🎯
+        Simple and powerful load testing!
       ko_kr: |
         **K6 성능 테스트 도구**
         
-        **접속:** https://k6performancesuite-username.nsl.sh/
-        **로그인:** admin / $default_pwd
+        접속: https://k6performancesuite-username.nsl.sh/
+        로그인: admin / $default_pwd
         
-        **🚀 설정 (최초 1회만):**
-        1. Grafana 대시보드 열기
-        2. Configuration → Data sources 이동
-        3. InfluxDB 데이터소스 추가:
-           - URL: http://influxdb:8086
-           - Database: k6
-           - (사용자/비밀번호는 비워둠)
-        4. 새 대시보드 생성
-        5. 쿼리로 패널 추가:
-           - FROM: http_req_duration (응답시간)
-           - FROM: http_reqs (요청 수)
-           - FROM: vus (가상 사용자)
+        설정:
+        1. Grafana에서 InfluxDB 데이터 소스 추가
+        2. K6 메트릭으로 대시보드 생성
+        3. K6 컨테이너를 통해 수동으로 테스트 실행
         
-        **✨ K6 자동 테스트:**
-        - 3분마다 자동으로 테스트 실행
-        - 대상: https://httpbin.org/get
-        - 60초 동안 10명의 가상 사용자
-        
-        **📊 사용 가능한 메트릭:**
-        - http_req_duration (응답시간)
-        - http_reqs (요청 수)
-        - vus (가상 사용자)
-        - checks (성공/실패)
-        
-        간단한 설정, 강력한 결과! 🎯
+        간단하고 강력한 로드 테스트!
   index: /
   webui_port: 3000
