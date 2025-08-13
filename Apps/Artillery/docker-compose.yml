@@ -13,7 +13,7 @@ services:
       - /DATA/AppData/$AppID/reports:/reports
     working_dir: /tests
     restart: unless-stopped
-    command: tail -f /dev/null
+    command: sleep infinity
     deploy:
       resources:
         limits:
@@ -21,12 +21,13 @@ services:
           cpus: '0.3'
 
   webui:
-    image: httpd:2.4-alpine
+    image: busybox:1.36
     environment:
       TZ: $TZ
     expose:
       - 80
     restart: unless-stopped
+    command: sh -c "echo '<h1>🎯 Artillery Stress Tester</h1><p>Simple YAML-based load testing tool</p><h3>How to use:</h3><ol><li>SSH into server</li><li>Run: <code>docker exec -it artillery-stress-tester-artillery-1 /bin/sh</code></li><li>Create test: <code>vi /tests/test.yml</code></li><li>Run test: <code>artillery run test.yml</code></li></ol><h3>Example YAML:</h3><pre>config:\n  target: https://httpbin.org\n  phases:\n    - duration: 60\n      arrivalRate: 10\nscenarios:\n  - name: \"Basic test\"\n    requests:\n      - get:\n          url: \"/\"</pre>' > /tmp/index.html && httpd -f -p 80 -h /tmp"
     deploy:
       resources:
         limits:
