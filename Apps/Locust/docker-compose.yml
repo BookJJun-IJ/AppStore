@@ -1,150 +1,129 @@
-name: artillery-stress-tester
+name: locust-load-tester
 
 services:
-  artillery:
-    image: artilleryio/artillery:2.0.5
-    user: $PUID:$PGID
+  locust:
+    image: locustio/locust:2.32.2
     environment:
-      PUID: $PUID
-      PGID: $PGID
       TZ: $TZ
     volumes:
-      - /DATA/AppData/$AppID/tests:/tests
-      - /DATA/AppData/$AppID/reports:/reports
-    working_dir: /tests
-    restart: unless-stopped
-    command: sleep infinity
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-          cpus: '0.3'
-
-  webui:
-    image: busybox:1.36
-    environment:
-      TZ: $TZ
+      - /DATA/AppData/$AppID:/mnt/locust
     expose:
-      - 80
+      - 8089
     restart: unless-stopped
-    command: sh -c "echo '<h1>🎯 Artillery Stress Tester</h1><p>Simple YAML-based load testing tool</p><h3>How to use:</h3><ol><li>SSH into server</li><li>Run: <code>docker exec -it artillery-stress-tester-artillery-1 /bin/sh</code></li><li>Create test: <code>vi /tests/test.yml</code></li><li>Run test: <code>artillery run test.yml</code></li></ol><h3>Example YAML:</h3><pre>config:\n  target: https://httpbin.org\n  phases:\n    - duration: 60\n      arrivalRate: 10\nscenarios:\n  - name: \"Basic test\"\n    requests:\n      - get:\n          url: \"/\"</pre>' > /tmp/index.html && httpd -f -p 80 -h /tmp"
+    working_dir: /mnt/locust
+    command: locust --host=https://httpbin.org --web-host=0.0.0.0
     deploy:
       resources:
         limits:
-          memory: 32M
-          cpus: '0.1'
+          memory: 512M
+          cpus: '0.5'
 
 x-casaos:
   architectures:
     - amd64
     - arm64
     - arm/v7
-  main: webui
+  main: locust
   author: Yundera Community
   category: Utilities
   description:
     en_us: |
-      Artillery - Simple YAML-based stress testing tool with beautiful HTML reports. 
-      No complex setup required! Just edit simple YAML files and run tests. 
-      Perfect for beginners who want professional load testing without coding.
+      Locust - Simple Python-based load testing tool with beautiful web UI.
+      Start and stop tests directly from your browser with real-time statistics.
+      Perfect for performance testing websites, APIs, and web applications.
       
-      Features: YAML configuration, HTML reports, WebSocket support, CI/CD ready.
+      Features: Web-based interface, real-time charts, distributed testing, Python scripting.
     ko_kr: |
-      Artillery - 아름다운 HTML 리포트를 제공하는 간단한 YAML 기반 스트레스 테스트 도구입니다.
-      복잡한 설정이 필요 없습니다! 간단한 YAML 파일만 편집하고 테스트를 실행하세요.
-      코딩 없이 전문적인 로드 테스트를 원하는 초보자에게 완벽합니다.
+      Locust - 아름다운 웹 UI를 제공하는 간단한 Python 기반 로드 테스트 도구입니다.
+      브라우저에서 직접 테스트를 시작하고 중지하며 실시간 통계를 확인하세요.
+      웹사이트, API, 웹 애플리케이션의 성능 테스트에 완벽합니다.
     fr_fr: |
-      Artillery - Outil de test de stress basé sur YAML avec de beaux rapports HTML.
-      Aucune configuration complexe requise!
+      Locust - Outil de test de charge basé sur Python avec une belle interface web.
+      Démarrez et arrêtez les tests directement depuis votre navigateur.
     es_es: |
-      Artillery - Herramienta de prueba de estrés basada en YAML con hermosos informes HTML.
-      ¡No se requiere configuración compleja!
+      Locust - Herramienta de prueba de carga basada en Python con hermosa interfaz web.
+      Inicie y detenga pruebas directamente desde su navegador.
     zh_cn: |
-      Artillery - 基于YAML的简单压力测试工具，生成精美的HTML报告。无需复杂设置！
-  developer: Artillery.io
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ArtilleryStressTester/icon.png
-  screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ArtilleryStressTester/screenshot-1.png
+      Locust - 基于Python的简单负载测试工具，具有精美的Web界面。
+      直接从浏览器启动和停止测试，提供实时统计信息。
+  developer: Locust.io
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/LocustLoadTester/icon.png
+  screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/LocustLoadTester/screenshot-1.png
   tagline:
-    en_us: "Simple YAML stress testing - beautiful HTML reports!"
-    ko_kr: "간단한 YAML 스트레스 테스트 - 아름다운 HTML 리포트!"
-    fr_fr: "Tests de stress YAML simples - beaux rapports HTML!"
-    es_es: "Pruebas de estrés YAML simples - ¡hermosos informes HTML!"
-    zh_cn: "简单的YAML压力测试 - 精美的HTML报告！"
+    en_us: "Web UI load testing - real-time statistics!"
+    ko_kr: "웹 UI 로드 테스트 - 실시간 통계!"
+    fr_fr: "Test de charge avec interface web - statistiques en temps réel!"
+    es_es: "Prueba de carga con interfaz web - ¡estadísticas en tiempo real!"
+    zh_cn: "Web界面负载测试 - 实时统计！"
   title:
-    en_us: Artillery
-    ko_kr: Artillery
-    fr_fr: Artillery
-    es_es: Artillery
-    zh_cn: Artillery
+    en_us: Locust
+    ko_kr: Locust
+    fr_fr: Locust
+    es_es: Locust
+    zh_cn: Locust
   tips:
     before_install:
       en_us: |
-        **Artillery Stress Tester**
+        **Locust Load Tester**
         
-        **Access:** https://artillery-stress-tester-username.nsl.sh/
-        (Shows Apache welcome page - SSH required for Artillery)
+        **Access:** https://locust-load-tester-username.nsl.sh/
         
-        **How to Use:**
-        1. SSH into your CasaOS server
-        2. Run: `docker exec -it artillery-stress-tester-artillery-1 /bin/sh`
-        3. Create test file: `vi /tests/my-test.yml`
-        4. Run test: `artillery run my-test.yml --output /reports/report.json`
-        5. Generate HTML report: `artillery report /reports/report.json`
+        **Quick Start:**
+        1. Open web interface
+        2. Create a simple locustfile.py first
+        3. Set number of users and spawn rate
+        4. Click "Start Swarming"
+        5. Watch real-time statistics
         
-        **Simple YAML Example:**
-        ```yaml
-        config:
-          target: https://httpbin.org
-          phases:
-            - duration: 60
-              arrivalRate: 10
-        scenarios:
-          - name: "Basic test"
-            requests:
-              - get:
-                  url: "/"
+        **Create Test File:**
+        Add this to /DATA/AppData/locust-load-tester/locustfile.py:
+        ```python
+        from locust import HttpUser, task
+        
+        class WebsiteUser(HttpUser):
+            @task
+            def test_homepage(self):
+                self.client.get("/")
         ```
         
         **Features:**
-        - CLI-based load testing
-        - YAML configuration
-        - JSON and HTML reports
-        - Professional stress testing
+        - Web-based interface (no CLI!)
+        - Real-time charts and statistics  
+        - Response time monitoring
+        - Error tracking
+        - CSV export
         
-        CLI interface via SSH!
+        Ready to test! 🐛
       ko_kr: |
-        **Artillery 스트레스 테스터**
+        **Locust 로드 테스터**
         
-        **접속:** https://artillery-stress-tester-username.nsl.sh/
-        (Apache 환영 페이지 - Artillery 사용은 SSH 필요)
+        **접속:** https://locust-load-tester-username.nsl.sh/
         
-        **사용 방법:**
-        1. CasaOS 서버에 SSH 접속
-        2. 실행: `docker exec -it artillery-stress-tester-artillery-1 /bin/sh`
-        3. 테스트 파일 생성: `vi /tests/my-test.yml`
-        4. 테스트 실행: `artillery run my-test.yml --output /reports/report.json`
-        5. HTML 리포트 생성: `artillery report /reports/report.json`
+        **빠른 시작:**
+        1. 웹 인터페이스 열기
+        2. 먼저 간단한 locustfile.py 생성
+        3. 사용자 수와 생성 속도 설정
+        4. "Start Swarming" 클릭
+        5. 실시간 통계 확인
         
-        **간단한 YAML 예제:**
-        ```yaml
-        config:
-          target: https://httpbin.org
-          phases:
-            - duration: 60
-              arrivalRate: 10
-        scenarios:
-          - name: "기본 테스트"
-            requests:
-              - get:
-                  url: "/"
+        **테스트 파일 생성:**
+        /DATA/AppData/locust-load-tester/locustfile.py에 추가:
+        ```python
+        from locust import HttpUser, task
+        
+        class WebsiteUser(HttpUser):
+            @task
+            def test_homepage(self):
+                self.client.get("/")
         ```
         
         **기능:**
-        - CLI 기반 로드 테스트
-        - YAML 설정
-        - JSON 및 HTML 리포트
-        - 전문적인 스트레스 테스트
+        - 웹 기반 인터페이스 (CLI 불필요!)
+        - 실시간 차트 및 통계
+        - 응답 시간 모니터링
+        - 오류 추적
+        - CSV 내보내기
         
-        SSH를 통한 CLI 인터페이스!
+        테스트 준비 완료! 🐛
   index: /
-  webui_port: 80
+  webui_port: 8089
