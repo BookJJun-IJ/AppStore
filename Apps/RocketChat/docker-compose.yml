@@ -10,8 +10,8 @@ services:
           memory: 1G
           cpus: "0.5"
     environment:
-      PUID: $PUID
-      PGID: $PGID
+      PUID: $PUID                                    # Process user ID / 프로세스 사용자 ID
+      PGID: $PGID                                    # Process group ID / 프로세스 그룹 ID
     command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27017"]
     
     healthcheck:
@@ -84,12 +84,10 @@ services:
       # Performance optimization
       METEOR_DISABLE_OPTIMISTIC_CACHING: "1"
       
-      # Jitsi 연동을 위한 WebRTC 활성화
-      OVERWRITE_SETTING_WEBRTC_ENABLED: "true"                        # WebRTC 활성화 (Jitsi 연동용)
-      
-      # Feature toggles (필요에 따라 활성화)
+      # Feature toggles (disabled for simplicity)
       OVERWRITE_SETTING_LIVECHAT_ENABLED: "false"
       OVERWRITE_SETTING_OMNICHANNEL_ENABLED: "false"
+      OVERWRITE_SETTING_WEBRTC_ENABLED: "false"                          # Disable WebRTC for video calls
       
       # Security settings
       OVERWRITE_SETTING_ACCOUNTS_ALLOW_ANONYMOUS_READ: "false"
@@ -120,78 +118,94 @@ x-casaos:
     - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/RocketChat/screenshot-3.png
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/RocketChat/screenshot-1.png
   description:
-    en_us: Rocket.Chat 7.8.3 with Jitsi Meet video conferencing support. Apps marketplace enabled for easy Jitsi integration.
-    ko_kr: Jitsi Meet 화상회의를 지원하는 Rocket.Chat 7.8.3. Jitsi 연동을 위한 앱 마켓플레이스 활성화.
+    en_us: Rocket.Chat 7.8.3 with marketplace enabled for team collaboration. Uses latest MongoDB 7.0 with verified replica set configuration.
+    ko_kr: 마켓플레이스가 활성화된 팀 협업용 Rocket.Chat 7.8.3. 최신 MongoDB 7.0과 검증된 replica set 구성 사용.
   developer: Rocket.Chat Technologies Corp.
   tagline:
-    en_us: Team communication with free Jitsi video conferencing
-    ko_kr: 무료 Jitsi 화상회의가 포함된 팀 커뮤니케이션
+    en_us: Latest team communication with marketplace & MongoDB 7.0
+    ko_kr: 마켓플레이스와 MongoDB 7.0을 지원하는 최신 팀 커뮤니케이션
   title:
-    en_us: Rocket.Chat + Jitsi
-    ko_kr: Rocket.Chat + Jitsi
+    en_us: Rocket.Chat
+    ko_kr: Rocket.Chat
   tips:
     before_install:
       en_us: |
-        **Rocket.Chat 7.8.3 with Jitsi Meet Integration**
+        **Rocket.Chat 7.8.3 with Apps Marketplace Enabled**
         
         **Default Account**
         | Username    | Password       |
         | ----------- | -------------- |
         | `admin`     | `$default_pwd` |
         
+        **Latest Features (7.8.3):**
+        - ✅ Apps Marketplace (install integrations)
+        - ✅ MongoDB 7.0 support (latest database)
+        - ✅ Node.js 20.x and Meteor 3.0 performance boost
+        - ✅ Enhanced security and stability
+        - ✅ Real-time messaging with replica set
+        - ✅ VoIP for Team Collaboration (beta)
+        
+        **Privacy Settings:**
+        - ❌ Statistics reporting disabled
+        - ❌ Automatic updates disabled  
+        - ❌ Federation disabled
+        - ✅ Your data stays on your server
+        
+        **Setup Process:**
+        1. Initial setup wizard will appear
+        2. Complete email verification for marketplace access
+        3. Apps marketplace will be available in admin panel
+        4. Install apps like GitHub, Jira, Google Drive integrations
+        
         **Jitsi Video Conferencing Setup:**
-        1. Login as admin after installation
-        2. Go to **Administration → Apps → Marketplace**
-        3. Search for "Jitsi" and click **Install**
-        4. Use `/jitsi` command in any chat to start video calls
+        1. Go to **Administration → Apps → Marketplace**
+        2. Search for "Jitsi" and click **Install**
+        3. Use `/jitsi` command in any chat to start video calls
+        4. Custom room: `/jitsi @MeetingRoom`
+        5. Share the generated link with participants
         
-        **Features:**
-        - ✅ **Free Video Conferencing** via Jitsi Meet
-        - ✅ **Screen Sharing** and **Chat** during calls
-        - ✅ **No Installation Required** for participants
-        - ✅ **Works in Browser** - just click the link
-        - ✅ **Unlimited Participants** (performance may vary)
-        
-        **Using Jitsi:**
-        - Type `/jitsi` in any channel or DM
-        - Custom room: `/jitsi @MeetingRoom`
-        - Click video call icon in room header
-        - Share the generated link with participants
-        
-        **Privacy:**
-        - Uses meet.jit.si by default (free service)
-        - Can be configured to use your own Jitsi server
-        - All communications encrypted end-to-end
+        **MongoDB 7.0 Benefits:**
+        - Better performance and scalability
+        - Enhanced security features
+        - Future-proof database version
       ko_kr: |
-        **Jitsi Meet이 연동된 Rocket.Chat 7.8.3**
+        **앱 마켓플레이스가 활성화된 Rocket.Chat 7.8.3**
         
         **기본 계정**
         | 사용자명     | 비밀번호        |
         | ----------- | -------------- |
         | `admin`     | `$default_pwd` |
         
+        **최신 기능 (7.8.3):**
+        - ✅ 앱 마켓플레이스 (통합 앱 설치)
+        - ✅ MongoDB 7.0 지원 (최신 데이터베이스)
+        - ✅ Node.js 20.x 및 Meteor 3.0 성능 향상
+        - ✅ 강화된 보안성과 안정성
+        - ✅ Replica set 실시간 메시징
+        - ✅ 팀 협업용 VoIP (베타)
+        
+        **프라이버시 설정:**
+        - ❌ 통계 리포팅 비활성화
+        - ❌ 자동 업데이트 비활성화
+        - ❌ 연합 기능 비활성화
+        - ✅ 데이터는 사용자 서버에만 보관
+        
+        **설정 과정:**
+        1. 초기 설정 마법사가 나타남
+        2. 마켓플레이스 접근을 위한 이메일 인증 완료
+        3. 관리자 패널에서 앱 마켓플레이스 사용 가능
+        4. GitHub, Jira, Google Drive 통합 등 앱 설치 가능
+        
         **Jitsi 화상회의 설정:**
-        1. 설치 후 관리자로 로그인
-        2. **관리 → 앱 → 마켓플레이스**로 이동
-        3. "Jitsi" 검색 후 **설치** 클릭
-        4. 채팅에서 `/jitsi` 명령어로 화상통화 시작
+        1. **관리 → 앱 → 마켓플레이스**로 이동
+        2. "Jitsi" 검색 후 **설치** 클릭
+        3. 채팅에서 `/jitsi` 명령어로 화상통화 시작
+        4. 커스텀 룸: `/jitsi @회의실`
+        5. 생성된 링크를 참가자들과 공유
         
-        **기능:**
-        - ✅ **무료 화상회의** Jitsi Meet 제공
-        - ✅ **화면 공유** 및 통화 중 **채팅**
-        - ✅ **설치 불필요** 참가자용
-        - ✅ **브라우저에서 작동** - 링크만 클릭
-        - ✅ **무제한 참가자** (성능에 따라 차이)
-        
-        **Jitsi 사용법:**
-        - 채널이나 DM에서 `/jitsi` 입력
-        - 커스텀 룸: `/jitsi @회의실`
-        - 룸 헤더의 화상통화 아이콘 클릭
-        - 생성된 링크를 참가자들과 공유
-        
-        **프라이버시:**
-        - 기본적으로 meet.jit.si 사용 (무료 서비스)
-        - 자체 Jitsi 서버로 구성 가능
-        - 모든 통신 종단간 암호화
+        **MongoDB 7.0 장점:**
+        - 향상된 성능과 확장성
+        - 강화된 보안 기능
+        - 미래 지향적 데이터베이스 버전
   index: /
   webui_port: 80
