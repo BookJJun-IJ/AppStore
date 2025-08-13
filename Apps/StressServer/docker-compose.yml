@@ -4,11 +4,12 @@ services:
   benchmark-suite:
     image: ubuntu:22.04
     container_name: system-benchmark-suite
-    user: $PUID:$PGID
+    # 패키지 설치를 위해 root로 실행
+    user: 0:0
     deploy:
       resources:
         limits:
-          memory: 1G
+          memory: 2G
           cpus: '1.0'
     environment:
       PUID: $PUID
@@ -24,8 +25,14 @@ services:
     restart: unless-stopped
     command: |
       bash -c "
+      # 시스템 업데이트 및 패키지 설치 (root 권한 필요)
       apt-get update && 
-      apt-get install -y stress-ng sysbench iperf3 fio wget curl htop iotop sysstat && 
+      apt-get install -y stress-ng sysbench iperf3 fio wget curl htop iotop sysstat sudo && 
+      
+      # 결과 디렉토리 소유권 설정
+      chown -R \$PUID:\$PGID /results /scripts &&
+      
+      # 벤치마크 스크립트 생성
       cat > /scripts/run_benchmarks.sh << 'EOL'
       #!/bin/bash
       set -e
@@ -110,8 +117,22 @@ services:
       cat \$REPORT_DIR/benchmark_results.csv | tee -a \$REPORT_DIR/summary.txt
       EOL
       
+      # 스크립트 실행 권한 부여
       chmod +x /scripts/run_benchmarks.sh &&
+      
+      # 사용 안내 파일 생성
       echo 'Benchmark suite ready! Run: docker exec -it system-benchmark-suite /scripts/run_benchmarks.sh' > /results/README.txt &&
+      
+      # 권한 재설정
+      chown -R \$PUID:\$PGID /results /scripts &&
+      
+      echo '====================================' &&
+      echo 'System Benchmark Suite is ready!' &&
+      echo 'Run benchmarks with:' &&
+      echo 'docker exec -it system-benchmark-suite /scripts/run_benchmarks.sh' &&
+      echo '====================================' &&
+      
+      # 컨테이너 유지
       tail -f /dev/null
       "
 
@@ -242,3 +263,38 @@ x-casaos:
         - 시간에 따른 성능 변화 추적을 위해 결과 비교
         - 벤치마크 중 시스템 모니터링을 위해 Netdata와 함께 사용
         - 결과는 타임스탬프가 포함되어 이력 추적이 용이
+  rationale:
+    en_us: |
+      **Security Note: Root Container Usage**
+      
+      This app runs as root (user: 0:0) for the following justified reasons:
+      
+      1. **Package Installation**: Requires root privileges to install benchmark tools (stress-ng, sysbench, fio, iperf3) via apt-get
+      2. **System Access**: Benchmark tools need access to system resources and hardware information
+      3. **AppData Only**: Container only accesses AppData directories (/DATA/AppData/system-benchmark-suite/) and does not interact with user directories
+      4. **Isolated Environment**: Runs in a contained environment with limited access to host system
+      
+      **Mitigation Measures:**
+      - File ownership is properly set to PUID:PGID after initialization
+      - No network exposure (no exposed ports)
+      - Results are stored in AppData with proper permissions
+      - Container is restarted with unless-stopped policy
+      
+      This follows the CasaOS security model where root containers are acceptable for AppData-only applications.
+    ko_kr: |
+      **보안 참고사항: Root 컨테이너 사용**
+      
+      이 앱은 다음과 같은 정당한 이유로 root(user: 0:0)로 실행됩니다:
+      
+      1. **패키지 설치**: apt-get을 통한 벤치마크 도구(stress-ng, sysbench, fio, iperf3) 설치에 root 권한 필요
+      2. **시스템 접근**: 벤치마크 도구들이 시스템 리소스와 하드웨어 정보에 접근해야 함
+      3. **AppData 전용**: 컨테이너는 AppData 디렉토리(/DATA/AppData/system-benchmark-suite/)만 접근하며 사용자 디렉토리와 상호작용하지 않음
+      4. **격리된 환경**: 호스트 시스템에 대한 제한된 접근권한을 가진 격리된 환경에서 실행
+      
+      **완화 조치:**
+      - 초기화 후 파일 소유권을 PUID:PGID로 적절히 설정
+      - 네트워크 노출 없음 (노출된 포트 없음)
+      - 결과는 적절한 권한으로 AppData에 저장
+      - unless-stopped 정책으로 컨테이너 재시작
+      
+      이는 AppData 전용 애플리케이션에서 root 컨테이너가 허용되는 CasaOS 보안 모델을 따릅니다.
