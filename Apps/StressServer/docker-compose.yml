@@ -2,9 +2,9 @@ name: phoronix-test-suite
 
 services:
   phoronix:
-    image: phoronix/pts:latest
+    image: ubuntu:22.04
     container_name: phoronix-test-suite
-    user: 0:0  # Phoromatic 서버 시작을 위해 root 권한 필요
+    user: 0:0  # Phoromatic 설치 및 실행을 위해 root 권한 필요
     hostname: $domain
     deploy:
       resources:
@@ -17,22 +17,34 @@ services:
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
-      PHOROMATIC_PORT: 80
+      DEBIAN_FRONTEND: noninteractive
     volumes:
       - /DATA/AppData/phoronix-test-suite/results:/var/lib/phoronix-test-suite/test-results
       - /DATA/AppData/phoronix-test-suite/config:/etc/phoronix-test-suite
       - /DATA/AppData/phoronix-test-suite/cache:/var/cache/phoronix-test-suite
-      - /DATA/AppData/phoronix-test-suite/phoromatic:/var/lib/phoromatic
+      - /DATA/AppData/phoronix-test-suite/phoromatic:/var/lib/phoronix-test-suite/phoromatic
     restart: unless-stopped
     command: >
       bash -c "
-      echo '🚀 Setting up Phoronix Test Suite + Phoromatic Web Server...' &&
+      echo '🚀 Installing Phoronix Test Suite + Phoromatic...' &&
+      
+      # Update system and install dependencies
+      apt-get update && 
+      apt-get install -y wget curl php-cli php-xml php-json unzip sudo git build-essential &&
+      
+      # Download and install Phoronix Test Suite
+      cd /tmp &&
+      wget -q https://phoronix-test-suite.com/releases/phoronix-test-suite-10.8.4.tar.gz &&
+      tar -xf phoronix-test-suite-10.8.4.tar.gz &&
+      cd phoronix-test-suite &&
+      ./install-sh /usr/local &&
       
       # Create directories
-      mkdir -p /var/lib/phoromatic /var/lib/phoronix-test-suite/test-results /var/cache/phoronix-test-suite &&
+      mkdir -p /var/lib/phoronix-test-suite/test-results /var/lib/phoronix-test-suite/phoromatic /var/cache/phoronix-test-suite &&
       
       # Configure Phoronix Test Suite
-      cat > /etc/phoronix-test-suite.xml << 'EOF'
+      mkdir -p /etc/phoronix-test-suite &&
+      cat > /etc/phoronix-test-suite/user-config.xml << 'EOF'
       <?xml version=\"1.0\"?>
       <PhoronixTestSuite>
         <Options>
@@ -58,15 +70,15 @@ services:
             <SearchMediaForCache>TRUE</SearchMediaForCache>
             <SymLinkFilesFromCache>FALSE</SymLinkFilesFromCache>
             <PromptForDownloadMirror>FALSE</PromptForDownloadMirror>
-            <EnvironmentDirectory>~/.phoronix-test-suite/installed-tests/</EnvironmentDirectory>
-            <CacheDirectory>~/.phoronix-test-suite/download-cache/</CacheDirectory>
+            <EnvironmentDirectory>/var/lib/phoronix-test-suite/installed-tests/</EnvironmentDirectory>
+            <CacheDirectory>/var/cache/phoronix-test-suite/download-cache/</CacheDirectory>
           </Installation>
           <Testing>
             <SaveSystemLogs>TRUE</SaveSystemLogs>
             <SaveInstallationLogs>TRUE</SaveInstallationLogs>
             <SaveTestLogs>TRUE</SaveTestLogs>
             <RemoveTestInstallOnCompletion>FALSE</RemoveTestInstallOnCompletion>
-            <ResultsDirectory>~/.phoronix-test-suite/test-results/</ResultsDirectory>
+            <ResultsDirectory>/var/lib/phoronix-test-suite/test-results/</ResultsDirectory>
             <AlwaysUploadResultsToOpenBenchmarking>FALSE</AlwaysUploadResultsToOpenBenchmarking>
             <AutoSortRunQueue>TRUE</AutoSortRunQueue>
             <ShowPostRunStatistics>TRUE</ShowPostRunStatistics>
@@ -110,21 +122,25 @@ services:
             <WebSocketPort>RANDOM</WebSocketPort>
             <AdvertiseServiceZeroConf>TRUE</AdvertiseServiceZeroConf>
             <AdvertiseServiceOpenBenchmarkRelay>TRUE</AdvertiseServiceOpenBenchmarkRelay>
-            <PhoromaticStorage>/var/lib/phoromatic/</PhoromaticStorage>
+            <PhoromaticStorage>/var/lib/phoronix-test-suite/phoromatic/</PhoromaticStorage>
           </Server>
         </Options>
       </PhoronixTestSuite>
       EOF
       
       # Set proper ownership
-      chown -R \$PUID:\$PGID /var/lib/phoromatic /var/lib/phoronix-test-suite /var/cache/phoronix-test-suite &&
+      chown -R \$PUID:\$PGID /var/lib/phoronix-test-suite /var/cache/phoronix-test-suite &&
       
-      echo '📊 Starting Phoromatic Web Server on port 80...' &&
-      echo '🌐 Access at: https://phoronix-test-suite-\$username.nsl.sh/' &&
-      echo '✨ Features: 650+ benchmarks, automated reporting, web interface' &&
+      # Configure batch mode to avoid prompts
+      echo 'y' | phoronix-test-suite batch-setup &&
       
-      cd /phoronix-test-suite && 
-      ./phoronix-test-suite start-phoromatic-server
+      echo '🌐 Starting Phoromatic Web Server on port 80...' &&
+      echo '✨ Access at: https://phoronix-test-suite-\$username.nsl.sh/' &&
+      echo '📊 Features: 650+ benchmarks, automated reporting, web interface' &&
+      echo '🎯 Create account from web interface to get started!' &&
+      
+      # Start Phoromatic server
+      exec phoronix-test-suite start-phoromatic-server
       "
 
 x-casaos:
@@ -314,16 +330,18 @@ x-casaos:
       
       This app runs as root (user: 0:0) for the following justified reasons:
       
-      1. **Phoromatic Server**: Requires root privileges to start the web server on port 80
-      2. **System Hardware Access**: Benchmark tools need access to hardware sensors and system information
-      3. **AppData Only**: Container only accesses AppData directories and does not interact with user files
-      4. **Professional Tool**: Industry-standard benchmarking platform used by major tech companies
+      1. **Software Installation**: Requires root privileges to install PHP, dependencies, and Phoronix Test Suite
+      2. **Phoromatic Server**: Needs root access to start web server on port 80
+      3. **System Hardware Access**: Benchmark tools require access to hardware sensors and system information
+      4. **AppData Only**: Container only accesses AppData directories and does not interact with user files
+      5. **Professional Tool**: Industry-standard benchmarking platform used by major tech companies
       
       **Mitigation Measures:**
-      - File ownership is set to PUID:PGID after initialization
+      - File ownership is set to PUID:PGID after installation
       - Web interface provides secure, controlled access
       - No direct system modification (read-only hardware access)
       - Results stored in AppData with proper permissions
+      - Container runs in isolated environment
       
       This follows the CasaOS security model for AppData-only professional applications.
     ko_kr: |
@@ -331,15 +349,17 @@ x-casaos:
       
       이 앱은 다음과 같은 정당한 이유로 root(user: 0:0)로 실행됩니다:
       
-      1. **Phoromatic 서버**: 포트 80에서 웹 서버를 시작하기 위해 root 권한 필요
-      2. **시스템 하드웨어 접근**: 벤치마크 도구가 하드웨어 센서와 시스템 정보에 접근해야 함
-      3. **AppData 전용**: 컨테이너는 AppData 디렉토리만 접근하며 사용자 파일과 상호작용하지 않음
-      4. **전문 도구**: 주요 기술 회사들이 사용하는 업계 표준 벤치마킹 플랫폼
+      1. **소프트웨어 설치**: PHP, 의존성, Phoronix Test Suite 설치를 위해 root 권한 필요
+      2. **Phoromatic 서버**: 포트 80에서 웹 서버를 시작하기 위해 root 접근 권한 필요
+      3. **시스템 하드웨어 접근**: 벤치마크 도구가 하드웨어 센서와 시스템 정보에 접근해야 함
+      4. **AppData 전용**: 컨테이너는 AppData 디렉토리만 접근하며 사용자 파일과 상호작용하지 않음
+      5. **전문 도구**: 주요 기술 회사들이 사용하는 업계 표준 벤치마킹 플랫폼
       
       **완화 조치:**
-      - 초기화 후 파일 소유권을 PUID:PGID로 설정
+      - 설치 후 파일 소유권을 PUID:PGID로 설정
       - 웹 인터페이스를 통한 안전하고 제어된 접근
       - 직접적인 시스템 수정 없음 (읽기 전용 하드웨어 접근)
       - 결과는 적절한 권한으로 AppData에 저장
+      - 격리된 환경에서 컨테이너 실행
       
       이는 AppData 전용 전문 애플리케이션에 대한 CasaOS 보안 모델을 따릅니다.
