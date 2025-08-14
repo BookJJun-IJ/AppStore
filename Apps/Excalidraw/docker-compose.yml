@@ -60,7 +60,159 @@ services:
     expose:
       - 80
 
-  # Excalidraw Frontend - 메인 애플리케이션
+  # 🆕 Instant Save API - 즉시 저장 서비스
+  save-api:
+    image: node:18-alpine
+    container_name: save-api
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.1'
+    volumes:
+      - /DATA/Documents/Excalidraw:/exports
+      - /DATA/AppData/$AppID/save-api:/app
+    expose:
+      - 3001
+    ports:
+      - "3001:3001"  # 프론트엔드에서 접근하기 위해
+    working_dir: /app
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+    command: |
+      sh -c '
+      # 📦 패키지 설치 및 서버 코드 생성
+      if [ ! -f package.json ]; then
+        echo "🚀 Initializing Save API server..."
+        npm init -y
+        npm install express cors multer express-rate-limit helmet
+        
+        # 📝 서버 코드 생성
+        cat > server.js << "EOF"
+const express = require("express");
+const cors = require("cors");
+const fs = require("fs");
+const path = require("path");
+const rateLimit = require("express-rate-limit");
+const helmet = require("helmet");
+
+const app = express();
+const PORT = process.env.PORT || 3001;
+
+// 📁 보안 및 미들웨어 설정
+app.use(helmet());
+app.use(cors({
+  origin: [
+    /^https:\/\/.*\.nsl\.sh$/,
+    "http://localhost:3000",
+    "http://localhost:5173"
+  ]
+}));
+app.use(express.json({ limit: "10mb" }));
+
+// 📊 Rate Limiting
+const saveLimit = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1분
+  max: 30, // 1분에 최대 30번 저장
+  message: { error: "Too many save requests, please try again later." }
+});
+
+// 📁 출력 디렉토리 확인
+const exportDir = "/exports";
+if (!fs.existsSync(exportDir)) {
+  fs.mkdirSync(exportDir, { recursive: true });
+}
+
+// 💾 즉시 저장 API
+app.post("/save", saveLimit, async (req, res) => {
+  try {
+    const { sceneData, filename } = req.body;
+    
+    if (!sceneData) {
+      return res.status(400).json({ error: "Scene data is required" });
+    }
+
+    // 📝 파일명 생성 (사용자 지정 또는 자동)
+    const timestamp = new Date().toISOString()
+      .replace(/[:\.]/g, "-")
+      .slice(0, 19);
+    
+    const baseName = filename || `excalidraw-${timestamp}`;
+    const sanitizedName = baseName.replace(/[^a-zA-Z0-9\-_]/g, "_");
+    const fullFilename = `${sanitizedName}.excalidraw`;
+    const filepath = path.join(exportDir, fullFilename);
+
+    // 💾 파일 저장
+    const jsonData = typeof sceneData === "string" ? sceneData : JSON.stringify(sceneData, null, 2);
+    fs.writeFileSync(filepath, jsonData, "utf8");
+    
+    // ✅ 권한 설정
+    fs.chmodSync(filepath, 0o644);
+
+    console.log(`✅ Saved: ${fullFilename}`);
+    
+    res.json({ 
+      success: true, 
+      filename: fullFilename,
+      path: `/DATA/Documents/Excalidraw/${fullFilename}`,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error("❌ Save error:", error);
+    res.status(500).json({ error: "Failed to save file" });
+  }
+});
+
+// 📋 저장된 파일 목록 조회
+app.get("/files", (req, res) => {
+  try {
+    const files = fs.readdirSync(exportDir)
+      .filter(file => file.endsWith(".excalidraw"))
+      .map(file => {
+        const stats = fs.statSync(path.join(exportDir, file));
+        return {
+          name: file,
+          size: stats.size,
+          created: stats.birthtime,
+          modified: stats.mtime
+        };
+      })
+      .sort((a, b) => b.modified - a.modified);
+
+    res.json({ files });
+  } catch (error) {
+    console.error("❌ Files list error:", error);
+    res.status(500).json({ error: "Failed to get files list" });
+  }
+});
+
+// ❤️ Health Check
+app.get("/health", (req, res) => {
+  res.json({ 
+    status: "healthy", 
+    timestamp: new Date().toISOString(),
+    exports_dir: exportDir
+  });
+});
+
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`🚀 Save API Server running on port ${PORT}`);
+  console.log(`📁 Export directory: ${exportDir}`);
+});
+EOF
+
+        echo "✅ Server code generated"
+      fi
+      
+      # 🚀 서버 시작
+      echo "🚀 Starting Save API server..."
+      node server.js
+      '
+
+  # Excalidraw Frontend - 메인 애플리케이션 (저장 기능 강화)
   excalidraw:
     image: alswl/excalidraw:v0.17.3-fork-b1
     platform: linux/amd64
@@ -74,30 +226,227 @@ services:
           cpus: '0.25'
     expose:
       - 80
+    volumes:
+      - /DATA/AppData/$AppID/excalidraw-custom:/app/custom
     environment:
       - TZ=$TZ
       - DOMAIN=$domain
-      # Storage Backend 연결 설정 (실제 NSL 도메인 사용)
-      # 주의: 아래 URL에서 "ikjunyundera" 부분을 실제 사용자명으로 변경하세요
-      - VITE_APP_BACKEND_V2_GET_URL=https://8081-excalidraw-ikjunyundera.nsl.sh/api/v2/scenes/
-      - VITE_APP_BACKEND_V2_POST_URL=https://8081-excalidraw-ikjunyundera.nsl.sh/api/v2/scenes/
-      - VITE_APP_HTTP_STORAGE_BACKEND_URL=https://8081-excalidraw-ikjunyundera.nsl.sh/api/v2
+      # Storage Backend 연결 설정 (동적 도메인 사용)
+      - VITE_APP_BACKEND_V2_GET_URL=https://8081-$domain/api/v2/scenes/
+      - VITE_APP_BACKEND_V2_POST_URL=https://8081-$domain/api/v2/scenes/
+      - VITE_APP_HTTP_STORAGE_BACKEND_URL=https://8081-$domain/api/v2
       - VITE_APP_STORAGE_BACKEND=http
       # Room Server 연결 설정  
       - VITE_APP_WS_SERVER_URL=ws://room:80
       # Firebase 비활성화
       - VITE_APP_FIREBASE_CONFIG={}
+      # 🆕 Save API URL (동적 구성)
+      - SAVE_API_URL=https://3001-$domain
     depends_on:
       - storage
       - room
+      - save-api
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:80/ || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
       start_period: 60s
+    command: |
+      sh -c '
+      # 📝 커스텀 저장 JavaScript 생성
+      mkdir -p /app/custom
+      
+      cat > /app/custom/save-enhancement.js << "EOF"
+(function() {
+  console.log("🚀 Excalidraw Save Enhancement Loaded");
+  
+  // 🌐 동적 API URL 구성
+  function getApiUrls() {
+    const currentHost = window.location.hostname;
+    const protocol = window.location.protocol;
+    
+    // NSL 라우터 도메인 패턴 감지 (excalidraw-username.nsl.sh)
+    if (currentHost.includes('.nsl.sh')) {
+      // excalidraw-username.nsl.sh → 3001-excalidraw-username.nsl.sh
+      const saveApiHost = currentHost.replace(/^/, '3001-');
+      const storageApiHost = currentHost.replace(/^/, '8081-');
+      
+      return {
+        saveApi: `${protocol}//${saveApiHost}`,
+        storageApi: `${protocol}//${storageApiHost}`
+      };
+    }
+    
+    // 로컬 개발 또는 다른 환경
+    const baseHost = currentHost.includes(':') ? currentHost.split(':')[0] : currentHost;
+    return {
+      saveApi: `${protocol}//${baseHost}:3001`,
+      storageApi: `${protocol}//${baseHost}:8081`
+    };
+  }
+  
+  // 💾 서버 저장 함수
+  async function saveToServer(sceneData, filename) {
+    try {
+      const { saveApi } = getApiUrls();
+      console.log("💾 Save API URL:", saveApi);
+      
+      const response = await fetch(`${saveApi}/save`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          sceneData: sceneData,
+          filename: filename
+        })
+      });
 
-  # Export File Generator - Export 시 서버에 .excalidraw 파일 생성
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error("❌ Server save failed:", error);
+      throw error;
+    }
+  }
+
+  // 🎯 Save to Disk 버튼 감지 및 교체
+  function enhanceSaveButton() {
+    // Excalidraw의 저장 메뉴 찾기
+    const saveButtons = document.querySelectorAll("[aria-label*=\"Save\"], [title*=\"Save\"], button");
+    
+    saveButtons.forEach(button => {
+      const text = button.textContent?.toLowerCase();
+      if (text && (text.includes("save to disk") || text.includes("디스크에 저장"))) {
+        
+        // 기존 이벤트 핸들러 제거 및 새로운 핸들러 추가
+        const newButton = button.cloneNode(true);
+        button.parentNode?.replaceChild(newButton, button);
+        
+        newButton.addEventListener("click", async (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          
+          try {
+            // 현재 Excalidraw 데이터 가져오기
+            const excalidrawAPI = window.excalidrawAPI;
+            if (!excalidrawAPI) {
+              throw new Error("Excalidraw API not available");
+            }
+
+            const elements = excalidrawAPI.getSceneElements();
+            const appState = excalidrawAPI.getAppState();
+            
+            // JSON 데이터 생성
+            const sceneData = JSON.stringify({
+              type: "excalidraw",
+              version: 2,
+              source: "https://excalidraw.com",
+              elements: elements,
+              appState: {
+                gridSize: appState.gridSize,
+                viewBackgroundColor: appState.viewBackgroundColor,
+              }
+            }, null, 2);
+
+            // 파일명 생성
+            const timestamp = new Date().toISOString()
+              .replace(/[:\.]/g, "-")
+              .slice(0, 19);
+            const filename = `excalidraw-${timestamp}`;
+
+            // 서버에 저장
+            console.log("💾 Saving to server...");
+            const result = await saveToServer(sceneData, filename);
+            
+            // 성공 알림
+            console.log("✅ Saved successfully:", result);
+            
+            // Toast 알림 표시 (가능한 경우)
+            if (excalidrawAPI.showToast) {
+              excalidrawAPI.showToast({
+                message: `✅ Saved to server: ${result.filename}`,
+                duration: 3000
+              });
+            } else {
+              alert(`✅ 파일이 서버에 저장되었습니다!\n파일명: ${result.filename}\n경로: ${result.path}`);
+            }
+
+          } catch (error) {
+            console.error("❌ Save failed:", error);
+            
+            // 에러 알림
+            if (window.excalidrawAPI?.showToast) {
+              window.excalidrawAPI.showToast({
+                message: `❌ 저장 실패: ${error.message}`,
+                duration: 4000
+              });
+            } else {
+              alert(`❌ 저장에 실패했습니다: ${error.message}`);
+            }
+          }
+        });
+        
+        // 버튼 스타일 개선
+        newButton.style.background = "linear-gradient(45deg, #4CAF50, #45a049)";
+        newButton.style.color = "white";
+        newButton.title = "서버에 즉시 저장 (Enhanced)";
+      }
+    });
+  }
+
+  // 🔄 정기적으로 버튼 확인 및 교체
+  function initSaveEnhancement() {
+    enhanceSaveButton();
+    
+    // DOM 변경 감지 및 재적용
+    const observer = new MutationObserver(() => {
+      enhanceSaveButton();
+    });
+    
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+    
+    // 주기적 재확인
+    setInterval(enhanceSaveButton, 2000);
+  }
+
+  // 🚀 초기화
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initSaveEnhancement);
+  } else {
+    initSaveEnhancement();
+  }
+
+  // 글로벌 접근 가능하도록 설정
+  window.excalidrawSaveToServer = saveToServer;
+  
+})();
+EOF
+
+      # 📝 HTML에 스크립트 주입
+      if [ -f /usr/share/nginx/html/index.html ]; then
+        # 기존 파일에 스크립트 추가
+        if ! grep -q "save-enhancement.js" /usr/share/nginx/html/index.html; then
+          sed -i "s|</body>|<script src=\"/custom/save-enhancement.js\"></script></body>|g" /usr/share/nginx/html/index.html
+        fi
+        
+        # 커스텀 디렉토리 제공
+        cp /app/custom/save-enhancement.js /usr/share/nginx/html/custom/save-enhancement.js 2>/dev/null || true
+      fi
+      
+      # 원래 명령어 실행
+      exec nginx -g "daemon off;"
+      '
+
+  # Export File Generator - Export 시 서버에 .excalidraw 파일 생성 (기존 유지)
   file-generator:
     image: redis:7-alpine
     container_name: file-generator
@@ -135,13 +484,13 @@ services:
                 
                 if [ -n "$SCENE_DATA" ] && [ "$SCENE_DATA" != "(nil)" ]; then
                   TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-                  FILENAME="excalidraw-$SCENE_ID-$TIMESTAMP.excalidraw"
+                  FILENAME="excalidraw-auto-$SCENE_ID-$TIMESTAMP.excalidraw"
                   FILEPATH="/exports/$FILENAME"
                   
                   echo "$SCENE_DATA" > "$FILEPATH"
                   
                   if [ -f "$FILEPATH" ]; then
-                    echo "✅ Created: $FILENAME"
+                    echo "✅ Auto-created: $FILENAME"
                     chmod 644 "$FILEPATH"
                   fi
                 fi
@@ -166,103 +515,145 @@ x-casaos:
   author: CasaOS Team
   category: Productivity
   description:
-    en_us: Excalidraw is a virtual collaborative whiteboard tool with real-time collaboration, server-side storage, working shareable links, and automatic .excalidraw file generation.
-    ko_kr: 실시간 협업, 서버 저장, 작동하는 공유 링크, 자동 .excalidraw 파일 생성 기능을 갖춘 가상 협업 화이트보드 도구입니다.
-    zh_cn: Excalidraw 是一个具有实时协作、服务器端存储、工作共享链接和自动 .excalidraw 文件生成功能的虚拟协作白板工具。
-    fr_fr: Excalidraw est un outil de tableau blanc collaboratif virtuel avec collaboration en temps réel, stockage côté serveur, liens partageables fonctionnels et génération automatique de fichiers .excalidraw.
-    es_es: Excalidraw es una herramienta de pizarra colaborativa virtual con colaboración en tiempo real, almacenamiento del lado del servidor, enlaces compartibles que funcionan y generación automática de archivos .excalidraw.
-  developer: Excalidraw Team
+    en_us: Excalidraw with enhanced instant "Save to Disk" functionality. Real-time collaboration, server-side storage, working shareable links, automatic file generation, and NEW instant server saving when clicking "Save to Disk" button.
+    ko_kr: 향상된 즉시 "디스크에 저장" 기능을 갖춘 Excalidraw입니다. 실시간 협업, 서버 저장, 작동하는 공유 링크, 자동 파일 생성, 그리고 "디스크에 저장" 버튼 클릭 시 즉시 서버 저장 기능을 제공합니다.
+    zh_cn: 具有增强的即时"保存到磁盘"功能的 Excalidraw。实时协作、服务器端存储、工作共享链接、自动文件生成，以及点击"保存到磁盘"按钮时的新即时服务器保存功能。
+    fr_fr: Excalidraw avec fonctionnalité améliorée de "Sauvegarder sur disque" instantanée. Collaboration en temps réel, stockage côté serveur, liens partageables fonctionnels, génération automatique de fichiers, et NOUVELLE sauvegarde instantanée sur serveur lors du clic sur "Sauvegarder sur disque".
+    es_es: Excalidraw con funcionalidad mejorada de "Guardar en disco" instantáneo. Colaboración en tiempo real, almacenamiento del lado del servidor, enlaces compartibles que funcionan, generación automática de archivos, y NUEVO guardado instantáneo en servidor al hacer clic en "Guardar en disco".
+  developer: Excalidraw Team + Enhanced
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/icon.png
   screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/screenshot-1.png
   tagline:
-    en_us: Collaborative whiteboard with share + auto file export
-    ko_kr: 공유 + 자동 파일 내보내기를 갖춘 협업 화이트보드
-    zh_cn: 具有共享 + 自动文件导出的协作白板
-    fr_fr: Tableau blanc collaboratif avec partage + export automatique
-    es_es: Pizarra colaborativa con compartir + exportación automática
+    en_us: Enhanced collaborative whiteboard with INSTANT server save
+    ko_kr: 즉시 서버 저장 기능을 갖춘 향상된 협업 화이트보드
+    zh_cn: 具有即时服务器保存功能的增强协作白板
+    fr_fr: Tableau blanc collaboratif amélioré avec sauvegarde instantanée
+    es_es: Pizarra colaborativa mejorada con guardado instantáneo en servidor
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/thumbnail.png
   title:
-    en_us: Excalidraw
+    en_us: Excalidraw Enhanced
   tips:
     before_install:
       en_us: |
-        **🚀 Complete Excalidraw with Share + Auto Export (Fixed):**
+        **🚀 Excalidraw Enhanced - INSTANT Save to Disk! 💾**
         
-        **✅ All Core Features**
+        **🆕 NEW FEATURE: Instant Server Save**
+        - Click "Save to Disk" → INSTANTLY saved to server! ✅
+        - No more waiting 60 seconds for auto-generation
+        - User-friendly filenames with timestamps
+        - Success/error notifications
+        - Rate-limited for security (30 saves/minute)
+        
+        **✅ All Original Features**
         - Real-time collaboration ✅
         - Server-side storage in Redis ✅  
-        - **WORKING: Shareable links** ✅
-        - **WORKING: Export to Link** ✅
-        - **NEW: Automatic .excalidraw file generation** ✅
+        - Working shareable links ✅
+        - Export to Link ✅
+        - Auto file generation (backup) ✅
         
-        **🆕 Auto Export Feature (Shell Fixed)**
-        - Automatically creates .excalidraw files when you draw
-        - Files saved to `/DATA/Documents/Excalidraw/`
-        - Simple, stable file generation (no complex shell syntax)
-        - Standard JSON format compatible with excalidraw.com
+        **💾 Dual Save System:**
+        1. **Manual Save**: Click "Save to Disk" → Instant server save
+        2. **Auto Save**: Background generation every 60s (backup)
         
-        **📁 File Output:**
-        `excalidraw-[scene-id]-[YYYYMMDD-HHMMSS].excalidraw`
+        **📁 File Output Locations:**
+        - Manual saves: `excalidraw-YYYY-MM-DD-HH-MM-SS.excalidraw`
+        - Auto saves: `excalidraw-auto-[scene-id]-[timestamp].excalidraw`
+        - All saved to: `/DATA/Documents/Excalidraw/`
         
-        **🔧 How It Works:**
-        1. Draw anything in Excalidraw → Saved to Redis
-        2. File generator checks Redis every 60 seconds
-        3. Creates .excalidraw file if none exists for that scene
-        4. Files appear in `/DATA/Documents/Excalidraw/`
+        **🔧 How Manual Save Works:**
+        1. Draw in Excalidraw
+        2. Click "Save to Disk" button
+        3. Enhanced script intercepts click
+        4. Sends data to Save API server
+        5. File instantly created on server
+        6. Success notification displayed
         
-        **🌐 Access URLs:**
+        **🌐 Access URLs (Auto-detected):**
         - Main App: `https://excalidraw-[username].nsl.sh/`
-        - Storage API: `https://8081-excalidraw-[username].nsl.sh/`
+        - Storage API: `https://8081-excalidraw-[username].nsl.sh/` (auto)
+        - Save API: `https://3001-excalidraw-[username].nsl.sh/` (auto)
         
         **🔧 Total Resources:**
-        - Memory: ~832MB (4 core services + file generator)
-        - CPU: ~0.8 cores
+        - Memory: ~960MB (5 services)
+        - CPU: ~0.9 cores
         
-        **✅ What Works:**
-        - Drawing and editing
-        - Real-time collaboration  
-        - Share buttons (both types)
-        - Persistent storage
-        - Automatic file creation
-        - Cross-device access
+        **🚀 Zero Configuration Required:**
+        - No manual setup needed!
+        - URLs auto-detected from browser
+        - Works for any username automatically
+        - Just install and use!
+        
+        **🔒 Security Features:**
+        - CORS protection
+        - Rate limiting (30 saves/minute)
+        - Input sanitization
+        - Helmet security headers
+        
+        **✅ What's Enhanced:**
+        - Instant save when clicking "Save to Disk"
+        - Beautiful success/error notifications
+        - File management API
+        - Health monitoring
+        - Secure and optimized
       ko_kr: |
-        **🚀 공유 + 자동 내보내기 기능이 있는 완전한 Excalidraw (수정됨):**
+        **🚀 Excalidraw Enhanced - 즉시 디스크에 저장! 💾**
         
-        **✅ 모든 핵심 기능**
+        **🆕 새로운 기능: 즉시 서버 저장**
+        - "디스크에 저장" 클릭 → 즉시 서버에 저장! ✅
+        - 더 이상 60초 자동 생성을 기다릴 필요 없음
+        - 타임스탬프가 포함된 사용자 친화적 파일명
+        - 성공/오류 알림
+        - 보안을 위한 속도 제한 (분당 30회 저장)
+        
+        **✅ 모든 기존 기능**
         - 실시간 협업 ✅
         - Redis 서버 측 저장 ✅  
-        - **작동함: 공유 링크** ✅
-        - **작동함: 링크로 내보내기** ✅
-        - **새로운 기능: 자동 .excalidraw 파일 생성** ✅
+        - 작동하는 공유 링크 ✅
+        - 링크로 내보내기 ✅
+        - 자동 파일 생성 (백업) ✅
         
-        **🆕 자동 내보내기 기능 (Shell 수정됨)**
-        - 그림을 그릴 때 자동으로 .excalidraw 파일 생성
-        - `/DATA/Documents/Excalidraw/`에 파일 저장
-        - 간단하고 안정적인 파일 생성 (복잡한 shell 문법 없음)
-        - excalidraw.com과 호환되는 표준 JSON 형식
+        **💾 이중 저장 시스템:**
+        1. **수동 저장**: "디스크에 저장" 클릭 → 즉시 서버 저장
+        2. **자동 저장**: 60초마다 백그라운드 생성 (백업)
         
-        **📁 파일 출력:**
-        `excalidraw-[scene-id]-[YYYYMMDD-HHMMSS].excalidraw`
+        **📁 파일 출력 위치:**
+        - 수동 저장: `excalidraw-YYYY-MM-DD-HH-MM-SS.excalidraw`
+        - 자동 저장: `excalidraw-auto-[scene-id]-[timestamp].excalidraw`
+        - 모두 저장 위치: `/DATA/Documents/Excalidraw/`
         
-        **🔧 작동 방식:**
-        1. Excalidraw에서 그리기 → Redis에 저장
-        2. 파일 생성기가 60초마다 Redis 확인
-        3. 해당 scene의 파일이 없으면 .excalidraw 파일 생성
-        4. `/DATA/Documents/Excalidraw/`에 파일 나타남
+        **🔧 수동 저장 작동 방식:**
+        1. Excalidraw에서 그리기
+        2. "디스크에 저장" 버튼 클릭
+        3. 향상된 스크립트가 클릭 가로채기
+        4. Save API 서버로 데이터 전송
+        5. 서버에 파일 즉시 생성
+        6. 성공 알림 표시
         
-        **🌐 접근 URL:**
+        **🌐 접근 URL (자동 감지):**
         - 메인 앱: `https://excalidraw-[username].nsl.sh/`
-        - Storage API: `https://8081-excalidraw-[username].nsl.sh/`
+        - Storage API: `https://8081-excalidraw-[username].nsl.sh/` (자동)
+        - Save API: `https://3001-excalidraw-[username].nsl.sh/` (자동)
         
         **🔧 총 리소스:**
-        - 메모리: ~832MB (4개 핵심 서비스 + 파일 생성기)
-        - CPU: ~0.8 코어
+        - 메모리: ~960MB (5개 서비스)
+        - CPU: ~0.9 코어
         
-        **✅ 작동하는 기능:**
-        - 그리기 및 편집
-        - 실시간 협업  
-        - 공유 버튼 (두 종류 모두)
-        - 지속적 저장
-        - 자동 파일 생성
-        - 여러 기기 간 접근
+        **🚀 설정 불필요:**
+        - 수동 설정 필요 없음!
+        - 브라우저에서 URL 자동 감지
+        - 모든 사용자명에서 자동 작동
+        - 그냥 설치하고 사용하세요!
+        
+        **🔒 보안 기능:**
+        - CORS 보호
+        - 속도 제한 (분당 30회 저장)
+        - 입력 정화
+        - Helmet 보안 헤더
+        
+        **✅ 향상된 기능:**
+        - "디스크에 저장" 클릭 시 즉시 저장
+        - 아름다운 성공/오류 알림
+        - 파일 관리 API
+        - 상태 모니터링
+        - 안전하고 최적화됨
   index: /
