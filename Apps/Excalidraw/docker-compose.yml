@@ -18,7 +18,7 @@ services:
   # Storage Backend - 그림 저장 및 공유 서버
   storage:
     image: kiliandeca/excalidraw-storage-backend:latest
-    platform: linux/amd64  # AMD64 강제 지정
+    platform: linux/amd64
     container_name: storage
     restart: unless-stopped
     deploy:
@@ -29,12 +29,10 @@ services:
     environment:
       - PORT=8081
       - STORAGE_URI=redis://redis:6379
-      - LOG_LEVEL=debug  # 디버깅을 위해 상세 로그
-      - GLOBAL_PREFIX=/api/v2  # API 경로 접두사
+      - LOG_LEVEL=info
+      - GLOBAL_PREFIX=/api/v2
     expose:
       - 8081
-    volumes:
-      - /DATA/Documents/Excalidraw:/app/data  # 실제 파일 저장용
     depends_on:
       - redis
     healthcheck:
@@ -46,7 +44,7 @@ services:
   # Room Server - 실시간 협업 서버
   room:
     image: excalidraw/excalidraw-room:sha-49bf529
-    platform: linux/amd64  # AMD64 강제 지정
+    platform: linux/amd64
     container_name: room
     restart: unless-stopped
     deploy:
@@ -59,9 +57,9 @@ services:
 
   # Excalidraw Frontend - 메인 애플리케이션
   excalidraw:
-    image: alswl/excalidraw:v0.17.3-fork-b1  # 원래 작동하던 버전으로 복구
-    platform: linux/amd64  # AMD64 강제 지정
-    user: "0:0"  # root 권한으로 env.js 파일 생성 허용
+    image: alswl/excalidraw:v0.17.3-fork-b1
+    platform: linux/amd64
+    user: "0:0"
     container_name: excalidraw
     restart: unless-stopped
     deploy:
@@ -93,80 +91,190 @@ services:
       retries: 3
       start_period: 60s
 
+  # JSON File Exporter - Redis에서 .excalidraw 파일로 변환
+  json-exporter:
+    image: node:18-alpine
+    container_name: json-exporter
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.1'
+    volumes:
+      - /DATA/Documents/Excalidraw:/app/exports
+      - /DATA/AppData/$AppID/exporter:/app/scripts
+    depends_on:
+      - redis
+      - storage
+    working_dir: /app/scripts
+    command: |
+      sh -c '
+      # Node.js 패키지 설치
+      if [ ! -f package.json ]; then
+        npm init -y
+        npm install redis@4
+      fi
+      
+      # JSON 변환 스크립트 생성
+      cat > exporter.js << "EOF"
+      const Redis = require("redis");
+      const fs = require("fs");
+      const path = require("path");
+      
+      const client = Redis.createClient({
+        host: "redis",
+        port: 6379
+      });
+      
+      async function exportExcalidrawFiles() {
+        try {
+          await client.connect();
+          console.log("Connected to Redis");
+          
+          // Redis에서 모든 scenes 키 가져오기
+          const keys = await client.keys("scenes:*");
+          console.log(`Found ${keys.length} scenes in Redis`);
+          
+          for (const key of keys) {
+            try {
+              const sceneData = await client.get(key);
+              if (sceneData) {
+                const parsedData = JSON.parse(sceneData);
+                
+                // Excalidraw 표준 JSON 형식으로 변환
+                const excalidrawFile = {
+                  type: "excalidraw",
+                  version: 2,
+                  source: "https://excalidraw.com",
+                  elements: parsedData.elements || [],
+                  appState: parsedData.appState || {},
+                  files: parsedData.files || {}
+                };
+                
+                // 파일명 생성 (키에서 scene: 제거하고 timestamp 추가)
+                const sceneId = key.replace("scenes:", "");
+                const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, -5);
+                const filename = `excalidraw-${sceneId}-${timestamp}.excalidraw`;
+                const filepath = path.join("/app/exports", filename);
+                
+                // JSON 파일로 저장
+                fs.writeFileSync(filepath, JSON.stringify(excalidrawFile, null, 2));
+                console.log(`Exported: ${filename}`);
+              }
+            } catch (err) {
+              console.error(`Error processing key ${key}:`, err.message);
+            }
+          }
+          
+          console.log("Export completed!");
+        } catch (error) {
+          console.error("Export failed:", error);
+        } finally {
+          await client.disconnect();
+        }
+      }
+      
+      // 초기 실행 후 5분마다 실행
+      async function run() {
+        await exportExcalidrawFiles();
+        setTimeout(run, 5 * 60 * 1000); // 5분
+      }
+      
+      // 시작 시 3초 대기 (Redis 연결 대기)
+      setTimeout(run, 3000);
+      EOF
+      
+      echo "Starting Excalidraw JSON Exporter..."
+      node exporter.js
+      '
+
 x-casaos:
   architectures:
     - amd64
-    - arm64  # platform 강제 지정으로 ARM64에서도 동작
-  main: excalidraw  # 컨테이너 이름과 정확히 일치
+    - arm64
+  main: excalidraw
   webui_port: 80
   author: CasaOS Team
   category: Productivity
   description:
-    en_us: Excalidraw is a virtual collaborative whiteboard tool with real-time collaboration, server-side storage, and sharing capabilities. Create and collaborate on diagrams with multiple users simultaneously.
-    ko_kr: 실시간 협업, 서버 저장, 공유 기능을 갖춘 가상 협업 화이트보드 도구입니다. 여러 사용자가 동시에 다이어그램을 만들고 협업할 수 있습니다.
-    zh_cn: Excalidraw 是一个具有实时协作、服务器端存储和共享功能的虚拟协作白板工具。
-    fr_fr: Excalidraw est un outil de tableau blanc collaboratif virtuel avec collaboration en temps réel et stockage côté serveur.
-    es_es: Excalidraw es una herramienta de pizarra colaborativa virtual con colaboración en tiempo real y almacenamiento del lado del servidor.
+    en_us: Excalidraw is a virtual collaborative whiteboard tool with real-time collaboration, server-side storage, and automatic .excalidraw JSON file export.
+    ko_kr: 실시간 협업, 서버 저장, 자동 .excalidraw JSON 파일 내보내기 기능을 갖춘 가상 협업 화이트보드 도구입니다.
+    zh_cn: Excalidraw 是一个具有实时协作、服务器端存储和自动 .excalidraw JSON 文件导出功能的虚拟协作白板工具。
+    fr_fr: Excalidraw est un outil de tableau blanc collaboratif virtuel avec collaboration en temps réel et export automatique de fichiers .excalidraw JSON.
+    es_es: Excalidraw es una herramienta de pizarra colaborativa virtual con colaboración en tiempo real y exportación automática de archivos .excalidraw JSON.
   developer: Excalidraw Team
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/icon.png
   screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/screenshot-1.png
   tagline:
-    en_us: Virtual collaborative whiteboard with server storage
-    ko_kr: 서버 저장 기능을 갖춘 가상 협업 화이트보드
-    zh_cn: 具有服务器存储的虚拟协作白板
-    fr_fr: Tableau blanc collaboratif virtuel avec stockage serveur
-    es_es: Pizarra colaborativa virtual con almacenamiento en servidor
+    en_us: Virtual collaborative whiteboard with automatic JSON file export
+    ko_kr: 자동 JSON 파일 내보내기를 갖춘 가상 협업 화이트보드
+    zh_cn: 具有自动 JSON 文件导出的虚拟协作白板
+    fr_fr: Tableau blanc collaboratif virtuel avec export automatique de fichiers JSON
+    es_es: Pizarra colaborativa virtual con exportación automática de archivos JSON
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/thumbnail.png
   title:
     en_us: Excalidraw
-    ko_kr: Excalidraw
-    zh_cn: Excalidraw
-    fr_fr: Excalidraw
-    es_es: Excalidraw
   tips:
     before_install:
       en_us: |
-        **🚀 Excalidraw Features:**
+        **🚀 Excalidraw with Automatic JSON Export:**
         
         **✅ Real-time Collaboration**
-        - Multiple users can edit the same diagram simultaneously
+        - Multiple users can edit simultaneously
         - Live cursor tracking and updates
         
-        **✅ Server Storage**
-        - All drawings automatically saved to `/DATA/Documents/Excalidraw/`
-        - Persistent storage across browser sessions
-        - Automatic backup with your data
+        **✅ Automatic .excalidraw File Export**
+        - All drawings automatically exported as .excalidraw JSON files
+        - Files saved to `/DATA/Documents/Excalidraw/`
+        - Export runs every 5 minutes automatically
+        - Standard Excalidraw file format for full compatibility
         
-        **✅ Sharing & Links**
-        - Generate shareable links for your diagrams
-        - Public and private sharing options
+        **✅ File Format**
+        - Exported files: `excalidraw-[scene-id]-[timestamp].excalidraw`
+        - JSON format compatible with excalidraw.com
+        - Can be imported back into any Excalidraw instance
         
-        **⚠️ Resource Usage:**
-        This setup uses 4 containers (Redis, Storage, Room, Frontend) and requires more resources than the basic version.
+        **📁 Exported Files Location:**
+        All .excalidraw files will be saved to `/DATA/Documents/Excalidraw/`
+        
+        **🔧 How It Works:**
+        1. Draw in Excalidraw → Automatically saved to Redis
+        2. JSON Exporter checks Redis every 5 minutes
+        3. Converts Redis data to .excalidraw JSON format
+        4. Saves individual .excalidraw files to server
         
         **🔧 Total Resources:**
-        - Memory: ~768MB (Redis: 128MB + Storage: 256MB + Room: 128MB + App: 256MB)
-        - CPU: ~0.7 cores
+        - Memory: ~896MB (includes JSON exporter)
+        - CPU: ~0.8 cores
       ko_kr: |
-        **🚀 Excalidraw 기능:**
+        **🚀 자동 JSON 내보내기 기능이 있는 Excalidraw:**
         
         **✅ 실시간 협업**
-        - 여러 사용자가 동시에 같은 다이어그램 편집
+        - 여러 사용자가 동시에 편집
         - 실시간 커서 추적 및 업데이트
         
-        **✅ 서버 저장**
-        - 모든 그림이 `/DATA/Documents/Excalidraw/`에 자동 저장
-        - 브라우저 세션 간 지속적 저장
-        - 데이터와 함께 자동 백업
+        **✅ 자동 .excalidraw 파일 내보내기**
+        - 모든 그림이 .excalidraw JSON 파일로 자동 내보내기
+        - `/DATA/Documents/Excalidraw/`에 파일 저장
+        - 5분마다 자동으로 내보내기 실행
+        - 완전 호환성을 위한 표준 Excalidraw 파일 형식
         
-        **✅ 공유 및 링크**
-        - 다이어그램용 공유 링크 생성
-        - 공개 및 비공개 공유 옵션
+        **✅ 파일 형식**
+        - 내보낸 파일: `excalidraw-[scene-id]-[timestamp].excalidraw`
+        - excalidraw.com과 호환되는 JSON 형식
+        - 모든 Excalidraw 인스턴스로 다시 가져오기 가능
         
-        **⚠️ 리소스 사용량:**
-        이 설정은 4개 컨테이너(Redis, Storage, Room, Frontend)를 사용하며 기본 버전보다 많은 리소스가 필요합니다.
+        **📁 내보낸 파일 위치:**
+        모든 .excalidraw 파일이 `/DATA/Documents/Excalidraw/`에 저장됩니다
+        
+        **🔧 작동 방식:**
+        1. Excalidraw에서 그리기 → Redis에 자동 저장
+        2. JSON Exporter가 5분마다 Redis 확인
+        3. Redis 데이터를 .excalidraw JSON 형식으로 변환
+        4. 개별 .excalidraw 파일을 서버에 저장
         
         **🔧 총 리소스:**
-        - 메모리: ~768MB (Redis: 128MB + Storage: 256MB + Room: 128MB + App: 256MB)
-        - CPU: ~0.7 코어
+        - 메모리: ~896MB (JSON exporter 포함)
+        - CPU: ~0.8 코어
   index: /
