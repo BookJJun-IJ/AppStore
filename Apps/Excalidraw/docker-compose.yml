@@ -68,8 +68,8 @@ services:
         limits:
           memory: 256M
           cpus: '0.25'
-    ports:
-      - "8080:80"  # 내부 접근용
+    expose:
+      - 80
     environment:
       - TZ=$TZ
       - DOMAIN=$domain
