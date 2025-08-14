@@ -79,12 +79,18 @@ services:
       - VITE_APP_HTTP_STORAGE_BACKEND_URL=/api/v2
       - VITE_APP_STORAGE_BACKEND=http
       # Room Server 연결 설정  
-      - VITE_APP_WS_SERVER_URL=/room
+      - VITE_APP_WS_SERVER_URL=ws://room:80
       # Firebase 비활성화
       - VITE_APP_FIREBASE_CONFIG={}
     depends_on:
       - storage
       - room
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:80/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 
   # Nginx Proxy - API 라우팅 및 WebSocket 프록시
   nginx:
@@ -104,10 +110,10 @@ services:
       - room
     volumes:
       - /DATA/AppData/$AppID/nginx:/etc/nginx/conf.d
-    command: |
+    entrypoint: |
       sh -c '
-      # Nginx 설정 파일 생성
-      cat > /etc/nginx/conf.d/default.conf << "EOF"
+      # 간단한 Nginx 설정 파일 생성
+      cat > /etc/nginx/conf.d/default.conf << EOF
       upstream excalidraw_app {
           server excalidraw:80;
       }
@@ -124,35 +130,28 @@ services:
           listen 80;
           server_name _;
           
-          # 메인 Excalidraw 앱
           location / {
               proxy_pass http://excalidraw_app;
-              proxy_set_header Host $host;
-              proxy_set_header X-Real-IP $remote_addr;
-              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-              proxy_set_header X-Forwarded-Proto $scheme;
-              
-              # WebSocket 지원
+              proxy_set_header Host \$host;
+              proxy_set_header X-Real-IP \$remote_addr;
+              proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+              proxy_set_header X-Forwarded-Proto \$scheme;
               proxy_http_version 1.1;
-              proxy_set_header Upgrade $http_upgrade;
+              proxy_set_header Upgrade \$http_upgrade;
               proxy_set_header Connection "upgrade";
           }
           
-          # Storage Backend API (중요!)
           location /api/v2/ {
               proxy_pass http://storage_backend/api/v2/;
-              proxy_set_header Host $host;
-              proxy_set_header X-Real-IP $remote_addr;
-              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-              proxy_set_header X-Forwarded-Proto $scheme;
-              
-              # CORS 헤더 추가
+              proxy_set_header Host \$host;
+              proxy_set_header X-Real-IP \$remote_addr;
+              proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+              proxy_set_header X-Forwarded-Proto \$scheme;
               add_header Access-Control-Allow-Origin * always;
               add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS" always;
               add_header Access-Control-Allow-Headers "Content-Type, Authorization" always;
               
-              # OPTIONS 요청 처리
-              if ($request_method = OPTIONS) {
+              if (\$request_method = OPTIONS) {
                   add_header Access-Control-Allow-Origin * always;
                   add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS" always;
                   add_header Access-Control-Allow-Headers "Content-Type, Authorization" always;
@@ -160,23 +159,20 @@ services:
               }
           }
           
-          # Room Server (협업)
           location /room {
               proxy_pass http://room_server;
-              proxy_set_header Host $host;
-              proxy_set_header X-Real-IP $remote_addr;
-              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-              proxy_set_header X-Forwarded-Proto $scheme;
-              
-              # WebSocket 지원
+              proxy_set_header Host \$host;
+              proxy_set_header X-Real-IP \$remote_addr;
+              proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+              proxy_set_header X-Forwarded-Proto \$scheme;
               proxy_http_version 1.1;
-              proxy_set_header Upgrade $http_upgrade;
+              proxy_set_header Upgrade \$http_upgrade;
               proxy_set_header Connection "upgrade";
           }
       }
       EOF
       
-      echo "🚀 Starting Nginx Proxy..."
+      echo "🚀 Starting Nginx with corrected config..."
       nginx -g "daemon off;"
       '
 
@@ -185,6 +181,7 @@ services:
     image: alpine:latest
     container_name: export-monitor
     restart: unless-stopped
+    user: "0:0"  # root 권한으로 실행
     deploy:
       resources:
         limits:
@@ -196,7 +193,7 @@ services:
     depends_on:
       - redis
     working_dir: /app
-    command: |
+    entrypoint: |
       sh -c '
       # 필요한 패키지 설치
       apk add --no-cache redis curl jq
@@ -206,83 +203,57 @@ services:
       # 스크립트 디렉토리 생성
       mkdir -p /exports /app
       
-      # 마지막 확인 타임스탬프 파일
-      LAST_CHECK_FILE="/app/last_check"
-      
-      # 현재 시간으로 초기화
-      date +%s > "$LAST_CHECK_FILE"
-      
       while true; do
         echo "📊 Checking for new/updated scenes..."
         
         # Redis에서 모든 scenes 키 가져오기
-        SCENE_KEYS=$(redis-cli -h redis -p 6379 KEYS "scenes:*" 2>/dev/null | tr " " "\n")
+        SCENE_KEYS=$(redis-cli -h redis -p 6379 KEYS "scenes:*" 2>/dev/null || echo "")
         
-        for key in $SCENE_KEYS; do
-          if [ -n "$key" ] && [ "$key" != "(empty array)" ]; then
-            # Scene ID 추출
-            SCENE_ID=$(echo "$key" | sed "s/scenes://")
-            
-            # Redis에서 데이터 가져오기
-            SCENE_DATA=$(redis-cli -h redis -p 6379 GET "$key" 2>/dev/null)
-            
-            if [ -n "$SCENE_DATA" ] && [ "$SCENE_DATA" != "(nil)" ]; then
-              # 데이터 해시 생성 (변화 감지용)
-              SCENE_HASH=$(echo "$SCENE_DATA" | sha256sum | cut -d" " -f1)
-              HASH_FILE="/app/hash_$SCENE_ID"
-              LAST_HASH=$(cat "$HASH_FILE" 2>/dev/null || echo "")
+        if [ -n "$SCENE_KEYS" ] && [ "$SCENE_KEYS" != "(empty array)" ]; then
+          echo "$SCENE_KEYS" | while read -r key; do
+            if [ -n "$key" ]; then
+              # Scene ID 추출
+              SCENE_ID=$(echo "$key" | sed "s/scenes://")
               
-              # 데이터가 변경되었는지 확인
-              if [ "$SCENE_HASH" != "$LAST_HASH" ]; then
-                echo "📝 Detected changes in scene: $SCENE_ID"
-                
+              # Redis에서 데이터 가져오기
+              SCENE_DATA=$(redis-cli -h redis -p 6379 GET "$key" 2>/dev/null || echo "")
+              
+              if [ -n "$SCENE_DATA" ] && [ "$SCENE_DATA" != "(nil)" ]; then
                 # 타임스탬프 생성
                 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
                 FILENAME="excalidraw-$SCENE_ID-$TIMESTAMP.excalidraw"
                 FILEPATH="/exports/$FILENAME"
                 
-                # JSON 데이터 파싱 및 Excalidraw 형식으로 변환
-                echo "$SCENE_DATA" | jq "
-                {
-                  type: \"excalidraw\",
-                  version: 2,
-                  source: \"https://excalidraw.com\",
-                  elements: (.elements // []),
-                  appState: (.appState // {
-                    viewBackgroundColor: \"#ffffff\",
-                    currentItemFontFamily: 1,
-                    currentItemStrokeWidth: 1,
-                    currentItemStrokeColor: \"#000000\",
-                    currentItemBackgroundColor: \"transparent\",
-                    currentItemFillStyle: \"hachure\",
-                    currentItemStrokeStyle: \"solid\",
-                    currentItemRoughness: 1,
-                    currentItemOpacity: 100,
-                    gridSize: null,
-                    colorPalette: {}
-                  }),
-                  files: (.files // {})
-                }
-                " > "$FILEPATH" 2>/dev/null
-                
-                if [ $? -eq 0 ] && [ -f "$FILEPATH" ]; then
-                  echo "✅ Successfully exported: $FILENAME"
+                # 기존 파일이 있는지 확인 (중복 방지)
+                if ! ls /exports/excalidraw-$SCENE_ID-*.excalidraw >/dev/null 2>&1; then
+                  echo "📝 Creating new file for scene: $SCENE_ID"
                   
-                  # 해시 저장
-                  echo "$SCENE_HASH" > "$HASH_FILE"
+                  # JSON 데이터 파싱 및 Excalidraw 형식으로 변환
+                  echo "$SCENE_DATA" | jq "{
+                    type: \"excalidraw\",
+                    version: 2,
+                    source: \"https://excalidraw.com\",
+                    elements: (.elements // []),
+                    appState: (.appState // {}),
+                    files: (.files // {})
+                  }" > "$FILEPATH" 2>/dev/null
                   
-                  # 파일 권한 설정
-                  chmod 644 "$FILEPATH"
-                else
-                  echo "❌ Failed to export scene: $SCENE_ID"
+                  if [ -f "$FILEPATH" ]; then
+                    echo "✅ Successfully exported: $FILENAME"
+                    chmod 644 "$FILEPATH"
+                  else
+                    echo "❌ Failed to export scene: $SCENE_ID"
+                  fi
                 fi
               fi
             fi
-          fi
-        done
+          done
+        else
+          echo "No scenes found in Redis"
+        fi
         
-        echo "💤 Waiting 30 seconds before next check..."
-        sleep 30
+        echo "💤 Waiting 60 seconds before next check..."
+        sleep 60
       done
       '
 
