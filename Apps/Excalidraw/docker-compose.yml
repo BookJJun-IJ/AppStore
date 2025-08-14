@@ -97,9 +97,9 @@ services:
       retries: 5
       start_period: 60s
 
-  # Export File Generator - Export 시 서버에 .excalidraw 파일 생성
+  # Export File Generator - Export 시 서버에 .excalidraw 파일 생성 (간단 버전)
   file-generator:
-    image: alpine:latest
+    image: redis:7-alpine
     container_name: file-generator
     restart: unless-stopped
     deploy:
@@ -116,41 +116,31 @@ services:
     working_dir: /app
     command: |
       sh -c '
-      # 패키지 설치
-      apk add --no-cache redis curl jq
+      echo "🚀 Starting Excalidraw Export File Generator (Simple Version)..."
       
-      echo "🚀 Starting Excalidraw Export File Generator..."
-      
-      # 디렉토리 생성
+      # 디렉토리 생성 (redis 이미지에는 이미 필요한 도구들이 있음)
       mkdir -p /exports /app
-      
-      # 이전 체크 시간 파일
-      LAST_CHECK="/app/last_check_time"
-      echo "0" > "$LAST_CHECK"
       
       while true; do
         echo "📊 Checking for scene updates..."
         
-        # 현재 시간
-        CURRENT_TIME=$(date +%s)
-        
         # Redis에서 모든 scene 키 가져오기
         SCENES=$(redis-cli -h redis -p 6379 KEYS "scenes:*" 2>/dev/null || echo "")
         
-        if [ -n "$SCENES" ]; then
+        if [ -n "$SCENES" ] && [ "$SCENES" != "(empty list or set)" ]; then
+          echo "Found scenes: $SCENES"
+          
           echo "$SCENES" | while read -r scene_key; do
-            if [ -n "$scene_key" ] && [ "$scene_key" != "(empty" ]; then
+            if [ -n "$scene_key" ]; then
               # Scene ID 추출
               SCENE_ID=$(echo "$scene_key" | sed "s/scenes://")
               
-              # 이 scene에 대한 마지막 생성 시간 확인
-              SCENE_TIME_FILE="/app/scene_time_$SCENE_ID"
-              LAST_SCENE_TIME=$(cat "$SCENE_TIME_FILE" 2>/dev/null || echo "0")
+              # 기존 파일이 있는지 확인 (중복 방지)
+              EXISTING_FILES=$(ls /exports/excalidraw-$SCENE_ID-*.excalidraw 2>/dev/null | wc -l)
               
-              # 60초 이상 지난 경우에만 새 파일 생성 (너무 자주 생성 방지)
-              TIME_DIFF=$((CURRENT_TIME - LAST_SCENE_TIME))
-              
-              if [ $TIME_DIFF -gt 60 ]; then
+              if [ "$EXISTING_FILES" -eq 0 ]; then
+                echo "📝 Creating new file for scene: $SCENE_ID"
+                
                 # Redis에서 scene 데이터 가져오기
                 SCENE_DATA=$(redis-cli -h redis -p 6379 GET "$scene_key" 2>/dev/null)
                 
@@ -160,40 +150,34 @@ services:
                   FILENAME="excalidraw-$SCENE_ID-$TIMESTAMP.excalidraw"
                   FILEPATH="/exports/$FILENAME"
                   
-                  echo "📝 Creating export file: $FILENAME"
+                  # 기본 Excalidraw JSON 구조 생성 (jq 없이)
+                  cat > "$FILEPATH" << EOF
+{
+  "type": "excalidraw",
+  "version": 2,
+  "source": "https://excalidraw.com",
+  "elements": [],
+  "appState": {
+    "viewBackgroundColor": "#ffffff"
+  },
+  "files": {}
+}
+EOF
                   
-                  # Excalidraw 표준 JSON 형식으로 변환
-                  echo "$SCENE_DATA" | jq "{
-                    type: \"excalidraw\",
-                    version: 2,
-                    source: \"https://excalidraw.com\",
-                    elements: (.elements // []),
-                    appState: (.appState // {
-                      viewBackgroundColor: \"#ffffff\",
-                      currentItemFontFamily: 1,
-                      currentItemStrokeWidth: 1,
-                      currentItemStrokeColor: \"#000000\",
-                      currentItemBackgroundColor: \"transparent\",
-                      currentItemFillStyle: \"hachure\",
-                      currentItemStrokeStyle: \"solid\",
-                      currentItemRoughness: 1,
-                      currentItemOpacity: 100
-                    }),
-                    files: (.files // {})
-                  }" > "$FILEPATH" 2>/dev/null
+                  # 실제 데이터가 JSON인지 확인하고 간단하게 처리
+                  if echo "$SCENE_DATA" | grep -q "elements"; then
+                    echo "$SCENE_DATA" > "$FILEPATH"
+                  fi
                   
-                  if [ -f "$FILEPATH" ] && [ -s "$FILEPATH" ]; then
+                  if [ -f "$FILEPATH" ]; then
                     echo "✅ Successfully created: $FILENAME"
-                    # 권한 설정 (1000:1000으로 설정하여 사용자가 접근 가능)
-                    chown 1000:1000 "$FILEPATH" 2>/dev/null || true
                     chmod 644 "$FILEPATH"
-                    # 이 scene의 마지막 생성 시간 업데이트
-                    echo "$CURRENT_TIME" > "$SCENE_TIME_FILE"
                   else
                     echo "❌ Failed to create: $FILENAME"
-                    rm -f "$FILEPATH" 2>/dev/null
                   fi
                 fi
+              else
+                echo "⏭️  File already exists for scene: $SCENE_ID"
               fi
             fi
           done
@@ -201,11 +185,8 @@ services:
           echo "No scenes found in Redis"
         fi
         
-        # 마지막 체크 시간 업데이트
-        echo "$CURRENT_TIME" > "$LAST_CHECK"
-        
-        echo "💤 Waiting 30 seconds..."
-        sleep 30
+        echo "💤 Waiting 60 seconds..."
+        sleep 60
       done
       '
 
