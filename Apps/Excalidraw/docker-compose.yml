@@ -15,11 +15,11 @@ services:
       - /DATA/AppData/$AppID/redis:/data
     command: redis-server --appendonly yes
 
-  # Storage Backend - 그림 저장 및 공유 서버  
+  # Storage Backend - 그림 저장 및 공유 서버
   storage:
     image: kiliandeca/excalidraw-storage-backend:latest
     platform: linux/amd64
-    container_name: excalidraw-storage
+    container_name: storage
     restart: unless-stopped
     deploy:
       resources:
@@ -27,15 +27,24 @@ services:
           memory: 256M
           cpus: '0.25'
     environment:
-      - PORT=3000
+      - PORT=8081
       - STORAGE_URI=redis://redis:6379
       - LOG_LEVEL=info
       - GLOBAL_PREFIX=/api/v2
+      # CORS 설정 추가
       - CORS_ORIGIN=*
     expose:
-      - 3000
+      - 8081
+    ports:
+      - "8081:8081"  # 브라우저에서 직접 접근하기 위해
     depends_on:
       - redis
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8081/api/v2/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
 
   # Room Server - 실시간 협업 서버
   room:
@@ -68,11 +77,15 @@ services:
     environment:
       - TZ=$TZ
       - DOMAIN=$domain
-      - VITE_APP_BACKEND_V2_GET_URL=https://3000-$domain/api/v2/scenes/
-      - VITE_APP_BACKEND_V2_POST_URL=https://3000-$domain/api/v2/scenes/
-      - VITE_APP_HTTP_STORAGE_BACKEND_URL=https://3000-$domain/api/v2
+      # Storage Backend 연결 설정 (실제 NSL 도메인 사용)
+      # 주의: 아래 URL에서 "ikjunyundera" 부분을 실제 사용자명으로 변경하세요
+      - VITE_APP_BACKEND_V2_GET_URL=https://8081-excalidraw-ikjunyundera.nsl.sh/api/v2/scenes/
+      - VITE_APP_BACKEND_V2_POST_URL=https://8081-excalidraw-ikjunyundera.nsl.sh/api/v2/scenes/
+      - VITE_APP_HTTP_STORAGE_BACKEND_URL=https://8081-excalidraw-ikjunyundera.nsl.sh/api/v2
       - VITE_APP_STORAGE_BACKEND=http
+      # Room Server 연결 설정  
       - VITE_APP_WS_SERVER_URL=ws://room:80
+      # Firebase 비활성화
       - VITE_APP_FIREBASE_CONFIG={}
     depends_on:
       - storage
@@ -123,7 +136,7 @@ x-casaos:
         
         **🔧 Technical Solution**
         - Storage Backend accessible via port 8081
-        - Auto-configured NSL router domain (`$domain`)
+        - Proper NSL router domain configuration  
         - CORS headers enabled for browser access
         - Direct port mapping for API calls
         
@@ -133,19 +146,13 @@ x-casaos:
         3. Both save to Redis and provide working links
         4. Links work across devices and users
         
-        **🌐 Access URLs (Auto-detected):**
+        **🌐 Access URLs:**
         - Main App: `https://excalidraw-[username].nsl.sh/`
-        - Storage API: `https://3000-excalidraw-[username].nsl.sh/`
+        - Storage API: `https://8081-excalidraw-[username].nsl.sh/`
         
         **🔧 Total Resources:**
         - Memory: ~768MB (4 core services only)
         - CPU: ~0.7 cores
-        
-        **🚀 Zero Configuration Required:**
-        - No manual setup needed!
-        - Domain automatically configured
-        - Works for any username
-        - Just install and use!
         
         **✅ What Works:**
         - Drawing and editing
@@ -153,6 +160,10 @@ x-casaos:
         - Share buttons (both types)
         - Persistent storage
         - Cross-device access
+        
+        **📝 Note:**
+        This version focuses on stability and core functionality.
+        File export features can be added later once the base system is working perfectly.
       ko_kr: |
         **🚀 작동하는 공유 기능을 갖춘 안정적인 Excalidraw:**
         
@@ -164,7 +175,7 @@ x-casaos:
         
         **🔧 기술적 솔루션**
         - 포트 8081을 통한 Storage Backend 접근
-        - NSL 라우터 도메인 자동 설정 (`$domain`)
+        - 적절한 NSL 라우터 도메인 설정  
         - 브라우저 접근을 위한 CORS 헤더 활성화
         - API 호출을 위한 직접 포트 매핑
         
@@ -174,19 +185,13 @@ x-casaos:
         3. 둘 다 Redis에 저장하고 작동하는 링크 제공
         4. 링크는 여러 기기와 사용자 간에 작동
         
-        **🌐 접근 URL (자동 감지):**
+        **🌐 접근 URL:**
         - 메인 앱: `https://excalidraw-[username].nsl.sh/`
-        - Storage API: `https://3000-excalidraw-[username].nsl.sh/`
+        - Storage API: `https://8081-excalidraw-[username].nsl.sh/`
         
         **🔧 총 리소스:**
         - 메모리: ~768MB (4개 핵심 서비스만)
         - CPU: ~0.7 코어
-        
-        **🚀 설정 불필요:**
-        - 수동 설정 필요 없음!
-        - 도메인 자동 설정
-        - 모든 사용자명에서 작동
-        - 그냥 설치하고 사용하세요!
         
         **✅ 작동하는 기능:**
         - 그리기 및 편집
@@ -194,4 +199,8 @@ x-casaos:
         - 공유 버튼 (두 종류 모두)
         - 지속적 저장
         - 여러 기기 간 접근
+        
+        **📝 참고:**
+        이 버전은 안정성과 핵심 기능에 중점을 둡니다.
+        파일 내보내기 기능은 기본 시스템이 완벽하게 작동한 후 나중에 추가할 수 있습니다.
   index: /
