@@ -152,17 +152,17 @@ services:
                   
                   # 기본 Excalidraw JSON 구조 생성 (jq 없이)
                   cat > "$FILEPATH" << EOF
-{
-  "type": "excalidraw",
-  "version": 2,
-  "source": "https://excalidraw.com",
-  "elements": [],
-  "appState": {
-    "viewBackgroundColor": "#ffffff"
-  },
-  "files": {}
-}
-EOF
+                  {
+                    "type": "excalidraw",
+                    "version": 2,
+                    "source": "https://excalidraw.com",
+                    "elements": [],
+                    "appState": {
+                      "viewBackgroundColor": "#ffffff"
+                    },
+                    "files": {}
+                  }
+                  EOF
                   
                   # 실제 데이터가 JSON인지 확인하고 간단하게 처리
                   if echo "$SCENE_DATA" | grep -q "elements"; then
