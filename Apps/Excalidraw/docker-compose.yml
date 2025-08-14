@@ -4,7 +4,7 @@ services:
   # Redis - 데이터 저장소
   redis:
     image: redis:7-alpine
-    user: $PUID:$PGID
+    container_name: redis
     restart: unless-stopped
     deploy:
       resources:
@@ -19,7 +19,7 @@ services:
   storage:
     image: kiliandeca/excalidraw-storage-backend:latest
     platform: linux/amd64
-    user: $PUID:$PGID
+    container_name: storage
     restart: unless-stopped
     deploy:
       resources:
@@ -27,27 +27,29 @@ services:
           memory: 256M
           cpus: '0.25'
     environment:
-      PORT: 8081
-      STORAGE_URI: redis://redis:6379
-      LOG_LEVEL: info
-      GLOBAL_PREFIX: /api/v2
-      CORS_ORIGIN: '*'
+      - PORT=8081
+      - STORAGE_URI=redis://redis:6379
+      - LOG_LEVEL=info
+      - GLOBAL_PREFIX=/api/v2
+      - CORS_ORIGIN=*
     expose:
       - 8081
+    ports:
+      - "8081:8081"
     depends_on:
       - redis
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:8081/api/v2/ || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:8081/api/v2/ || exit 1"]
       interval: 30s
       timeout: 10s
-      retries: 3
+      retries: 5
       start_period: 30s
 
   # Room Server - 실시간 협업 서버
   room:
     image: excalidraw/excalidraw-room:sha-49bf529
     platform: linux/amd64
-    user: $PUID:$PGID
+    container_name: room
     restart: unless-stopped
     deploy:
       resources:
@@ -57,115 +59,12 @@ services:
     expose:
       - 80
 
-  # Save API - 즉시 저장 서비스
-  save-api:
-    image: node:18-alpine
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 128M
-          cpus: '0.1'
-    volumes:
-      - /DATA/Documents/Excalidraw:/exports
-      - /DATA/AppData/$AppID/save-api:/app
-    expose:
-      - 3001
-    working_dir: /app
-    environment:
-      NODE_ENV: production
-      PORT: 3001
-    command: |
-      sh -c '
-      # 디렉토리 생성 및 권한 설정
-      mkdir -p /exports /app
-      chown -R 1000:1000 /exports /app 2>/dev/null || true
-      
-      if [ ! -f package.json ]; then
-        echo "🚀 Initializing Save API server..."
-        npm init -y
-        npm install express cors helmet
-        
-        cat > server.js << "EOF"
-      const express = require("express");
-      const cors = require("cors");
-      const fs = require("fs");
-      const path = require("path");
-      const helmet = require("helmet");
-
-      const app = express();
-      const PORT = process.env.PORT || 3001;
-
-      app.use(helmet());
-      app.use(cors());
-      app.use(express.json({ limit: "10mb" }));
-
-      const exportDir = "/exports";
-      if (!fs.existsSync(exportDir)) {
-        fs.mkdirSync(exportDir, { recursive: true });
-      }
-
-      app.post("/save", async (req, res) => {
-        try {
-          const { sceneData, filename } = req.body;
-          
-          if (!sceneData) {
-            return res.status(400).json({ error: "Scene data is required" });
-          }
-
-          const timestamp = new Date().toISOString()
-            .replace(/[:\.]/g, "-")
-            .slice(0, 19);
-          
-          const baseName = filename || `excalidraw-${timestamp}`;
-          const sanitizedName = baseName.replace(/[^a-zA-Z0-9\-_]/g, "_");
-          const fullFilename = `${sanitizedName}.excalidraw`;
-          const filepath = path.join(exportDir, fullFilename);
-
-          const jsonData = typeof sceneData === "string" ? sceneData : JSON.stringify(sceneData, null, 2);
-          fs.writeFileSync(filepath, jsonData, "utf8");
-
-          console.log(`✅ Saved: ${fullFilename}`);
-          
-          res.json({ 
-            success: true, 
-            filename: fullFilename,
-            path: `/DATA/Documents/Excalidraw/${fullFilename}`,
-            timestamp: new Date().toISOString()
-          });
-
-        } catch (error) {
-          console.error("❌ Save error:", error);
-          res.status(500).json({ error: "Failed to save file" });
-        }
-      });
-
-      app.get("/health", (req, res) => {
-        res.json({ 
-          status: "healthy", 
-          timestamp: new Date().toISOString(),
-          exports_dir: exportDir,
-          port: PORT
-        });
-      });
-
-      app.listen(PORT, "0.0.0.0", () => {
-        console.log(`🚀 Save API Server running on port ${PORT}`);
-        console.log(`📁 Export directory: ${exportDir}`);
-      });
-      EOF
-
-        echo "✅ Server code generated"
-      fi
-      
-      echo "🚀 Starting Save API server..."
-      node server.js
-      '
-
   # Excalidraw Frontend - 메인 애플리케이션
   excalidraw:
     image: alswl/excalidraw:v0.17.3-fork-b1
     platform: linux/amd64
+    user: "0:0"
+    container_name: excalidraw
     restart: unless-stopped
     deploy:
       resources:
@@ -175,25 +74,22 @@ services:
     expose:
       - 80
     environment:
-      TZ: $TZ
-      PUID: $PUID
-      PGID: $PGID
-      DOMAIN: $domain
-      VITE_APP_BACKEND_V2_GET_URL: https://8081-$domain/api/v2/scenes/
-      VITE_APP_BACKEND_V2_POST_URL: https://8081-$domain/api/v2/scenes/
-      VITE_APP_HTTP_STORAGE_BACKEND_URL: https://8081-$domain/api/v2
-      VITE_APP_STORAGE_BACKEND: http
-      VITE_APP_WS_SERVER_URL: ws://room:80
-      VITE_APP_FIREBASE_CONFIG: '{}'
+      - TZ=$TZ
+      - DOMAIN=$domain
+      - VITE_APP_BACKEND_V2_GET_URL=https://8081-$domain/api/v2/scenes/
+      - VITE_APP_BACKEND_V2_POST_URL=https://8081-$domain/api/v2/scenes/
+      - VITE_APP_HTTP_STORAGE_BACKEND_URL=https://8081-$domain/api/v2
+      - VITE_APP_STORAGE_BACKEND=http
+      - VITE_APP_WS_SERVER_URL=ws://room:80
+      - VITE_APP_FIREBASE_CONFIG={}
     depends_on:
       - storage
       - room
-      - save-api
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:80/ || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:80/ || exit 1"]
       interval: 30s
       timeout: 10s
-      retries: 3
+      retries: 5
       start_period: 60s
 
 x-casaos:
@@ -205,101 +101,105 @@ x-casaos:
   author: CasaOS Team
   category: Productivity
   description:
-    en_us: Excalidraw collaborative whiteboard with server-side storage and instant save functionality. Simplified version for reliable deployment.
-    ko_kr: 서버 측 저장과 즉시 저장 기능을 갖춘 Excalidraw 협업 화이트보드입니다. 안정적인 배포를 위한 간소화된 버전입니다.
-    zh_cn: 具有服务器端存储和即时保存功能的 Excalidraw 协作白板。为可靠部署而简化的版本。
-    fr_fr: Tableau blanc collaboratif Excalidraw avec stockage côté serveur et fonctionnalité de sauvegarde instantanée. Version simplifiée pour un déploiement fiable.
-    es_es: Pizarra colaborativa Excalidraw con almacenamiento del lado del servidor y funcionalidad de guardado instantáneo. Versión simplificada para un despliegue confiable.
+    en_us: Excalidraw is a virtual collaborative whiteboard tool with real-time collaboration, server-side storage, and working shareable links functionality.
+    ko_kr: 실시간 협업, 서버 저장, 작동하는 공유 링크 기능을 갖춘 가상 협업 화이트보드 도구입니다.
+    zh_cn: Excalidraw 是一个具有实时协作、服务器端存储和工作共享链接功能的虚拟协作白板工具。
+    fr_fr: Excalidraw est un outil de tableau blanc collaboratif virtuel avec collaboration en temps réel, stockage côté serveur et fonctionnalité de liens partageables fonctionnelle.
+    es_es: Excalidraw es una herramienta de pizarra colaborativa virtual con colaboración en tiempo real, almacenamiento del lado del servidor y funcionalidad de enlaces compartibles que funciona.
   developer: Excalidraw Team
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/icon.png
   screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/screenshot-1.png
   tagline:
-    en_us: Simplified collaborative whiteboard with server storage
-    ko_kr: 서버 저장 기능을 갖춘 간소화된 협업 화이트보드
-    zh_cn: 具有服务器存储的简化协作白板
-    fr_fr: Tableau blanc collaboratif simplifié avec stockage serveur
-    es_es: Pizarra colaborativa simplificada con almacenamiento en servidor
+    en_us: Collaborative whiteboard with working share features
+    ko_kr: 작동하는 공유 기능을 갖춘 협업 화이트보드
+    zh_cn: 具有工作共享功能的协作白板
+    fr_fr: Tableau blanc collaboratif avec fonctionnalités de partage fonctionnelles
+    es_es: Pizarra colaborativa con funciones de compartir que funcionan
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/thumbnail.png
   title:
-    en_us: Excalidraw Simple
+    en_us: Excalidraw
   tips:
     before_install:
       en_us: |
-        **🚀 Excalidraw Simple - Stable & Reliable**
+        **🚀 Stable Excalidraw with Working Share Features:**
         
-        **✅ Core Features:**
+        **✅ All Core Features**
         - Real-time collaboration ✅
         - Server-side storage in Redis ✅  
-        - Working shareable links ✅
-        - Save API for manual saves ✅
-        - Clean NSL Router integration ✅
+        - **WORKING: Shareable links** ✅
+        - **WORKING: Export to Link** ✅
         
-        **🔧 What's Fixed:**
-        - Removed complex frontend modifications
-        - Simplified port configurations  
-        - Better health checks with wget
-        - Proper PUID/PGID permissions
-        - Clean dependency order
+        **🔧 Technical Solution**
+        - Storage Backend accessible via port 8081
+        - Auto-configured NSL router domain (`$domain`)
+        - CORS headers enabled for browser access
+        - Direct port mapping for API calls
         
-        **📁 Save API Available:**
-        - Manual save endpoint: `/save`
-        - Health check: `/health`
-        - Access via: `https://3001-excalidraw-[username].nsl.sh/`
+        **📱 How Share Features Work:**
+        1. Click "Export to Link" → Creates shareable URL
+        2. Click "Shareable link" → Generates public link
+        3. Both save to Redis and provide working links
+        4. Links work across devices and users
         
-        **🌐 Access URLs:**
+        **🌐 Access URLs (Auto-detected):**
         - Main App: `https://excalidraw-[username].nsl.sh/`
         - Storage API: `https://8081-excalidraw-[username].nsl.sh/`
-        - Save API: `https://3001-excalidraw-[username].nsl.sh/`
         
-        **🔧 Resources:**
-        - Memory: ~640MB (4 services)
-        - CPU: ~0.6 cores
+        **🔧 Total Resources:**
+        - Memory: ~768MB (4 core services only)
+        - CPU: ~0.7 cores
         
-        **🎯 Testing Steps:**
-        1. Install this simplified version first
-        2. Verify main app loads properly
-        3. Test collaboration and sharing
-        4. Check save API health endpoint
-        5. Then we can add enhanced features
+        **🚀 Zero Configuration Required:**
+        - No manual setup needed!
+        - Domain automatically configured
+        - Works for any username
+        - Just install and use!
         
-        This version focuses on **stability first**!
+        **✅ What Works:**
+        - Drawing and editing
+        - Real-time collaboration  
+        - Share buttons (both types)
+        - Persistent storage
+        - Cross-device access
       ko_kr: |
-        **🚀 Excalidraw Simple - 안정적이고 신뢰할 수 있는 버전**
+        **🚀 작동하는 공유 기능을 갖춘 안정적인 Excalidraw:**
         
-        **✅ 핵심 기능:**
+        **✅ 모든 핵심 기능**
         - 실시간 협업 ✅
         - Redis 서버 측 저장 ✅  
-        - 작동하는 공유 링크 ✅
-        - 수동 저장용 Save API ✅
-        - 깔끔한 NSL Router 통합 ✅
+        - **작동함: 공유 링크** ✅
+        - **작동함: 링크로 내보내기** ✅
         
-        **🔧 수정된 사항:**
-        - 복잡한 프론트엔드 수정 제거
-        - 포트 구성 단순화  
-        - wget을 사용한 더 나은 상태 확인
-        - 적절한 PUID/PGID 권한
-        - 깔끔한 의존성 순서
+        **🔧 기술적 솔루션**
+        - 포트 8081을 통한 Storage Backend 접근
+        - NSL 라우터 도메인 자동 설정 (`$domain`)
+        - 브라우저 접근을 위한 CORS 헤더 활성화
+        - API 호출을 위한 직접 포트 매핑
         
-        **📁 Save API 사용 가능:**
-        - 수동 저장 엔드포인트: `/save`
-        - 상태 확인: `/health`
-        - 접근: `https://3001-excalidraw-[username].nsl.sh/`
+        **📱 공유 기능 작동 방식:**
+        1. "링크로 내보내기" 클릭 → 공유 가능한 URL 생성
+        2. "공유 링크" 클릭 → 공개 링크 생성
+        3. 둘 다 Redis에 저장하고 작동하는 링크 제공
+        4. 링크는 여러 기기와 사용자 간에 작동
         
-        **🌐 접근 URL:**
+        **🌐 접근 URL (자동 감지):**
         - 메인 앱: `https://excalidraw-[username].nsl.sh/`
         - Storage API: `https://8081-excalidraw-[username].nsl.sh/`
-        - Save API: `https://3001-excalidraw-[username].nsl.sh/`
         
-        **🔧 리소스:**
-        - 메모리: ~640MB (4개 서비스)
-        - CPU: ~0.6 코어
+        **🔧 총 리소스:**
+        - 메모리: ~768MB (4개 핵심 서비스만)
+        - CPU: ~0.7 코어
         
-        **🎯 테스트 단계:**
-        1. 이 간소화된 버전을 먼저 설치
-        2. 메인 앱이 제대로 로드되는지 확인
-        3. 협업 및 공유 테스트
-        4. Save API 상태 엔드포인트 확인
-        5. 그 다음에 향상된 기능 추가
+        **🚀 설정 불필요:**
+        - 수동 설정 필요 없음!
+        - 도메인 자동 설정
+        - 모든 사용자명에서 작동
+        - 그냥 설치하고 사용하세요!
         
-        이 버전은 **안정성 우선**으로 구성되었습니다!
+        **✅ 작동하는 기능:**
+        - 그리기 및 편집
+        - 실시간 협업  
+        - 공유 버튼 (두 종류 모두)
+        - 지속적 저장
+        - 여러 기기 간 접근
   index: /
