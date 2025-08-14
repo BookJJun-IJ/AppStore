@@ -31,8 +31,12 @@ services:
       - STORAGE_URI=redis://redis:6379
       - LOG_LEVEL=info
       - GLOBAL_PREFIX=/api/v2
+      # CORS 설정 추가
+      - CORS_ORIGIN=*
     expose:
       - 8081
+    ports:
+      - "8081:8081"  # 브라우저에서 직접 접근하기 위해
     depends_on:
       - redis
     healthcheck:
@@ -73,10 +77,11 @@ services:
     environment:
       - TZ=$TZ
       - DOMAIN=$domain
-      # Storage Backend 연결 설정 (Nginx 프록시를 통해)
-      - VITE_APP_BACKEND_V2_GET_URL=/api/v2/scenes/
-      - VITE_APP_BACKEND_V2_POST_URL=/api/v2/scenes/
-      - VITE_APP_HTTP_STORAGE_BACKEND_URL=/api/v2
+      # Storage Backend 연결 설정 (실제 NSL 도메인 사용)
+      # 주의: 아래 URL에서 "ikjunyundera" 부분을 실제 사용자명으로 변경하세요
+      - VITE_APP_BACKEND_V2_GET_URL=https://8081-excalidraw-ikjunyundera.nsl.sh/api/v2/scenes/
+      - VITE_APP_BACKEND_V2_POST_URL=https://8081-excalidraw-ikjunyundera.nsl.sh/api/v2/scenes/
+      - VITE_APP_HTTP_STORAGE_BACKEND_URL=https://8081-excalidraw-ikjunyundera.nsl.sh/api/v2
       - VITE_APP_STORAGE_BACKEND=http
       # Room Server 연결 설정  
       - VITE_APP_WS_SERVER_URL=ws://room:80
@@ -92,267 +97,102 @@ services:
       retries: 5
       start_period: 60s
 
-  # Nginx Proxy - API 라우팅 및 WebSocket 프록시
-  nginx:
-    image: nginx:alpine
-    container_name: nginx
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 64M
-          cpus: '0.1'
-    expose:
-      - 80
-    depends_on:
-      - excalidraw
-      - storage
-      - room
-    volumes:
-      - /DATA/AppData/$AppID/nginx:/etc/nginx/conf.d
-    entrypoint: |
-      sh -c '
-      # 간단한 Nginx 설정 파일 생성
-      cat > /etc/nginx/conf.d/default.conf << EOF
-      upstream excalidraw_app {
-          server excalidraw:80;
-      }
-      
-      upstream storage_backend {
-          server storage:8081;
-      }
-      
-      upstream room_server {
-          server room:80;
-      }
-      
-      server {
-          listen 80;
-          server_name _;
-          
-          location / {
-              proxy_pass http://excalidraw_app;
-              proxy_set_header Host \$host;
-              proxy_set_header X-Real-IP \$remote_addr;
-              proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-              proxy_set_header X-Forwarded-Proto \$scheme;
-              proxy_http_version 1.1;
-              proxy_set_header Upgrade \$http_upgrade;
-              proxy_set_header Connection "upgrade";
-          }
-          
-          location /api/v2/ {
-              proxy_pass http://storage_backend/api/v2/;
-              proxy_set_header Host \$host;
-              proxy_set_header X-Real-IP \$remote_addr;
-              proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-              proxy_set_header X-Forwarded-Proto \$scheme;
-              add_header Access-Control-Allow-Origin * always;
-              add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS" always;
-              add_header Access-Control-Allow-Headers "Content-Type, Authorization" always;
-              
-              if (\$request_method = OPTIONS) {
-                  add_header Access-Control-Allow-Origin * always;
-                  add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS" always;
-                  add_header Access-Control-Allow-Headers "Content-Type, Authorization" always;
-                  return 204;
-              }
-          }
-          
-          location /room {
-              proxy_pass http://room_server;
-              proxy_set_header Host \$host;
-              proxy_set_header X-Real-IP \$remote_addr;
-              proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-              proxy_set_header X-Forwarded-Proto \$scheme;
-              proxy_http_version 1.1;
-              proxy_set_header Upgrade \$http_upgrade;
-              proxy_set_header Connection "upgrade";
-          }
-      }
-      EOF
-      
-      echo "🚀 Starting Nginx with corrected config..."
-      nginx -g "daemon off;"
-      '
-
-  # Export Monitor - Redis 변화 감지 및 파일 생성
-  export-monitor:
-    image: alpine:latest
-    container_name: export-monitor
-    restart: unless-stopped
-    user: "0:0"  # root 권한으로 실행
-    deploy:
-      resources:
-        limits:
-          memory: 64M
-          cpus: '0.1'
-    volumes:
-      - /DATA/Documents/Excalidraw:/exports
-      - /DATA/AppData/$AppID/monitor:/app
-    depends_on:
-      - redis
-    working_dir: /app
-    entrypoint: |
-      sh -c '
-      # 필요한 패키지 설치
-      apk add --no-cache redis curl jq
-      
-      echo "🚀 Starting Excalidraw Export Monitor..."
-      
-      # 스크립트 디렉토리 생성
-      mkdir -p /exports /app
-      
-      while true; do
-        echo "📊 Checking for new/updated scenes..."
-        
-        # Redis에서 모든 scenes 키 가져오기
-        SCENE_KEYS=$(redis-cli -h redis -p 6379 KEYS "scenes:*" 2>/dev/null || echo "")
-        
-        if [ -n "$SCENE_KEYS" ] && [ "$SCENE_KEYS" != "(empty array)" ]; then
-          echo "$SCENE_KEYS" | while read -r key; do
-            if [ -n "$key" ]; then
-              # Scene ID 추출
-              SCENE_ID=$(echo "$key" | sed "s/scenes://")
-              
-              # Redis에서 데이터 가져오기
-              SCENE_DATA=$(redis-cli -h redis -p 6379 GET "$key" 2>/dev/null || echo "")
-              
-              if [ -n "$SCENE_DATA" ] && [ "$SCENE_DATA" != "(nil)" ]; then
-                # 타임스탬프 생성
-                TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-                FILENAME="excalidraw-$SCENE_ID-$TIMESTAMP.excalidraw"
-                FILEPATH="/exports/$FILENAME"
-                
-                # 기존 파일이 있는지 확인 (중복 방지)
-                if ! ls /exports/excalidraw-$SCENE_ID-*.excalidraw >/dev/null 2>&1; then
-                  echo "📝 Creating new file for scene: $SCENE_ID"
-                  
-                  # JSON 데이터 파싱 및 Excalidraw 형식으로 변환
-                  echo "$SCENE_DATA" | jq "{
-                    type: \"excalidraw\",
-                    version: 2,
-                    source: \"https://excalidraw.com\",
-                    elements: (.elements // []),
-                    appState: (.appState // {}),
-                    files: (.files // {})
-                  }" > "$FILEPATH" 2>/dev/null
-                  
-                  if [ -f "$FILEPATH" ]; then
-                    echo "✅ Successfully exported: $FILENAME"
-                    chmod 644 "$FILEPATH"
-                  else
-                    echo "❌ Failed to export scene: $SCENE_ID"
-                  fi
-                fi
-              fi
-            fi
-          done
-        else
-          echo "No scenes found in Redis"
-        fi
-        
-        echo "💤 Waiting 60 seconds before next check..."
-        sleep 60
-      done
-      '
-
 x-casaos:
   architectures:
     - amd64
     - arm64
-  main: nginx
+  main: excalidraw
   webui_port: 80
   author: CasaOS Team
   category: Productivity
   description:
-    en_us: Excalidraw is a virtual collaborative whiteboard tool with real-time collaboration, server-side storage, automatic export monitoring, and fixed shareable links functionality.
-    ko_kr: 실시간 협업, 서버 저장, 자동 내보내기 모니터링, 수정된 공유 링크 기능을 갖춘 가상 협업 화이트보드 도구입니다.
-    zh_cn: Excalidraw 是一个具有实时协作、服务器端存储、自动导出监控和修复的可共享链接功能的虚拟协作白板工具。
-    fr_fr: Excalidraw est un outil de tableau blanc collaboratif virtuel avec collaboration en temps réel, stockage côté serveur, surveillance d'export automatique et fonctionnalité de liens partageables corrigée.
-    es_es: Excalidraw es una herramienta de pizarra colaborativa virtual con colaboración en tiempo real, almacenamiento del lado del servidor, monitoreo automático de exportación y funcionalidad de enlaces compartibles corregida.
+    en_us: Excalidraw is a virtual collaborative whiteboard tool with real-time collaboration, server-side storage, and working shareable links functionality.
+    ko_kr: 실시간 협업, 서버 저장, 작동하는 공유 링크 기능을 갖춘 가상 협업 화이트보드 도구입니다.
+    zh_cn: Excalidraw 是一个具有实时协作、服务器端存储和工作共享链接功能的虚拟协作白板工具。
+    fr_fr: Excalidraw est un outil de tableau blanc collaboratif virtuel avec collaboration en temps réel, stockage côté serveur et fonctionnalité de liens partageables fonctionnelle.
+    es_es: Excalidraw es una herramienta de pizarra colaborativa virtual con colaboración en tiempo real, almacenamiento del lado del servidor y funcionalidad de enlaces compartibles que funciona.
   developer: Excalidraw Team
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/icon.png
   screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/screenshot-1.png
   tagline:
-    en_us: Collaborative whiteboard with fixed sharing + auto-export
-    ko_kr: 공유 기능 수정 + 자동 내보내기를 갖춘 협업 화이트보드
-    zh_cn: 修复共享功能 + 自动导出的协作白板
-    fr_fr: Tableau blanc collaboratif avec partage corrigé + export automatique
-    es_es: Pizarra colaborativa con compartir corregido + exportación automática
+    en_us: Collaborative whiteboard with working share features
+    ko_kr: 작동하는 공유 기능을 갖춘 협업 화이트보드
+    zh_cn: 具有工作共享功能的协作白板
+    fr_fr: Tableau blanc collaboratif avec fonctionnalités de partage fonctionnelles
+    es_es: Pizarra colaborativa con funciones de compartir que funcionan
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/thumbnail.png
   title:
     en_us: Excalidraw
   tips:
     before_install:
       en_us: |
-        **🚀 Complete Excalidraw Solution:**
+        **🚀 Stable Excalidraw with Working Share Features:**
         
         **✅ All Core Features**
         - Real-time collaboration ✅
         - Server-side storage in Redis ✅  
-        - **FIXED: Shareable links** ✅
-        - **FIXED: Export to Link** ✅
+        - **WORKING: Shareable links** ✅
+        - **WORKING: Export to Link** ✅
         
-        **🆕 Automatic Export Monitoring**
-        - Automatically creates .excalidraw files when you draw
-        - Files saved to `/DATA/Documents/Excalidraw/`
-        - Smart change detection (no duplicates)
-        - Runs every 30 seconds
+        **🔧 Technical Solution**
+        - Storage Backend accessible via port 8081
+        - Proper NSL router domain configuration  
+        - CORS headers enabled for browser access
+        - Direct port mapping for API calls
         
-        **🔧 Technical Fixes:**
-        - Added Nginx proxy for API routing
-        - Fixed CORS issues for browser access
-        - Proper WebSocket support for collaboration
-        - Stable container communication
+        **📱 How Share Features Work:**
+        1. Click "Export to Link" → Creates shareable URL
+        2. Click "Shareable link" → Generates public link
+        3. Both save to Redis and provide working links
+        4. Links work across devices and users
         
-        **📁 File Output:**
-        `excalidraw-[scene-id]-[YYYYMMDD-HHMMSS].excalidraw`
+        **🌐 Access URLs:**
+        - Main App: `https://excalidraw-[username].nsl.sh/`
+        - Storage API: `https://8081-excalidraw-[username].nsl.sh/`
         
         **🔧 Total Resources:**
-        - Memory: ~896MB (all services + proxy + monitor)
-        - CPU: ~0.9 cores
+        - Memory: ~768MB (4 core services only)
+        - CPU: ~0.7 cores
         
-        **🎯 What Works Now:**
-        - ✅ Drawing and editing
-        - ✅ Real-time collaboration
-        - ✅ "Export to Link" button  
-        - ✅ "Shareable link" button
-        - ✅ Automatic file creation
-        - ✅ Server-side backup
+        **✅ What Works:**
+        - Drawing and editing
+        - Real-time collaboration  
+        - Share buttons (both types)
+        - Persistent storage
+        - Cross-device access
       ko_kr: |
-        **🚀 완전한 Excalidraw 솔루션:**
+        **🚀 작동하는 공유 기능을 갖춘 안정적인 Excalidraw:**
         
         **✅ 모든 핵심 기능**
         - 실시간 협업 ✅
         - Redis 서버 측 저장 ✅  
-        - **수정됨: 공유 링크** ✅
-        - **수정됨: 링크로 내보내기** ✅
+        - **작동함: 공유 링크** ✅
+        - **작동함: 링크로 내보내기** ✅
         
-        **🆕 자동 내보내기 모니터링**
-        - 그림을 그릴 때 자동으로 .excalidraw 파일 생성
-        - `/DATA/Documents/Excalidraw/`에 파일 저장
-        - 스마트 변화 감지 (중복 없음)
-        - 30초마다 실행
+        **🔧 기술적 솔루션**
+        - 포트 8081을 통한 Storage Backend 접근
+        - 적절한 NSL 라우터 도메인 설정  
+        - 브라우저 접근을 위한 CORS 헤더 활성화
+        - API 호출을 위한 직접 포트 매핑
         
-        **🔧 기술적 수정사항:**
-        - API 라우팅을 위한 Nginx 프록시 추가
-        - 브라우저 접근을 위한 CORS 문제 수정
-        - 협업을 위한 적절한 WebSocket 지원
-        - 안정적인 컨테이너 통신
+        **📱 공유 기능 작동 방식:**
+        1. "링크로 내보내기" 클릭 → 공유 가능한 URL 생성
+        2. "공유 링크" 클릭 → 공개 링크 생성
+        3. 둘 다 Redis에 저장하고 작동하는 링크 제공
+        4. 링크는 여러 기기와 사용자 간에 작동
         
-        **📁 파일 출력:**
-        `excalidraw-[scene-id]-[YYYYMMDD-HHMMSS].excalidraw`
+        **🌐 접근 URL:**
+        - 메인 앱: `https://excalidraw-[username].nsl.sh/`
+        - Storage API: `https://8081-excalidraw-[username].nsl.sh/`
         
         **🔧 총 리소스:**
-        - 메모리: ~896MB (모든 서비스 + 프록시 + 모니터)
-        - CPU: ~0.9 코어
+        - 메모리: ~768MB (4개 핵심 서비스만)
+        - CPU: ~0.7 코어
         
-        **🎯 현재 작동하는 기능:**
-        - ✅ 그리기 및 편집
-        - ✅ 실시간 협업
-        - ✅ "링크로 내보내기" 버튼  
-        - ✅ "공유 링크" 버튼
-        - ✅ 자동 파일 생성
-        - ✅ 서버 측 백업
+        **✅ 작동하는 기능:**
+        - 그리기 및 편집
+        - 실시간 협업  
+        - 공유 버튼 (두 종류 모두)
+        - 지속적 저장
+        - 여러 기기 간 접근
   index: /
