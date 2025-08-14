@@ -97,7 +97,7 @@ services:
       retries: 5
       start_period: 60s
 
-  # Export File Generator - Export 시 서버에 .excalidraw 파일 생성 (간단 버전)
+  # Export File Generator - Export 시 서버에 .excalidraw 파일 생성
   file-generator:
     image: redis:7-alpine
     container_name: file-generator
@@ -114,75 +114,42 @@ services:
       - redis
       - storage
     working_dir: /app
-    command: |
+    entrypoint: |
       sh -c '
-      echo "🚀 Starting Excalidraw Export File Generator (Simple Version)..."
-      
-      # 디렉토리 생성 (redis 이미지에는 이미 필요한 도구들이 있음)
+      echo "🚀 Starting Excalidraw Export File Generator..."
       mkdir -p /exports /app
       
       while true; do
         echo "📊 Checking for scene updates..."
-        
-        # Redis에서 모든 scene 키 가져오기
         SCENES=$(redis-cli -h redis -p 6379 KEYS "scenes:*" 2>/dev/null || echo "")
         
-        if [ -n "$SCENES" ] && [ "$SCENES" != "(empty list or set)" ]; then
-          echo "Found scenes: $SCENES"
-          
+        if [ -n "$SCENES" ]; then
           echo "$SCENES" | while read -r scene_key; do
             if [ -n "$scene_key" ]; then
-              # Scene ID 추출
               SCENE_ID=$(echo "$scene_key" | sed "s/scenes://")
+              EXISTING_COUNT=$(ls /exports/excalidraw-$SCENE_ID-*.excalidraw 2>/dev/null | wc -l)
               
-              # 기존 파일이 있는지 확인 (중복 방지)
-              EXISTING_FILES=$(ls /exports/excalidraw-$SCENE_ID-*.excalidraw 2>/dev/null | wc -l)
-              
-              if [ "$EXISTING_FILES" -eq 0 ]; then
-                echo "📝 Creating new file for scene: $SCENE_ID"
-                
-                # Redis에서 scene 데이터 가져오기
+              if [ "$EXISTING_COUNT" -eq 0 ]; then
+                echo "📝 Creating file for scene: $SCENE_ID"
                 SCENE_DATA=$(redis-cli -h redis -p 6379 GET "$scene_key" 2>/dev/null)
                 
                 if [ -n "$SCENE_DATA" ] && [ "$SCENE_DATA" != "(nil)" ]; then
-                  # 타임스탬프로 파일명 생성
                   TIMESTAMP=$(date +%Y%m%d-%H%M%S)
                   FILENAME="excalidraw-$SCENE_ID-$TIMESTAMP.excalidraw"
                   FILEPATH="/exports/$FILENAME"
                   
-                  # 기본 Excalidraw JSON 구조 생성 (jq 없이)
-                  cat > "$FILEPATH" << EOF
-                  {
-                    "type": "excalidraw",
-                    "version": 2,
-                    "source": "https://excalidraw.com",
-                    "elements": [],
-                    "appState": {
-                      "viewBackgroundColor": "#ffffff"
-                    },
-                    "files": {}
-                  }
-                  EOF
-                  
-                  # 실제 데이터가 JSON인지 확인하고 간단하게 처리
-                  if echo "$SCENE_DATA" | grep -q "elements"; then
-                    echo "$SCENE_DATA" > "$FILEPATH"
-                  fi
+                  echo "$SCENE_DATA" > "$FILEPATH"
                   
                   if [ -f "$FILEPATH" ]; then
-                    echo "✅ Successfully created: $FILENAME"
+                    echo "✅ Created: $FILENAME"
                     chmod 644 "$FILEPATH"
-                  else
-                    echo "❌ Failed to create: $FILENAME"
                   fi
                 fi
-              else
-                echo "⏭️  File already exists for scene: $SCENE_ID"
               fi
             fi
           done
         else
-          echo "No scenes found in Redis"
+          echo "No scenes found"
         fi
         
         echo "💤 Waiting 60 seconds..."
@@ -208,18 +175,18 @@ x-casaos:
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/icon.png
   screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/screenshot-1.png
   tagline:
-    en_us: Collaborative whiteboard with share features + auto file export
-    ko_kr: 공유 기능 + 자동 파일 내보내기를 갖춘 협업 화이트보드
-    zh_cn: 具有共享功能 + 自动文件导出的协作白板
-    fr_fr: Tableau blanc collaboratif avec fonctionnalités de partage + export automatique
-    es_es: Pizarra colaborativa con funciones de compartir + exportación automática
+    en_us: Collaborative whiteboard with share + auto file export
+    ko_kr: 공유 + 자동 파일 내보내기를 갖춘 협업 화이트보드
+    zh_cn: 具有共享 + 自动文件导出的协作白板
+    fr_fr: Tableau blanc collaboratif avec partage + export automatique
+    es_es: Pizarra colaborativa con compartir + exportación automática
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/thumbnail.png
   title:
     en_us: Excalidraw
   tips:
     before_install:
       en_us: |
-        **🚀 Complete Excalidraw with Share + Auto Export:**
+        **🚀 Complete Excalidraw with Share + Auto Export (Fixed):**
         
         **✅ All Core Features**
         - Real-time collaboration ✅
@@ -228,19 +195,19 @@ x-casaos:
         - **WORKING: Export to Link** ✅
         - **NEW: Automatic .excalidraw file generation** ✅
         
-        **🆕 Auto Export Feature**
-        - Automatically creates .excalidraw files when you draw/edit
+        **🆕 Auto Export Feature (Shell Fixed)**
+        - Automatically creates .excalidraw files when you draw
         - Files saved to `/DATA/Documents/Excalidraw/`
-        - Smart timing: creates files every 60+ seconds (avoids spam)
-        - Standard Excalidraw format for full compatibility
+        - Simple, stable file generation (no complex shell syntax)
+        - Standard JSON format compatible with excalidraw.com
         
         **📁 File Output:**
         `excalidraw-[scene-id]-[YYYYMMDD-HHMMSS].excalidraw`
         
-        **🔧 How Auto Export Works:**
-        1. Draw or modify anything in Excalidraw
-        2. File generator detects changes in Redis
-        3. Creates timestamped .excalidraw file automatically
+        **🔧 How It Works:**
+        1. Draw anything in Excalidraw → Saved to Redis
+        2. File generator checks Redis every 60 seconds
+        3. Creates .excalidraw file if none exists for that scene
         4. Files appear in `/DATA/Documents/Excalidraw/`
         
         **🌐 Access URLs:**
@@ -256,10 +223,10 @@ x-casaos:
         - Real-time collaboration  
         - Share buttons (both types)
         - Persistent storage
-        - Automatic file backup
+        - Automatic file creation
         - Cross-device access
       ko_kr: |
-        **🚀 공유 + 자동 내보내기 기능이 있는 완전한 Excalidraw:**
+        **🚀 공유 + 자동 내보내기 기능이 있는 완전한 Excalidraw (수정됨):**
         
         **✅ 모든 핵심 기능**
         - 실시간 협업 ✅
@@ -268,19 +235,19 @@ x-casaos:
         - **작동함: 링크로 내보내기** ✅
         - **새로운 기능: 자동 .excalidraw 파일 생성** ✅
         
-        **🆕 자동 내보내기 기능**
-        - 그리기/편집 시 자동으로 .excalidraw 파일 생성
+        **🆕 자동 내보내기 기능 (Shell 수정됨)**
+        - 그림을 그릴 때 자동으로 .excalidraw 파일 생성
         - `/DATA/Documents/Excalidraw/`에 파일 저장
-        - 스마트 타이밍: 60초 이상 간격으로 파일 생성 (스팸 방지)
-        - 완전 호환성을 위한 표준 Excalidraw 형식
+        - 간단하고 안정적인 파일 생성 (복잡한 shell 문법 없음)
+        - excalidraw.com과 호환되는 표준 JSON 형식
         
         **📁 파일 출력:**
         `excalidraw-[scene-id]-[YYYYMMDD-HHMMSS].excalidraw`
         
-        **🔧 자동 내보내기 작동 방식:**
-        1. Excalidraw에서 그리기 또는 수정
-        2. 파일 생성기가 Redis 변화 감지
-        3. 타임스탬프가 있는 .excalidraw 파일 자동 생성
+        **🔧 작동 방식:**
+        1. Excalidraw에서 그리기 → Redis에 저장
+        2. 파일 생성기가 60초마다 Redis 확인
+        3. 해당 scene의 파일이 없으면 .excalidraw 파일 생성
         4. `/DATA/Documents/Excalidraw/`에 파일 나타남
         
         **🌐 접근 URL:**
@@ -296,6 +263,6 @@ x-casaos:
         - 실시간 협업  
         - 공유 버튼 (두 종류 모두)
         - 지속적 저장
-        - 자동 파일 백업
+        - 자동 파일 생성
         - 여러 기기 간 접근
   index: /
