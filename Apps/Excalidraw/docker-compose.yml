@@ -15,11 +15,11 @@ services:
       - /DATA/AppData/$AppID/redis:/data
     command: redis-server --appendonly yes
 
-  # Storage Backend - 그림 저장 및 공유 서버
+  # Storage Backend - 그림 저장 및 공유 서버  
   storage:
     image: kiliandeca/excalidraw-storage-backend:latest
     platform: linux/amd64
-    container_name: storage
+    container_name: excalidraw-storage
     restart: unless-stopped
     deploy:
       resources:
@@ -27,23 +27,15 @@ services:
           memory: 256M
           cpus: '0.25'
     environment:
-      - PORT=8081
+      - PORT=3000
       - STORAGE_URI=redis://redis:6379
       - LOG_LEVEL=info
       - GLOBAL_PREFIX=/api/v2
       - CORS_ORIGIN=*
     expose:
-      - 8081
-    ports:
-      - "8081:8081"
+      - 3000
     depends_on:
       - redis
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8081/api/v2/ || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
 
   # Room Server - 실시간 협업 서버
   room:
@@ -76,9 +68,9 @@ services:
     environment:
       - TZ=$TZ
       - DOMAIN=$domain
-      - VITE_APP_BACKEND_V2_GET_URL=https://8081-$domain/api/v2/scenes/
-      - VITE_APP_BACKEND_V2_POST_URL=https://8081-$domain/api/v2/scenes/
-      - VITE_APP_HTTP_STORAGE_BACKEND_URL=https://8081-$domain/api/v2
+      - VITE_APP_BACKEND_V2_GET_URL=https://3000-$domain/api/v2/scenes/
+      - VITE_APP_BACKEND_V2_POST_URL=https://3000-$domain/api/v2/scenes/
+      - VITE_APP_HTTP_STORAGE_BACKEND_URL=https://3000-$domain/api/v2
       - VITE_APP_STORAGE_BACKEND=http
       - VITE_APP_WS_SERVER_URL=ws://room:80
       - VITE_APP_FIREBASE_CONFIG={}
@@ -143,7 +135,7 @@ x-casaos:
         
         **🌐 Access URLs (Auto-detected):**
         - Main App: `https://excalidraw-[username].nsl.sh/`
-        - Storage API: `https://8081-excalidraw-[username].nsl.sh/`
+        - Storage API: `https://3000-excalidraw-[username].nsl.sh/`
         
         **🔧 Total Resources:**
         - Memory: ~768MB (4 core services only)
@@ -184,7 +176,7 @@ x-casaos:
         
         **🌐 접근 URL (자동 감지):**
         - 메인 앱: `https://excalidraw-[username].nsl.sh/`
-        - Storage API: `https://8081-excalidraw-[username].nsl.sh/`
+        - Storage API: `https://3000-excalidraw-[username].nsl.sh/`
         
         **🔧 총 리소스:**
         - 메모리: ~768MB (4개 핵심 서비스만)
