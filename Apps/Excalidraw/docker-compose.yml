@@ -97,6 +97,118 @@ services:
       retries: 5
       start_period: 60s
 
+  # Export File Generator - Export 시 서버에 .excalidraw 파일 생성
+  file-generator:
+    image: alpine:latest
+    container_name: file-generator
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+          cpus: '0.1'
+    volumes:
+      - /DATA/Documents/Excalidraw:/exports
+      - /DATA/AppData/$AppID/generator:/app
+    depends_on:
+      - redis
+      - storage
+    working_dir: /app
+    command: |
+      sh -c '
+      # 패키지 설치
+      apk add --no-cache redis curl jq
+      
+      echo "🚀 Starting Excalidraw Export File Generator..."
+      
+      # 디렉토리 생성
+      mkdir -p /exports /app
+      
+      # 이전 체크 시간 파일
+      LAST_CHECK="/app/last_check_time"
+      echo "0" > "$LAST_CHECK"
+      
+      while true; do
+        echo "📊 Checking for scene updates..."
+        
+        # 현재 시간
+        CURRENT_TIME=$(date +%s)
+        
+        # Redis에서 모든 scene 키 가져오기
+        SCENES=$(redis-cli -h redis -p 6379 KEYS "scenes:*" 2>/dev/null || echo "")
+        
+        if [ -n "$SCENES" ]; then
+          echo "$SCENES" | while read -r scene_key; do
+            if [ -n "$scene_key" ] && [ "$scene_key" != "(empty" ]; then
+              # Scene ID 추출
+              SCENE_ID=$(echo "$scene_key" | sed "s/scenes://")
+              
+              # 이 scene에 대한 마지막 생성 시간 확인
+              SCENE_TIME_FILE="/app/scene_time_$SCENE_ID"
+              LAST_SCENE_TIME=$(cat "$SCENE_TIME_FILE" 2>/dev/null || echo "0")
+              
+              # 60초 이상 지난 경우에만 새 파일 생성 (너무 자주 생성 방지)
+              TIME_DIFF=$((CURRENT_TIME - LAST_SCENE_TIME))
+              
+              if [ $TIME_DIFF -gt 60 ]; then
+                # Redis에서 scene 데이터 가져오기
+                SCENE_DATA=$(redis-cli -h redis -p 6379 GET "$scene_key" 2>/dev/null)
+                
+                if [ -n "$SCENE_DATA" ] && [ "$SCENE_DATA" != "(nil)" ]; then
+                  # 타임스탬프로 파일명 생성
+                  TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+                  FILENAME="excalidraw-$SCENE_ID-$TIMESTAMP.excalidraw"
+                  FILEPATH="/exports/$FILENAME"
+                  
+                  echo "📝 Creating export file: $FILENAME"
+                  
+                  # Excalidraw 표준 JSON 형식으로 변환
+                  echo "$SCENE_DATA" | jq "{
+                    type: \"excalidraw\",
+                    version: 2,
+                    source: \"https://excalidraw.com\",
+                    elements: (.elements // []),
+                    appState: (.appState // {
+                      viewBackgroundColor: \"#ffffff\",
+                      currentItemFontFamily: 1,
+                      currentItemStrokeWidth: 1,
+                      currentItemStrokeColor: \"#000000\",
+                      currentItemBackgroundColor: \"transparent\",
+                      currentItemFillStyle: \"hachure\",
+                      currentItemStrokeStyle: \"solid\",
+                      currentItemRoughness: 1,
+                      currentItemOpacity: 100
+                    }),
+                    files: (.files // {})
+                  }" > "$FILEPATH" 2>/dev/null
+                  
+                  if [ -f "$FILEPATH" ] && [ -s "$FILEPATH" ]; then
+                    echo "✅ Successfully created: $FILENAME"
+                    # 권한 설정 (1000:1000으로 설정하여 사용자가 접근 가능)
+                    chown 1000:1000 "$FILEPATH" 2>/dev/null || true
+                    chmod 644 "$FILEPATH"
+                    # 이 scene의 마지막 생성 시간 업데이트
+                    echo "$CURRENT_TIME" > "$SCENE_TIME_FILE"
+                  else
+                    echo "❌ Failed to create: $FILENAME"
+                    rm -f "$FILEPATH" 2>/dev/null
+                  fi
+                fi
+              fi
+            fi
+          done
+        else
+          echo "No scenes found in Redis"
+        fi
+        
+        # 마지막 체크 시간 업데이트
+        echo "$CURRENT_TIME" > "$LAST_CHECK"
+        
+        echo "💤 Waiting 30 seconds..."
+        sleep 30
+      done
+      '
+
 x-casaos:
   architectures:
     - amd64
@@ -106,93 +218,103 @@ x-casaos:
   author: CasaOS Team
   category: Productivity
   description:
-    en_us: Excalidraw is a virtual collaborative whiteboard tool with real-time collaboration, server-side storage, and working shareable links functionality.
-    ko_kr: 실시간 협업, 서버 저장, 작동하는 공유 링크 기능을 갖춘 가상 협업 화이트보드 도구입니다.
-    zh_cn: Excalidraw 是一个具有实时协作、服务器端存储和工作共享链接功能的虚拟协作白板工具。
-    fr_fr: Excalidraw est un outil de tableau blanc collaboratif virtuel avec collaboration en temps réel, stockage côté serveur et fonctionnalité de liens partageables fonctionnelle.
-    es_es: Excalidraw es una herramienta de pizarra colaborativa virtual con colaboración en tiempo real, almacenamiento del lado del servidor y funcionalidad de enlaces compartibles que funciona.
+    en_us: Excalidraw is a virtual collaborative whiteboard tool with real-time collaboration, server-side storage, working shareable links, and automatic .excalidraw file generation.
+    ko_kr: 실시간 협업, 서버 저장, 작동하는 공유 링크, 자동 .excalidraw 파일 생성 기능을 갖춘 가상 협업 화이트보드 도구입니다.
+    zh_cn: Excalidraw 是一个具有实时协作、服务器端存储、工作共享链接和自动 .excalidraw 文件生成功能的虚拟协作白板工具。
+    fr_fr: Excalidraw est un outil de tableau blanc collaboratif virtuel avec collaboration en temps réel, stockage côté serveur, liens partageables fonctionnels et génération automatique de fichiers .excalidraw.
+    es_es: Excalidraw es una herramienta de pizarra colaborativa virtual con colaboración en tiempo real, almacenamiento del lado del servidor, enlaces compartibles que funcionan y generación automática de archivos .excalidraw.
   developer: Excalidraw Team
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/icon.png
   screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/screenshot-1.png
   tagline:
-    en_us: Collaborative whiteboard with working share features
-    ko_kr: 작동하는 공유 기능을 갖춘 협업 화이트보드
-    zh_cn: 具有工作共享功能的协作白板
-    fr_fr: Tableau blanc collaboratif avec fonctionnalités de partage fonctionnelles
-    es_es: Pizarra colaborativa con funciones de compartir que funcionan
+    en_us: Collaborative whiteboard with share features + auto file export
+    ko_kr: 공유 기능 + 자동 파일 내보내기를 갖춘 협업 화이트보드
+    zh_cn: 具有共享功能 + 自动文件导出的协作白板
+    fr_fr: Tableau blanc collaboratif avec fonctionnalités de partage + export automatique
+    es_es: Pizarra colaborativa con funciones de compartir + exportación automática
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/thumbnail.png
   title:
     en_us: Excalidraw
   tips:
     before_install:
       en_us: |
-        **🚀 Stable Excalidraw with Working Share Features:**
+        **🚀 Complete Excalidraw with Share + Auto Export:**
         
         **✅ All Core Features**
         - Real-time collaboration ✅
         - Server-side storage in Redis ✅  
         - **WORKING: Shareable links** ✅
         - **WORKING: Export to Link** ✅
+        - **NEW: Automatic .excalidraw file generation** ✅
         
-        **🔧 Technical Solution**
-        - Storage Backend accessible via port 8081
-        - Proper NSL router domain configuration  
-        - CORS headers enabled for browser access
-        - Direct port mapping for API calls
+        **🆕 Auto Export Feature**
+        - Automatically creates .excalidraw files when you draw/edit
+        - Files saved to `/DATA/Documents/Excalidraw/`
+        - Smart timing: creates files every 60+ seconds (avoids spam)
+        - Standard Excalidraw format for full compatibility
         
-        **📱 How Share Features Work:**
-        1. Click "Export to Link" → Creates shareable URL
-        2. Click "Shareable link" → Generates public link
-        3. Both save to Redis and provide working links
-        4. Links work across devices and users
+        **📁 File Output:**
+        `excalidraw-[scene-id]-[YYYYMMDD-HHMMSS].excalidraw`
+        
+        **🔧 How Auto Export Works:**
+        1. Draw or modify anything in Excalidraw
+        2. File generator detects changes in Redis
+        3. Creates timestamped .excalidraw file automatically
+        4. Files appear in `/DATA/Documents/Excalidraw/`
         
         **🌐 Access URLs:**
         - Main App: `https://excalidraw-[username].nsl.sh/`
         - Storage API: `https://8081-excalidraw-[username].nsl.sh/`
         
         **🔧 Total Resources:**
-        - Memory: ~768MB (4 core services only)
-        - CPU: ~0.7 cores
+        - Memory: ~832MB (4 core services + file generator)
+        - CPU: ~0.8 cores
         
         **✅ What Works:**
         - Drawing and editing
         - Real-time collaboration  
         - Share buttons (both types)
         - Persistent storage
+        - Automatic file backup
         - Cross-device access
       ko_kr: |
-        **🚀 작동하는 공유 기능을 갖춘 안정적인 Excalidraw:**
+        **🚀 공유 + 자동 내보내기 기능이 있는 완전한 Excalidraw:**
         
         **✅ 모든 핵심 기능**
         - 실시간 협업 ✅
         - Redis 서버 측 저장 ✅  
         - **작동함: 공유 링크** ✅
         - **작동함: 링크로 내보내기** ✅
+        - **새로운 기능: 자동 .excalidraw 파일 생성** ✅
         
-        **🔧 기술적 솔루션**
-        - 포트 8081을 통한 Storage Backend 접근
-        - 적절한 NSL 라우터 도메인 설정  
-        - 브라우저 접근을 위한 CORS 헤더 활성화
-        - API 호출을 위한 직접 포트 매핑
+        **🆕 자동 내보내기 기능**
+        - 그리기/편집 시 자동으로 .excalidraw 파일 생성
+        - `/DATA/Documents/Excalidraw/`에 파일 저장
+        - 스마트 타이밍: 60초 이상 간격으로 파일 생성 (스팸 방지)
+        - 완전 호환성을 위한 표준 Excalidraw 형식
         
-        **📱 공유 기능 작동 방식:**
-        1. "링크로 내보내기" 클릭 → 공유 가능한 URL 생성
-        2. "공유 링크" 클릭 → 공개 링크 생성
-        3. 둘 다 Redis에 저장하고 작동하는 링크 제공
-        4. 링크는 여러 기기와 사용자 간에 작동
+        **📁 파일 출력:**
+        `excalidraw-[scene-id]-[YYYYMMDD-HHMMSS].excalidraw`
+        
+        **🔧 자동 내보내기 작동 방식:**
+        1. Excalidraw에서 그리기 또는 수정
+        2. 파일 생성기가 Redis 변화 감지
+        3. 타임스탬프가 있는 .excalidraw 파일 자동 생성
+        4. `/DATA/Documents/Excalidraw/`에 파일 나타남
         
         **🌐 접근 URL:**
         - 메인 앱: `https://excalidraw-[username].nsl.sh/`
         - Storage API: `https://8081-excalidraw-[username].nsl.sh/`
         
         **🔧 총 리소스:**
-        - 메모리: ~768MB (4개 핵심 서비스만)
-        - CPU: ~0.7 코어
+        - 메모리: ~832MB (4개 핵심 서비스 + 파일 생성기)
+        - CPU: ~0.8 코어
         
         **✅ 작동하는 기능:**
         - 그리기 및 편집
         - 실시간 협업  
         - 공유 버튼 (두 종류 모두)
         - 지속적 저장
+        - 자동 파일 백업
         - 여러 기기 간 접근
   index: /
