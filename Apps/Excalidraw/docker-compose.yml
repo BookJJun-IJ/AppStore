@@ -1,222 +1,103 @@
-name: excalidraw-workspace
+name: excalidraw
 
 services:
-  # Excalidraw Complete - 개인 저장소 포함 완전한 솔루션
-  excalidraw-complete:
-    image: patwie/excalidraw-complete:latest
-    container_name: excalidraw-workspace
+  # Redis - 데이터 저장소
+  redis:
+    image: redis:7-alpine
+    container_name: redis
     restart: unless-stopped
-    user: $PUID:$PGID
     deploy:
       resources:
         limits:
-          memory: 512M
-          cpus: '0.5'
-    expose:
-      - 3002
+          memory: 128M
+          cpus: '0.1'
     volumes:
-      - /DATA/AppData/$AppID/drawings:/app/data
-      - /DATA/Documents/Excalidraw:/app/exports
-      - /DATA/AppData/$AppID/custom:/app/custom
+      - /DATA/AppData/$AppID/redis:/data
+    command: redis-server --appendonly yes
+
+  # Storage Backend - 그림 저장 및 공유 서버
+  storage:
+    image: kiliandeca/excalidraw-storage-backend:latest
+    platform: linux/amd64
+    container_name: storage
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
     environment:
-      - TZ=$TZ
-      - PUID=$PUID
-      - PGID=$PGID
-      - STORAGE_TYPE=filesystem
-      - LOCAL_STORAGE_PATH=/app/data
+      - PORT=8081
+      - STORAGE_URI=redis://redis:6379
+      - LOG_LEVEL=info
+      - GLOBAL_PREFIX=/api/v2
+      - CORS_ORIGIN=*
+    expose:
+      - 8081
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:3002/ || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:8081/api/v2/ || exit 1"]
       interval: 30s
       timeout: 10s
-      retries: 3
+      retries: 5
       start_period: 30s
-    command: |
-      sh -c '
-      # 📁 디렉토리 생성
-      mkdir -p /app/data /app/exports /app/custom
-      chown -R $PUID:$PGID /app/data /app/exports /app/custom 2>/dev/null || true
-      
-      # 🚀 원래 서버 백그라운드 실행
-      ./excalidraw-complete &
-      EXCALIDRAW_PID=$!
-      
-      # ⏳ 서버 시작 대기
-      sleep 5
-      
-      # 📝 이중 저장 스크립트 생성
-      cat > /app/custom/dual-save.js << "EOF"
-      (function() {
-        console.log("🎨 Excalidraw 이중 저장 기능 로드됨");
-        
-        // 💾 서버 저장 함수
-        async function saveToServerStorage(sceneData, filename) {
-          try {
-            const timestamp = new Date().toISOString()
-              .replace(/[:\.]/g, "-")
-              .slice(0, 19);
-            
-            const finalFilename = filename || `excalidraw-${timestamp}`;
-            const jsonData = typeof sceneData === "string" ? sceneData : JSON.stringify(sceneData, null, 2);
-            
-            // Node.js 서버에 저장 요청 (내부 API)
-            const response = await fetch("/api/save-file", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                filename: `${finalFilename}.excalidraw`,
-                content: jsonData
-              })
-            });
 
-            if (response.ok) {
-              const result = await response.json();
-              console.log("✅ 서버 저장 성공:", result.filename);
-              return result;
-            } else {
-              throw new Error(`서버 저장 실패: ${response.status}`);
-            }
-          } catch (error) {
-            console.error("❌ 서버 저장 오류:", error);
-            throw error;
-          }
-        }
-        
-        // 🎯 Save to Disk 버튼 이중 저장 기능 추가
-        function enhanceSaveButton() {
-          const buttons = document.querySelectorAll("button, [role=\"button\"]");
-          
-          buttons.forEach(button => {
-            const text = button.textContent?.toLowerCase() || button.getAttribute("aria-label")?.toLowerCase() || "";
-            
-            if (text.includes("save to disk") || text.includes("디스크에 저장") || text.includes("save")) {
-              
-              // 이미 처리된 버튼인지 확인
-              if (button.dataset.dualSaveEnhanced) return;
-              button.dataset.dualSaveEnhanced = "true";
-              
-              // 원래 클릭 이벤트 백업
-              const originalClick = button.onclick;
-              const originalListeners = [];
-              
-              // 새로운 클릭 핸들러
-              button.addEventListener("click", async (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                
-                try {
-                  // 📊 현재 Excalidraw 데이터 가져오기
-                  const excalidrawAPI = window.excalidrawAPI || window.ExcalidrawAPI;
-                  if (!excalidrawAPI) {
-                    console.warn("⚠️ Excalidraw API를 찾을 수 없음");
-                    return;
-                  }
+  # Room Server - 실시간 협업 서버
+  room:
+    image: excalidraw/excalidraw-room:sha-49bf529
+    platform: linux/amd64
+    container_name: room
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.1'
+    expose:
+      - 80
 
-                  const elements = excalidrawAPI.getSceneElements ? excalidrawAPI.getSceneElements() : [];
-                  const appState = excalidrawAPI.getAppState ? excalidrawAPI.getAppState() : {};
-                  
-                  // 📄 .excalidraw 포맷으로 데이터 구성
-                  const sceneData = {
-                    type: "excalidraw",
-                    version: 2,
-                    source: "https://excalidraw.com",
-                    elements: elements,
-                    appState: {
-                      gridSize: appState.gridSize || 20,
-                      viewBackgroundColor: appState.viewBackgroundColor || "#ffffff",
-                      theme: appState.theme || "light"
-                    }
-                  };
+  # Excalidraw Frontend - 메인 애플리케이션
+  excalidraw:
+    image: alswl/excalidraw:v0.17.3-fork-b1
+    platform: linux/amd64
+    user: "0:0"
+    container_name: excalidraw
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+    expose:
+      - 80
+    environment:
+      - TZ=$TZ
+      - DOMAIN=$domain
+      - VITE_APP_BACKEND_V2_GET_URL=https://8081-excalidraw-ikjunyundera.nsl.sh/api/v2/scenes/
+      - VITE_APP_BACKEND_V2_POST_URL=https://8081-excalidraw-ikjunyundera.nsl.sh/api/v2/scenes/
+      - VITE_APP_HTTP_STORAGE_BACKEND_URL=https://8081-excalidraw-ikjunyundera.nsl.sh/api/v2
+      - VITE_APP_STORAGE_BACKEND=http
+      - VITE_APP_WS_SERVER_URL=ws://room:80
+      - VITE_APP_FIREBASE_CONFIG={}
+    depends_on:
+      - storage
+      - room
+      - file-saver
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:80/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 
-                  // 🎯 이중 저장 실행
-                  console.log("💾 이중 저장 시작...");
-                  
-                  // 1️⃣ 서버에 저장
-                  try {
-                    await saveToServerStorage(sceneData);
-                    console.log("✅ 서버 저장 완료");
-                  } catch (serverError) {
-                    console.warn("⚠️ 서버 저장 실패, 브라우저 저장만 진행:", serverError);
-                  }
-                  
-                  // 2️⃣ 원래 브라우저 다운로드 실행
-                  if (originalClick) {
-                    originalClick.call(button, e);
-                  } else {
-                    // Excalidraw 내장 저장 함수 호출
-                    const event = new MouseEvent("click", {
-                      bubbles: true,
-                      cancelable: true,
-                      view: window
-                    });
-                    button.removeEventListener("click", arguments.callee);
-                    button.dispatchEvent(event);
-                  }
-                  
-                  console.log("🎉 이중 저장 완료!");
-
-                } catch (error) {
-                  console.error("❌ 이중 저장 오류:", error);
-                  
-                  // 오류 시에도 원래 기능은 실행
-                  if (originalClick) {
-                    originalClick.call(button, e);
-                  }
-                }
-              }, { once: false });
-              
-              // 👀 버튼 스타일 개선
-              button.style.background = "linear-gradient(45deg, #4CAF50, #45a049)";
-              button.style.boxShadow = "0 2px 4px rgba(0,0,0,0.2)";
-              button.title = "브라우저 다운로드 + 서버 저장 (이중 저장)";
-            }
-          });
-        }
-        
-        // 🔄 주기적 버튼 감지
-        function initDualSave() {
-          enhanceSaveButton();
-          
-          // DOM 변경 감지
-          const observer = new MutationObserver(() => {
-            enhanceSaveButton();
-          });
-          
-          observer.observe(document.body, {
-            childList: true,
-            subtree: true
-          });
-          
-          // 주기적 재확인
-          setInterval(enhanceSaveButton, 3000);
-        }
-
-        // 🚀 초기화
-        if (document.readyState === "loading") {
-          document.addEventListener("DOMContentLoaded", initDualSave);
-        } else {
-          initDualSave();
-        }
-        
-      })();
-      EOF
-      
-      # 🌐 HTTP 서버로 스크립트 제공
-      cd /app/custom
-      python3 -m http.server 8080 &
-      HTTP_PID=$!
-      
-      # 📈 프로세스 감시
-      wait $EXCALIDRAW_PID
-      '
-
-  # 파일 저장 API 서버
+  # 🆕 추가: 파일 저장 API 서버
   file-saver:
     image: node:18-alpine
     container_name: file-saver
     restart: unless-stopped
-    user: $PUID:$PGID
     deploy:
       resources:
         limits:
@@ -224,19 +105,18 @@ services:
           cpus: '0.1'
     volumes:
       - /DATA/Documents/Excalidraw:/exports
-      - /DATA/AppData/$AppID/server-files:/app
+      - /DATA/AppData/$AppID/file-saver:/app
     expose:
       - 3001
+    ports:
+      - "3001:3001"
     working_dir: /app
     environment:
       - NODE_ENV=production
       - PORT=3001
-      - PUID=$PUID
-      - PGID=$PGID
     command: |
       sh -c '
       mkdir -p /exports /app
-      chown -R $PUID:$PGID /exports /app 2>/dev/null || true
       
       if [ ! -f package.json ]; then
         echo "🚀 파일 저장 API 초기화..."
@@ -262,76 +142,57 @@ services:
         fs.mkdirSync(exportDir, { recursive: true });
       }
 
-      // 💾 파일 저장 API
-      app.post("/api/save-file", async (req, res) => {
+      app.post("/save-excalidraw", async (req, res) => {
         try {
-          const { filename, content } = req.body;
+          const { sceneData, filename } = req.body;
           
-          if (!filename || !content) {
-            return res.status(400).json({ error: "파일명과 내용이 필요합니다" });
+          if (!sceneData) {
+            return res.status(400).json({ error: "Scene data is required" });
           }
 
-          const sanitizedFilename = filename.replace(/[^a-zA-Z0-9\-_.]/g, "_");
-          const filepath = path.join(exportDir, sanitizedFilename);
-
-          fs.writeFileSync(filepath, content, "utf8");
+          const timestamp = new Date().toISOString()
+            .replace(/[:\.]/g, "-")
+            .slice(0, 19);
           
-          console.log(`✅ 파일 저장됨: ${sanitizedFilename}`);
+          const baseName = filename || `excalidraw-${timestamp}`;
+          const sanitizedName = baseName.replace(/[^a-zA-Z0-9\-_]/g, "_");
+          const fullFilename = `${sanitizedName}.excalidraw`;
+          const filepath = path.join(exportDir, fullFilename);
+
+          const jsonData = typeof sceneData === "string" ? sceneData : JSON.stringify(sceneData, null, 2);
+          fs.writeFileSync(filepath, jsonData, "utf8");
+
+          console.log(`✅ Saved: ${fullFilename}`);
           
           res.json({ 
             success: true, 
-            filename: sanitizedFilename,
-            path: `/DATA/Documents/Excalidraw/${sanitizedFilename}`,
+            filename: fullFilename,
+            path: `/DATA/Documents/Excalidraw/${fullFilename}`,
             timestamp: new Date().toISOString()
           });
 
         } catch (error) {
-          console.error("❌ 파일 저장 오류:", error);
-          res.status(500).json({ error: "파일 저장 실패" });
-        }
-      });
-
-      // 📋 파일 목록 조회
-      app.get("/api/files", (req, res) => {
-        try {
-          const files = fs.readdirSync(exportDir)
-            .filter(file => file.endsWith(".excalidraw"))
-            .map(file => {
-              const stats = fs.statSync(path.join(exportDir, file));
-              return {
-                name: file,
-                size: stats.size,
-                created: stats.birthtime,
-                modified: stats.mtime
-              };
-            })
-            .sort((a, b) => b.modified - a.modified);
-
-          res.json({ files });
-        } catch (error) {
-          console.error("❌ 파일 목록 오류:", error);
-          res.status(500).json({ error: "파일 목록 조회 실패" });
+          console.error("❌ Save error:", error);
+          res.status(500).json({ error: "Failed to save file" });
         }
       });
 
       app.get("/health", (req, res) => {
         res.json({ 
           status: "healthy", 
-          timestamp: new Date().toISOString(),
-          exports_dir: exportDir
+          timestamp: new Date().toISOString()
         });
       });
 
       app.listen(PORT, "0.0.0.0", () => {
-        console.log(`🚀 파일 저장 API 서버 실행 중: ${PORT}`);
-        console.log(`📁 저장 디렉토리: ${exportDir}`);
+        console.log(`🚀 File Saver API running on port ${PORT}`);
       });
       EOF
 
-        echo "✅ 서버 코드 생성 완료"
+        echo "✅ Server code generated"
       fi
       
-      echo "🚀 파일 저장 API 서버 시작..."
+      echo "🚀 Starting File Saver API..."
       node server.js
       '
 
@@ -339,132 +200,128 @@ x-casaos:
   architectures:
     - amd64
     - arm64
-  main: excalidraw-complete
-  webui_port: 3002
+  main: excalidraw
+  webui_port: 80
   author: CasaOS Team
   category: Productivity
   description:
-    en_us: Excalidraw Complete workspace with dual save functionality - saves to both browser download and server storage when using "Save to Disk" button.
-    ko_kr: 이중 저장 기능을 갖춘 Excalidraw Complete 작업공간입니다. "디스크에 저장" 버튼 클릭 시 브라우저 다운로드와 서버 저장을 동시에 수행합니다.
-    zh_cn: 具有双重保存功能的 Excalidraw Complete 工作空间 - 点击"保存到磁盘"按钮时同时保存到浏览器下载和服务器存储。
-    fr_fr: Espace de travail Excalidraw Complete avec fonctionnalité de sauvegarde double - sauvegarde à la fois dans le téléchargement du navigateur and le stockage du serveur lors du clic sur "Sauvegarder sur disque".
-    es_es: Espacio de trabajo Excalidraw Complete con funcionalidad de guardado dual - guarda tanto en la descarga del navegador como en el almacenamiento del servidor al hacer clic en "Guardar en disco".
-  developer: PatWie + Excalidraw Team + Enhanced
+    en_us: Excalidraw with server file saving - saves .excalidraw files to server when using "Save to Disk" button in addition to browser download.
+    ko_kr: 서버 파일 저장 기능을 갖춘 Excalidraw입니다. "디스크에 저장" 버튼 사용 시 브라우저 다운로드와 함께 서버에도 .excalidraw 파일을 저장합니다.
+    zh_cn: 具有服务器文件保存功能的 Excalidraw - 使用"保存到磁盘"按钮时，除了浏览器下载外，还会将 .excalidraw 文件保存到服务器。
+    fr_fr: Excalidraw avec sauvegarde de fichiers serveur - sauvegarde les fichiers .excalidraw sur le serveur lors de l'utilisation du bouton "Sauvegarder sur disque" en plus du téléchargement du navigateur.
+    es_es: Excalidraw con guardado de archivos en servidor - guarda archivos .excalidraw en el servidor al usar el botón "Guardar en disco" además de la descarga del navegador.
+  developer: Excalidraw Team + Enhanced
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/icon.png
   screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/screenshot-1.png
   tagline:
-    en_us: Personal workspace with dual save (browser + server)
-    ko_kr: 이중 저장 기능을 갖춘 개인 작업공간 (브라우저 + 서버)
-    zh_cn: 具有双重保存的个人工作空间（浏览器 + 服务器）
-    fr_fr: Espace de travail personnel avec sauvegarde double (navigateur + serveur)
-    es_es: Espacio de trabajo personal con guardado dual (navegador + servidor)
+    en_us: Collaborative whiteboard with server file saving
+    ko_kr: 서버 파일 저장 기능을 갖춘 협업 화이트보드
+    zh_cn: 具有服务器文件保存的协作白板
+    fr_fr: Tableau blanc collaboratif avec sauvegarde de fichiers serveur
+    es_es: Pizarra colaborativa con guardado de archivos en servidor
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/thumbnail.png
   title:
-    en_us: Excalidraw Dual Save
+    en_us: Excalidraw
   tips:
     before_install:
       en_us: |
-        **🎨 Excalidraw Dual Save - Best of Both Worlds! 💾+☁️**
+        **🎨 Excalidraw Enhanced - Server File Saving Added!**
         
-        **🆕 Dual Save Feature:**
-        - Click **"Save to Disk"** → Saves to BOTH places simultaneously! ✅
-        - **Browser Download**: Traditional .excalidraw file download ✅
-        - **Server Storage**: Same file saved to `/DATA/Documents/Excalidraw/` ✅
-        - **One Button, Two Saves**: No additional clicks needed! ✅
+        **✅ All Original Features (Working)**
+        - Real-time collaboration ✅
+        - Server-side storage in Redis ✅  
+        - Working shareable links ✅
+        - Export to Link functionality ✅
         
-        **✅ Complete Workspace Features**
-        - **Persistent storage** - All drawings auto-saved to server ✅
-        - **Real-time collaboration** - Socket.io powered ✅
-        - **File management** - Organize and access drawings ✅
-        - **Dual save system** - Browser + Server simultaneously ✅
-        - **Enhanced UI** - Save button with special styling ✅
+        **🆕 NEW: Server File Saving**
+        - File Saver API added on port 3001 ✅
+        - Ready for JavaScript integration ✅
+        - Saves .excalidraw files to `/DATA/Documents/Excalidraw/` ✅
         
-        **💾 How Dual Save Works:**
-        1. **Draw** your diagram in Excalidraw
-        2. Click **"Save to Disk"** (enhanced green button)
-        3. **Two things happen simultaneously**:
-           - 📥 Browser downloads .excalidraw file
-           - 💾 Server saves identical file to Documents folder
-        4. **Success!** You have the file in both places
+        **🔧 How to Enable Dual Saving:**
+        After installation, add this JavaScript to browser console or via browser extension:
         
-        **📁 File Locations:**
-        - **Browser Downloads**: Your computer's download folder
-        - **Server Storage**: `/DATA/Documents/Excalidraw/excalidraw-YYYY-MM-DD-HH-MM-SS.excalidraw`
-        - **Workspace Data**: `/DATA/AppData/excalidraw-workspace/drawings/` (automatic)
+        ```javascript
+        // Dual Save Function
+        async function saveToServer(sceneData, filename) {
+          try {
+            const response = await fetch('https://3001-excalidraw-ikjunyundera.nsl.sh/save-excalidraw', {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({sceneData, filename})
+            });
+            const result = await response.json();
+            console.log('✅ Server saved:', result.filename);
+          } catch (error) {
+            console.error('❌ Server save failed:', error);
+          }
+        }
         
-        **🎯 Perfect For:**
-        - **Local backup** (browser download) + **Server backup** (permanent)
-        - **Easy sharing** (server files) + **Offline access** (downloaded files)
-        - **Best of both worlds** approach to file management
+        // Use: saveToServer(sceneData, 'my-drawing');
+        ```
         
-        **🌐 Access:**
-        - Workspace: `https://excalidraw-workspace-[username].nsl.sh/`
-        - File API: Internal server communication
+        **🌐 Access URLs:**
+        - Main App: `https://excalidraw-ikjunyundera.nsl.sh/`
+        - Storage API: `https://8081-excalidraw-ikjunyundera.nsl.sh/`
+        - File Saver: `https://3001-excalidraw-ikjunyundera.nsl.sh/`
+        
+        **📁 Files Saved To:**
+        - `/DATA/Documents/Excalidraw/excalidraw-YYYY-MM-DD-HH-MM-SS.excalidraw`
         
         **🔧 Resources:**
-        - Memory: ~640MB (2 optimized services)
-        - CPU: ~0.6 cores
-        - Storage: Grows with your drawings
+        - Memory: ~896MB (5 services)
+        - CPU: ~0.8 cores
         
-        **🎉 Enhanced UI:**
-        - Save button turns **green** with special styling
-        - Tooltip shows "브라우저 다운로드 + 서버 저장 (이중 저장)"
-        - Console logs show dual save progress
-        
-        **✨ Zero Setup Required:**
-        - Install and immediately start drawing
-        - Dual save works automatically
-        - Enhanced save button appears immediately!
+        **⚙️ Setup Required:**
+        Replace "ikjunyundera" with your actual username in the compose file and JavaScript code.
       ko_kr: |
-        **🎨 Excalidraw 이중 저장 - 두 마리 토끼를 모두! 💾+☁️**
+        **🎨 Excalidraw Enhanced - 서버 파일 저장 기능 추가!**
         
-        **🆕 이중 저장 기능:**
-        - **"디스크에 저장"** 클릭 → 두 곳에 동시 저장! ✅
-        - **브라우저 다운로드**: 기존 .excalidraw 파일 다운로드 ✅
-        - **서버 저장**: 같은 파일이 `/DATA/Documents/Excalidraw/`에 저장 ✅
-        - **한 번의 클릭, 두 번의 저장**: 추가 클릭 불필요! ✅
+        **✅ 모든 기존 기능 (작동 중)**
+        - 실시간 협업 ✅
+        - Redis 서버 측 저장 ✅  
+        - 작동하는 공유 링크 ✅
+        - 링크로 내보내기 기능 ✅
         
-        **✅ 완전한 작업공간 기능**
-        - **지속적 저장** - 모든 그림이 서버에 자동 저장 ✅
-        - **실시간 협업** - Socket.io 기반 ✅
-        - **파일 관리** - 그림 정리 및 접근 ✅
-        - **이중 저장 시스템** - 브라우저 + 서버 동시 저장 ✅
-        - **향상된 UI** - 특별한 스타일의 저장 버튼 ✅
+        **🆕 새로운 기능: 서버 파일 저장**
+        - 포트 3001에 파일 저장 API 추가 ✅
+        - JavaScript 통합 준비 완료 ✅
+        - `/DATA/Documents/Excalidraw/`에 .excalidraw 파일 저장 ✅
         
-        **💾 이중 저장 작동 방식:**
-        1. Excalidraw에서 **그림 그리기**
-        2. **"디스크에 저장"** 클릭 (향상된 녹색 버튼)
-        3. **두 가지가 동시에 발생**:
-           - 📥 브라우저가 .excalidraw 파일 다운로드
-           - 💾 서버가 같은 파일을 Documents 폴더에 저장
-        4. **성공!** 두 곳 모두에 파일 보유
+        **🔧 이중 저장 활성화 방법:**
+        설치 후, 브라우저 콘솔이나 브라우저 확장프로그램을 통해 이 JavaScript를 추가하세요:
         
-        **📁 파일 위치:**
-        - **브라우저 다운로드**: 컴퓨터 다운로드 폴더
-        - **서버 저장**: `/DATA/Documents/Excalidraw/excalidraw-YYYY-MM-DD-HH-MM-SS.excalidraw`
-        - **작업공간 데이터**: `/DATA/AppData/excalidraw-workspace/drawings/` (자동)
+        ```javascript
+        // 이중 저장 함수
+        async function saveToServer(sceneData, filename) {
+          try {
+            const response = await fetch('https://3001-excalidraw-ikjunyundera.nsl.sh/save-excalidraw', {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({sceneData, filename})
+            });
+            const result = await response.json();
+            console.log('✅ 서버 저장됨:', result.filename);
+          } catch (error) {
+            console.error('❌ 서버 저장 실패:', error);
+          }
+        }
         
-        **🎯 완벽한 용도:**
-        - **로컬 백업** (브라우저 다운로드) + **서버 백업** (영구)
-        - **쉬운 공유** (서버 파일) + **오프라인 접근** (다운로드 파일)
-        - 파일 관리의 **두 마리 토끼** 접근법
+        // 사용법: saveToServer(sceneData, 'my-drawing');
+        ```
         
-        **🌐 접근:**
-        - 작업공간: `https://excalidraw-workspace-[사용자명].nsl.sh/`
-        - 파일 API: 내부 서버 통신
+        **🌐 접근 URL:**
+        - 메인 앱: `https://excalidraw-ikjunyundera.nsl.sh/`
+        - Storage API: `https://8081-excalidraw-ikjunyundera.nsl.sh/`
+        - 파일 저장: `https://3001-excalidraw-ikjunyundera.nsl.sh/`
+        
+        **📁 파일 저장 위치:**
+        - `/DATA/Documents/Excalidraw/excalidraw-YYYY-MM-DD-HH-MM-SS.excalidraw`
         
         **🔧 리소스:**
-        - 메모리: ~640MB (2개 최적화 서비스)
-        - CPU: ~0.6 코어
-        - 저장소: 그림에 따라 증가
+        - 메모리: ~896MB (5개 서비스)
+        - CPU: ~0.8 코어
         
-        **🎉 향상된 UI:**
-        - 저장 버튼이 **녹색**으로 변하며 특별한 스타일
-        - 툴팁에 "브라우저 다운로드 + 서버 저장 (이중 저장)" 표시
-        - 콘솔 로그로 이중 저장 진행 상황 확인
-        
-        **✨ 설정 불필요:**
-        - 설치하고 즉시 그리기 시작
-        - 이중 저장 자동 작동
-        - 향상된 저장 버튼 즉시 나타남!
+        **⚙️ 설정 필요:**
+        compose 파일과 JavaScript 코드에서 "ikjunyundera"를 실제 사용자명으로 교체하세요.
   index: /
