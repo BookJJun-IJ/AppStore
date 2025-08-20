@@ -1,11 +1,12 @@
 name: excalidraw
 
 services:
-  # Redis - 데이터 저장소
+  # Redis - 권한 문제 해결 버전
   redis:
     image: redis:7-alpine
     container_name: excalidraw-redis
     restart: unless-stopped
+    user: "0:0"  # root로 실행하여 권한 문제 회피
     deploy:
       resources:
         limits:
@@ -13,12 +14,21 @@ services:
           cpus: '0.1'
     volumes:
       - /DATA/AppData/$AppID/redis:/data
-    command: redis-server --appendonly yes
+    command: |
+      sh -c '
+      # 데이터 디렉토리 권한 설정
+      chown -R redis:redis /data 2>/dev/null || true
+      chmod 755 /data 2>/dev/null || true
+      
+      # Redis 서버 시작 (간단한 설정)
+      exec redis-server --appendonly yes --dir /data --save 300 1
+      '
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
+      test: ["CMD-SHELL", "redis-cli ping || exit 1"]
+      interval: 15s
       timeout: 5s
-      retries: 3
+      retries: 5
+      start_period: 30s
 
   # Storage Backend - 그림 저장 및 공유 서버
   storage:
@@ -48,8 +58,8 @@ services:
       test: ["CMD-SHELL", "curl -f http://localhost:8081/api/v2/ || exit 1"]
       interval: 30s
       timeout: 10s
-      retries: 5
-      start_period: 30s
+      retries: 3
+      start_period: 45s
 
   # Room Server - 실시간 협업 서버
   room:
@@ -65,12 +75,13 @@ services:
     expose:
       - 80
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:80/ || exit 1"]
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:80/ || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 30s
 
-  # 파일 저장 API 서버
+  # 파일 저장 API 서버 - 단순화
   file-saver:
     image: node:18-alpine
     container_name: excalidraw-file-saver
@@ -92,112 +103,102 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3001
-      - PUID=$PUID
-      - PGID=$PGID
     command: |
       sh -c '
-      mkdir -p /exports /app
-      chmod 755 /exports 2>/dev/null || true
+      echo "🚀 파일 저장 API 시작..."
       
-      if [ ! -f package.json ]; then
-        echo "📦 Node.js 프로젝트 초기화..."
-        npm init -y > /dev/null 2>&1
-        npm install express cors helmet > /dev/null 2>&1
+      mkdir -p /exports /app
+      
+      if [ ! -f server.js ]; then
+        echo "📦 서버 코드 생성..."
         
+        # package.json 생성
+        cat > package.json << "EOF"
+      {
+        "name": "file-saver",
+        "version": "1.0.0",
+        "main": "server.js"
+      }
+      EOF
+
+        # 단순한 서버 코드
         cat > server.js << "EOF"
-      const express = require("express");
-      const cors = require("cors");
+      const http = require("http");
       const fs = require("fs");
       const path = require("path");
-      const helmet = require("helmet");
 
-      const app = express();
-      const PORT = process.env.PORT || 3001;
+      const server = http.createServer((req, res) => {
+        // CORS 헤더
+        res.setHeader("Access-Control-Allow-Origin", "*");
+        res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+        res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+        res.setHeader("Content-Type", "application/json");
 
-      app.use(helmet({ contentSecurityPolicy: false }));
-      app.use(cors({ origin: "*" }));
-      app.use(express.json({ limit: "50mb" }));
-
-      const exportDir = "/exports";
-
-      try {
-        if (!fs.existsSync(exportDir)) {
-          fs.mkdirSync(exportDir, { recursive: true });
+        if (req.method === "OPTIONS") {
+          res.writeHead(200);
+          res.end();
+          return;
         }
-      } catch (error) {
-        console.error("Directory setup failed:", error);
-      }
 
-      app.post("/save-excalidraw", async (req, res) => {
-        try {
-          const { sceneData, filename } = req.body;
-          
-          if (!sceneData) {
-            return res.status(400).json({ error: "Scene data is required" });
-          }
+        if (req.method === "GET" && req.url === "/health") {
+          res.writeHead(200);
+          res.end(JSON.stringify({ status: "healthy", timestamp: new Date().toISOString() }));
+          return;
+        }
 
-          const timestamp = new Date().toISOString()
-            .replace(/[:.]/g, "-")
-            .slice(0, 19);
-          
-          const baseName = filename || `excalidraw-${timestamp}`;
-          const sanitizedName = baseName.replace(/[^a-zA-Z0-9\-_]/g, "_");
-          const fullFilename = `${sanitizedName}.excalidraw`;
-          const filepath = path.join(exportDir, fullFilename);
+        if (req.method === "POST" && req.url === "/save-excalidraw") {
+          let body = "";
+          req.on("data", chunk => { body += chunk.toString(); });
+          req.on("end", () => {
+            try {
+              const data = JSON.parse(body);
+              const { sceneData, filename } = data;
+              
+              if (!sceneData) {
+                res.writeHead(400);
+                res.end(JSON.stringify({ error: "Scene data required" }));
+                return;
+              }
 
-          const jsonData = typeof sceneData === "string" ? sceneData : JSON.stringify(sceneData, null, 2);
-          fs.writeFileSync(filepath, jsonData, "utf8");
-          
-          console.log(`✅ File saved: ${fullFilename}`);
-          
-          res.json({ 
-            success: true, 
-            filename: fullFilename,
-            path: `/DATA/Documents/Excalidraw/${fullFilename}`,
-            timestamp: new Date().toISOString()
+              const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+              const baseName = filename || `excalidraw-${timestamp}`;
+              const sanitizedName = baseName.replace(/[^a-zA-Z0-9\-_]/g, "_");
+              const fullFilename = `${sanitizedName}.excalidraw`;
+              const filepath = path.join("/exports", fullFilename);
+
+              const jsonData = typeof sceneData === "string" ? sceneData : JSON.stringify(sceneData, null, 2);
+              fs.writeFileSync(filepath, jsonData, "utf8");
+              
+              console.log(`✅ Saved: ${fullFilename}`);
+              
+              res.writeHead(200);
+              res.end(JSON.stringify({ 
+                success: true, 
+                filename: fullFilename,
+                path: `/DATA/Documents/Excalidraw/${fullFilename}`,
+                timestamp: new Date().toISOString()
+              }));
+
+            } catch (error) {
+              console.error("❌ Save error:", error);
+              res.writeHead(500);
+              res.end(JSON.stringify({ error: "Save failed" }));
+            }
           });
-
-        } catch (error) {
-          console.error("❌ Save error:", error);
-          res.status(500).json({ error: "Failed to save file" });
+          return;
         }
+
+        res.writeHead(404);
+        res.end(JSON.stringify({ error: "Not found" }));
       });
 
-      app.get("/files", (req, res) => {
-        try {
-          const files = fs.readdirSync(exportDir)
-            .filter(file => file.endsWith(".excalidraw"))
-            .map(file => {
-              const filepath = path.join(exportDir, file);
-              const stats = fs.statSync(filepath);
-              return {
-                filename: file,
-                size: stats.size,
-                created: stats.birthtime,
-                modified: stats.mtime
-              };
-            })
-            .sort((a, b) => b.modified - a.modified);
-
-          res.json({ files, count: files.length });
-        } catch (error) {
-          res.status(500).json({ error: "Failed to list files" });
-        }
-      });
-
-      app.get("/health", (req, res) => {
-        res.json({ 
-          status: "healthy", 
-          timestamp: new Date().toISOString()
-        });
-      });
-
-      app.listen(PORT, "0.0.0.0", () => {
-        console.log(`🚀 File Saver API running on port ${PORT}`);
+      server.listen(3001, "0.0.0.0", () => {
+        console.log("🚀 File Saver API running on port 3001");
       });
       EOF
       fi
       
+      echo "✅ Starting server..."
       node server.js
       '
     healthcheck:
@@ -205,8 +206,9 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 30s
 
-  # Excalidraw Frontend - 메인 애플리케이션 (서비스명을 excalidraw로 유지)
+  # Excalidraw Frontend - 메인 애플리케이션
   excalidraw:
     image: alswl/excalidraw:v0.17.3-fork-b1
     platform: linux/amd64
@@ -238,8 +240,8 @@ services:
       test: ["CMD-SHELL", "curl -f http://localhost:80/ || exit 1"]
       interval: 30s
       timeout: 10s
-      retries: 5
-      start_period: 60s
+      retries: 3
+      start_period: 90s
 
 x-casaos:
   architectures:
@@ -266,5 +268,5 @@ x-casaos:
     es_es: Pizarra colaborativa con guardado de archivos en servidor
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/thumbnail.png
   title:
-    en_us: Excalidraw Enhanced
+    en_us: Excalidraw
   index: /
