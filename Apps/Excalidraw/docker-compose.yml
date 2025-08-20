@@ -62,157 +62,6 @@ services:
     expose:
       - 80
 
-  file-saver:
-    image: node:18-alpine
-    container_name: excalidraw-file-saver
-    restart: unless-stopped
-    user: $PUID:$PGID
-    deploy:
-      resources:
-        limits:
-          memory: 128M
-          cpus: "0.1"
-    volumes:
-      - /DATA/Documents/Excalidraw:/exports
-      - /DATA/AppData/$AppID/file-saver:/app
-    expose:
-      - 3001
-    working_dir: /app
-    environment:
-      - NODE_ENV=production
-      - PORT=3001
-      - PUID=$PUID
-      - PGID=$PGID
-    command:
-      - /bin/sh
-      - -c
-      - |
-        mkdir -p /exports /app
-        cd /app
-        if [ ! -f server.js ]; then
-          cat > server.js << 'EOF'
-        const http = require("http");
-        const fs = require("fs");
-        const path = require("path");
-
-        const server = http.createServer((req, res) => {
-          res.setHeader("Access-Control-Allow-Origin", "*");
-          res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-          res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-          res.setHeader("Content-Type", "application/json");
-
-          if (req.method === "OPTIONS") {
-            res.writeHead(200);
-            res.end();
-            return;
-          }
-
-          if (req.method === "GET" && req.url === "/health") {
-            res.writeHead(200);
-            res.end(JSON.stringify({ status: "healthy" }));
-            return;
-          }
-
-          // 북마클릿 제공 엔드포인트
-          if (req.method === "GET" && req.url === "/bookmarklet") {
-            const bookmarklet = `javascript:(function(){var e=window.ExcalidrawLib?.getSceneElements?.()||[],a=window.ExcalidrawLib?.getAppState?.()||{},s=JSON.stringify({type:"excalidraw",version:2,elements:e,appState:a}),f=prompt('파일명 입력:','my-drawing');if(f){fetch(window.location.origin.replace('excalidraw-','3001-excalidraw-')+'/save-excalidraw',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sceneData:s,filename:f})}).then(r=>r.json()).then(d=>alert(d.success?'✅저장완료: '+d.filename:'❌저장실패')).catch(e=>alert('❌오류: '+e.message))}})();`;
-            res.writeHead(200, {'Content-Type': 'text/html'});
-            res.end(`
-              <!DOCTYPE html>
-              <html>
-              <head>
-                <title>Excalidraw 서버 저장 도구</title>
-                <style>
-                  body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
-                  .bookmarklet { background: #f0f0f0; padding: 10px; border-radius: 5px; margin: 20px 0; }
-                  .drag-button { 
-                    display: inline-block; 
-                    background: #6366f1; 
-                    color: white; 
-                    padding: 10px 20px; 
-                    text-decoration: none; 
-                    border-radius: 5px; 
-                    font-weight: bold;
-                  }
-                </style>
-              </head>
-              <body>
-                <h1>🎨 Excalidraw 서버 저장 도구</h1>
-                <p>아래 버튼을 브라우저 북마크바로 드래그하세요!</p>
-                
-                <div class="bookmarklet">
-                  <a href="${bookmarklet}" class="drag-button">💾 서버에 저장</a>
-                </div>
-                
-                <h3>사용법:</h3>
-                <ol>
-                  <li>위의 "💾 서버에 저장" 버튼을 브라우저 북마크바로 드래그</li>
-                  <li>Excalidraw에서 그림을 그리기</li>
-                  <li>북마크바의 "💾 서버에 저장" 버튼 클릭</li>
-                  <li>파일명 입력하고 확인!</li>
-                </ol>
-                
-                <p><strong>저장 위치:</strong> /DATA/Documents/Excalidraw/</p>
-              </body>
-              </html>
-            `);
-            return;
-          }
-
-          if (req.method === "POST" && req.url === "/save-excalidraw") {
-            let body = "";
-            req.on("data", chunk => { body += chunk.toString(); });
-            req.on("end", () => {
-              try {
-                const data = JSON.parse(body);
-                const { sceneData, filename } = data;
-                
-                if (!sceneData) {
-                  res.writeHead(400);
-                  res.end(JSON.stringify({ error: "Scene data required" }));
-                  return;
-                }
-
-                const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
-                const baseName = filename || "excalidraw-" + timestamp;
-                const sanitizedName = baseName.replace(/[^a-zA-Z0-9\-_]/g, "_");
-                const fullFilename = sanitizedName + ".excalidraw";
-                const filepath = path.join("/exports", fullFilename);
-
-                const jsonData = typeof sceneData === "string" ? sceneData : JSON.stringify(sceneData, null, 2);
-                fs.writeFileSync(filepath, jsonData, "utf8");
-                
-                console.log("Saved:", fullFilename);
-                
-                res.writeHead(200);
-                res.end(JSON.stringify({ 
-                  success: true, 
-                  filename: fullFilename,
-                  path: "/DATA/Documents/Excalidraw/" + fullFilename,
-                  timestamp: new Date().toISOString()
-                }));
-
-              } catch (error) {
-                console.error("Save error:", error);
-                res.writeHead(500);
-                res.end(JSON.stringify({ error: "Save failed" }));
-              }
-            });
-            return;
-          }
-
-          res.writeHead(404);
-          res.end(JSON.stringify({ error: "Not found" }));
-        });
-
-        server.listen(3001, "0.0.0.0", () => {
-          console.log("File Saver API running on port 3001");
-          console.log("북마클릿 도구: https://3001-excalidraw-$DOMAIN/bookmarklet");
-        });
-        EOF
-        fi
-        node server.js
-
   excalidraw:
     image: alswl/excalidraw:v0.17.3-fork-b1
     platform: linux/amd64
@@ -229,6 +78,7 @@ services:
     environment:
       - TZ=$TZ
       - DOMAIN=$domain
+      # 🔑 핵심: 서버 저장을 위한 올바른 설정
       - VITE_APP_BACKEND_V2_GET_URL=https://8081-excalidraw-$domain/api/v2/scenes/
       - VITE_APP_BACKEND_V2_POST_URL=https://8081-excalidraw-$domain/api/v2/scenes/
       - VITE_APP_HTTP_STORAGE_BACKEND_URL=https://8081-excalidraw-$domain/api/v2
@@ -242,7 +92,6 @@ services:
         condition: service_started
 
 x-casaos:
-  pre-install-cmd: mkdir -p /DATA/Documents/Excalidraw && chown 1000:1000 /DATA/Documents/Excalidraw
   architectures:
     - amd64
     - arm64
@@ -251,60 +100,71 @@ x-casaos:
   author: CasaOS Team
   category: Productivity
   description:
-    en_us: Excalidraw with Redis storage backend and user-friendly server file saving. Includes bookmarklet tool for easy saving without technical knowledge.
-    ko_kr: Redis 저장소 백엔드와 사용자 친화적인 서버 파일 저장 기능을 갖춘 Excalidraw입니다. 기술 지식 없이도 쉽게 저장할 수 있는 북마클릿 도구가 포함되어 있습니다.
-    zh_cn: 具有 Redis 存储后端和用户友好的服务器文件保存功能的 Excalidraw。包含无需技术知识即可轻松保存的书签工具。
-    fr_fr: Excalidraw avec backend de stockage Redis et sauvegarde de fichiers serveur conviviale. Comprend un outil bookmarklet pour un enregistrement facile sans connaissances techniques.
-    es_es: Excalidraw con backend de almacenamiento Redis y guardado de archivos del servidor fácil de usar. Incluye herramienta de marcador para guardar fácilmente sin conocimientos técnicos.
-  developer: Excalidraw Team + Enhanced
+    en_us: Excalidraw with built-in server storage - automatically saves drawings to server using "Export to Link" button. No additional setup required.
+    ko_kr: 내장 서버 저장 기능을 갖춘 Excalidraw - "링크로 내보내기" 버튼으로 자동으로 서버에 그림을 저장합니다. 추가 설정이 필요하지 않습니다.
+    zh_cn: 具有内置服务器存储功能的 Excalidraw - 使用"导出到链接"按钮自动将绘图保存到服务器。无需额外设置。
+    fr_fr: Excalidraw avec stockage serveur intégré - sauvegarde automatiquement les dessins sur le serveur à l'aide du bouton "Exporter vers un lien". Aucune configuration supplémentaire requise.
+    es_es: Excalidraw con almacenamiento de servidor integrado - guarda automáticamente los dibujos en el servidor usando el botón "Exportar a enlace". No se requiere configuración adicional.
+  developer: Excalidraw Team + alswl Fork
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/icon.png
   screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/screenshot-1.png
   tagline:
-    en_us: Collaborative whiteboard with user-friendly server saving
-    ko_kr: 사용자 친화적인 서버 저장 기능을 갖춘 협업 화이트보드
-    zh_cn: 具有用户友好的服务器保存功能的协作白板
-    fr_fr: Tableau blanc collaboratif avec sauvegarde serveur conviviale
-    es_es: Pizarra colaborativa con guardado de servidor fácil de usar
+    en_us: Collaborative whiteboard with built-in server storage
+    ko_kr: 내장 서버 저장 기능을 갖춘 협업 화이트보드
+    zh_cn: 具有内置服务器存储的协作白板
+    fr_fr: Tableau blanc collaboratif avec stockage serveur intégré
+    es_es: Pizarra colaborativa con almacenamiento de servidor integrado
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/thumbnail.png
   title:
     en_us: Excalidraw Enhanced
   tips:
     before_install:
       en_us: |
-        **🎨 Excalidraw Enhanced - 일반 사용자 친화적!**
+        **🎨 Excalidraw Enhanced - 내장 서버 저장 완벽 지원!**
         
-        **✅ 포함된 기능:**
-        - Redis 기반 데이터 저장 ✅
-        - 실시간 협업 ✅
-        - 공유 링크 생성 ✅
-        - **사용자 친화적인 서버 파일 저장** ✅
+        **✅ 자동 서버 저장 기능:**
+        - "Export to Link" 버튼 클릭 → 자동으로 서버에 저장 ✅
+        - Redis에 데이터 영구 보관 ✅
+        - 공유 링크로 언제든 접근 가능 ✅
+        - 실시간 협업 지원 ✅
         
-        **🔧 일반 사용자를 위한 쉬운 저장법:**
-        
-        **1단계:** `https://3001-excalidraw-$domain/bookmarklet` 접속
-        
-        **2단계:** "💾 서버에 저장" 버튼을 브라우저 북마크바로 드래그
-        
-        **3단계:** Excalidraw에서 그림 그린 후 북마크 클릭!
+        **🔧 사용법 (매우 간단!):**
+        1. Excalidraw에서 그림 그리기
+        2. **"Export to Link" 버튼 클릭**
+        3. 생성된 링크 복사 → 서버에 영구 저장됨!
+        4. 링크를 다른 사람과 공유하거나 나중에 접속
         
         **🌐 접근 URL:**
         - 메인 앱: `https://excalidraw-$domain/`
-        - 북마클릿 도구: `https://3001-excalidraw-$domain/bookmarklet`
+        - Storage API: `https://8081-excalidraw-$domain/`
         
-        **📁 저장 위치:** `/DATA/Documents/Excalidraw/`
+        **💾 저장 방식:**
+        - Redis 데이터베이스에 영구 저장
+        - 공유 링크 형태로 접근
+        - 브라우저 독립적 (어디서든 접근 가능)
         
-        **🚀 컴퓨터 초보자도 쉽게 사용할 수 있습니다!**
+        **🚀 복잡한 설정 불필요! 설치 후 바로 사용!**
+        
+        **💡 추가 팁:**
+        - "Export to Link" = 서버 저장
+        - "Save to disk" = 로컬 다운로드 (.excalidraw 파일)
+        - 둘 다 사용 가능합니다!
       ko_kr: |
-        **🎨 Excalidraw Enhanced - 누구나 쉽게!**
+        **🎨 Excalidraw Enhanced - 진짜 서버 저장!**
         
-        **기술 지식 없이도 서버 저장 가능!**
+        **🤦‍♂️ 우리가 놓친 것:**
+        Excalidraw에 이미 서버 저장 기능이 있었습니다!
         
-        **📖 사용법:**
-        1. `https://3001-excalidraw-$domain/bookmarklet` 방문
-        2. "💾 서버에 저장" 버튼을 북마크바로 드래그
-        3. 그림 그리고 북마크 클릭!
+        **✅ 내장 기능:**
+        - "링크로 내보내기" 버튼 → 서버 저장
+        - Redis에 데이터 영구 보관
+        - 공유 링크로 언제든 접근
+        - 실시간 협업 지원
         
-        **📁 파일 저장:** `/DATA/Documents/Excalidraw/`
+        **🔧 사용법:**
+        1. 그림 그리기
+        2. "링크로 내보내기" 클릭
+        3. 링크 복사 → 서버 저장 완료!
         
-        **🚀 누구나 쉽게 사용 가능!**
+        **🚀 북마클릿이나 복잡한 설정 필요 없음!**
   index: /
