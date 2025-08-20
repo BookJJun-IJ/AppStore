@@ -43,11 +43,11 @@ x-casaos:
   author: CasaOS Team
   category: Utilities
   description:
-    en_us: ConvertX is a self-hosted online file converter that supports over 1000 different file formats. Convert images, videos, audio files, documents, and more with this powerful web-based tool. Built with TypeScript and powered by FFmpeg, Pandoc, ImageMagick, and other proven libraries.
-    ko_kr: ConvertX는 1000개 이상의 다양한 파일 형식을 지원하는 자가 호스팅 온라인 파일 변환기입니다. 이미지, 비디오, 오디오 파일, 문서 등을 이 강력한 웹 기반 도구로 변환하세요.
-    zh_cn: ConvertX是一个支持1000多种不同文件格式的自托管在线文件转换器。使用这个强大的基于网络的工具转换图像、视频、音频文件、文档等。
-    fr_fr: ConvertX est un convertisseur de fichiers en ligne auto-hébergé qui prend en charge plus de 1000 formats de fichiers différents. Convertissez des images, vidéos, fichiers audio, documents et plus avec cet outil web puissant.
-    es_es: ConvertX es un convertidor de archivos en línea auto-hospedado que admite más de 1000 formatos de archivo diferentes. Convierte imágenes, videos, archivos de audio, documentos y más con esta potente herramienta basada en web.
+    en_us: ConvertX is your own universal file converter that supports over 1000+ different file formats. Think of it as having a Swiss Army knife for files - convert images, videos, audio, documents, 3D models, and more, all from your browser. Instead of using multiple online conversion websites (which often have file size limits, watermarks, or privacy concerns), you get a powerful, private conversion tool running on your own server. Everything is processed locally on your server, so your files never leave your control. Perfect for content creators, businesses, families, or anyone who wants complete privacy and no file size limits.
+    ko_kr: ConvertX는 1000개 이상의 다양한 파일 형식을 지원하는 당신만의 범용 파일 변환기입니다. 파일을 위한 스위스 아미 나이프처럼 생각하세요 - 브라우저에서 이미지, 비디오, 오디오, 문서, 3D 모델 등을 변환할 수 있습니다. 파일 크기 제한, 워터마크, 개인정보 보호 문제가 있는 여러 온라인 변환 웹사이트를 사용하는 대신, 자신의 서버에서 실행되는 강력하고 사적인 변환 도구를 얻을 수 있습니다. 모든 것이 서버에서 로컬로 처리되므로 파일이 당신의 통제를 벗어나지 않습니다.
+    zh_cn: ConvertX是您自己的通用文件转换器，支持1000多种不同的文件格式。把它想象成文件的瑞士军刀 - 在浏览器中转换图像、视频、音频、文档、3D模型等。您无需使用多个在线转换网站（通常有文件大小限制、水印或隐私问题），而是在自己的服务器上获得功能强大的私人转换工具。所有内容都在您的服务器上本地处理，因此您的文件永远不会脱离您的控制。
+    fr_fr: ConvertX est votre propre convertisseur de fichiers universel qui prend en charge plus de 1000 formats de fichiers différents. Pensez-y comme un couteau suisse pour les fichiers - convertissez des images, vidéos, audio, documents, modèles 3D et plus, tout depuis votre navigateur. Au lieu d'utiliser plusieurs sites web de conversion en ligne (qui ont souvent des limites de taille de fichier, des filigranes ou des problèmes de confidentialité), vous obtenez un outil de conversion puissant et privé fonctionnant sur votre propre serveur.
+    es_es: ConvertX es tu propio convertidor de archivos universal que admite más de 1000 formatos de archivo diferentes. Piénsalo como una navaja suiza para archivos: convierte imágenes, videos, audio, documentos, modelos 3D y más, todo desde tu navegador. En lugar de usar múltiples sitios web de conversión en línea (que a menudo tienen límites de tamaño de archivo, marcas de agua o problemas de privacidad), obtienes una herramienta de conversión potente y privada que funciona en tu propio servidor.
   developer: C4illin
   icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/ConvertX/icon.png
   screenshot:
@@ -55,36 +55,43 @@ x-casaos:
     - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/ConvertX/screenshot-2.png
     - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/ConvertX/screenshot-3.png
   tagline:
-    en_us: Self-hosted file converter supporting 1000+ formats
-    ko_kr: 1000개 이상의 형식을 지원하는 자가 호스팅 파일 변환기
-    zh_cn: 支持1000多种格式的自托管文件转换器
-    fr_fr: Convertisseur de fichiers auto-hébergé supportant plus de 1000 formats
-    es_es: Convertidor de archivos auto-hospedado que admite más de 1000 formatos
+    en_us: Universal file converter supporting 1000+ formats with complete privacy
+    ko_kr: 완전한 개인정보 보호와 함께 1000개 이상의 형식을 지원하는 범용 파일 변환기
+    zh_cn: 支持1000多种格式的通用文件转换器，完全保护隐私
+    fr_fr: Convertisseur de fichiers universel supportant plus de 1000 formats avec confidentialité complète
+    es_es: Convertidor de archivos universal que admite más de 1000 formatos con privacidad completa
   thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/ConvertX/thumbnail.png
   title:
     en_us: ConvertX
   tips:
     before_install:
       en_us: |
-        **Default Configuration**
+        **Quick Start:**
         
-        - **First User**: The first account registered becomes the admin
-        - **File Storage**: Converted files are automatically deleted after 24 hours
-        - **Supported Formats**: Images, videos, audio, documents, 3D models, and more
-        - **Security**: HTTPS access recommended, HTTP disabled by default
+        1. Create your first account (becomes admin automatically)
+        2. Drag & drop files to convert instantly
+        3. Files auto-delete after 24 hours to save space
         
-        **Supported Conversions**
-        - **Images**: PNG, JPG, WebP, AVIF, SVG, PDF, and many more
-        - **Videos**: MP4, WebM, AVI, MOV, MKV using FFmpeg
-        - **Audio**: MP3, WAV, FLAC, OGG, AAC, and more
-        - **Documents**: PDF, DOCX, HTML, Markdown via Pandoc
-        - **3D Models**: STL, OBJ, PLY, and other formats
+        **Supported Formats:**
+        - Images: PNG, JPG, WebP, AVIF, SVG, PDF
+        - Videos: MP4, WebM, AVI, MOV, MKV
+        - Audio: MP3, WAV, FLAC, OGG, AAC
+        - Documents: PDF, DOCX, HTML, Markdown
+        
+        **Note:** All conversions happen locally - your files never leave your server.
       ko_kr: |
-        **기본 설정**
+        **빠른 시작:**
         
-        - **첫 번째 사용자**: 등록한 첫 번째 계정이 관리자가 됩니다
-        - **파일 저장**: 변환된 파일은 24시간 후 자동 삭제됩니다
-        - **지원 형식**: 이미지, 비디오, 오디오, 문서, 3D 모델 등
-        - **보안**: HTTPS 접근 권장, HTTP는 기본적으로 비활성화
+        1. 첫 번째 계정 생성 (자동으로 관리자가 됨)
+        2. 파일을 드래그 앤 드롭하여 즉시 변환
+        3. 파일은 24시간 후 자동 삭제되어 공간 절약
+        
+        **지원 형식:**
+        - 이미지: PNG, JPG, WebP, AVIF, SVG, PDF
+        - 비디오: MP4, WebM, AVI, MOV, MKV
+        - 오디오: MP3, WAV, FLAC, OGG, AAC
+        - 문서: PDF, DOCX, HTML, Markdown
+        
+        **참고:** 모든 변환이 로컬에서 처리되어 파일이 서버를 벗어나지 않습니다.
   index: /
   webui_port: 3000
