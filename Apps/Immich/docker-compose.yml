@@ -10,10 +10,10 @@ services:
         limits:
           memory: 2048M
           cpus: '1.0'
-    image: ghcr.io/immich-app/immich-server:v1.135.3
+    image: ghcr.io/immich-app/immich-server:v1.138.0
     user: $PUID:$PGID
     volumes:
-      - /DATA/AppData/immich/upload:/usr/src/app/upload
+      - /DATA/AppData/immich/upload:/data
       - /etc/localtime:/etc/localtime:ro
     environment:
       DB_DATABASE_NAME: immich
@@ -41,7 +41,7 @@ services:
         limits:
           memory: 2048M
           cpus: '0.5'
-    image: ghcr.io/immich-app/immich-machine-learning:v1.135.3
+    image: ghcr.io/immich-app/immich-machine-learning:v1.138.0
     user: 0:0
     environment:
       TZ: $TZ
@@ -62,7 +62,7 @@ services:
         limits:
           memory: 256M
           cpus: '0.25'
-    image: docker.io/redis:6.2-alpine@sha256:148bb5411c184abd288d9aaed139c98123eeb8824c5d3fce03cf721db58066d8
+    image: docker.io/valkey/valkey:8-bookworm@sha256:5b8f8c333bef895c925f56629d6ba90aea95a4f7391f62411e625267c600b19c
     user: $PUID:$PGID
     healthcheck:
       test: redis-cli ping || exit 1
@@ -85,7 +85,7 @@ services:
         limits:
           memory: 1024M
           cpus: '0.5'
-    image: docker.io/tensorchord/pgvecto-rs:pg14-v0.2.0@sha256:739cdd626151ff1f796dc95a6591b55a714f341c737e27f045019ceabf8e8c52
+    image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0
     user: $PUID:$PGID
     environment:
       POSTGRES_PASSWORD: postgres
@@ -95,12 +95,13 @@ services:
       TZ: UTC
       PGID: $PGID
       PUID: $PUID
+      # Uncomment the DB_STORAGE_TYPE: 'HDD' var if your database isn't stored on SSDs
+      # DB_STORAGE_TYPE: 'HDD'
     volumes:
       - /DATA/AppData/immich/pgdata:/var/lib/postgresql/data
     healthcheck:
       test: pg_isready --dbname='immich' --username='postgres' || exit 1; Chksum="$$(psql --dbname='immich' --username='postgres' --tuples-only --no-align --command='SELECT COALESCE(SUM(checksum_failures), 0) FROM pg_stat_database')"; echo "checksum failure count is $$Chksum"; [ "$$Chksum" = '0' ] || exit 1
       interval: 5m
-      start_interval: 30s
       start_period: 5m
     command:
       [
@@ -368,7 +369,15 @@ x-casaos:
         
         ⏰ **Startup Time**: Immich takes approximately 5 minutes to fully start up. Please wait before accessing the web panel.
         
-        🔐 **First Setup**: Create your admin account on first visit to the web interface.
+        🔑 **First Setup**: Create your admin account on first visit to the web interface.
+        
+        **Version v1.138.0 Updates:**
+        
+        🆕 **Enhanced Timeline**: New beta timeline with improved sync mechanism and better performance
+        
+        📊 **Database Migration**: Automatically migrates to VectorChord for improved vector database performance
+        
+        🔄 **Data Path Change**: Now uses `/data` instead of `/usr/src/app/upload` for cleaner organization (automatically handled)
       en_gb: |
         **Setup Information:**
         
@@ -376,7 +385,15 @@ x-casaos:
         
         ⏰ **Startup Time**: Immich takes approximately 5 minutes to fully start up. Please wait before accessing the web panel.
         
-        🔐 **First Setup**: Create your admin account on first visit to the web interface.
+        🔑 **First Setup**: Create your admin account on first visit to the web interface.
+        
+        **Version v1.138.0 Updates:**
+        
+        🆕 **Enhanced Timeline**: New beta timeline with improved sync mechanism and better performance
+        
+        📊 **Database Migration**: Automatically migrates to VectorChord for improved vector database performance
+        
+        🔄 **Data Path Change**: Now uses `/data` instead of `/usr/src/app/upload` for cleaner organisation (automatically handled)
       it_it: |
         **Informazioni di configurazione:**
         
@@ -384,7 +401,15 @@ x-casaos:
         
         ⏰ **Tempo di avvio**: Immich impiega circa 5 minuti per avviarsi completamente. Attendere prima di accedere al pannello web.
         
-        🔐 **Prima configurazione**: Crea il tuo account amministratore alla prima visita dell'interfaccia web.
+        🔑 **Prima configurazione**: Crea il tuo account amministratore alla prima visita dell'interfaccia web.
+        
+        **Aggiornamenti versione v1.138.0:**
+        
+        🆕 **Timeline migliorata**: Nuova timeline beta con meccanismo di sincronizzazione migliorato e prestazioni migliori
+        
+        📊 **Migrazione database**: Migra automaticamente a VectorChord per prestazioni migliorate del database vettoriale
+        
+        🔄 **Cambio percorso dati**: Ora utilizza `/data` invece di `/usr/src/app/upload` per un'organizzazione più pulita (gestito automaticamente)
       nb_no: |
         **Oppsettsinformasjon:**
         
@@ -392,7 +417,15 @@ x-casaos:
         
         ⏰ **Oppstartstid**: Immich tar omtrent 5 minutter å starte opp fullstendig. Vennligst vent før du åpner nettgrensesnittet.
         
-        🔐 **Første oppsett**: Opprett din administratorkonto ved første besøk til nettgrensesnittet.
+        🔑 **Første oppsett**: Opprett din administratorkonto ved første besøk til nettgrensesnittet.
+        
+        **Versjon v1.138.0 oppdateringer:**
+        
+        🆕 **Forbedret tidslinje**: Ny beta-tidslinje med forbedret synkroniseringsmekanisme og bedre ytelse
+        
+        📊 **Databasemigrering**: Migrerer automatisk til VectorChord for forbedret vektordatabase-ytelse
+        
+        🔄 **Databanendring**: Bruker nå `/data` i stedet for `/usr/src/app/upload` for renere organisering (håndteres automatisk)
       zh_cn: |
         **设置信息：**
         
@@ -400,7 +433,15 @@ x-casaos:
         
         ⏰ **启动时间**：Immich 需要大约 5 分钟才能完全启动。请在访问网页面板前等待。
         
-        🔐 **首次设置**：首次访问网页界面时创建您的管理员账户。
+        🔑 **首次设置**：首次访问网页界面时创建您的管理员账户。
+        
+        **版本 v1.138.0 更新：**
+        
+        🆕 **增强时间线**：新的测试版时间线，具有改进的同步机制和更好的性能
+        
+        📊 **数据库迁移**：自动迁移到 VectorChord 以提高向量数据库性能
+        
+        🔄 **数据路径更改**：现在使用 `/data` 而不是 `/usr/src/app/upload` 以实现更清洁的组织（自动处理）
       ja_jp: |
         **セットアップ情報:**
         
@@ -408,7 +449,15 @@ x-casaos:
         
         ⏰ **起動時間**: Immichは完全に起動するまで約5分かかります。Webパネルにアクセスする前にお待ちください。
         
-        🔐 **初回設定**: Webインターフェースに初回アクセス時に管理者アカウントを作成してください。
+        🔑 **初回設定**: Webインターフェースに初回アクセス時に管理者アカウントを作成してください。
+        
+        **バージョン v1.138.0 アップデート:**
+        
+        🆕 **強化されたタイムライン**: 改善された同期メカニズムとより良いパフォーマンスを持つ新しいベータタイムライン
+        
+        📊 **データベース移行**: ベクトルデータベースのパフォーマンス向上のためVectorChordに自動移行
+        
+        🔄 **データパス変更**: よりクリーンな構成のため `/usr/src/app/upload` の代わりに `/data` を使用（自動処理）
       ko_kr: |
         **설정 정보:**
         
@@ -416,7 +465,15 @@ x-casaos:
         
         ⏰ **시작 시간**: Immich가 완전히 시작되는 데 약 5분이 걸립니다. 웹 패널에 접근하기 전에 기다려 주세요.
         
-        🔐 **첫 설정**: 웹 인터페이스에 처음 방문할 때 관리자 계정을 생성하세요.
+        🔑 **첫 설정**: 웹 인터페이스에 처음 방문할 때 관리자 계정을 생성하세요.
+        
+        **버전 v1.138.0 업데이트:**
+        
+        🆕 **향상된 타임라인**: 개선된 동기화 메커니즘과 더 나은 성능을 가진 새로운 베타 타임라인
+        
+        📊 **데이터베이스 마이그레이션**: 향상된 벡터 데이터베이스 성능을 위해 VectorChord로 자동 마이그레이션
+        
+        🔄 **데이터 경로 변경**: 더 깔끔한 구성을 위해 `/usr/src/app/upload` 대신 `/data` 사용 (자동 처리)
       fr_fr: |
         **Informations de configuration :**
         
@@ -424,7 +481,15 @@ x-casaos:
         
         ⏰ **Temps de démarrage** : Immich prend environ 5 minutes pour démarrer complètement. Veuillez patienter avant d'accéder au panneau web.
         
-        🔐 **Première configuration** : Créez votre compte administrateur lors de votre première visite de l'interface web.
+        🔑 **Première configuration** : Créez votre compte administrateur lors de votre première visite de l'interface web.
+        
+        **Mises à jour version v1.138.0 :**
+        
+        🆕 **Timeline améliorée** : Nouvelle timeline bêta avec mécanisme de synchronisation amélioré et meilleures performances
+        
+        📊 **Migration de base de données** : Migre automatiquement vers VectorChord pour améliorer les performances de la base de données vectorielle
+        
+        🔄 **Changement de chemin de données** : Utilise maintenant `/data` au lieu de `/usr/src/app/upload` pour une organisation plus propre (géré automatiquement)
       de_de: |
         **Setup-Informationen:**
         
@@ -432,7 +497,15 @@ x-casaos:
         
         ⏰ **Startzeit**: Immich benötigt etwa 5 Minuten, um vollständig zu starten. Bitte warten Sie, bevor Sie auf das Web-Panel zugreifen.
         
-        🔐 **Erste Einrichtung**: Erstellen Sie Ihr Administratorkonto beim ersten Besuch der Web-Oberfläche.
+        🔑 **Erste Einrichtung**: Erstellen Sie Ihr Administratorkonto beim ersten Besuch der Web-Oberfläche.
+        
+        **Version v1.138.0 Updates:**
+        
+        🆕 **Verbesserte Timeline**: Neue Beta-Timeline mit verbessertem Synchronisierungsmechanismus und besserer Leistung
+        
+        📊 **Datenbank-Migration**: Migriert automatisch zu VectorChord für verbesserte Vektor-Datenbankleistung
+        
+        🔄 **Datenpfad-Änderung**: Verwendet jetzt `/data` anstatt `/usr/src/app/upload` für sauberere Organisation (automatisch verwaltet)
       sv_se: |
         **Installationsinformation:**
         
@@ -440,7 +513,15 @@ x-casaos:
         
         ⏰ **Starttid**: Immich tar cirka 5 minuter att starta helt. Vänligen vänta innan du öppnar webbpanelen.
         
-        🔐 **Första inställning**: Skapa ditt administratörskonto vid första besöket till webbgränssnittet.
+        🔑 **Första inställning**: Skapa ditt administratörskonto vid första besöket till webbgränssnittet.
+        
+        **Version v1.138.0 uppdateringar:**
+        
+        🆕 **Förbättrad tidslinje**: Ny beta-tidslinje med förbättrad synkroniseringsmekanism och bättre prestanda
+        
+        📊 **Databasmigrering**: Migrerar automatiskt till VectorChord för förbättrad vektordatabasprestanda
+        
+        🔄 **Datasökvägsändring**: Använder nu `/data` istället för `/usr/src/app/upload` för renare organisation (hanteras automatiskt)
       el_gr: |
         **Πληροφορίες ρύθμισης:**
         
@@ -448,7 +529,15 @@ x-casaos:
         
         ⏰ **Χρόνος εκκίνησης**: Το Immich χρειάζεται περίπου 5 λεπτά για να ξεκινήσει πλήρως. Παρακαλώ περιμένετε πριν προσπελάσετε το web panel.
         
-        🔐 **Πρώτη ρύθμιση**: Δημιουργήστε τον λογαριασμό διαχειριστή κατά την πρώτη επίσκεψή σας στη διαδικτυακή διεπαφή.
+        🔑 **Πρώτη ρύθμιση**: Δημιουργήστε τον λογαριασμό διαχειριστή κατά την πρώτη επίσκεψή σας στη διαδικτυακή διεπαφή.
+        
+        **Ενημερώσεις έκδοσης v1.138.0:**
+        
+        🆕 **Βελτιωμένο χρονολόγιο**: Νέο beta χρονολόγιο με βελτιωμένο μηχανισμό συγχρονισμού και καλύτερη απόδοση
+        
+        📊 **Μετανάστευση βάσης δεδομένων**: Μεταναστεύει αυτόματα στο VectorChord για βελτιωμένη απόδοση βάσης δεδομένων διανυσμάτων
+        
+        🔄 **Αλλαγή διαδρομής δεδομένων**: Χρησιμοποιεί τώρα `/data` αντί για `/usr/src/app/upload` για καθαρότερη οργάνωση (διαχειρίζεται αυτόματα)
       hr_hr: |
         **Informacije o postavci:**
         
@@ -456,7 +545,15 @@ x-casaos:
         
         ⏰ **Vrijeme pokretanja**: Immich treba približno 5 minuta da se potpuno pokrene. Molimo pričekajte prije pristupanja web panelu.
         
-        🔐 **Prva postavka**: Stvorite svoj administratorski račun pri prvom posjetu web sučelju.
+        🔑 **Prva postavka**: Stvorite svoj administratorski račun pri prvom posjetu web sučelju.
+        
+        **Ažuriranja verzije v1.138.0:**
+        
+        🆕 **Poboljšana vremenska crta**: Nova beta vremenska crta s poboljšanim mehanizmom sinkronizacije i boljim performansama
+        
+        📊 **Migracija baze podataka**: Automatski migrira na VectorChord za poboljšane performanse vektorske baze podataka
+        
+        🔄 **Promjena puta podataka**: Sada koristi `/data` umjesto `/usr/src/app/upload` za čišću organizaciju (automatski upravljano)
       pt_pt: |
         **Informações de configuração:**
         
@@ -464,7 +561,15 @@ x-casaos:
         
         ⏰ **Tempo de arranque**: O Immich demora aproximadamente 5 minutos para iniciar completamente. Por favor aguarde antes de aceder ao painel web.
         
-        🔐 **Primeira configuração**: Crie a sua conta de administrador na primeira visita à interface web.
+        🔑 **Primeira configuração**: Crie a sua conta de administrador na primeira visita à interface web.
+        
+        **Atualizações versão v1.138.0:**
+        
+        🆕 **Linha do tempo aprimorada**: Nova linha do tempo beta com mecanismo de sincronização melhorado e melhor desempenho
+        
+        📊 **Migração de base de dados**: Migra automaticamente para VectorChord para melhor desempenho da base de dados vectorial
+        
+        🔄 **Mudança de caminho de dados**: Agora usa `/data` em vez de `/usr/src/app/upload` para organização mais limpa (gerido automaticamente)
       ru_ru: |
         **Информация о настройке:**
         
@@ -472,7 +577,15 @@ x-casaos:
         
         ⏰ **Время запуска**: Immich требуется примерно 5 минут для полного запуска. Пожалуйста, подождите перед доступом к веб-панели.
         
-        🔐 **Первая настройка**: Создайте учётную запись администратора при первом посещении веб-интерфейса.
+        🔑 **Первая настройка**: Создайте учётную запись администратора при первом посещении веб-интерфейса.
+        
+        **Обновления версии v1.138.0:**
+        
+        🆕 **Улучшенная временная шкала**: Новая бета временная шкала с улучшенным механизмом синхронизации и лучшей производительностью
+        
+        📊 **Миграция базы данных**: Автоматически мигрирует в VectorChord для улучшенной производительности векторной базы данных
+        
+        🔄 **Изменение пути данных**: Теперь использует `/data` вместо `/usr/src/app/upload` для более чистой организации (обрабатывается автоматически)
       tr_tr: |
         **Kurulum Bilgileri:**
         
@@ -480,6 +593,14 @@ x-casaos:
         
         ⏰ **Başlatma Süresi**: Immich'in tamamen başlaması yaklaşık 5 dakika sürer. Web paneline erişmeden önce lütfen bekleyin.
         
-        🔐 **İlk Kurulum**: Web arayüzünü ilk ziyaret ettiğinizde yönetici hesabınızı oluşturun.
+        🔑 **İlk Kurulum**: Web arayüzünü ilk ziyaret ettiğinizde yönetici hesabınızı oluşturun.
+        
+        **Sürüm v1.138.0 Güncellemeleri:**
+        
+        🆕 **Geliştirilmiş Zaman Çizelgesi**: Geliştirilmiş senkronizasyon mekanizması ve daha iyi performansla yeni beta zaman çizelgesi
+        
+        📊 **Veritabanı Göçü**: Geliştirilmiş vektör veritabanı performansı için VectorChord'a otomatik göç
+        
+        🔄 **Veri Yolu Değişikliği**: Daha temiz organizasyon için `/usr/src/app/upload` yerine `/data` kullanıyor (otomatik olarak yönetilir)
   index: /
   webui_port: 80
