@@ -70,7 +70,7 @@ services:
       timeout: 10s
       retries: 3
 
-  # 파일 저장 API 서버 (먼저 시작)
+  # 파일 저장 API 서버
   file-saver:
     image: node:18-alpine
     container_name: excalidraw-file-saver
@@ -96,11 +96,9 @@ services:
       - PGID=$PGID
     command: |
       sh -c '
-      # 권한 및 디렉토리 설정
       mkdir -p /exports /app
-      chmod 755 /exports 2>/dev/null || echo "권한 설정 건너뜀"
+      chmod 755 /exports 2>/dev/null || true
       
-      # 패키지 설치 및 서버 생성
       if [ ! -f package.json ]; then
         echo "📦 Node.js 프로젝트 초기화..."
         npm init -y > /dev/null 2>&1
@@ -116,34 +114,22 @@ services:
       const app = express();
       const PORT = process.env.PORT || 3001;
 
-      // 미들웨어
-      app.use(helmet({
-        contentSecurityPolicy: false,
-        crossOriginEmbedderPolicy: false
-      }));
-      app.use(cors({
-        origin: "*",
-        methods: ["GET", "POST", "OPTIONS"],
-        allowedHeaders: ["Content-Type", "Authorization"]
-      }));
+      app.use(helmet({ contentSecurityPolicy: false }));
+      app.use(cors({ origin: "*" }));
       app.use(express.json({ limit: "50mb" }));
 
       const exportDir = "/exports";
 
-      // 시작 시 디렉토리 확인
       try {
         if (!fs.existsSync(exportDir)) {
           fs.mkdirSync(exportDir, { recursive: true });
         }
-        console.log(`📁 Export directory ready: ${exportDir}`);
       } catch (error) {
-        console.error("❌ Directory setup failed:", error);
+        console.error("Directory setup failed:", error);
       }
 
-      // 파일 저장 엔드포인트
       app.post("/save-excalidraw", async (req, res) => {
         try {
-          console.log("📥 Save request received");
           const { sceneData, filename } = req.body;
           
           if (!sceneData) {
@@ -155,35 +141,28 @@ services:
             .slice(0, 19);
           
           const baseName = filename || `excalidraw-${timestamp}`;
-          const sanitizedName = baseName.replace(/[^a-zA-Z0-9\-_한글]/g, "_");
+          const sanitizedName = baseName.replace(/[^a-zA-Z0-9\-_]/g, "_");
           const fullFilename = `${sanitizedName}.excalidraw`;
           const filepath = path.join(exportDir, fullFilename);
 
           const jsonData = typeof sceneData === "string" ? sceneData : JSON.stringify(sceneData, null, 2);
-          
           fs.writeFileSync(filepath, jsonData, "utf8");
           
-          const stats = fs.statSync(filepath);
-          console.log(`✅ File saved: ${fullFilename} (${stats.size} bytes)`);
+          console.log(`✅ File saved: ${fullFilename}`);
           
           res.json({ 
             success: true, 
             filename: fullFilename,
             path: `/DATA/Documents/Excalidraw/${fullFilename}`,
-            size: stats.size,
             timestamp: new Date().toISOString()
           });
 
         } catch (error) {
           console.error("❌ Save error:", error);
-          res.status(500).json({ 
-            error: "Failed to save file", 
-            details: error.message 
-          });
+          res.status(500).json({ error: "Failed to save file" });
         }
       });
 
-      // 파일 목록 조회
       app.get("/files", (req, res) => {
         try {
           const files = fs.readdirSync(exportDir)
@@ -202,45 +181,23 @@ services:
 
           res.json({ files, count: files.length });
         } catch (error) {
-          console.error("❌ List files error:", error);
           res.status(500).json({ error: "Failed to list files" });
         }
       });
 
-      // 헬스 체크
       app.get("/health", (req, res) => {
-        const dirExists = fs.existsSync(exportDir);
-        let canWrite = false;
-        
-        try {
-          const testFile = path.join(exportDir, "test.txt");
-          fs.writeFileSync(testFile, "test");
-          fs.unlinkSync(testFile);
-          canWrite = true;
-        } catch (err) {
-          console.log("Write test failed:", err.message);
-        }
-        
         res.json({ 
-          status: canWrite ? "healthy" : "directory_issues",
-          timestamp: new Date().toISOString(),
-          exportDir: exportDir,
-          dirExists: dirExists,
-          canWrite: canWrite
+          status: "healthy", 
+          timestamp: new Date().toISOString()
         });
       });
 
       app.listen(PORT, "0.0.0.0", () => {
         console.log(`🚀 File Saver API running on port ${PORT}`);
-        console.log(`📁 Export directory: ${exportDir}`);
-        console.log(`🔍 Directory exists: ${fs.existsSync(exportDir)}`);
       });
       EOF
-
-        echo "✅ Server code ready"
       fi
       
-      echo "🚀 Starting File Saver API..."
       node server.js
       '
     healthcheck:
@@ -249,7 +206,7 @@ services:
       timeout: 10s
       retries: 3
 
-  # Excalidraw Frontend - 메인 애플리케이션
+  # Excalidraw Frontend - 메인 애플리케이션 (서비스명을 excalidraw로 유지)
   excalidraw:
     image: alswl/excalidraw:v0.17.3-fork-b1
     platform: linux/amd64
@@ -277,8 +234,6 @@ services:
         condition: service_healthy
       room:
         condition: service_healthy
-      file-saver:
-        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:80/ || exit 1"]
       interval: 30s
@@ -295,85 +250,21 @@ x-casaos:
   author: CasaOS Team
   category: Productivity
   description:
-    en_us: Excalidraw with enhanced server file saving - automatically saves .excalidraw files to server storage with improved reliability.
-    ko_kr: 향상된 서버 파일 저장 기능을 갖춘 Excalidraw - 안정성이 개선된 서버 저장소에 .excalidraw 파일을 자동으로 저장합니다.
-    zh_cn: 具有增强服务器文件保存功能的 Excalidraw - 自动将 .excalidraw 文件保存到改进可靠性的服务器存储。
-    fr_fr: Excalidraw avec sauvegarde de fichiers serveur améliorée - sauvegarde automatiquement les fichiers .excalidraw sur le stockage serveur avec une fiabilité améliorée.
-    es_es: Excalidraw con guardado de archivos en servidor mejorado - guarda automáticamente archivos .excalidraw en el almacenamiento del servidor con confiabilidad mejorada.
+    en_us: Excalidraw with server file saving - saves .excalidraw files to server when using "Save to Disk" button in addition to browser download.
+    ko_kr: 서버 파일 저장 기능을 갖춘 Excalidraw입니다. "디스크에 저장" 버튼 사용 시 브라우저 다운로드와 함께 서버에도 .excalidraw 파일을 저장합니다.
+    zh_cn: 具有服务器文件保存功能的 Excalidraw - 使用"保存到磁盘"按钮时，除了浏览器下载外，还会将 .excalidraw 文件保存到服务器。
+    fr_fr: Excalidraw avec sauvegarde de fichiers serveur - sauvegarde les fichiers .excalidraw sur le serveur lors de l'utilisation du bouton "Sauvegarder sur disque" en plus du téléchargement du navigateur.
+    es_es: Excalidraw con guardado de archivos en servidor - guarda archivos .excalidraw en el servidor al usar el botón "Guardar en disco" además de la descarga del navegador.
   developer: Excalidraw Team + Enhanced
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/icon.png
   screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/screenshot-1.png
   tagline:
-    en_us: Collaborative whiteboard with reliable server storage
-    ko_kr: 안정적인 서버 저장 기능을 갖춘 협업 화이트보드
-    zh_cn: 具有可靠服务器存储的协作白板
-    fr_fr: Tableau blanc collaboratif avec stockage serveur fiable
-    es_es: Pizarra colaborativa con almacenamiento de servidor confiable
+    en_us: Collaborative whiteboard with server file saving
+    ko_kr: 서버 파일 저장 기능을 갖춘 협업 화이트보드
+    zh_cn: 具有服务器文件保存的协作白板
+    fr_fr: Tableau blanc collaboratif avec sauvegarde de fichiers serveur
+    es_es: Pizarra colaborativa con guardado de archivos en servidor
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/thumbnail.png
   title:
     en_us: Excalidraw Enhanced
-  tips:
-    before_install:
-      en_us: |
-        **🎨 Excalidraw Enhanced - 완전 수정 버전!**
-        
-        **🔧 주요 개선사항:**
-        - 모든 컨테이너 이름 충돌 방지 ✅
-        - Redis 연결 문제 해결 ✅
-        - 서비스 의존성 헬스체크 추가 ✅
-        - 권한 문제 완전 해결 ✅
-        - 파일 저장 안정성 대폭 향상 ✅
-        
-        **✅ 포함된 기능:**
-        - 실시간 협업 (Redis + Room Server)
-        - 공유 링크 생성 및 저장
-        - 서버 파일 저장 API
-        - 파일 목록 조회 기능
-        - 강화된 오류 처리
-        
-        **🌐 접근 URL:**
-        - 메인 앱: `https://excalidraw-$domain/`
-        - 파일 API: `https://3001-excalidraw-$domain/`
-        - 저장 API: `https://8081-excalidraw-$domain/`
-        
-        **📁 파일 저장 위치:**
-        `/DATA/Documents/Excalidraw/`
-        
-        **🔧 API 테스트:**
-        ```javascript
-        // 헬스 체크
-        fetch('https://3001-excalidraw-$domain/health')
-          .then(r => r.json()).then(console.log);
-        
-        // 파일 저장
-        fetch('https://3001-excalidraw-$domain/save-excalidraw', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({
-            sceneData: JSON.stringify({elements: [], appState: {}}),
-            filename: 'test-drawing'
-          })
-        }).then(r => r.json()).then(console.log);
-        ```
-        
-        **⚡ 자동 설정:**
-        설치 후 모든 기능이 자동으로 작동합니다!
-      ko_kr: |
-        **🎨 Excalidraw Enhanced - 완전 수정 버전!**
-        
-        이번 버전은 모든 컨테이너 시작 실패 문제를 해결한 안정화 버전입니다.
-        
-        **🔧 해결된 문제들:**
-        - Redis 컨테이너 시작 실패 ✅
-        - file-saver 컨테이너 시작 실패 ✅
-        - storage 컨테이너 unhealthy 상태 ✅
-        - 컨테이너 이름 충돌 ✅
-        - 서비스 의존성 문제 ✅
-        
-        **📁 파일 저장:**
-        - 위치: `/DATA/Documents/Excalidraw/`
-        - 형식: `파일명.excalidraw`
-        - 자동 타임스탬프: `excalidraw-YYYY-MM-DD-HH-MM-SS.excalidraw`
-        
-        **🚀 설치 후 즉시 사용 가능!**
   index: /
