@@ -113,6 +113,52 @@ services:
             return;
           }
 
+          // 북마클릿 제공 엔드포인트
+          if (req.method === "GET" && req.url === "/bookmarklet") {
+            const bookmarklet = `javascript:(function(){var e=window.ExcalidrawLib?.getSceneElements?.()||[],a=window.ExcalidrawLib?.getAppState?.()||{},s=JSON.stringify({type:"excalidraw",version:2,elements:e,appState:a}),f=prompt('파일명 입력:','my-drawing');if(f){fetch(window.location.origin.replace('excalidraw-','3001-excalidraw-')+'/save-excalidraw',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sceneData:s,filename:f})}).then(r=>r.json()).then(d=>alert(d.success?'✅저장완료: '+d.filename:'❌저장실패')).catch(e=>alert('❌오류: '+e.message))}})();`;
+            res.writeHead(200, {'Content-Type': 'text/html'});
+            res.end(`
+              <!DOCTYPE html>
+              <html>
+              <head>
+                <title>Excalidraw 서버 저장 도구</title>
+                <style>
+                  body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
+                  .bookmarklet { background: #f0f0f0; padding: 10px; border-radius: 5px; margin: 20px 0; }
+                  .drag-button { 
+                    display: inline-block; 
+                    background: #6366f1; 
+                    color: white; 
+                    padding: 10px 20px; 
+                    text-decoration: none; 
+                    border-radius: 5px; 
+                    font-weight: bold;
+                  }
+                </style>
+              </head>
+              <body>
+                <h1>🎨 Excalidraw 서버 저장 도구</h1>
+                <p>아래 버튼을 브라우저 북마크바로 드래그하세요!</p>
+                
+                <div class="bookmarklet">
+                  <a href="${bookmarklet}" class="drag-button">💾 서버에 저장</a>
+                </div>
+                
+                <h3>사용법:</h3>
+                <ol>
+                  <li>위의 "💾 서버에 저장" 버튼을 브라우저 북마크바로 드래그</li>
+                  <li>Excalidraw에서 그림을 그리기</li>
+                  <li>북마크바의 "💾 서버에 저장" 버튼 클릭</li>
+                  <li>파일명 입력하고 확인!</li>
+                </ol>
+                
+                <p><strong>저장 위치:</strong> /DATA/Documents/Excalidraw/</p>
+              </body>
+              </html>
+            `);
+            return;
+          }
+
           if (req.method === "POST" && req.url === "/save-excalidraw") {
             let body = "";
             req.on("data", chunk => { body += chunk.toString(); });
@@ -161,6 +207,7 @@ services:
 
         server.listen(3001, "0.0.0.0", () => {
           console.log("File Saver API running on port 3001");
+          console.log("북마클릿 도구: https://3001-excalidraw-$DOMAIN/bookmarklet");
         });
         EOF
         fi
@@ -204,21 +251,60 @@ x-casaos:
   author: CasaOS Team
   category: Productivity
   description:
-    en_us: Excalidraw with Redis storage backend and server file saving API. Saves .excalidraw files to server storage in addition to browser downloads.
-    ko_kr: Redis 저장소 백엔드와 서버 파일 저장 API를 갖춘 Excalidraw입니다. 브라우저 다운로드와 함께 서버 저장소에 .excalidraw 파일을 저장합니다.
-    zh_cn: 具有 Redis 存储后端和服务器文件保存 API 的 Excalidraw。除了浏览器下载外，还将 .excalidraw 文件保存到服务器存储。
-    fr_fr: Excalidraw avec backend de stockage Redis et API de sauvegarde de fichiers serveur. Sauvegarde les fichiers .excalidraw sur le stockage serveur en plus des téléchargements du navigateur.
-    es_es: Excalidraw con backend de almacenamiento Redis y API de guardado de archivos del servidor. Guarda archivos .excalidraw en el almacenamiento del servidor además de las descargas del navegador.
+    en_us: Excalidraw with Redis storage backend and user-friendly server file saving. Includes bookmarklet tool for easy saving without technical knowledge.
+    ko_kr: Redis 저장소 백엔드와 사용자 친화적인 서버 파일 저장 기능을 갖춘 Excalidraw입니다. 기술 지식 없이도 쉽게 저장할 수 있는 북마클릿 도구가 포함되어 있습니다.
+    zh_cn: 具有 Redis 存储后端和用户友好的服务器文件保存功能的 Excalidraw。包含无需技术知识即可轻松保存的书签工具。
+    fr_fr: Excalidraw avec backend de stockage Redis et sauvegarde de fichiers serveur conviviale. Comprend un outil bookmarklet pour un enregistrement facile sans connaissances techniques.
+    es_es: Excalidraw con backend de almacenamiento Redis y guardado de archivos del servidor fácil de usar. Incluye herramienta de marcador para guardar fácilmente sin conocimientos técnicos.
   developer: Excalidraw Team + Enhanced
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/icon.png
   screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/screenshot-1.png
   tagline:
-    en_us: Collaborative whiteboard with server file saving
-    ko_kr: 서버 파일 저장 기능을 갖춘 협업 화이트보드
-    zh_cn: 具有服务器文件保存的协作白板
-    fr_fr: Tableau blanc collaboratif avec sauvegarde de fichiers serveur
-    es_es: Pizarra colaborativa con guardado de archivos en servidor
+    en_us: Collaborative whiteboard with user-friendly server saving
+    ko_kr: 사용자 친화적인 서버 저장 기능을 갖춘 협업 화이트보드
+    zh_cn: 具有用户友好的服务器保存功能的协作白板
+    fr_fr: Tableau blanc collaboratif avec sauvegarde serveur conviviale
+    es_es: Pizarra colaborativa con guardado de servidor fácil de usar
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/thumbnail.png
   title:
-    en_us: Excalidraw
+    en_us: Excalidraw Enhanced
+  tips:
+    before_install:
+      en_us: |
+        **🎨 Excalidraw Enhanced - 일반 사용자 친화적!**
+        
+        **✅ 포함된 기능:**
+        - Redis 기반 데이터 저장 ✅
+        - 실시간 협업 ✅
+        - 공유 링크 생성 ✅
+        - **사용자 친화적인 서버 파일 저장** ✅
+        
+        **🔧 일반 사용자를 위한 쉬운 저장법:**
+        
+        **1단계:** `https://3001-excalidraw-$domain/bookmarklet` 접속
+        
+        **2단계:** "💾 서버에 저장" 버튼을 브라우저 북마크바로 드래그
+        
+        **3단계:** Excalidraw에서 그림 그린 후 북마크 클릭!
+        
+        **🌐 접근 URL:**
+        - 메인 앱: `https://excalidraw-$domain/`
+        - 북마클릿 도구: `https://3001-excalidraw-$domain/bookmarklet`
+        
+        **📁 저장 위치:** `/DATA/Documents/Excalidraw/`
+        
+        **🚀 컴퓨터 초보자도 쉽게 사용할 수 있습니다!**
+      ko_kr: |
+        **🎨 Excalidraw Enhanced - 누구나 쉽게!**
+        
+        **기술 지식 없이도 서버 저장 가능!**
+        
+        **📖 사용법:**
+        1. `https://3001-excalidraw-$domain/bookmarklet` 방문
+        2. "💾 서버에 저장" 버튼을 북마크바로 드래그
+        3. 그림 그리고 북마크 클릭!
+        
+        **📁 파일 저장:** `/DATA/Documents/Excalidraw/`
+        
+        **🚀 누구나 쉽게 사용 가능!**
   index: /
