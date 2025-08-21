@@ -1,12 +1,43 @@
 name: excalidraw
 
 services:
-  frontend:
-    image: alswl/excalidraw:v0.17.3-fork-b1
+  # 🔧 실제 .excalidraw 파일 저장을 지원하는 백엔드
+  excalidraw-backend:
+    image: ghcr.io/cocreators-ee/excalidraw-alternative-store:latest
+    container_name: excalidraw-backend
+    restart: unless-stopped
+    user: $PUID:$PGID
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.25"
+    expose:
+      - 8080
+    environment:
+      - PUID=$PUID
+      - PGID=$PGID
+      - TZ=$TZ
+      - PORT=8080
+      - FILE_SIZE_LIMIT=10485760  # 10MB 파일 크기 제한
+      - STORAGE_MODULE=local
+      - LOCAL_STORAGE_PATH=/storage
+      - CORS_ALLOW_ORIGINS=https://excalidraw-$domain
+    volumes:
+      # 🎯 실제 .excalidraw 파일들이 여기에 저장됨
+      - /DATA/Documents/Excalidraw:/storage
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"] 
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  # 🔧 공식 Excalidraw 프론트엔드 (파일 저장 기능 연결)
+  excalidraw-frontend:
+    image: excalidraw/excalidraw:latest
     container_name: excalidraw-frontend
     restart: unless-stopped
-    # 🔧 privileged 모드로 env.js 파일 생성 권한 확보
-    privileged: true
     deploy:
       resources:
         limits:
@@ -18,154 +49,127 @@ services:
       - PUID=$PUID
       - PGID=$PGID
       - TZ=$TZ
-      # 🔧 $domain 변수 사용으로 동적 도메인 설정
-      - VITE_APP_BACKEND_V2_GET_URL=https://8081-excalidraw-$domain/api/v2/
-      - VITE_APP_BACKEND_V2_POST_URL=https://8081-excalidraw-$domain/api/v2/post/
-      - VITE_APP_WS_SERVER_URL=https://8082-excalidraw-$domain/
-      - VITE_APP_FIREBASE_CONFIG={}
-      - VITE_APP_HTTP_STORAGE_BACKEND_URL=https://8081-excalidraw-$domain/api/v2
+      # 🔧 백엔드 파일 저장소 연결
+      - VITE_APP_BACKEND_V2_GET_URL=https://8080-excalidraw-$domain/api/v2/
+      - VITE_APP_BACKEND_V2_POST_URL=https://8080-excalidraw-$domain/api/v2/post/
+      - VITE_APP_HTTP_STORAGE_BACKEND_URL=https://8080-excalidraw-$domain
       - VITE_APP_STORAGE_BACKEND=http
       - VITE_APP_DISABLE_TRACKING=true
     depends_on:
-      - storage
-      - room
-
-  storage:
-    image: alswl/excalidraw-storage-backend:v2023.11.11
-    container_name: excalidraw-storage
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-          cpus: "0.25"
-    expose:
-      - 8081
-    environment:
-      - PORT=8081
-      - STORAGE_URI=redis://excalidraw-redis:6379
-      - LOG_LEVEL=info
-    depends_on:
-      - redis
-
-  room:
-    image: excalidraw/excalidraw-room:sha-49bf529
-    container_name: excalidraw-room
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 128M
-          cpus: "0.1"
-    expose:
-      - 80
-
-  redis:
-    image: redis:7-alpine
-    container_name: excalidraw-redis
-    restart: unless-stopped
-    # 🔧 Redis 사용자를 1000:1000으로 설정 (CasaOS 호환)
-    user: "1000:1000"
-    deploy:
-      resources:
-        limits:
-          memory: 128M
-          cpus: "0.1"
-    volumes:
-      - /DATA/AppData/$AppID/redis:/data
-    # 🔧 AOF + RDB 모두 활성화로 데이터 안전성 극대화
-    command: redis-server --appendonly yes --save 300 10 --save 60 1000 --dir /data --dbfilename dump.rdb --appendfilename appendonly.aof
+      excalidraw-backend:
+        condition: service_healthy
 
 x-casaos:
   architectures:
     - amd64
     - arm64
-  main: frontend
+  main: excalidraw-frontend
   webui_port: 80
-  author: CasaOS Team
+  author: Cocreators + CasaOS Team
   category: Productivity
-  # 🔧 초기 설정 스크립트로 권한 문제 해결
+  # 🔧 파일 저장 디렉토리 사전 생성
   pre-install-cmd: |
-    mkdir -p /DATA/AppData/$AppID/redis &&
-    chown -R 1000:1000 /DATA/AppData/$AppID/redis &&
-    chmod 755 /DATA/AppData/$AppID/redis
+    mkdir -p /DATA/Documents/Excalidraw &&
+    chown -R $PUID:$PGID /DATA/Documents/Excalidraw &&
+    chmod 755 /DATA/Documents/Excalidraw
   description:
-    en_us: Excalidraw with collaboration features and persistent server storage based on alswl's original implementation. Supports real-time collaboration and Export to Link functionality with data persistence.
-    ko_kr: alswl의 원본 구현을 기반으로 한 협업 기능과 영구 서버 저장소를 갖춘 Excalidraw입니다. 실시간 협업과 데이터 영구 보존이 가능한 링크로 내보내기 기능을 지원합니다.
-    zh_cn: 基于 alswl 原始实现的具有协作功能和持久服务器存储的 Excalidraw。支持实时协作和具有数据持久性的导出到链接功能。
-    fr_fr: Excalidraw avec fonctionnalités de collaboration et stockage serveur persistant basé sur l'implémentation originale d'alswl. Prend en charge la collaboration en temps réel et la fonctionnalité d'exportation vers un lien avec persistance des données.
-    es_es: Excalidraw con funciones de colaboración y almacenamiento persistente en servidor basado en la implementación original de alswl. Compatible con colaboración en tiempo real y funcionalidad de exportar a enlace con persistencia de datos.
-  developer: alswl + CasaOS Team
+    en_us: Excalidraw with real file storage capability. Save actual .excalidraw files to your Documents folder and manage them like regular files.
+    ko_kr: 실제 파일 저장 기능을 갖춘 Excalidraw입니다. .excalidraw 파일을 Documents 폴더에 저장하고 일반 파일처럼 관리할 수 있습니다.
+    zh_cn: 具有真实文件存储功能的 Excalidraw。将实际的 .excalidraw 文件保存到文档文件夹并像常规文件一样管理它们。
+    fr_fr: Excalidraw avec capacité de stockage de fichiers réels. Enregistrez de vrais fichiers .excalidraw dans votre dossier Documents et gérez-les comme des fichiers normaux.
+    es_es: Excalidraw con capacidad de almacenamiento de archivos reales. Guarda archivos .excalidraw reales en tu carpeta de Documentos y adminístralos como archivos normales.
+  developer: Cocreators + CasaOS Team
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/icon.png
   screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/screenshot-1.png
   tagline:
-    en_us: Collaborative whiteboard with persistent Export to Link
-    ko_kr: 영구 저장되는 링크로 내보내기 기능을 갖춘 협업 화이트보드
-    zh_cn: 具有持久导出到链接功能的协作白板
-    fr_fr: Tableau blanc collaboratif avec exportation persistante vers un lien
-    es_es: Pizarra colaborativa con exportar a enlace persistente
+    en_us: Whiteboard with real file storage
+    ko_kr: 실제 파일 저장 기능을 갖춘 화이트보드
+    zh_cn: 具有真实文件存储的白板
+    fr_fr: Tableau blanc avec stockage de fichiers réels
+    es_es: Pizarra con almacenamiento de archivos reales
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/thumbnail.png
   title:
     en_us: Excalidraw
   tips:
     before_install:
       en_us: |
-        **🎨 Excalidraw - 검증된 안정적 솔루션!**
+        **📁 Excalidraw - 실제 .excalidraw 파일 저장!**
         
-        **✅ 확실히 작동하는 기능:**
-        - **"Export to Link" 영구 저장** ✅ (Redis에 데이터 보존)
-        - **실시간 협업** ✅ (여러 명이 동시 편집)
-        - **권한 문제 해결** ✅ (privileged + pre-install-cmd)
-        - **데이터 영구 보존** ✅ (AOF + RDB 이중 백업)
-        - **안정적인 이미지** ✅ (alswl 검증된 버전)
+        **✅ 진짜 파일 저장 기능:**
+        - **실제 .excalidraw 파일이 생성됨** ✅
+        - **/DATA/Documents/Excalidraw/ 폴더에 저장** ✅
+        - **파일 브라우저에서 파일 확인 가능** ✅
+        - **백업, 복사, 이동 가능** ✅
+        - **다른 앱에서도 열기 가능** ✅
         
-        **💾 데이터 저장 방식:**
-        - **Export to Link**: 웹 링크로 공유 (Redis 저장)
-        - **영구 보존**: 컨테이너 재시작 후에도 링크 유지
-        - **실시간 동기화**: 협업 변경사항 즉시 저장
+        **📂 저장 위치:**
+        ```
+        /DATA/Documents/Excalidraw/
+        ├── my-diagram-001.excalidraw      ← 실제 파일!
+        ├── project-wireframe-002.excalidraw
+        ├── team-brainstorm-003.excalidraw
+        └── flowchart-final-004.excalidraw
+        ```
+        
+        **🔧 작동 방식:**
+        1. Excalidraw에서 그림 그리기
+        2. **"Save" 또는 저장 기능 사용**
+        3. **실제 .excalidraw 파일이 Documents 폴더에 저장**
+        4. 파일 매니저에서 파일 확인 가능
+        5. 나중에 파일을 열어서 편집 계속 가능
         
         **🌐 접근 URL:**
         - 메인 앱: `https://excalidraw-{사용자명}.nsl.sh/`
-        - Storage API: `https://8081-excalidraw-{사용자명}.nsl.sh/`
-        - Room Server: `https://8082-excalidraw-{사용자명}.nsl.sh/`
+        - 백엔드 API: `https://8080-excalidraw-{사용자명}.nsl.sh/`
         
-        **📝 완벽한 워크플로우:**
-        1. **개인/팀 작업** → 실시간 그림 그리기
-        2. **"Export to Link" 클릭** → 서버에 영구 저장
-        3. **링크 공유** → 다른 사람과 접근 공유
-        4. **언제든 재접속** → 데이터 영구 보존
+        **💡 기능 비교:**
         
-        **🔧 해결된 문제들:**
-        - ✅ Frontend 권한 문제 (privileged 모드)
-        - ✅ Redis 권한 문제 (pre-install-cmd)
-        - ✅ 데이터 손실 방지 (AOF + RDB)
-        - ✅ 도메인 하드코딩 ($domain 변수)
+        | 기능 | Export to Link | 🔥 실제 파일 저장 |
+        |------|---------------|-----------------|
+        | .excalidraw 파일 생성 | ❌ | ✅ |
+        | 서버에 파일 저장 | ❌ | ✅ |
+        | 파일 브라우저 확인 | ❌ | ✅ |
+        | 백업/복사 가능 | ❌ | ✅ |
+        | 파일 관리 | ❌ | ✅ |
+        | 실시간 협업 | ✅ | ❌ |
+        | 웹 링크 공유 | ✅ | ❌ |
         
-        **💡 이 설정의 장점:**
-        - **검증됨**: alswl의 안정적인 이미지 사용
-        - **권한 해결**: 모든 권한 문제 사전 해결
-        - **영구 저장**: Export to Link 데이터 영구 보존
-        - **협업 완벽**: 실시간 다중 사용자 편집
+        **🎯 이 설정은 실제 .excalidraw 파일을 저장하고 관리하는 용도입니다!**
         
-        **🚀 안정적이고 검증된 Excalidraw 솔루션!**
+        **📝 파일 저장 워크플로우:**
+        1. **그림 그리기** → Excalidraw에서 도면 작성
+        2. **저장하기** → Save 버튼 클릭 또는 Ctrl+S
+        3. **파일 생성** → `/DATA/Documents/Excalidraw/filename.excalidraw`
+        4. **파일 관리** → 파일 브라우저에서 확인/백업/이동
+        5. **재편집** → 파일을 다시 열어서 편집 계속
+        
+        **🔒 파일 접근:**
+        - SSH/SFTP로 서버 파일 직접 접근 가능
+        - 파일 브라우저 앱에서 확인 가능
+        - 백업 도구로 자동 백업 가능
+        - 버전 관리 시스템에 추가 가능
+        
+        **🚀 서버에 실제 .excalidraw 파일이 저장됩니다!**
         
         **⚠️ 참고사항:**
-        - 실제 .excalidraw 파일 저장은 안됨 (웹 링크 방식)
-        - 파일 브라우저에서 파일 확인 불가
-        - Export to Link로 데이터 관리 (영구 보존됨)
+        - 실시간 협업 기능 없음 (개인용 파일 저장에 최적화)
+        - Export to Link 기능 없음 (실제 파일로 대체)
+        - 파일 공유는 직접 파일 전송으로 해야 함
       ko_kr: |
-        **🎨 Excalidraw - 검증된 안정 버전!**
+        **📁 Excalidraw - 실제 파일 저장!**
         
-        **✅ 확실한 기능:**
-        - Export to Link 영구 저장 ✅
-        - 실시간 협업 ✅
-        - 권한 문제 해결 ✅
-        - 데이터 영구 보존 ✅
+        **✅ 진짜 파일 저장:**
+        - .excalidraw 파일 생성 ✅
+        - Documents 폴더에 저장 ✅
+        - 파일 브라우저에서 관리 ✅
+        
+        **📂 저장 위치:**
+        `/DATA/Documents/Excalidraw/`
         
         **📝 사용법:**
         1. 그림 그리기
-        2. "Export to Link" 클릭
-        3. 링크로 영구 저장!
+        2. Save 버튼 클릭
+        3. 실제 파일 저장 완료!
         
-        **🚀 안정적으로 작동합니다!**
+        **🎯 진짜 .excalidraw 파일이 저장됩니다!**
   index: /
