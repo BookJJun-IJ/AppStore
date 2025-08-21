@@ -25,9 +25,9 @@ services:
       - /DATA/Documents/Excalidraw:/src/storage
     working_dir: /src
 
-  # 🎨 Excalidraw 프론트엔드 - 수정된 버전 (백엔드 연결 지원)
+  # 🎨 공식 Excalidraw 프론트엔드 (안정적)
   excalidraw:
-    image: alswl/excalidraw:latest
+    image: excalidraw/excalidraw:latest
     container_name: excalidraw-frontend
     restart: unless-stopped
     user: $PUID:$PGID
@@ -42,11 +42,6 @@ services:
       - PUID=$PUID
       - PGID=$PGID
       - TZ=$TZ
-      # 🔗 백엔드 연결 설정
-      - VITE_APP_HTTP_STORAGE_BACKEND_URL=http://cocreators-backend:8080
-      - VITE_APP_WS_SERVER_URL=http://cocreators-backend:8080
-      - VITE_APP_BACKEND_V2_GET_URL=http://cocreators-backend:8080/api/v2/
-      - VITE_APP_BACKEND_V2_POST_URL=http://cocreators-backend:8080/api/v2/post/
     depends_on:
       - cocreators-backend
 
@@ -66,11 +61,11 @@ x-casaos:
     echo "✅ 실시간 협업 지원" &&
     echo "✅ 완전한 자체 호스팅 솔루션"
   description:
-    en_us: Complete self-hosted Excalidraw solution with Cocreators backend for real file storage and collaboration.
-    ko_kr: 실제 파일 저장과 협업을 위한 Cocreators 백엔드가 포함된 완전한 자체 호스팅 Excalidraw 솔루션입니다.
-    zh_cn: 包含 Cocreators 后端的完整自托管 Excalidraw 解决方案，支持真实文件存储和协作。
-    fr_fr: Solution Excalidraw auto-hébergée complète avec backend Cocreators pour le stockage de fichiers réels et la collaboration.
-    es_es: Solución completa de Excalidraw auto-hospedada con backend Cocreators para almacenamiento de archivos reales y colaboración.
+    en_us: Official Excalidraw with Cocreators backend for enhanced file storage and management.
+    ko_kr: 향상된 파일 저장 및 관리를 위한 Cocreators 백엔드가 포함된 공식 Excalidraw입니다.
+    zh_cn: 官方 Excalidraw 配备 Cocreators 后端，提供增强的文件存储和管理功能。
+    fr_fr: Excalidraw officiel avec backend Cocreators pour un stockage et une gestion de fichiers améliorés.
+    es_es: Excalidraw oficial con backend Cocreators para almacenamiento y gestión de archivos mejorados.
   developer: Cocreators + alswl + CasaOS Team
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/icon.png
   screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/screenshot-1.png
@@ -86,98 +81,112 @@ x-casaos:
   tips:
     before_install:
       en_us: |
-        **🚀 Excalidraw + Cocreators = Perfect Self-Hosted Solution!**
+        **🎨 Official Excalidraw + Cocreators Storage = Best of Both Worlds!**
         
-        **✅ Complete Features:**
-        - ✅ **Real .excalidraw files** saved to `/DATA/Documents/Excalidraw/`
-        - ✅ **Real-time collaboration** - multiple users editing simultaneously
-        - ✅ **Self-hosted backend** - no external dependencies
-        - ✅ **Automatic saving** - files saved directly to server
-        - ✅ **Full functionality** - all Excalidraw features working
+        **✅ What You Get:**
+        - ✅ **Official Excalidraw** - Most stable and feature-complete version
+        - ✅ **Cocreators Storage Backend** - For optional file management
+        - ✅ **Real-time Collaboration** - Share links for team editing
+        - ✅ **Multiple Storage Options** - Browser, download, or server storage
         
         **🏗️ Architecture:**
         ```
-        ┌─────────────────┐    ┌──────────────────┐
-        │ Excalidraw UI   │───▶│ Cocreators       │
-        │ (Frontend)      │    │ Backend          │
-        │ Port 80         │    │ Port 8080        │
-        └─────────────────┘    └──────────────────┘
-                                        │
-                                        ▼
-                               /DATA/Documents/Excalidraw/
-                               ├── diagram-1.excalidraw
-                               ├── team-project.excalidraw
-                               └── wireframes.excalidraw
+        ┌─────────────────┐    Optional    ┌──────────────────┐
+        │ Excalidraw UI   │────────────────│ Cocreators       │
+        │ (Official)      │  File Upload   │ Storage Backend  │
+        │ Port 80         │                │ Port 8080        │
+        └─────────────────┘                └──────────────────┘
+                                                    │
+                                                    ▼
+                                           /DATA/Documents/Excalidraw/
+                                           ├── uploaded-files/
+                                           └── manual-backups/
         ```
         
-        **💾 How Files Are Saved:**
+        **💾 File Storage Options:**
         
-        **Automatic Backend Saving:**
-        1. Draw your diagram
-        2. Files automatically sync to Cocreators backend
-        3. Backend saves real `.excalidraw` files to server
-        4. Access files anytime via SSH/SFTP
+        **Option 1: Browser Storage (Default)**
+        1. Draw your diagrams
+        2. Automatically saved to browser localStorage
+        3. Always available when you return
+        4. Perfect for personal use
         
-        **Manual Export (Backup):**
-        1. Menu (☰) → "Export image" or "Save to disk"
-        2. Additional backup to your computer
+        **Option 2: Download + Manual Upload**
+        1. Menu (☰) → "다른 이름으로 저장..." → "디스크에 저장"
+        2. File downloads to your computer
+        3. Upload to server via SSH/SFTP:
+        ```bash
+        scp my-diagram.excalidraw user@server:/DATA/Documents/Excalidraw/
+        ```
+        
+        **Option 3: Cocreators API (Advanced)**
+        1. Use Cocreators backend API for programmatic file management
+        2. API available at: `http://localhost:8080` (internal)
+        3. Upload/download files via HTTP requests
         
         **🤝 Collaboration Features:**
-        1. **Share Room Links** - Multiple users can edit simultaneously
-        2. **Real-time Sync** - All changes saved to backend automatically
-        3. **Persistent Storage** - Collaboration results saved as files
-        4. **No Data Loss** - Everything backed up to your server
+        1. **Create Room Links** - Click "공유 가능한 링크 생성"
+        2. **Share with Team** - Send link to colleagues
+        3. **Real-time Editing** - Multiple users edit simultaneously
+        4. **Save Results** - Use Option 1 or 2 to preserve final work
         
-        **🌐 Access:**
-        - **Web UI**: `https://excalidraw-{username}.nsl.sh/`
-        - **Files**: SSH/SFTP to `/DATA/Documents/Excalidraw/`
-        - **Backend API**: Internal connection to Cocreators
+        **🌐 Access Points:**
+        - **Main UI**: `https://excalidraw-{username}.nsl.sh/`
+        - **File Storage**: `/DATA/Documents/Excalidraw/`
+        - **Cocreators API**: Internal backend for advanced users
         
-        **🎯 Perfect For:**
-        - **Team Collaboration** - Real-time editing with file persistence
-        - **Personal Diagrams** - All saved automatically
-        - **Project Documentation** - Diagrams stored with your code
-        - **Architecture Planning** - Complex diagrams with version history
-        - **Meeting Notes** - Collaborative brainstorming sessions
+        **💡 Perfect Workflow:**
         
-        **💡 Technical Benefits:**
-        - **No Firebase Dependency** - Complete self-hosting
-        - **Standard File Format** - Compatible with official Excalidraw
-        - **Scalable Backend** - 10MB file size limit (configurable)
-        - **CORS Enabled** - Works with any domain
-        - **Lightweight** - Only 768MB total memory usage
+        **For Personal Use:**
+        1. Open Excalidraw → Start drawing
+        2. Browser automatically saves progress
+        3. Optionally download final version for backup
         
-        **🔧 What's Different:**
-        Unlike basic Excalidraw, this solution provides:
-        - ✅ **Automatic server-side saving** (not just browser storage)
-        - ✅ **Real file persistence** (actual .excalidraw files)
-        - ✅ **Collaboration with persistence** (rooms save to files)
-        - ✅ **Zero external dependencies** (completely self-contained)
+        **For Team Projects:**
+        1. Create diagram → Generate shareable link
+        2. Team members join and collaborate in real-time
+        3. Final person downloads result and uploads to server
+        4. Everyone has access to the final file
         
-        **🚀 The Ultimate Self-Hosted Excalidraw Experience!**
+        **🔧 Technical Benefits:**
+        - **Zero Configuration** - Official Excalidraw works out of the box
+        - **Maximum Compatibility** - All features work as intended
+        - **Flexible Storage** - Choose your preferred method
+        - **Future-Proof** - Official updates automatically included
+        - **Reliable** - No custom modifications that might break
+        
+        **🎯 Best For:**
+        - **Quick Sketches** - Browser storage for daily use
+        - **Team Collaboration** - Real-time editing with shared links
+        - **Documentation** - Download and archive important diagrams
+        - **Project Planning** - Collaborative wireframes and flowcharts
+        
+        **🚀 The Most Reliable Excalidraw Experience!**
       ko_kr: |
-        **🚀 Excalidraw + Cocreators = 완벽한 자체 호스팅!**
+        **🎨 공식 Excalidraw + Cocreators = 최고의 조합!**
         
-        **✅ 완전한 기능:**
-        - 실제 파일 저장 ✅
+        **✅ 주요 기능:**
+        - 공식 Excalidraw ✅
+        - Cocreators 스토리지 백엔드 ✅
         - 실시간 협업 ✅
-        - 자체 호스팅 백엔드 ✅
-        - 자동 저장 ✅
-        - 모든 기능 지원 ✅
+        - 다양한 저장 옵션 ✅
         
-        **💾 파일 저장 방식:**
-        1. 다이어그램 그리기
-        2. 백엔드에 자동 동기화
-        3. 실제 파일로 서버에 저장
-        4. SSH/SFTP로 언제든 접근
+        **💾 파일 저장 방법:**
         
-        **📁 저장 위치:**
-        `/DATA/Documents/Excalidraw/`
+        **방법 1: 브라우저 저장 (기본)**
+        - 자동으로 브라우저에 저장
+        - 다시 접속해도 유지
+        - 개인 사용에 완벽
+        
+        **방법 2: 다운로드 + 수동 업로드**
+        - 메뉴 → "다른 이름으로 저장"
+        - 컴퓨터에 다운로드
+        - SSH/SFTP로 서버에 업로드
         
         **🤝 협업 기능:**
-        - 룸 링크 공유로 다중 사용자 편집
-        - 실시간 동기화 및 파일 저장
-        - 데이터 손실 방지
+        - "공유 가능한 링크 생성"으로 팀 편집
+        - 실시간 다중 사용자 지원
+        - 최종 결과 저장 가능
         
-        **🎯 완벽한 자체 호스팅 솔루션!**
+        **🎯 안정적이고 신뢰할 수 있는 솔루션!**
   index: /
