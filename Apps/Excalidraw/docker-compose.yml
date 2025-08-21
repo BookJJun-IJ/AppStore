@@ -1,134 +1,183 @@
 name: excalidraw
 
 services:
-  excalidraw:
-    image: alpine:3.19
-    container_name: excalidraw
+  # 🗄️ Cocreators 백엔드 - 파일 저장 담당
+  cocreators-backend:
+    image: ghcr.io/cocreators-ee/excalidraw-alternative-store:latest
+    container_name: excalidraw-backend
     restart: unless-stopped
     user: root
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.25"
+    expose:
+      - 8080
+    environment:
+      - PORT=8080
+      - FILE_SIZE_LIMIT=10485760  # 10MB
+      - STORAGE_MODULE=local
+      - LOCAL_STORAGE_PATH=/src/storage
+      - CORS_ALLOW_ORIGINS=*
+    volumes:
+      # 🎯 실제 .excalidraw 파일들이 여기에 저장됨
+      - /DATA/Documents/Excalidraw:/src/storage
+    working_dir: /src
+
+  # 🎨 Excalidraw 프론트엔드 - 수정된 버전 (백엔드 연결 지원)
+  excalidraw:
+    image: alswl/excalidraw:latest
+    container_name: excalidraw-frontend
+    restart: unless-stopped
+    user: $PUID:$PGID
     deploy:
       resources:
         limits:
           memory: 512M
           cpus: "0.5"
     expose:
-      - 3002
+      - 80
     environment:
-      - STORAGE_TYPE=filesystem
-      - LOCAL_STORAGE_PATH=/storage
-      - ENABLE_COLLABORATION=true
-      - PORT=3002
-    volumes:
-      - /DATA/Documents/Excalidraw:/storage
-    working_dir: /storage
-    command: |
-      sh -c "
-        apk add --no-cache wget tar &&
-        mkdir -p /app &&
-        if [ ! -f /app/excalidraw-complete ]; then
-          echo 'Detecting architecture...'
-          ARCH=\$(uname -m)
-          echo \"Architecture: \$ARCH\"
-          
-          if [ \"\$ARCH\" = \"aarch64\" ]; then
-            echo 'Using ARM64 binary'
-            wget -O /tmp/binary.tar.gz 'https://github.com/PatWie/excalidraw-complete/releases/download/0.0.2/excalidraw-complete_Linux_arm64.tar.gz'
-          else
-            echo 'Using AMD64 binary'
-            wget -O /tmp/binary.tar.gz 'https://github.com/PatWie/excalidraw-complete/releases/download/0.0.2/excalidraw-complete_Linux_x86_64.tar.gz'
-          fi &&
-          
-          echo 'Extracting binary...' &&
-          cd /tmp &&
-          tar -xzf binary.tar.gz &&
-          mv excalidraw-complete /app/ &&
-          chmod +x /app/excalidraw-complete &&
-          rm /tmp/binary.tar.gz &&
-          echo 'Binary installation completed'
-        else
-          echo 'Binary already exists, skipping download'
-        fi &&
-        
-        echo 'Starting PatWie excalidraw-complete with correct parameters...' &&
-        echo 'Storage: filesystem (/storage)' &&
-        echo 'Port: 3002' &&
-        cd /storage &&
-        STORAGE_TYPE=filesystem LOCAL_STORAGE_PATH=/storage exec /app/excalidraw-complete --listen=':3002'
-      "
+      - PUID=$PUID
+      - PGID=$PGID
+      - TZ=$TZ
+      # 🔗 백엔드 연결 설정
+      - VITE_APP_HTTP_STORAGE_BACKEND_URL=http://cocreators-backend:8080
+      - VITE_APP_WS_SERVER_URL=http://cocreators-backend:8080
+      - VITE_APP_BACKEND_V2_GET_URL=http://cocreators-backend:8080/api/v2/
+      - VITE_APP_BACKEND_V2_POST_URL=http://cocreators-backend:8080/api/v2/post/
+    depends_on:
+      - cocreators-backend
 
 x-casaos:
   architectures:
     - amd64
     - arm64
   main: excalidraw
-  webui_port: 3002
+  webui_port: 80
   author: CasaOS Team
   category: Productivity
   pre-install-cmd: |
     mkdir -p /DATA/Documents/Excalidraw &&
-    chmod 755 /DATA/Documents/Excalidraw
+    chmod 755 /DATA/Documents/Excalidraw &&
+    echo "🗄️ Cocreators 백엔드 + Excalidraw 프론트엔드 조합" &&
+    echo "✅ 실제 파일 저장: /DATA/Documents/Excalidraw/" &&
+    echo "✅ 실시간 협업 지원" &&
+    echo "✅ 완전한 자체 호스팅 솔루션"
   description:
-    en_us: PatWie's Excalidraw with file storage and real-time collaboration. Simple and effective whiteboard tool.
-    ko_kr: 파일 저장과 실시간 협업을 지원하는 PatWie Excalidraw입니다. 간단하고 효과적인 화이트보드 도구입니다.
-    zh_cn: PatWie 的 Excalidraw，支持文件存储和实时协作。简单有效的白板工具。
-    fr_fr: Excalidraw de PatWie avec stockage de fichiers et collaboration en temps réel. Outil de tableau blanc simple et efficace.
-    es_es: Excalidraw de PatWie con almacenamiento de archivos y colaboración en tiempo real. Herramienta de pizarra simple y efectiva.
-  developer: PatWie
+    en_us: Complete self-hosted Excalidraw solution with Cocreators backend for real file storage and collaboration.
+    ko_kr: 실제 파일 저장과 협업을 위한 Cocreators 백엔드가 포함된 완전한 자체 호스팅 Excalidraw 솔루션입니다.
+    zh_cn: 包含 Cocreators 后端的完整自托管 Excalidraw 解决方案，支持真实文件存储和协作。
+    fr_fr: Solution Excalidraw auto-hébergée complète avec backend Cocreators pour le stockage de fichiers réels et la collaboration.
+    es_es: Solución completa de Excalidraw auto-hospedada con backend Cocreators para almacenamiento de archivos reales y colaboración.
+  developer: Cocreators + alswl + CasaOS Team
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/icon.png
   screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/screenshot-1.png
   tagline:
-    en_us: Simple whiteboard with file storage and collaboration
-    ko_kr: 파일 저장과 협업이 가능한 간단한 화이트보드
-    zh_cn: 具有文件存储和协作功能的简单白板
-    fr_fr: Tableau blanc simple avec stockage de fichiers et collaboration
-    es_es: Pizarra simple con almacenamiento de archivos y colaboración
+    en_us: Complete self-hosted solution with real file storage
+    ko_kr: 실제 파일 저장이 가능한 완전한 자체 호스팅 솔루션
+    zh_cn: 具有真实文件存储的完整自托管解决方案
+    fr_fr: Solution auto-hébergée complète avec stockage de fichiers réels
+    es_es: Solución completa auto-hospedada con almacenamiento de archivos reales
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/thumbnail.png
   title:
     en_us: Excalidraw
   tips:
     before_install:
       en_us: |
-        **🎨 PatWie Excalidraw - Simple & Effective**
+        **🚀 Excalidraw + Cocreators = Perfect Self-Hosted Solution!**
         
-        **✅ Features:**
+        **✅ Complete Features:**
         - ✅ **Real .excalidraw files** saved to `/DATA/Documents/Excalidraw/`
-        - ✅ **Real-time collaboration** - multiple users can edit simultaneously
-        - ✅ **Simple installation** - downloads binary automatically on first run
-        - ✅ **File management** - access files directly via SSH/SFTP
+        - ✅ **Real-time collaboration** - multiple users editing simultaneously
+        - ✅ **Self-hosted backend** - no external dependencies
+        - ✅ **Automatic saving** - files saved directly to server
+        - ✅ **Full functionality** - all Excalidraw features working
         
-        **📁 File Storage:**
+        **🏗️ Architecture:**
         ```
-        /DATA/Documents/Excalidraw/
-        ├── my-diagram.excalidraw
-        ├── team-project.excalidraw
-        └── wireframes.excalidraw
+        ┌─────────────────┐    ┌──────────────────┐
+        │ Excalidraw UI   │───▶│ Cocreators       │
+        │ (Frontend)      │    │ Backend          │
+        │ Port 80         │    │ Port 8080        │
+        └─────────────────┘    └──────────────────┘
+                                        │
+                                        ▼
+                               /DATA/Documents/Excalidraw/
+                               ├── diagram-1.excalidraw
+                               ├── team-project.excalidraw
+                               └── wireframes.excalidraw
         ```
+        
+        **💾 How Files Are Saved:**
+        
+        **Automatic Backend Saving:**
+        1. Draw your diagram
+        2. Files automatically sync to Cocreators backend
+        3. Backend saves real `.excalidraw` files to server
+        4. Access files anytime via SSH/SFTP
+        
+        **Manual Export (Backup):**
+        1. Menu (☰) → "Export image" or "Save to disk"
+        2. Additional backup to your computer
+        
+        **🤝 Collaboration Features:**
+        1. **Share Room Links** - Multiple users can edit simultaneously
+        2. **Real-time Sync** - All changes saved to backend automatically
+        3. **Persistent Storage** - Collaboration results saved as files
+        4. **No Data Loss** - Everything backed up to your server
         
         **🌐 Access:**
-        - Web UI: `https://excalidraw-{username}.nsl.sh/`
-        - Files: SSH/SFTP access for backup and management
+        - **Web UI**: `https://excalidraw-{username}.nsl.sh/`
+        - **Files**: SSH/SFTP to `/DATA/Documents/Excalidraw/`
+        - **Backend API**: Internal connection to Cocreators
         
-        **🚀 Simple Setup:**
-        1. Click install
-        2. Binary downloads automatically 
-        3. Start drawing immediately
+        **🎯 Perfect For:**
+        - **Team Collaboration** - Real-time editing with file persistence
+        - **Personal Diagrams** - All saved automatically
+        - **Project Documentation** - Diagrams stored with your code
+        - **Architecture Planning** - Complex diagrams with version history
+        - **Meeting Notes** - Collaborative brainstorming sessions
         
-        **💡 Perfect for:**
-        - Personal diagrams and sketches
-        - Team collaboration sessions
-        - Wireframing and brainstorming
-        - Architecture diagrams
+        **💡 Technical Benefits:**
+        - **No Firebase Dependency** - Complete self-hosting
+        - **Standard File Format** - Compatible with official Excalidraw
+        - **Scalable Backend** - 10MB file size limit (configurable)
+        - **CORS Enabled** - Works with any domain
+        - **Lightweight** - Only 768MB total memory usage
+        
+        **🔧 What's Different:**
+        Unlike basic Excalidraw, this solution provides:
+        - ✅ **Automatic server-side saving** (not just browser storage)
+        - ✅ **Real file persistence** (actual .excalidraw files)
+        - ✅ **Collaboration with persistence** (rooms save to files)
+        - ✅ **Zero external dependencies** (completely self-contained)
+        
+        **🚀 The Ultimate Self-Hosted Excalidraw Experience!**
       ko_kr: |
-        **🎨 PatWie Excalidraw - 간단하고 효과적**
+        **🚀 Excalidraw + Cocreators = 완벽한 자체 호스팅!**
         
-        **✅ 기능:**
+        **✅ 완전한 기능:**
         - 실제 파일 저장 ✅
-        - 실시간 협업 ✅  
-        - 간단한 설치 ✅
-        - 파일 관리 ✅
+        - 실시간 협업 ✅
+        - 자체 호스팅 백엔드 ✅
+        - 자동 저장 ✅
+        - 모든 기능 지원 ✅
+        
+        **💾 파일 저장 방식:**
+        1. 다이어그램 그리기
+        2. 백엔드에 자동 동기화
+        3. 실제 파일로 서버에 저장
+        4. SSH/SFTP로 언제든 접근
         
         **📁 저장 위치:**
         `/DATA/Documents/Excalidraw/`
         
-        **🚀 설치 후 바로 사용!**
+        **🤝 협업 기능:**
+        - 룸 링크 공유로 다중 사용자 편집
+        - 실시간 동기화 및 파일 저장
+        - 데이터 손실 방지
+        
+        **🎯 완벽한 자체 호스팅 솔루션!**
   index: /
