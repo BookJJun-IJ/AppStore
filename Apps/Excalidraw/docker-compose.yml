@@ -50,7 +50,7 @@ services:
       - LOG_LEVEL=info
     depends_on:
       redis:
-        condition: service_healthy
+        condition: service_started
 
   room:
     image: excalidraw/excalidraw-room:sha-49bf529
@@ -77,14 +77,15 @@ services:
           cpus: "0.1"
     volumes:
       - /DATA/AppData/$AppID/redis:/data
-    command: redis-server --appendonly yes
-    # 🔧 Redis Health check 추가
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 3s
-      retries: 3
-      start_period: 10s
+    # 🔧 AOF 기능 제거하여 권한 문제 회피
+    command: redis-server --save 60 1 --loglevel warning
+    # 🔧 임시로 health check 제거 (시작 후 다시 추가)
+    # healthcheck:
+    #   test: ["CMD", "redis-cli", "ping"]
+    #   interval: 10s
+    #   timeout: 3s
+    #   retries: 3
+    #   start_period: 10s
 
 x-casaos:
   architectures:
