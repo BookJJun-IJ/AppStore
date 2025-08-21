@@ -17,11 +17,12 @@ services:
       - PUID=$PUID
       - PGID=$PGID
       - TZ=$TZ
-      - VITE_APP_BACKEND_V2_GET_URL=https://8081-excalidraw-ikjunyundera.nsl.sh/api/v2/
-      - VITE_APP_BACKEND_V2_POST_URL=https://8081-excalidraw-ikjunyundera.nsl.sh/api/v2/post/
-      - VITE_APP_WS_SERVER_URL=https://8082-excalidraw-ikjunyundera.nsl.sh/
+      # 🔧 $domain 변수 사용으로 동적 도메인 설정
+      - VITE_APP_BACKEND_V2_GET_URL=https://8081-excalidraw-$domain/api/v2/
+      - VITE_APP_BACKEND_V2_POST_URL=https://8081-excalidraw-$domain/api/v2/post/
+      - VITE_APP_WS_SERVER_URL=https://8082-excalidraw-$domain/
       - VITE_APP_FIREBASE_CONFIG={}
-      - VITE_APP_HTTP_STORAGE_BACKEND_URL=https://8081-excalidraw-ikjunyundera.nsl.sh/api/v2
+      - VITE_APP_HTTP_STORAGE_BACKEND_URL=https://8081-excalidraw-$domain/api/v2
       - VITE_APP_STORAGE_BACKEND=http
       - VITE_APP_DISABLE_TRACKING=true
     depends_on:
@@ -29,6 +30,13 @@ services:
         condition: service_started
       room:
         condition: service_started
+    # 🔧 Health check 추가 (선택사항)
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/"] 
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
   storage:
     image: alswl/excalidraw-storage-backend:v2023.11.11
@@ -48,6 +56,13 @@ services:
     depends_on:
       redis:
         condition: service_started
+    # 🔧 Health check 추가 (선택사항)
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/api/v2/health"] 
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
   room:
     image: excalidraw/excalidraw-room:sha-49bf529
@@ -60,6 +75,13 @@ services:
           cpus: "0.1"
     expose:
       - 80
+    # 🔧 Health check 추가 (선택사항)
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/"] 
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
   redis:
     image: redis:7-alpine
@@ -73,6 +95,13 @@ services:
     volumes:
       - /DATA/AppData/$AppID/redis:/data
     command: redis-server --appendonly yes
+    # 🔧 Health check 추가 (선택사항)
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
 
 x-casaos:
   architectures:
@@ -103,13 +132,12 @@ x-casaos:
   tips:
     before_install:
       en_us: |
-        **🎨 Excalidraw Collaboration - alswl 원본 기반!**
+        **🎨 Excalidraw Collaboration - 동적 도메인 설정!**
         
-        **✅ alswl의 검증된 설정:**
-        - alswl/excalidraw:v0.17.3-fork-b1 이미지 ✅
-        - alswl/excalidraw-storage-backend:v2023.11.11 ✅
-        - excalidraw/excalidraw-room 협업 서버 ✅
-        - Redis 영구 저장소 ✅
+        **✅ 주요 수정사항:**
+        - `$domain` 변수 사용으로 자동 도메인 설정 ✅
+        - Health check 추가로 안정성 향상 ✅
+        - 서비스 시작 시간 고려한 start_period 설정 ✅
         
         **🔧 주요 기능:**
         - **"Export to Link" 버튼으로 서버 저장** ✅
@@ -117,10 +145,10 @@ x-casaos:
         - Redis에 데이터 영구 보관 ✅
         - 공유 링크로 언제든 접근 ✅
         
-        **🌐 접근 URL:**
-        - 메인 앱: `https://excalidraw-ikjunyundera.nsl.sh/`
-        - Storage API: `https://8081-excalidraw-ikjunyundera.nsl.sh/`
-        - Room Server: `https://8082-excalidraw-ikjunyundera.nsl.sh/`
+        **🌐 접근 URL (자동 설정):**
+        - 메인 앱: `https://excalidraw-{사용자명}.nsl.sh/`
+        - Storage API: `https://8081-excalidraw-{사용자명}.nsl.sh/`
+        - Room Server: `https://8082-excalidraw-{사용자명}.nsl.sh/`
         
         **📝 사용법:**
         1. 그림 그리기
@@ -128,26 +156,19 @@ x-casaos:
         3. 생성된 링크 복사 → 서버에 저장됨!
         4. 링크를 다른 사람과 공유하거나 나중에 접속
         
-        **🚨 중요: 도메인 수정 필요!**
-        "ikjunyundera"를 본인의 실제 사용자명으로 교체하세요.
-        
-        **🚀 alswl의 원본 설정 그대로, 안정적으로 작동합니다!**
+        **🚀 이제 도메인 하드코딩 문제가 해결되었습니다!**
       ko_kr: |
-        **🎨 Excalidraw Collaboration - alswl 원본!**
+        **🎨 Excalidraw Collaboration - 자동 도메인!**
         
-        **✅ 검증된 원본 설정:**
-        - 실시간 협업 지원
-        - Export to Link 기능
-        - Redis 영구 저장
-        - 안정적인 서버 저장
+        **✅ 수정사항:**
+        - 동적 도메인 설정
+        - Health check 추가
+        - 안정성 향상
         
         **🔧 사용법:**
         1. 그림 그리기
         2. "Export to Link" 클릭
         3. 서버 저장 완료!
         
-        **⚙️ 도메인 설정:**
-        환경변수에서 "ikjunyundera"를 본인 사용자명으로 변경하세요.
-        
-        **🚀 이제 제대로 작동합니다!**
+        **🚀 제대로 작동합니다!**
   index: /
