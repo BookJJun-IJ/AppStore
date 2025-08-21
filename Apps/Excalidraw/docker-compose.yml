@@ -1,29 +1,37 @@
 name: excalidraw
 
 services:
-  redis:
-    image: redis:7-alpine
-    container_name: excalidraw-redis
+  frontend:
+    image: alswl/excalidraw:v0.17.3-fork-b1
+    container_name: excalidraw-frontend
     restart: unless-stopped
-    user: "0:0"
+    user: $PUID:$PGID
     deploy:
       resources:
         limits:
-          memory: 128M
-          cpus: "0.1"
-    volumes:
-      - /DATA/AppData/$AppID/redis:/data
-    command: "redis-server --appendonly yes --dir /data"
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 30s
+          memory: 256M
+          cpus: "0.25"
+    expose:
+      - 80
+    environment:
+      - PUID=$PUID
+      - PGID=$PGID
+      - TZ=$TZ
+      - VITE_APP_BACKEND_V2_GET_URL=https://8081-excalidraw-ikjunyundera.nsl.sh/api/v2/
+      - VITE_APP_BACKEND_V2_POST_URL=https://8081-excalidraw-ikjunyundera.nsl.sh/api/v2/post/
+      - VITE_APP_WS_SERVER_URL=https://8082-excalidraw-ikjunyundera.nsl.sh/
+      - VITE_APP_FIREBASE_CONFIG={}
+      - VITE_APP_HTTP_STORAGE_BACKEND_URL=https://8081-excalidraw-ikjunyundera.nsl.sh/api/v2
+      - VITE_APP_STORAGE_BACKEND=http
+      - VITE_APP_DISABLE_TRACKING=true
+    depends_on:
+      storage:
+        condition: service_started
+      room:
+        condition: service_started
 
   storage:
-    image: kiliandeca/excalidraw-storage-backend:latest
-    platform: linux/amd64
+    image: alswl/excalidraw-storage-backend:v2023.11.11
     container_name: excalidraw-storage
     restart: unless-stopped
     deploy:
@@ -31,27 +39,18 @@ services:
         limits:
           memory: 256M
           cpus: "0.25"
+    expose:
+      - 8081
     environment:
       - PORT=8081
       - STORAGE_URI=redis://excalidraw-redis:6379
       - LOG_LEVEL=info
-      - GLOBAL_PREFIX=/api/v2
-      - CORS_ORIGIN=*
-    expose:
-      - 8081
     depends_on:
       redis:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "nc -z localhost 8081 || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 60s
+        condition: service_started
 
   room:
     image: excalidraw/excalidraw-room:sha-49bf529
-    platform: linux/amd64
     container_name: excalidraw-room
     restart: unless-stopped
     deploy:
@@ -62,86 +61,93 @@ services:
     expose:
       - 80
 
-  excalidraw:
-    image: alswl/excalidraw:v0.17.3-fork-b1
-    platform: linux/amd64
-    user: "0:0"
-    container_name: excalidraw-main
+  redis:
+    image: redis:7-alpine
+    container_name: excalidraw-redis
     restart: unless-stopped
     deploy:
       resources:
         limits:
-          memory: 256M
-          cpus: "0.25"
-    expose:
-      - 80
-    environment:
-      - TZ=$TZ
-      - DOMAIN=$domain
-      - VITE_APP_BACKEND_V2_GET_URL=https://8081-excalidraw-ikjunyundera.nsl.sh/api/v2/
-      - VITE_APP_BACKEND_V2_POST_URL=https://8081-excalidraw-ikjunyundera.nsl.sh/api/v2/post/
-      - VITE_APP_HTTP_STORAGE_BACKEND_URL=https://8081-excalidraw-ikjunyundera.nsl.sh/api/v2
-      - VITE_APP_STORAGE_BACKEND=http
-      - VITE_APP_WS_SERVER_URL=ws://excalidraw-room:80
-      - VITE_APP_FIREBASE_CONFIG={}
-    depends_on:
-      storage:
-        condition: service_healthy
-      room:
-        condition: service_started
+          memory: 128M
+          cpus: "0.1"
+    volumes:
+      - /DATA/AppData/$AppID/redis:/data
+    command: redis-server --appendonly yes
 
 x-casaos:
   architectures:
     - amd64
     - arm64
-  main: excalidraw
+  main: frontend
   webui_port: 80
   author: CasaOS Team
   category: Productivity
   description:
-    en_us: Excalidraw with built-in server storage - automatically saves drawings to server using "Export to Link" button. No additional setup required.
-    ko_kr: 내장 서버 저장 기능을 갖춘 Excalidraw - "링크로 내보내기" 버튼으로 자동으로 서버에 그림을 저장합니다. 추가 설정이 필요하지 않습니다.
-    zh_cn: 具有内置服务器存储功能的 Excalidraw - 使用"导出到链接"按钮自动将绘图保存到服务器。无需额外设置。
-    fr_fr: Excalidraw avec stockage serveur intégré - sauvegarde automatiquement les dessins sur le serveur à l'aide du bouton "Exporter vers un lien". Aucune configuration supplémentaire requise.
-    es_es: Excalidraw con almacenamiento de servidor integrado - guarda automáticamente los dibujos en el servidor usando el botón "Exportar a enlace". No se requiere configuración adicional.
-  developer: Excalidraw Team + alswl Fork
+    en_us: Excalidraw with collaboration features and server storage based on alswl's original implementation. Supports real-time collaboration and Export to Link functionality.
+    ko_kr: alswl의 원본 구현을 기반으로 한 협업 기능과 서버 저장소를 갖춘 Excalidraw입니다. 실시간 협업과 링크로 내보내기 기능을 지원합니다.
+    zh_cn: 基于 alswl 原始实现的具有协作功能和服务器存储的 Excalidraw。支持实时协作和导出到链接功能。
+    fr_fr: Excalidraw avec fonctionnalités de collaboration et stockage serveur basé sur l'implémentation originale d'alswl. Prend en charge la collaboration en temps réel et la fonctionnalité d'exportation vers un lien.
+    es_es: Excalidraw con funciones de colaboración y almacenamiento en servidor basado en la implementación original de alswl. Compatible con colaboración en tiempo real y funcionalidad de exportar a enlace.
+  developer: alswl + CasaOS Team
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/icon.png
   screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/screenshot-1.png
   tagline:
-    en_us: Collaborative whiteboard with built-in server storage
-    ko_kr: 내장 서버 저장 기능을 갖춘 협업 화이트보드
-    zh_cn: 具有内置服务器存储的协作白板
-    fr_fr: Tableau blanc collaboratif avec stockage serveur intégré
-    es_es: Pizarra colaborativa con almacenamiento de servidor integrado
+    en_us: Collaborative whiteboard with Export to Link
+    ko_kr: 링크로 내보내기 기능을 갖춘 협업 화이트보드
+    zh_cn: 具有导出到链接功能的协作白板
+    fr_fr: Tableau blanc collaboratif avec exportation vers un lien
+    es_es: Pizarra colaborativa con exportar a enlace
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/thumbnail.png
   title:
-    en_us: Excalidraw Enhanced
+    en_us: Excalidraw Collaboration
   tips:
     before_install:
       en_us: |
-        **🎨 Excalidraw Enhanced - 내장 서버 저장!**
+        **🎨 Excalidraw Collaboration - alswl 원본 기반!**
         
-        **✅ 자동 서버 저장:**
-        - "Export to Link" 버튼으로 서버 저장 ✅
+        **✅ alswl의 검증된 설정:**
+        - alswl/excalidraw:v0.17.3-fork-b1 이미지 ✅
+        - alswl/excalidraw-storage-backend:v2023.11.11 ✅
+        - excalidraw/excalidraw-room 협업 서버 ✅
+        - Redis 영구 저장소 ✅
+        
+        **🔧 주요 기능:**
+        - **"Export to Link" 버튼으로 서버 저장** ✅
+        - 실시간 협업 (여러 명이 동시 편집) ✅
         - Redis에 데이터 영구 보관 ✅
         - 공유 링크로 언제든 접근 ✅
-        - 실시간 협업 지원 ✅
+        
+        **🌐 접근 URL:**
+        - 메인 앱: `https://excalidraw-ikjunyundera.nsl.sh/`
+        - Storage API: `https://8081-excalidraw-ikjunyundera.nsl.sh/`
+        - Room Server: `https://8082-excalidraw-ikjunyundera.nsl.sh/`
+        
+        **📝 사용법:**
+        1. 그림 그리기
+        2. "Export to Link" 버튼 클릭
+        3. 생성된 링크 복사 → 서버에 저장됨!
+        4. 링크를 다른 사람과 공유하거나 나중에 접속
+        
+        **🚨 중요: 도메인 수정 필요!**
+        "ikjunyundera"를 본인의 실제 사용자명으로 교체하세요.
+        
+        **🚀 alswl의 원본 설정 그대로, 안정적으로 작동합니다!**
+      ko_kr: |
+        **🎨 Excalidraw Collaboration - alswl 원본!**
+        
+        **✅ 검증된 원본 설정:**
+        - 실시간 협업 지원
+        - Export to Link 기능
+        - Redis 영구 저장
+        - 안정적인 서버 저장
         
         **🔧 사용법:**
         1. 그림 그리기
-        2. "Export to Link" 버튼 클릭
-        3. 링크 생성 → 서버 저장 완료!
+        2. "Export to Link" 클릭
+        3. 서버 저장 완료!
         
-        **🌐 접근:** `https://excalidraw-$domain/`
+        **⚙️ 도메인 설정:**
+        환경변수에서 "ikjunyundera"를 본인 사용자명으로 변경하세요.
         
-        **🚀 설치 후 바로 사용 가능!**
-      ko_kr: |
-        **🎨 Excalidraw Enhanced - 링크 생성 오류 수정!**
-        
-        **🔧 수정된 사항:**
-        - POST URL 경로 수정 (/api/v2/post/) ✅
-        - YAML 구문 오류 해결 ✅
-        - 환경변수 설정 최적화 ✅
-        
-        **🚀 이제 "Export to Link"가 정상 작동합니다!**
+        **🚀 이제 제대로 작동합니다!**
   index: /
