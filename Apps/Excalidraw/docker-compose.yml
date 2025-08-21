@@ -1,164 +1,151 @@
 name: excalidraw
 
 services:
-  frontend:
-    image: alswl/excalidraw:v0.17.3-fork-b1
-    container_name: excalidraw-frontend
+  # 🔥 완전한 Excalidraw - 파일 저장 + 협업 모두 지원
+  excalidraw:
+    image: ghcr.io/patwie/excalidraw-complete:latest
+    container_name: excalidraw
     restart: unless-stopped
-    # 🔧 Frontend는 root 권한 필요 (Nginx 파일 수정을 위해)
-    # user: $PUID:$PGID  <- 제거됨
+    user: $PUID:$PGID
     deploy:
       resources:
         limits:
-          memory: 256M
-          cpus: "0.25"
+          memory: 512M
+          cpus: "0.5"
     expose:
-      - 80
+      - 3002
     environment:
       - PUID=$PUID
       - PGID=$PGID
       - TZ=$TZ
-      # 🔧 $domain 변수 사용으로 동적 도메인 설정
-      - VITE_APP_BACKEND_V2_GET_URL=https://8081-excalidraw-$domain/api/v2/
-      - VITE_APP_BACKEND_V2_POST_URL=https://8081-excalidraw-$domain/api/v2/post/
-      - VITE_APP_WS_SERVER_URL=https://8082-excalidraw-$domain/
-      - VITE_APP_FIREBASE_CONFIG={}
-      - VITE_APP_HTTP_STORAGE_BACKEND_URL=https://8081-excalidraw-$domain/api/v2
-      - VITE_APP_STORAGE_BACKEND=http
-      - VITE_APP_DISABLE_TRACKING=true
-    depends_on:
-      storage:
-        condition: service_started
-      room:
-        condition: service_started
-
-  storage:
-    image: alswl/excalidraw-storage-backend:v2023.11.11
-    container_name: excalidraw-storage
-    restart: unless-stopped
-    # 🔧 Storage는 AppData만 사용하므로 root 권한으로 실행
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-          cpus: "0.25"
-    expose:
-      - 8081
-    environment:
-      - PORT=8081
-      - STORAGE_URI=redis://excalidraw-redis:6379
-      - LOG_LEVEL=info
-    depends_on:
-      redis:
-        condition: service_started
-
-  room:
-    image: excalidraw/excalidraw-room:sha-49bf529
-    container_name: excalidraw-room
-    restart: unless-stopped
-    # 🔧 Room 서비스도 root 권한으로 실행
-    deploy:
-      resources:
-        limits:
-          memory: 128M
-          cpus: "0.1"
-    expose:
-      - 80
-
-  redis:
-    image: redis:7-alpine
-    container_name: excalidraw-redis
-    restart: unless-stopped
-    # 🔧 Redis는 root 권한으로 실행 (AppData 전용)
-    deploy:
-      resources:
-        limits:
-          memory: 128M
-          cpus: "0.1"
+      # 🔧 파일시스템 저장 설정
+      - STORAGE_TYPE=filesystem
+      - LOCAL_STORAGE_PATH=/storage
+      # 🔧 실시간 협업 활성화
+      - ENABLE_COLLABORATION=true
+      # 🔧 도메인 설정
+      - PUBLIC_URL=https://excalidraw-$domain
     volumes:
-      - /DATA/AppData/$AppID/redis:/data
-    # 🔧 AOF 기능 제거하여 권한 문제 회피
-    command: redis-server --save 60 1 --loglevel warning
-    # 🔧 임시로 health check 제거 (시작 후 다시 추가)
-    # healthcheck:
-    #   test: ["CMD", "redis-cli", "ping"]
-    #   interval: 10s
-    #   timeout: 3s
-    #   retries: 3
-    #   start_period: 10s
+      # 🎯 실제 .excalidraw 파일들이 여기에 저장됨
+      - /DATA/Documents/Excalidraw:/storage
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3002/health"] 
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
 
 x-casaos:
   architectures:
     - amd64
     - arm64
-  main: frontend
-  webui_port: 80
-  author: CasaOS Team
+  main: excalidraw
+  webui_port: 3002
+  author: PatWie + CasaOS Team
   category: Productivity
+  # 🔧 파일 저장 디렉토리 사전 생성
+  pre-install-cmd: |
+    mkdir -p /DATA/Documents/Excalidraw &&
+    chown -R $PUID:$PGID /DATA/Documents/Excalidraw &&
+    chmod 755 /DATA/Documents/Excalidraw
   description:
-    en_us: Excalidraw with collaboration features and server storage based on alswl's original implementation. Supports real-time collaboration and Export to Link functionality.
-    ko_kr: alswl의 원본 구현을 기반으로 한 협업 기능과 서버 저장소를 갖춘 Excalidraw입니다. 실시간 협업과 링크로 내보내기 기능을 지원합니다.
-    zh_cn: 基于 alswl 原始实现的具有协作功能和服务器存储的 Excalidraw。支持实时协作和导出到链接功能。
-    fr_fr: Excalidraw avec fonctionnalités de collaboration et stockage serveur basé sur l'implémentation originale d'alswl. Prend en charge la collaboration en temps réel et la fonctionnalité d'exportation vers un lien.
-    es_es: Excalidraw con funciones de colaboración y almacenamiento en servidor basado en la implementación original de alswl. Compatible con colaboración en tiempo real y funcionalidad de exportar a enlace.
-  developer: alswl + CasaOS Team
+    en_us: Complete Excalidraw solution with both file storage and real-time collaboration. Save actual .excalidraw files while enjoying collaborative editing features.
+    ko_kr: 파일 저장과 실시간 협업을 모두 지원하는 완전한 Excalidraw 솔루션입니다. 실제 .excalidraw 파일을 저장하면서 동시에 협업 편집 기능을 즐길 수 있습니다.
+    zh_cn: 完整的 Excalidraw 解决方案，同时支持文件存储和实时协作。保存实际的 .excalidraw 文件，同时享受协作编辑功能。
+    fr_fr: Solution Excalidraw complète avec stockage de fichiers et collaboration en temps réel. Enregistrez de vrais fichiers .excalidraw tout en profitant des fonctionnalités d'édition collaborative.
+    es_es: Solución completa de Excalidraw con almacenamiento de archivos y colaboración en tiempo real. Guarda archivos .excalidraw reales mientras disfrutas de las funciones de edición colaborativa.
+  developer: PatWie + CasaOS Team
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/icon.png
   screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/screenshot-1.png
   tagline:
-    en_us: Collaborative whiteboard with Export to Link
-    ko_kr: 링크로 내보내기 기능을 갖춘 협업 화이트보드
-    zh_cn: 具有导出到链接功能的协作白板
-    fr_fr: Tableau blanc collaboratif avec exportation vers un lien
-    es_es: Pizarra colaborativa con exportar a enlace
+    en_us: Complete whiteboard with file storage and collaboration
+    ko_kr: 파일 저장과 협업을 지원하는 완전한 화이트보드
+    zh_cn: 具有文件存储和协作功能的完整白板
+    fr_fr: Tableau blanc complet avec stockage de fichiers et collaboration
+    es_es: Pizarra completa con almacenamiento de archivos y colaboración
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/thumbnail.png
   title:
-    en_us: Excalidraw Collaboration
+    en_us: Excalidraw
   tips:
     before_install:
       en_us: |
-        **🎨 Excalidraw Collaboration - 권한 문제 해결!**
+        **🔥 Excalidraw - 파일 저장 + 협업 완전판!**
         
-        **✅ 주요 수정사항:**
-        - Frontend root 권한으로 실행 (env.js 파일 생성을 위해) ✅
-        - Redis root 권한으로 실행 (데이터 파일 쓰기를 위해) ✅
-        - Redis health check로 의존성 관리 ✅
-        - `$domain` 변수 사용으로 동적 도메인 설정 ✅
+        **✅ 완전한 기능 세트:**
+        - **✅ 실제 .excalidraw 파일 저장** (Documents 폴더)
+        - **✅ 실시간 협업** (여러 명이 동시 편집)
+        - **✅ 파일 브라우저에서 관리** 가능
+        - **✅ 백업, 복사, 이동** 자유자재
+        - **✅ 단일 바이너리** 올인원 솔루션
         
-        **🔧 주요 기능:**
-        - **"Export to Link" 버튼으로 서버 저장** ✅
-        - 실시간 협업 (여러 명이 동시 편집) ✅
-        - Redis에 데이터 영구 보관 ✅
-        - 공유 링크로 언제든 접근 ✅
+        **📁 실제 파일 저장:**
+        ```
+        /DATA/Documents/Excalidraw/
+        ├── project-diagram.excalidraw     # 실제 파일!
+        ├── team-brainstorm.excalidraw     # 협업으로 만든 파일
+        ├── wireframe-v1.excalidraw        # 백업 가능
+        └── flowchart-final.excalidraw     # 버전 관리 가능
+        ```
         
-        **🌐 접근 URL (자동 설정):**
+        **🤝 협업 기능:**
+        - 여러 명이 동시에 같은 파일 편집
+        - 실시간 커서 표시
+        - 즉시 동기화
+        - **편집 결과가 실제 파일에 저장됨!**
+        
+        **🔧 사용 시나리오:**
+        
+        **개인 작업:**
+        1. 새 다이어그램 생성
+        2. 파일로 저장 → `/DATA/Documents/Excalidraw/my-diagram.excalidraw`
+        3. 언제든 파일 열어서 편집 계속
+        
+        **팀 협업:**
+        1. 팀원들과 동시 편집
+        2. 실시간으로 변경사항 확인
+        3. 완성된 파일이 자동으로 저장됨
+        4. 모든 팀원이 같은 파일에 접근 가능
+        
+        **🌐 접근 URL:**
         - 메인 앱: `https://excalidraw-{사용자명}.nsl.sh/`
-        - Storage API: `https://8081-excalidraw-{사용자명}.nsl.sh/`
-        - Room Server: `https://8082-excalidraw-{사용자명}.nsl.sh/`
         
-        **📝 사용법:**
-        1. 그림 그리기
-        2. "Export to Link" 버튼 클릭
-        3. 생성된 링크 복사 → 서버에 저장됨!
-        4. 링크를 다른 사람과 공유하거나 나중에 접속
+        **💡 기능 비교표:**
         
-        **🚀 권한 문제가 완전히 해결되었습니다!**
+        | 기능 | 기존 alswl | 파일 저장 전용 | 🔥 Excalidraw |
+        |------|-----------|--------------|------------|
+        | 실제 파일 저장 | ❌ | ✅ | ✅ |
+        | 실시간 협업 | ✅ | ❌ | ✅ |
+        | Export to Link | ✅ | ❌ | ✅ |
+        | 파일 관리 | ❌ | ✅ | ✅ |
+        | 단일 솔루션 | ❌ | ✅ | ✅ |
+        | 복잡도 | 높음 | 낮음 | 낮음 |
         
-        **🔒 보안 참고:**
-        - AppData 디렉토리만 사용하므로 root 권한 안전
-        - 사용자 파일 접근 없음
-        - 시스템 격리 유지
+        **🎯 이제 파일 저장과 협업을 동시에!**
+        
+        **📝 완벽한 워크플로우:**
+        1. **개인 작업** → 파일로 저장
+        2. **팀원 초대** → 실시간 협업 편집
+        3. **결과 저장** → 실제 파일에 자동 저장
+        4. **백업/관리** → 파일 브라우저에서 자유롭게
+        
+        **🚀 가장 완전한 Excalidraw 솔루션입니다!**
       ko_kr: |
-        **🎨 Excalidraw Collaboration - 권한 해결!**
+        **🔥 Excalidraw - 완전판!**
         
-        **✅ 수정사항:**
-        - 권한 문제 완전 해결
-        - 안정적인 Redis 연결
-        - 동적 도메인 설정
+        **✅ 모든 기능:**
+        - 실제 파일 저장 ✅
+        - 실시간 협업 ✅  
+        - 파일 관리 ✅
+        - 올인원 솔루션 ✅
         
-        **🔧 사용법:**
-        1. 그림 그리기
-        2. "Export to Link" 클릭
-        3. 서버 저장 완료!
+        **📁 저장 위치:**
+        `/DATA/Documents/Excalidraw/`
         
-        **🚀 이제 완벽하게 작동합니다!**
+        **🤝 사용법:**
+        1. 다이어그램 생성
+        2. 파일로 저장
+        3. 팀원과 협업
+        4. 자동 저장 완료!
+        
+        **🎯 파일 저장 + 협업 모두!**
   index: /
