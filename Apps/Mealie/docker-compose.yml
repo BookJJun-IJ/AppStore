@@ -18,8 +18,8 @@ services:
       TZ: $TZ
       # 보안 설정
       ALLOW_SIGNUP: "false"
-      DEFAULT_EMAIL: admin@example.com
-      DEFAULT_PASSWORD: $default_pwd
+      # Mealie v3 기본 계정 (첫 설치 시)
+      # changeme@example.com / MyPassword
       # NSL Router 설정
       BASE_URL: https://$domain
       # 성능 설정
@@ -63,10 +63,12 @@ x-casaos:
   tips:
     before_install:
       en_us: |
-        **Default Account**
+        **Default Account (First Login)**
         | Username | Password |
         | -------- | -------- |
-        | `admin@example.com` | `$default_pwd` |
+        | `changeme@example.com` | `MyPassword` |
+        
+        **⚠️ Important: Change these credentials immediately after first login!**
         
         **Features:**
         - Import recipes from URLs automatically
@@ -75,10 +77,10 @@ x-casaos:
         - Organize recipes in cookbooks
         - Share recipes with family
         
-        **First Login:**
-        1. Use the default credentials above
-        2. Go to Profile Settings to change your email and password
-        3. Disable signup if you don't want others to register
+        **After First Login:**
+        1. Go to Profile Settings (우측 상단 메뉴)
+        2. Change your email and password
+        3. Consider disabling signup in Admin settings
   title:
     en_us: Mealie
   webui_port: 80
