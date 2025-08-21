@@ -30,7 +30,8 @@ services:
     image: excalidraw/excalidraw:latest
     container_name: excalidraw-frontend
     restart: unless-stopped
-    user: $PUID:$PGID
+    # 🔧 공식 이미지는 root로 실행 (내부적으로 nginx 사용)
+    # user 설정 제거
     deploy:
       resources:
         limits:
@@ -39,8 +40,6 @@ services:
     expose:
       - 80
     environment:
-      - PUID=$PUID
-      - PGID=$PGID
       - TZ=$TZ
     depends_on:
       - cocreators-backend
