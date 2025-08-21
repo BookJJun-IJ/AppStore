@@ -49,10 +49,11 @@ services:
           echo 'Binary already exists, skipping download'
         fi &&
         
-        echo 'Starting PatWie excalidraw-complete...' &&
+        echo 'Starting PatWie excalidraw-complete with correct parameters...' &&
         echo 'Storage: filesystem (/storage)' &&
         echo 'Port: 3002' &&
-        exec /app/excalidraw-complete
+        cd /storage &&
+        STORAGE_TYPE=filesystem LOCAL_STORAGE_PATH=/storage exec /app/excalidraw-complete --listen=':3002'
       "
 
 x-casaos:
