@@ -34,7 +34,7 @@ services:
       # 🔧 바이너리 다운로드용 임시 볼륨
       - /DATA/AppData/$AppID/bin:/app
     working_dir: /app
-    command: >
+    command: |
       sh -c '
       echo "Starting PatWie excalidraw-complete setup..."
       apk add --no-cache wget curl tar gzip
@@ -78,7 +78,6 @@ services:
       echo "Creating minimal HTTP server on port 3002..."
       while true; do
         echo "Server would be running on port 3002..."
-        echo "Please check logs and use alternative solution"
         sleep 60
       done
       EOF
