@@ -1,0 +1,85 @@
+name: mealie
+
+services:
+  mealie:
+    image: ghcr.io/mealie-recipes/mealie:v3.0.2
+    container_name: mealie
+    user: $PUID:$PGID
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+    expose:
+      - 80
+    environment:
+      PUID: $PUID
+      PGID: $PGID
+      TZ: $TZ
+      # 보안 설정
+      ALLOW_SIGNUP: "false"
+      DEFAULT_EMAIL: admin@example.com
+      DEFAULT_PASSWORD: $default_pwd
+      # NSL Router 설정
+      BASE_URL: https://$domain
+      # 성능 설정
+      MAX_WORKERS: 1
+      WEB_CONCURRENCY: 1
+      # 포트 설정
+      API_PORT: 80
+    volumes:
+      - /DATA/AppData/$AppID/data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/api/app/about"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  main: mealie
+  author: CasaOS Team
+  category: Utilities
+  description:
+    en_us: Mealie is a self hosted recipe manager and meal planner with a RestAPI backend and a reactive frontend application built in Vue for a pleasant user experience for the whole family. Easily add recipes into your database by providing the url and mealie will automatically import the relevant data or add a family recipe with the UI editor.
+    fr_fr: Mealie est un gestionnaire de recettes auto-hébergé et un planificateur de repas avec un backend RestAPI et une application frontend réactive construite en Vue pour une expérience utilisateur agréable pour toute la famille.
+    ko_kr: Mealie는 RestAPI 백엔드와 Vue로 구축된 반응형 프론트엔드 애플리케이션을 갖춘 자체 호스팅 레시피 관리자 및 식사 계획 도구입니다.
+    zh_cn: Mealie 是一个自托管的食谱管理器和膳食规划器，具有 RestAPI 后端和用 Vue 构建的响应式前端应用程序，为全家人提供愉快的用户体验。
+    es_es: Mealie es un administrador de recetas auto-hospedado y planificador de comidas con un backend RestAPI y una aplicación frontend reactiva construida en Vue para una experiencia de usuario agradable para toda la familia.
+  developer: Mealie Recipes Team
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mealie/icon.png
+  screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mealie/screenshot-1.png
+  tagline:
+    en_us: Self-hosted recipe manager and meal planner
+    fr_fr: Gestionnaire de recettes auto-hébergé et planificateur de repas
+    ko_kr: 자체 호스팅 레시피 관리자 및 식사 계획 도구
+    zh_cn: 自托管食谱管理器和膳食规划器
+    es_es: Administrador de recetas auto-hospedado y planificador de comidas
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mealie/thumbnail.png
+  tips:
+    before_install:
+      en_us: |
+        **Default Account**
+        | Username | Password |
+        | -------- | -------- |
+        | `admin@example.com` | `$default_pwd` |
+        
+        **Features:**
+        - Import recipes from URLs automatically
+        - Create shopping lists from recipes
+        - Plan meals for the week
+        - Organize recipes in cookbooks
+        - Share recipes with family
+        
+        **First Login:**
+        1. Use the default credentials above
+        2. Go to Profile Settings to change your email and password
+        3. Disable signup if you don't want others to register
+  title:
+    en_us: Mealie
+  webui_port: 80
+  index: /
