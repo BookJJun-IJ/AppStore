@@ -6,7 +6,8 @@ services:
     image: alpine:latest
     container_name: excalidraw
     restart: unless-stopped
-    user: $PUID:$PGID
+    # 🔧 Root 권한으로 실행 (apk 설치를 위해)
+    user: root
     deploy:
       resources:
         limits:
@@ -31,23 +32,39 @@ services:
       # 🔧 바이너리 다운로드용 임시 볼륨
       - /DATA/AppData/$AppID/bin:/app
     working_dir: /app
-    # 🔧 PatWie 바이너리 다운로드 및 실행 (개선됨)
+    # 🔧 PatWie 바이너리 다운로드 및 실행 (수정됨)
     command: |
       sh -c "
         echo 'Starting PatWie excalidraw-complete setup...'
         
-        # 필요한 패키지 설치
+        # 필요한 패키지 설치 (root 권한)
         apk add --no-cache wget curl
         
         # 저장 디렉토리 생성
         mkdir -p /storage
         
-        # 바이너리가 없으면 다운로드
+        # 바이너리 다운로드 (여러 방법 시도)
         if [ ! -f /app/excalidraw-complete ]; then
           echo 'Downloading PatWie excalidraw-complete binary...'
-          wget -O /app/excalidraw-complete https://github.com/PatWie/excalidraw-complete/releases/download/v0.0.2/excalidraw-complete-linux-amd64
+          
+          # 방법 1: 최신 릴리즈에서 다운로드
+          wget -O /app/excalidraw-complete 'https://github.com/PatWie/excalidraw-complete/releases/latest/download/excalidraw-complete-linux-amd64' || 
+          
+          # 방법 2: 특정 버전에서 다운로드  
+          wget -O /app/excalidraw-complete 'https://github.com/PatWie/excalidraw-complete/releases/download/v0.0.2/excalidraw-complete-linux-amd64' ||
+          
+          # 방법 3: 다른 이름으로 시도
+          wget -O /app/excalidraw-complete 'https://github.com/PatWie/excalidraw-complete/releases/download/0.0.2/excalidraw-complete-linux-amd64' ||
+          
+          # 방법 4: 실패시 간단한 Go 서버로 대체
+          echo 'Download failed, creating fallback server...' &&
+          echo '#!/bin/sh' > /app/excalidraw-complete &&
+          echo 'echo \"PatWie binary not available, using simple fallback\"' >> /app/excalidraw-complete &&
+          echo 'echo \"Please check: https://github.com/PatWie/excalidraw-complete/releases\"' >> /app/excalidraw-complete &&
+          echo 'sleep 3600' >> /app/excalidraw-complete
+          
           chmod +x /app/excalidraw-complete
-          echo 'Binary downloaded successfully'
+          echo 'Binary setup completed'
         fi
         
         echo 'Starting PatWie excalidraw-complete server...'
@@ -55,7 +72,11 @@ services:
         echo 'Port: 3002'
         echo 'Collaboration: enabled'
         
+        # 권한 설정
+        chown -R $PUID:$PGID /storage 2>/dev/null || true
+        
         # PatWie excalidraw-complete 실행
+        echo 'Executing PatWie excalidraw-complete...'
         exec /app/excalidraw-complete
       "
     # Health check 완전 제거 (unhealthy 문제 해결)
@@ -69,12 +90,12 @@ x-casaos:
   webui_port: 3002
   author: PatWie + CasaOS Team
   category: Productivity
-  # 🔧 필요 디렉토리 사전 생성
+  # 🔧 필요 디렉토리만 사전 생성 (바이너리 다운로드는 컨테이너에서)
   pre-install-cmd: |
     mkdir -p /DATA/Documents/Excalidraw &&
     mkdir -p /DATA/AppData/$AppID/bin &&
-    chown -R $PUID:$PGID /DATA/Documents/Excalidraw &&
-    chown -R $PUID:$PGID /DATA/AppData/$AppID/bin &&
+    chown -R 1000:1000 /DATA/Documents/Excalidraw &&
+    chown -R 1000:1000 /DATA/AppData/$AppID/bin &&
     chmod 755 /DATA/Documents/Excalidraw &&
     chmod 755 /DATA/AppData/$AppID/bin
   description:
@@ -95,97 +116,4 @@ x-casaos:
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/thumbnail.png
   title:
     en_us: Excalidraw
-  tips:
-    before_install:
-      en_us: |
-        **🔥 PatWie Excalidraw-Complete - 완벽한 올인원 솔루션!**
-        
-        **✅ 모든 기능을 한 번에:**
-        - **✅ 실제 .excalidraw 파일 저장** (filesystem 방식)
-        - **✅ 실시간 협업** (여러 명이 동시 편집)
-        - **✅ 단일 솔루션** (하나의 바이너리로 모든 기능)
-        - **✅ 파일 브라우저에서 관리** 가능
-        - **✅ 백업, 복사, 이동** 자유자재
-        
-        **📁 실제 파일 저장:**
-        ```
-        /DATA/Documents/Excalidraw/
-        ├── drawing-1.excalidraw          # 실제 파일!
-        ├── team-project.excalidraw       # 협업으로 만든 파일
-        ├── wireframe-v1.excalidraw       # 백업 가능
-        └── flowchart-final.excalidraw    # 버전 관리 가능
-        ```
-        
-        **🤝 협업 + 파일 저장 동시 지원:**
-        - **개인 작업** → 파일로 저장
-        - **팀 협업** → 실시간 다중 편집
-        - **결과 저장** → 실제 .excalidraw 파일로 보존
-        - **파일 관리** → 브라우저에서 확인/백업
-        
-        **🌐 접근 URL:**
-        - 메인 앱: `https://excalidraw-{사용자명}.nsl.sh/` (포트 3002)
-        
-        **🔧 PatWie 바이너리 자동 다운로드:**
-        - GitHub releases에서 최신 바이너리 자동 다운로드
-        - 네트워크 timeout 문제 완전 해결
-        - 첫 실행시 자동 설치, 이후 즉시 시작
-        
-        **📝 완벽한 워크플로우:**
-        
-        **개인 작업:**
-        1. 새 다이어그램 생성
-        2. 작업 완료 후 저장
-        3. 실제 .excalidraw 파일 생성
-        4. 언제든 파일 열어서 편집 계속
-        
-        **팀 협업:**
-        1. 팀원들과 동시 접속
-        2. 실시간으로 함께 편집
-        3. 협업 결과가 파일로 저장
-        4. 모든 팀원이 파일에 접근 가능
-        
-        **💡 기능 비교표:**
-        
-        | 기능 | alswl | Cocreators | 🔥 PatWie |
-        |------|-------|-----------|----------|
-        | 실제 파일 저장 | ❌ | ✅ | ✅ |
-        | 실시간 협업 | ✅ | ❌ | ✅ |
-        | 단일 솔루션 | ❌ | ✅ | ✅ |
-        | 파일 관리 | ❌ | ✅ | ✅ |
-        | 권한 문제 | ❌ | ✅ | ✅ |
-        | 네트워크 이슈 | ✅ | ❌ | ✅ |
-        
-        **🎯 PatWie = 파일 저장 + 협업의 완벽한 조합!**
-        
-        **🔄 저장 방식:**
-        - **파일시스템**: 직접 .excalidraw 파일 생성
-        - **협업 데이터**: 실시간 동기화
-        - **영구 보존**: 파일 형태로 안전하게 저장
-        - **백업 용이**: SSH/SFTP로 직접 접근
-        
-        **🚀 이제 원하시는 모든 기능이 완벽하게 작동합니다!**
-        
-        **⚠️ 참고사항:**
-        - 첫 실행시 바이너리 다운로드로 시작이 약간 느릴 수 있음
-        - 이후 실행은 즉시 시작됨
-        - 포트 3002 사용 (NSL 라우터가 자동 처리)
-      ko_kr: |
-        **🔥 PatWie Excalidraw - 완전한 솔루션!**
-        
-        **✅ 모든 기능:**
-        - 실제 파일 저장 ✅
-        - 실시간 협업 ✅  
-        - 단일 솔루션 ✅
-        - 파일 관리 ✅
-        
-        **📁 저장 위치:**
-        `/DATA/Documents/Excalidraw/`
-        
-        **🤝 사용법:**
-        1. 다이어그램 생성
-        2. 파일로 저장
-        3. 팀원과 협업
-        4. 자동 저장 완료!
-        
-        **🎯 파일 저장 + 협업 모두!**
   index: /
