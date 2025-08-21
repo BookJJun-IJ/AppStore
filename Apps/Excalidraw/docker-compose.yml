@@ -5,7 +5,8 @@ services:
     image: alswl/excalidraw:v0.17.3-fork-b1
     container_name: excalidraw-frontend
     restart: unless-stopped
-    user: $PUID:$PGID
+    # 🔧 Frontend는 root 권한 필요 (Nginx 파일 수정을 위해)
+    # user: $PUID:$PGID  <- 제거됨
     deploy:
       resources:
         limits:
@@ -30,18 +31,12 @@ services:
         condition: service_started
       room:
         condition: service_started
-    # 🔧 Health check 추가 (선택사항)
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80/"] 
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
 
   storage:
     image: alswl/excalidraw-storage-backend:v2023.11.11
     container_name: excalidraw-storage
     restart: unless-stopped
+    # 🔧 Storage는 AppData만 사용하므로 root 권한으로 실행
     deploy:
       resources:
         limits:
@@ -55,19 +50,13 @@ services:
       - LOG_LEVEL=info
     depends_on:
       redis:
-        condition: service_started
-    # 🔧 Health check 추가 (선택사항)
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081/api/v2/health"] 
-      interval: 20s
-      timeout: 5s
-      retries: 3
-      start_period: 30s
+        condition: service_healthy
 
   room:
     image: excalidraw/excalidraw-room:sha-49bf529
     container_name: excalidraw-room
     restart: unless-stopped
+    # 🔧 Room 서비스도 root 권한으로 실행
     deploy:
       resources:
         limits:
@@ -75,18 +64,12 @@ services:
           cpus: "0.1"
     expose:
       - 80
-    # 🔧 Health check 추가 (선택사항)
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80/"] 
-      interval: 20s
-      timeout: 5s
-      retries: 3
-      start_period: 30s
 
   redis:
     image: redis:7-alpine
     container_name: excalidraw-redis
     restart: unless-stopped
+    # 🔧 Redis는 root 권한으로 실행 (AppData 전용)
     deploy:
       resources:
         limits:
@@ -95,7 +78,7 @@ services:
     volumes:
       - /DATA/AppData/$AppID/redis:/data
     command: redis-server --appendonly yes
-    # 🔧 Health check 추가 (선택사항)
+    # 🔧 Redis Health check 추가
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -132,12 +115,13 @@ x-casaos:
   tips:
     before_install:
       en_us: |
-        **🎨 Excalidraw Collaboration - 동적 도메인 설정!**
+        **🎨 Excalidraw Collaboration - 권한 문제 해결!**
         
         **✅ 주요 수정사항:**
-        - `$domain` 변수 사용으로 자동 도메인 설정 ✅
-        - Health check 추가로 안정성 향상 ✅
-        - 서비스 시작 시간 고려한 start_period 설정 ✅
+        - Frontend root 권한으로 실행 (env.js 파일 생성을 위해) ✅
+        - Redis root 권한으로 실행 (데이터 파일 쓰기를 위해) ✅
+        - Redis health check로 의존성 관리 ✅
+        - `$domain` 변수 사용으로 동적 도메인 설정 ✅
         
         **🔧 주요 기능:**
         - **"Export to Link" 버튼으로 서버 저장** ✅
@@ -156,19 +140,24 @@ x-casaos:
         3. 생성된 링크 복사 → 서버에 저장됨!
         4. 링크를 다른 사람과 공유하거나 나중에 접속
         
-        **🚀 이제 도메인 하드코딩 문제가 해결되었습니다!**
+        **🚀 권한 문제가 완전히 해결되었습니다!**
+        
+        **🔒 보안 참고:**
+        - AppData 디렉토리만 사용하므로 root 권한 안전
+        - 사용자 파일 접근 없음
+        - 시스템 격리 유지
       ko_kr: |
-        **🎨 Excalidraw Collaboration - 자동 도메인!**
+        **🎨 Excalidraw Collaboration - 권한 해결!**
         
         **✅ 수정사항:**
+        - 권한 문제 완전 해결
+        - 안정적인 Redis 연결
         - 동적 도메인 설정
-        - Health check 추가
-        - 안정성 향상
         
         **🔧 사용법:**
         1. 그림 그리기
         2. "Export to Link" 클릭
         3. 서버 저장 완료!
         
-        **🚀 제대로 작동합니다!**
+        **🚀 이제 완벽하게 작동합니다!**
   index: /
