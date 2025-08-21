@@ -1,13 +1,11 @@
 name: excalidraw
 
 services:
-  # 🔥 PatWie excalidraw-complete - 모든 기능 통합 솔루션
   excalidraw:
-    image: ubuntu:22.04
+    image: alpine:3.19
     container_name: excalidraw
     restart: unless-stopped
-    # 🔧 사용자 권한으로 실행
-    user: $PUID:$PGID
+    user: root
     deploy:
       resources:
         limits:
@@ -16,27 +14,35 @@ services:
     expose:
       - 3002
     environment:
-      # 🔧 PatWie 설정: 파일시스템 저장
       - STORAGE_TYPE=filesystem
       - LOCAL_STORAGE_PATH=/storage
-      # 🔧 실시간 협업 활성화
       - ENABLE_COLLABORATION=true
-      # 🔧 포트 설정 (NSL 라우터 연동)
       - PORT=3002
-      # 🔧 도메인 설정
-      - DOMAIN=$domain
-      # 🔧 시스템 환경변수
-      - PUID=$PUID
-      - PGID=$PGID
-      - TZ=$TZ
     volumes:
-      # 🎯 실제 .excalidraw 파일들이 여기에 저장됨
       - /DATA/Documents/Excalidraw:/storage
-      # 🔧 바이너리 디렉토리 전체 마운트
-      - /DATA/AppData/$AppID/bin:/app
     working_dir: /storage
-    # 🔧 시작 스크립트 실행 (권한 문제 해결)
-    command: ["/app/start.sh"]
+    command: |
+      sh -c "
+        apk add --no-cache wget tar &&
+        mkdir -p /app &&
+        if [ ! -f /app/excalidraw-complete ]; then
+          ARCH=\$(uname -m)
+          if [ \"\$ARCH\" = \"aarch64\" ]; then
+            BINARY_URL=\"https://github.com/PatWie/excalidraw-complete/releases/download/0.0.2/excalidraw-complete_Linux_arm64.tar.gz\"
+          else
+            BINARY_URL=\"https://github.com/PatWie/excalidraw-complete/releases/download/0.0.2/excalidraw-complete_Linux_x86_64.tar.gz\"
+          fi
+          echo \"Downloading: \$BINARY_URL\"
+          wget -O /tmp/binary.tar.gz \"\$BINARY_URL\" &&
+          cd /tmp &&
+          tar -xzf binary.tar.gz &&
+          mv excalidraw-complete /app/ &&
+          chmod +x /app/excalidraw-complete &&
+          rm /tmp/binary.tar.gz
+        fi &&
+        echo \"Starting PatWie excalidraw-complete...\" &&
+        exec /app/excalidraw-complete
+      "
 
 x-casaos:
   architectures:
@@ -44,209 +50,73 @@ x-casaos:
     - arm64
   main: excalidraw
   webui_port: 3002
-  author: PatWie + CasaOS Team
+  author: CasaOS Team
   category: Productivity
-  # 🔧 모든 설치 과정을 pre-install-cmd에서 처리 (CasaOS 권장 방식)
   pre-install-cmd: |
-    echo "=== PatWie Excalidraw-Complete Pre-Installation ==="
-    
-    # 필요 디렉토리 생성
     mkdir -p /DATA/Documents/Excalidraw &&
-    mkdir -p /DATA/AppData/$AppID/bin &&
-    
-    # 아키텍처 감지
-    ARCH=$(uname -m)
-    if [ "$ARCH" = "x86_64" ] || [ "$ARCH" = "amd64" ]; then
-      BINARY_URL="https://github.com/PatWie/excalidraw-complete/releases/download/0.0.2/excalidraw-complete_Linux_x86_64.tar.gz"
-      echo "Detected amd64 architecture"
-    elif [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
-      BINARY_URL="https://github.com/PatWie/excalidraw-complete/releases/download/0.0.2/excalidraw-complete_Linux_arm64.tar.gz"
-      echo "Detected arm64 architecture"
-    else
-      echo "Unsupported architecture: $ARCH, defaulting to amd64"
-      BINARY_URL="https://github.com/PatWie/excalidraw-complete/releases/download/0.0.2/excalidraw-complete_Linux_x86_64.tar.gz"
-    fi
-    
-    # 바이너리 다운로드 및 설치
-    if [ ! -f /DATA/AppData/$AppID/bin/excalidraw-complete ]; then
-      echo "Downloading PatWie excalidraw-complete from: $BINARY_URL"
-      
-      if wget -O /tmp/excalidraw-complete.tar.gz "$BINARY_URL"; then
-        echo "Download successful, extracting..."
-        cd /tmp
-        tar -xzf excalidraw-complete.tar.gz
-        
-        if [ -f excalidraw-complete ]; then
-          mv excalidraw-complete /DATA/AppData/$AppID/bin/excalidraw-complete
-          chmod +x /DATA/AppData/$AppID/bin/excalidraw-complete
-          echo "Binary extraction and setup completed"
-        else
-          echo "Error: Binary not found in extracted files"
-          ls -la /tmp/
-          exit 1
-        fi
-        
-        rm -f /tmp/excalidraw-complete.tar.gz
-        echo "PatWie excalidraw-complete installed successfully!"
-      else
-        echo "Download failed! Please check network connection"
-        exit 1
-      fi
-    else
-      echo "Binary already exists, skipping download"
-    fi
-    
-    # 시작 스크립트 생성 (Ubuntu glibc 환경에서 안정적 실행)
-    cat > /DATA/AppData/$AppID/bin/start.sh << 'EOF'
-    #!/bin/bash
-    echo "=== PatWie Excalidraw-Complete Startup ==="
-    echo "Starting PatWie excalidraw-complete..."
-    echo "Storage: filesystem (/storage)"
-    echo "Port: 3002"
-    echo "Collaboration: enabled"
-    
-    # 디버깅 정보
-    echo "Current user: $(id)"
-    echo "Working directory: $(pwd)"
-    echo "Binary check:"
-    if [ -f /app/excalidraw-complete ]; then
-      ls -la /app/excalidraw-complete
-      echo "Binary exists and details:"
-      file /app/excalidraw-complete 2>/dev/null || echo "file command not available"
-    else
-      echo "ERROR: Binary not found at /app/excalidraw-complete"
-      echo "Available files in /app:"
-      ls -la /app/ 2>/dev/null || echo "App directory not accessible"
-      exit 1
-    fi
-    
-    # 환경변수 확인
-    echo "Environment variables:"
-    echo "STORAGE_TYPE=$STORAGE_TYPE"
-    echo "LOCAL_STORAGE_PATH=$LOCAL_STORAGE_PATH"
-    echo "PORT=$PORT"
-    echo "ENABLE_COLLABORATION=$ENABLE_COLLABORATION"
-    
-    # 스토리지 디렉토리 확인
-    echo "Storage directory status:"
-    ls -la /storage/ 2>/dev/null || echo "Storage directory not accessible"
-    
-    # 바이너리 실행
-    if [ -x /app/excalidraw-complete ]; then
-      echo "Executing PatWie excalidraw-complete..."
-      exec /app/excalidraw-complete
-    else
-      echo "ERROR: Binary is not executable"
-      echo "Attempting to make executable..."
-      chmod +x /app/excalidraw-complete 2>/dev/null || echo "Failed to chmod"
-      if [ -x /app/excalidraw-complete ]; then
-        echo "Now executable, retrying..."
-        exec /app/excalidraw-complete
-      else
-        echo "Still not executable, exiting"
-        exit 1
-      fi
-    fi
-    EOF
-    
-    chmod +x /DATA/AppData/$AppID/bin/start.sh
-    
-    # 권한 설정
-    chown -R 1000:1000 /DATA/Documents/Excalidraw &&
-    chown -R 1000:1000 /DATA/AppData/$AppID/bin &&
-    chmod 755 /DATA/Documents/Excalidraw &&
-    chmod 755 /DATA/AppData/$AppID/bin &&
-    
-    echo "=== Pre-installation completed successfully ==="
+    chmod 755 /DATA/Documents/Excalidraw
   description:
-    en_us: PatWie's complete Excalidraw solution with both file storage and real-time collaboration. Save actual .excalidraw files while enjoying collaborative editing features.
-    ko_kr: 파일 저장과 실시간 협업을 모두 지원하는 PatWie의 완전한 Excalidraw 솔루션입니다. 실제 .excalidraw 파일을 저장하면서 동시에 협업 편집 기능을 즐길 수 있습니다.
-    zh_cn: PatWie 的完整 Excalidraw 解决方案，同时支持文件存储和实时协作。保存实际的 .excalidraw 文件，同时享受协作编辑功能。
-    fr_fr: Solution Excalidraw complète de PatWie avec stockage de fichiers et collaboration en temps réel. Enregistrez de vrais fichiers .excalidraw tout en profitant des fonctionnalités d'édition collaborative.
-    es_es: Solución completa de Excalidraw de PatWie con almacenamiento de archivos y colaboración en tiempo real. Guarda archivos .excalidraw reales mientras disfrutas de las funciones de edición colaborativa.
-  developer: PatWie + CasaOS Team
+    en_us: PatWie's Excalidraw with file storage and real-time collaboration. Simple and effective whiteboard tool.
+    ko_kr: 파일 저장과 실시간 협업을 지원하는 PatWie Excalidraw입니다. 간단하고 효과적인 화이트보드 도구입니다.
+    zh_cn: PatWie 的 Excalidraw，支持文件存储和实时协作。简单有效的白板工具。
+    fr_fr: Excalidraw de PatWie avec stockage de fichiers et collaboration en temps réel. Outil de tableau blanc simple et efficace.
+    es_es: Excalidraw de PatWie con almacenamiento de archivos y colaboración en tiempo real. Herramienta de pizarra simple y efectiva.
+  developer: PatWie
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/icon.png
   screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/screenshot-1.png
   tagline:
-    en_us: Complete solution with file storage and collaboration
-    ko_kr: 파일 저장과 협업을 모두 지원하는 완전한 솔루션
-    zh_cn: 具有文件存储和协作功能的完整解决方案
-    fr_fr: Solution complète avec stockage de fichiers et collaboration
-    es_es: Solución completa con almacenamiento de archivos y colaboración
+    en_us: Simple whiteboard with file storage and collaboration
+    ko_kr: 파일 저장과 협업이 가능한 간단한 화이트보드
+    zh_cn: 具有文件存储和协作功能的简单白板
+    fr_fr: Tableau blanc simple avec stockage de fichiers et collaboration
+    es_es: Pizarra simple con almacenamiento de archivos y colaboración
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/thumbnail.png
   title:
     en_us: Excalidraw
   tips:
     before_install:
       en_us: |
-        **🔥 PatWie Excalidraw-Complete - CasaOS 최적화 버전!**
+        **🎨 PatWie Excalidraw - Simple & Effective**
         
-        **✅ 주요 기능:**
-        - ✅ **실제 .excalidraw 파일 저장** (filesystem 방식)
-        - ✅ **실시간 협업** (여러 명이 동시 편집)
-        - ✅ **사전 설치** (설치 시 자동 바이너리 다운로드)
-        - ✅ **파일 관리** (브라우저에서 직접 접근)
-        - ✅ **빠른 시작** (복잡한 설치 과정 없음)
+        **✅ Features:**
+        - ✅ **Real .excalidraw files** saved to `/DATA/Documents/Excalidraw/`
+        - ✅ **Real-time collaboration** - multiple users can edit simultaneously
+        - ✅ **Simple installation** - downloads binary automatically on first run
+        - ✅ **File management** - access files directly via SSH/SFTP
         
-        **📁 파일 저장 위치:**
+        **📁 File Storage:**
         ```
         /DATA/Documents/Excalidraw/
-        ├── project-1.excalidraw       # 실제 파일로 저장
-        ├── collaboration.excalidraw   # 협업 결과
-        └── diagrams/                  # 폴더 구조 가능
+        ├── my-diagram.excalidraw
+        ├── team-project.excalidraw
+        └── wireframes.excalidraw
         ```
         
-        **🌐 접근 방법:**
-        - **웹 UI**: `https://excalidraw-{사용자명}.nsl.sh/`
-        - **파일 접근**: SSH/SFTP로 직접 관리 가능
+        **🌐 Access:**
+        - Web UI: `https://excalidraw-{username}.nsl.sh/`
+        - Files: SSH/SFTP access for backup and management
         
-        **🚀 설치 과정:**
-        1. **사전 설치**: GitHub에서 바이너리 자동 다운로드
-        2. **아키텍처 감지**: amd64/arm64 자동 선택
-        3. **권한 설정**: 파일 접근 권한 자동 구성
-        4. **즉시 시작**: 설치 완료 후 바로 사용 가능
+        **🚀 Simple Setup:**
+        1. Click install
+        2. Binary downloads automatically 
+        3. Start drawing immediately
         
-        **🤝 사용 방법:**
-        
-        **개인 작업:**
-        1. 새 다이어그램 생성 → 작업 완료 → 저장
-        2. 실제 .excalidraw 파일 생성
-        3. 언제든 다시 열어서 편집
-        
-        **팀 협업:**
-        1. 팀원들이 동시 접속 → 실시간 편집
-        2. 협업 결과를 파일로 저장
-        3. 모든 팀원이 파일 공유
-        
-        **💾 장점:**
-        - **표준 파일**: 다른 Excalidraw와 호환
-        - **백업 용이**: 일반 파일이므로 쉽게 백업
-        - **버전 관리**: Git으로 버전 관리 가능
-        - **CasaOS 최적화**: 설치 버튼 누르면 바로 작동
-        
-        **⚡ 빠른 설치:**
-        - 설치 시 자동으로 바이너리 다운로드
-        - 네트워크 문제시 설치 실패 (재시도 가능)
-        - 설치 완료 후 즉시 사용 가능
-        
-        **🎯 PatWie의 완벽함을 CasaOS에서 간편하게!**
+        **💡 Perfect for:**
+        - Personal diagrams and sketches
+        - Team collaboration sessions
+        - Wireframing and brainstorming
+        - Architecture diagrams
       ko_kr: |
-        **🔥 PatWie Excalidraw - CasaOS 최적화!**
+        **🎨 PatWie Excalidraw - 간단하고 효과적**
         
-        **✅ 핵심 기능:**
+        **✅ 기능:**
         - 실제 파일 저장 ✅
         - 실시간 협업 ✅  
-        - 사전 설치 ✅
-        - 빠른 시작 ✅
+        - 간단한 설치 ✅
+        - 파일 관리 ✅
         
         **📁 저장 위치:**
         `/DATA/Documents/Excalidraw/`
         
-        **🤝 사용법:**
-        1. 다이어그램 생성
-        2. 파일로 저장
-        3. 팀원과 협업
-        4. 자동 저장!
-        
-        **🚀 설치 후 바로 사용 가능!**
+        **🚀 설치 후 바로 사용!**
   index: /
