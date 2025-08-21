@@ -3,10 +3,10 @@ name: excalidraw
 services:
   # 🔥 PatWie excalidraw-complete - 모든 기능 통합 솔루션
   excalidraw:
-    image: busybox:1.36
+    image: ubuntu:22.04
     container_name: excalidraw
     restart: unless-stopped
-    # 🔧 사용자 권한으로 실행 (바이너리 설치는 pre-install-cmd에서 완료)
+    # 🔧 사용자 권한으로 실행
     user: $PUID:$PGID
     deploy:
       resources:
@@ -25,14 +25,18 @@ services:
       - PORT=3002
       # 🔧 도메인 설정
       - DOMAIN=$domain
+      # 🔧 시스템 환경변수
+      - PUID=$PUID
+      - PGID=$PGID
+      - TZ=$TZ
     volumes:
       # 🎯 실제 .excalidraw 파일들이 여기에 저장됨
       - /DATA/Documents/Excalidraw:/storage
-      # 🔧 사전 다운로드된 바이너리 연결
-      - /DATA/AppData/$AppID/bin/excalidraw-complete:/app/excalidraw-complete:ro
+      # 🔧 바이너리 디렉토리 전체 마운트
+      - /DATA/AppData/$AppID/bin:/app
     working_dir: /storage
-    # 🔧 단순한 실행 명령어 (모든 설치는 pre-install-cmd 완료)
-    command: ["/app/excalidraw-complete"]
+    # 🔧 시작 스크립트 실행 (권한 문제 해결)
+    command: ["/app/start.sh"]
 
 x-casaos:
   architectures:
@@ -91,6 +95,61 @@ x-casaos:
     else
       echo "Binary already exists, skipping download"
     fi
+    
+    # 시작 스크립트 생성 (Ubuntu glibc 환경에서 안정적 실행)
+    cat > /DATA/AppData/$AppID/bin/start.sh << 'EOF'
+    #!/bin/bash
+    echo "=== PatWie Excalidraw-Complete Startup ==="
+    echo "Starting PatWie excalidraw-complete..."
+    echo "Storage: filesystem (/storage)"
+    echo "Port: 3002"
+    echo "Collaboration: enabled"
+    
+    # 디버깅 정보
+    echo "Current user: $(id)"
+    echo "Working directory: $(pwd)"
+    echo "Binary check:"
+    if [ -f /app/excalidraw-complete ]; then
+      ls -la /app/excalidraw-complete
+      echo "Binary exists and details:"
+      file /app/excalidraw-complete 2>/dev/null || echo "file command not available"
+    else
+      echo "ERROR: Binary not found at /app/excalidraw-complete"
+      echo "Available files in /app:"
+      ls -la /app/ 2>/dev/null || echo "App directory not accessible"
+      exit 1
+    fi
+    
+    # 환경변수 확인
+    echo "Environment variables:"
+    echo "STORAGE_TYPE=$STORAGE_TYPE"
+    echo "LOCAL_STORAGE_PATH=$LOCAL_STORAGE_PATH"
+    echo "PORT=$PORT"
+    echo "ENABLE_COLLABORATION=$ENABLE_COLLABORATION"
+    
+    # 스토리지 디렉토리 확인
+    echo "Storage directory status:"
+    ls -la /storage/ 2>/dev/null || echo "Storage directory not accessible"
+    
+    # 바이너리 실행
+    if [ -x /app/excalidraw-complete ]; then
+      echo "Executing PatWie excalidraw-complete..."
+      exec /app/excalidraw-complete
+    else
+      echo "ERROR: Binary is not executable"
+      echo "Attempting to make executable..."
+      chmod +x /app/excalidraw-complete 2>/dev/null || echo "Failed to chmod"
+      if [ -x /app/excalidraw-complete ]; then
+        echo "Now executable, retrying..."
+        exec /app/excalidraw-complete
+      else
+        echo "Still not executable, exiting"
+        exit 1
+      fi
+    fi
+    EOF
+    
+    chmod +x /DATA/AppData/$AppID/bin/start.sh
     
     # 권한 설정
     chown -R 1000:1000 /DATA/Documents/Excalidraw &&
