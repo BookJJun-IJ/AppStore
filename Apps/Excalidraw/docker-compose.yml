@@ -26,21 +26,32 @@ services:
         apk add --no-cache wget tar &&
         mkdir -p /app &&
         if [ ! -f /app/excalidraw-complete ]; then
+          echo 'Detecting architecture...'
           ARCH=\$(uname -m)
+          echo \"Architecture: \$ARCH\"
+          
           if [ \"\$ARCH\" = \"aarch64\" ]; then
-            BINARY_URL=\"https://github.com/PatWie/excalidraw-complete/releases/download/0.0.2/excalidraw-complete_Linux_arm64.tar.gz\"
+            echo 'Using ARM64 binary'
+            wget -O /tmp/binary.tar.gz 'https://github.com/PatWie/excalidraw-complete/releases/download/0.0.2/excalidraw-complete_Linux_arm64.tar.gz'
           else
-            BINARY_URL=\"https://github.com/PatWie/excalidraw-complete/releases/download/0.0.2/excalidraw-complete_Linux_x86_64.tar.gz\"
-          fi
-          echo \"Downloading: \$BINARY_URL\"
-          wget -O /tmp/binary.tar.gz \"\$BINARY_URL\" &&
+            echo 'Using AMD64 binary'
+            wget -O /tmp/binary.tar.gz 'https://github.com/PatWie/excalidraw-complete/releases/download/0.0.2/excalidraw-complete_Linux_x86_64.tar.gz'
+          fi &&
+          
+          echo 'Extracting binary...' &&
           cd /tmp &&
           tar -xzf binary.tar.gz &&
           mv excalidraw-complete /app/ &&
           chmod +x /app/excalidraw-complete &&
-          rm /tmp/binary.tar.gz
+          rm /tmp/binary.tar.gz &&
+          echo 'Binary installation completed'
+        else
+          echo 'Binary already exists, skipping download'
         fi &&
-        echo \"Starting PatWie excalidraw-complete...\" &&
+        
+        echo 'Starting PatWie excalidraw-complete...' &&
+        echo 'Storage: filesystem (/storage)' &&
+        echo 'Port: 3002' &&
         exec /app/excalidraw-complete
       "
 
