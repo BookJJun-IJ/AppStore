@@ -34,10 +34,10 @@ services:
       # 🔧 바이너리 다운로드용 임시 볼륨
       - /DATA/AppData/$AppID/bin:/app
     working_dir: /app
-    # 🔧 PatWie 바이너리 다운로드 및 실행 (정확한 URL 사용)
-    command: |
-      sh -c "
-        echo 'Starting PatWie excalidraw-complete setup...'
+    # 🔧 PatWie 바이너리 다운로드 및 실행 (Alpine sh 호환 문법)
+    command: >
+      sh -c '
+        echo "Starting PatWie excalidraw-complete setup..."
         
         # 필요한 패키지 설치 (root 권한)
         apk add --no-cache wget curl tar gzip
@@ -47,30 +47,26 @@ services:
         
         # 바이너리 다운로드 (아키텍처 감지)
         if [ ! -f /app/excalidraw-complete ]; then
-          echo 'Downloading PatWie excalidraw-complete binary...'
+          echo "Downloading PatWie excalidraw-complete binary..."
           
-          # 아키텍처 감지
-          ARCH=\$(uname -m)
-          case \$ARCH in
-            x86_64|amd64)
-              BINARY_URL='https://github.com/PatWie/excalidraw-complete/releases/download/0.0.2/excalidraw-complete_Linux_x86_64.tar.gz'
-              echo 'Detected amd64 architecture'
-              ;;
-            aarch64|arm64)
-              BINARY_URL='https://github.com/PatWie/excalidraw-complete/releases/download/0.0.2/excalidraw-complete_Linux_arm64.tar.gz'
-              echo 'Detected arm64 architecture'
-              ;;
-            *)
-              echo 'Unsupported architecture: \$ARCH'
-              BINARY_URL='https://github.com/PatWie/excalidraw-complete/releases/download/0.0.2/excalidraw-complete_Linux_x86_64.tar.gz'
-              echo 'Defaulting to amd64...'
-              ;;
-          esac
+          # 아키텍처 감지 (단순한 if-else 사용)
+          ARCH=$(uname -m)
+          if [ "$ARCH" = "x86_64" ] || [ "$ARCH" = "amd64" ]; then
+            BINARY_URL="https://github.com/PatWie/excalidraw-complete/releases/download/0.0.2/excalidraw-complete_Linux_x86_64.tar.gz"
+            echo "Detected amd64 architecture"
+          elif [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
+            BINARY_URL="https://github.com/PatWie/excalidraw-complete/releases/download/0.0.2/excalidraw-complete_Linux_arm64.tar.gz"
+            echo "Detected arm64 architecture"
+          else
+            echo "Unsupported architecture: $ARCH"
+            BINARY_URL="https://github.com/PatWie/excalidraw-complete/releases/download/0.0.2/excalidraw-complete_Linux_x86_64.tar.gz"
+            echo "Defaulting to amd64..."
+          fi
           
           # 바이너리 다운로드 및 압축 해제
-          echo \"Downloading from: \$BINARY_URL\"
-          if wget -O /tmp/excalidraw-complete.tar.gz \"\$BINARY_URL\"; then
-            echo 'Download successful, extracting...'
+          echo "Downloading from: $BINARY_URL"
+          if wget -O /tmp/excalidraw-complete.tar.gz "$BINARY_URL"; then
+            echo "Download successful, extracting..."
             cd /tmp
             tar -xzf excalidraw-complete.tar.gz
             
@@ -78,9 +74,9 @@ services:
             if [ -f excalidraw-complete ]; then
               mv excalidraw-complete /app/excalidraw-complete
               chmod +x /app/excalidraw-complete
-              echo 'Binary extraction and setup completed'
+              echo "Binary extraction and setup completed"
             else
-              echo 'Error: Binary not found in extracted files'
+              echo "Error: Binary not found in extracted files"
               ls -la /tmp/
               exit 1
             fi
@@ -88,38 +84,40 @@ services:
             # 임시 파일 정리
             rm -f /tmp/excalidraw-complete.tar.gz
           else
-            echo 'Download failed! Creating fallback...'
+            echo "Download failed! Creating fallback..."
             
-            # 최후 수단: 웹 다운로드 서버 생성
-            cat > /app/excalidraw-complete << 'EOF'
-      #!/bin/sh
-      echo \"=== PatWie Excalidraw-Complete Download Failed ===\"
-      echo \"Please manually download from:\"
-      echo \"https://github.com/PatWie/excalidraw-complete/releases/download/0.0.2/\"
-      echo \"\"
-      echo \"Creating minimal HTTP server on port 3002...\"
-      
-      # 간단한 HTTP 응답 서버
-      while true; do
-        echo -e \"HTTP/1.1 200 OK\\r\\nContent-Type: text/html\\r\\n\\r\\n<h1>Excalidraw Download Failed</h1><p>Please check logs</p>\" | nc -l -p 3002 || sleep 5
-      done
-      EOF
+            # 최후 수단: 플레이스홀더 스크립트
+            cat > /app/excalidraw-complete << "EOF"
+#!/bin/sh
+echo "=== PatWie Excalidraw-Complete Download Failed ==="
+echo "Please manually download from:"
+echo "https://github.com/PatWie/excalidraw-complete/releases/download/0.0.2/"
+echo ""
+echo "Creating minimal HTTP server on port 3002..."
+
+# 간단한 메시지 출력
+while true; do
+  echo "Server would be running on port 3002..."
+  echo "Please check logs and use alternative solution"
+  sleep 60
+done
+EOF
             chmod +x /app/excalidraw-complete
           fi
         fi
         
-        echo 'Starting PatWie excalidraw-complete server...'
-        echo 'Storage: filesystem (/storage)'
-        echo 'Port: 3002'
-        echo 'Collaboration: enabled'
+        echo "Starting PatWie excalidraw-complete server..."
+        echo "Storage: filesystem (/storage)"
+        echo "Port: 3002"
+        echo "Collaboration: enabled"
         
         # 권한 설정
-        chown -R \$PUID:\$PGID /storage 2>/dev/null || true
+        chown -R $PUID:$PGID /storage 2>/dev/null || true
         
         # PatWie excalidraw-complete 실행
-        echo 'Executing PatWie excalidraw-complete...'
+        echo "Executing PatWie excalidraw-complete..."
         exec /app/excalidraw-complete
-      "
+      '
 
 x-casaos:
   architectures:
