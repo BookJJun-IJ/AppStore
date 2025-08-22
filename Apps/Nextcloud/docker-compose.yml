@@ -8,7 +8,6 @@ services:
     depends_on:
       - db
       - redis
-      - collabora
     deploy:
       resources:
         limits:
@@ -17,22 +16,22 @@ services:
     expose:
       - 80
     environment:
-      - PUID=$PUID
-      - PGID=$PGID
-      - TZ=$TZ
-      - MYSQL_HOST=db
-      - MYSQL_DATABASE=nextcloud
-      - MYSQL_USER=nextcloud
-      - MYSQL_PASSWORD=$default_pwd
-      - NEXTCLOUD_TRUSTED_DOMAINS=localhost $domain nextcloud
-      - OVERWRITEPROTOCOL=https
-      - OVERWRITEHOST=$domain
-      - REDIS_HOST=redis
-      - REDIS_HOST_PORT=6379
-      - REDIS_HOST_PASSWORD=$default_pwd
-      - NEXTCLOUD_INIT_HTACCESS=true
-      - PHP_MEMORY_LIMIT=2048M
-      - PHP_UPLOAD_LIMIT=1024M
+      - PUID=$PUID                                    # Process user ID / 프로세스 사용자 ID
+      - PGID=$PGID                                    # Process group ID / 프로세스 그룹 ID
+      - TZ=$TZ                                        # Timezone setting / 시간대 설정
+      - MYSQL_HOST=db                                 # MySQL/MariaDB host name / MySQL/MariaDB 호스트명
+      - MYSQL_DATABASE=nextcloud                      # Database name for Nextcloud / Nextcloud용 데이터베이스명
+      - MYSQL_USER=nextcloud                          # Database username / 데이터베이스 사용자명
+      - MYSQL_PASSWORD=$default_pwd                   # Database password / 데이터베이스 비밀번호
+      - NEXTCLOUD_TRUSTED_DOMAINS=localhost $domain nextcloud  # Trusted domains for access / 접근 허용 도메인들
+      - OVERWRITEPROTOCOL=https                       # Force HTTPS protocol / HTTPS 프로토콜 강제 사용
+      - OVERWRITEHOST=$domain                         # Override host for URL generation / URL 생성용 호스트 오버라이드
+      - REDIS_HOST=redis                              # Redis cache server hostname / Redis 캐시 서버 호스트명
+      - REDIS_HOST_PORT=6379                          # Redis server port / Redis 서버 포트
+      - REDIS_HOST_PASSWORD=$default_pwd              # Redis authentication password / Redis 인증 비밀번호
+      - NEXTCLOUD_INIT_HTACCESS=true                  # Initialize .htaccess file / .htaccess 파일 초기화
+      - PHP_MEMORY_LIMIT=2048M                        # PHP memory limit / PHP 메모리 제한
+      - PHP_UPLOAD_LIMIT=1024M                        # PHP file upload size limit / PHP 파일 업로드 크기 제한
     volumes:
       - /DATA/AppData/$AppID/html:/var/www/html
       - /DATA/AppData/$AppID/config:/var/www/html/config
@@ -56,18 +55,19 @@ services:
           memory: 512M
           cpus: '0.5'
     environment:
-      - TZ=$TZ
-      - MYSQL_ROOT_PASSWORD=$default_pwd
-      - MYSQL_DATABASE=nextcloud
-      - MYSQL_USER=nextcloud
-      - MYSQL_PASSWORD=$default_pwd
-      - MARIADB_AUTO_UPGRADE=1
-      - MARIADB_DISABLE_UPGRADE_BACKUP=1
+      - TZ=$TZ                                        # Timezone setting / 시간대 설정
+      - MYSQL_ROOT_PASSWORD=$default_pwd              # MySQL root user password / MySQL root 사용자 비밀번호
+      - MYSQL_DATABASE=nextcloud                      # Database name to create / 생성할 데이터베이스명
+      - MYSQL_USER=nextcloud                          # Database user to create / 생성할 데이터베이스 사용자
+      - MYSQL_PASSWORD=$default_pwd                   # Password for database user / 데이터베이스 사용자 비밀번호
+      - MARIADB_AUTO_UPGRADE=1                        # Enable automatic database upgrades / 자동 데이터베이스 업그레이드 활성화
+      - MARIADB_DISABLE_UPGRADE_BACKUP=1              # Disable backup during upgrades / 업그레이드 시 백업 비활성화
     volumes:
       - /DATA/AppData/$AppID/db:/var/lib/mysql
     restart: unless-stopped
     networks:
       - nextcloud-network
+    # MariaDB performance optimization for Nextcloud / Nextcloud를 위한 MariaDB 성능 최적화
     command: >
       --innodb-buffer-pool-size=256M
       --transaction-isolation=READ-COMMITTED
@@ -87,6 +87,7 @@ services:
         limits:
           memory: 128M
           cpus: '0.2'
+    # Redis with password authentication and data persistence / 비밀번호 인증과 데이터 지속성을 가진 Redis
     command: redis-server --requirepass $default_pwd --appendonly yes
     volumes:
       - /DATA/AppData/$AppID/redis:/data
@@ -98,39 +99,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-
-  collabora:
-    image: collabora/code:24.04.9.1.1
-    container_name: nextcloud_collabora
-    privileged: true
-    deploy:
-      resources:
-        limits:
-          memory: 1024M
-          cpus: '1.0'
-    ports:
-      - "9980:9980"
-    environment:
-      - TZ=$TZ
-      - aliasgroup1=https://$domain
-      - extra_params=--o:ssl.enable=false --o:ssl.termination=true --o:logging.level=warning
-      - username=admin
-      - password=$default_pwd
-    volumes:
-      - /DATA/AppData/$AppID/collabora:/opt/collabora/systemplate
-      - /DATA/AppData/$AppID/collabora/tmp:/tmp
-    restart: unless-stopped
-    networks:
-      - nextcloud-network
-    cap_add:
-      - MKNOD
-      - SYS_CHROOT
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9980/hosting/discovery"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 90s
 
 networks:
   nextcloud-network:
@@ -145,15 +113,15 @@ x-casaos:
   developer: Nextcloud GmbH
   pre-install-cmd: |
     rm -rf /DATA/AppData/$AppID/* &&
-    mkdir -p /DATA/AppData/$AppID/{config,data,html,db,redis,collabora/tmp} &&
+    mkdir -p /DATA/AppData/$AppID/{config,data,html,db,redis} &&
     chown -R $PUID:$PGID /DATA/AppData/$AppID &&
     chmod -R 755 /DATA/AppData/$AppID
   title:
     en_us: Nextcloud
     ko_kr: Nextcloud
   tagline:
-    en_us: Personal cloud with Collabora document editing
-    ko_kr: Collabora 문서 편집이 포함된 개인 클라우드
+    en_us: Build your Teams alternative with guided app installation
+    ko_kr: 가이드를 통한 Teams 대안 구축
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/icon.png
   screenshot_link:
     - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/screenshot-1.png
@@ -162,131 +130,135 @@ x-casaos:
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/thumbnail.png
   description:
     en_us: |
-      **☁️ Nextcloud with Collabora Integration**
+      **☁️ What is Nextcloud?**
 
-      Complete personal cloud solution with **Collabora Online** document server for professional document editing.
+      **Nextcloud** is your own personal cloud: like **Google Drive, Dropbox, Microsoft Teams, and WhatsApp all-in-one**, but fully under your control.
 
-      **🚀 What's Included:**
-      • **Nextcloud** - File management, sharing, calendar, contacts
-      • **Collabora Online** - Professional document editing server
-      • **Redis Cache** - Optimized performance
-      • **MariaDB** - Reliable database backend
+      If you want to sync your files across devices, you'll need to use the Nextcloud Files app — it's like your own private version of Google Drive or Dropbox.
 
-      **📝 Office Features:**
-      • **Word Documents** (.docx, .doc) - Full editing capabilities
-      • **Excel Spreadsheets** (.xlsx, .xls) - Advanced formulas and charts
-      • **PowerPoint Presentations** (.pptx, .ppt) - Rich media support
-      • **Real-time Collaboration** - Multiple users editing simultaneously
-      • **Comment System** - Review and feedback workflow
-      • **Version History** - Track document changes
+      You can **store files, share them, collaborate, chat, and even manage calendars and tasks**, all from a single private space.
 
-      **🔧 Technical Features:**
-      • **NSL Router Compatible** - Clean HTTPS URLs
-      • **Privileged Container** - Proper jail permissions for Collabora
-      • **High Performance** - Dedicated resources for document editing
-      • **Secure** - All data stays on your server
+      Think of it as your **own private workspace**, with apps you choose, running on your own server.
 
-      **Perfect for teams and individuals who need professional document editing with complete privacy control!**
+      **🔧 What Can You Do with Nextcloud?**
+
+      Nextcloud is modular: you can **add features like apps on a phone**. Here are some of the most popular ones:
+
+      • 📁 **Nextcloud Files**: Upload, access, and share files — like your own Google Drive
+      • 🗓️ **Calendar**: Manage events and sync with your phone or laptop
+      • 📇 **Contacts**: Store and sync all your contacts privately
+      • 🗣️ **Talk**: Chat and video call with your team or family — like a private WhatsApp or Zoom
+      • ✅ **Deck**: Organize tasks and projects like Trello or Notion
+      • 📝 **Nextcloud Office**: Open and edit Word, Excel, and PowerPoint files in your browser — just like Google Docs
+      • 📦 **More Apps**: Over 100+ apps available to customize your workspace
+
+      **🚀 Why Use Nextcloud?**
+
+      • **No more Google or Microsoft** — keep your files and data private
+      • **Fully customizable** — add only the tools you need
+      • **Accessible anywhere** — use the official Nextcloud mobile app or desktop app
+      • **Share with others** — send files, create shared folders, or chat securely
+      • **Control your data** — your files, your server, your rules
+
+      **🛠️ Example Use Cases**
+
+      • Use **Nextcloud Files** like Google Drive
+      • Use **Talk** to message and call like WhatsApp or Zoom
+      • Use **Office + Calendar + Deck** to replace Microsoft Teams
+      • Invite your team or family and manage everything from one place
     ko_kr: |
-      **☁️ Collabora 통합 Nextcloud**
+      **☁️ Nextcloud란 무엇인가요?**
 
-      전문적인 문서 편집을 위한 **Collabora Online** 문서 서버가 포함된 완전한 개인 클라우드 솔루션입니다.
+      **Nextcloud**는 **Google Drive, Dropbox, Microsoft Teams, WhatsApp을 모두 합친** 것과 같은 개인 클라우드이지만, 완전히 당신의 통제 하에 있습니다.
 
-      **🚀 포함된 기능:**
-      • **Nextcloud** - 파일 관리, 공유, 일정, 연락처
-      • **Collabora Online** - 전문적인 문서 편집 서버
-      • **Redis 캐시** - 최적화된 성능
-      • **MariaDB** - 안정적인 데이터베이스 백엔드
+      기기 간에 파일을 동기화하려면 Nextcloud Files 앱을 사용해야 합니다 — 이것은 Google Drive나 Dropbox의 개인적인 버전과 같습니다.
 
-      **📝 오피스 기능:**
-      • **Word 문서** (.docx, .doc) - 완전한 편집 기능
-      • **Excel 스프레드시트** (.xlsx, .xls) - 고급 수식 및 차트
-      • **PowerPoint 프레젠테이션** (.pptx, .ppt) - 풍부한 미디어 지원
-      • **실시간 협업** - 여러 사용자가 동시에 편집
-      • **댓글 시스템** - 검토 및 피드백 워크플로
-      • **버전 기록** - 문서 변경 사항 추적
+      **파일을 저장하고, 공유하고, 협업하고, 채팅하고, 심지어 일정과 작업을 관리**할 수 있습니다. 모든 것을 하나의 개인 공간에서 처리할 수 있습니다.
 
-      **🔧 기술적 기능:**
-      • **NSL Router 호환** - 깔끔한 HTTPS URL
-      • **특권 컨테이너** - Collabora를 위한 적절한 jail 권한
-      • **고성능** - 문서 편집을 위한 전용 리소스
-      • **보안** - 모든 데이터가 서버에 보관
+      당신이 선택한 앱으로 당신의 서버에서 실행되는 **자신만의 개인 작업공간**이라고 생각하세요.
 
-      **완전한 개인정보 보호 통제와 함께 전문적인 문서 편집이 필요한 팀과 개인에게 완벽합니다!**
+      **🔧 Nextcloud로 무엇을 할 수 있나요?**
+
+      Nextcloud는 모듈식입니다: **휴대폰의 앱처럼 기능을 추가**할 수 있습니다. 가장 인기 있는 것들을 소개합니다:
+
+      • 📁 **Nextcloud Files**: 파일 업로드, 접근, 공유 — 자신만의 Google Drive
+      • 🗓️ **Calendar**: 이벤트 관리 및 휴대폰이나 노트북과 동기화
+      • 📇 **Contacts**: 모든 연락처를 비공개로 저장 및 동기화
+      • 🗣️ **Talk**: 팀이나 가족과 채팅 및 화상 통화 — 개인적인 WhatsApp이나 Zoom
+      • ✅ **Deck**: Trello나 Notion처럼 작업과 프로젝트 정리
+      • 📝 **Nextcloud Office**: 브라우저에서 Word, Excel, PowerPoint 파일 열기 및 편집 — Google Docs와 같음
+      • 📦 **더 많은 앱**: 작업공간을 맞춤화할 수 있는 100개 이상의 앱 사용 가능
+
+      **🚀 Nextcloud를 사용하는 이유는?**
+
+      • **Google이나 Microsoft 불필요** — 파일과 데이터를 비공개로 보관
+      • **완전히 맞춤 가능** — 필요한 도구만 추가
+      • **어디서나 접근 가능** — 공식 Nextcloud 모바일 앱이나 데스크톱 앱 사용
+      • **다른 사람과 공유** — 파일 전송, 공유 폴더 생성, 안전한 채팅
+      • **데이터 통제** — 당신의 파일, 당신의 서버, 당신의 규칙
+
+      **🛠️ 사용 사례 예시**
+
+      • **Nextcloud Files**를 Google Drive처럼 사용
+      • **Talk**을 WhatsApp이나 Zoom처럼 메시지 및 통화용으로 사용
+      • **Office + Calendar + Deck**으로 Microsoft Teams 대체
+      • 팀이나 가족을 초대하고 한 곳에서 모든 것을 관리
   tips:
     before_install:
       en_us: |
-        **🚀 Nextcloud + Collabora Setup Guide**
+        **🚀 Quick Setup Guide**
         
-        **What This Includes:**
-        ✅ Nextcloud with all features
-        ✅ Collabora Online server (dedicated)
-        ✅ Redis cache for performance
-        ✅ MariaDB database
-        ✅ NSL Router optimized configuration
+        **1. Initial Setup:**
         
-        **📋 After Installation:**
-        1. **Wait 4-5 minutes** for Collabora to fully initialize
-        2. **Access Nextcloud:** `https://nextcloud-username.nsl.sh`
-        3. **Complete setup wizard** (create admin account)
-        4. **Install Nextcloud Office app:**
-           - Go to **Apps** → Search "**Nextcloud Office**"
-           - Click **Download and enable**
-        5. **Configure Collabora:**
-           - Go to **Settings** → **Office**
-           - Select "**Use your own server**"
-           - **Server URL:** `https://9980-nextcloud-username.nsl.sh/`
-           - **Secret key:** Leave blank
-           - **Check:** "Disable certificate verification" ✅
-           - **Advanced settings:** Add WOPI allow-list: `172.17.0.0/16`
-           - Click **Save**
+        ⚠️ **Setup can take time, even if it's not shown.** **If infinite loading occurs → Restart the app**
         
-        **🎯 Test Collabora:**
-        - Go to **Files** → **+ button**
-        - You should see: **Document**, **Spreadsheet**, **Presentation**
-        - Click any option → Collabora editor opens!
+        • Sign up and complete the setup
+        • Select MySQL database (pre-configured)
         
-        **💡 Troubleshooting:**
-        - First document load takes 1-2 minutes (normal)
-        - If connection fails, wait longer - Collabora needs time
-        - Collabora runs on external port 9980 for NSL Router access
+        **2. After Restart:**
         
-        **Fixed the TRUSTED_PROXIES error that caused 502 Bad Gateway!**
+        • Access web interface again
+        • **Skip setup wizard** (already completed)  
+        • Login with your admin credentials
+        
+        **3. Add Team Apps (Profile → Apps):**
+        
+        **Enable Built-in Apps:**
+        ✅ Calendar, Contacts, Mail
+        
+        **Install from App Store:**
+        🔍 Search & install: Talk, Deck, Tasks, Nextcloud Office
+        
+        **4. Done!**
+        Complete Microsoft Teams alternative ready.
+        
+        **Files sync to:** /DATA/Documents & /DATA/Media
       ko_kr: |
-        **🚀 Nextcloud + Collabora 설정 가이드**
+        **🚀 빠른 설정 가이드**
         
-        **포함된 기능:**
-        ✅ 모든 기능이 포함된 Nextcloud
-        ✅ Collabora Online 서버 (전용)
-        ✅ 성능을 위한 Redis 캐시
-        ✅ MariaDB 데이터베이스
-        ✅ NSL Router 최적화 구성
+        **1. 초기 설정:**
         
-        **📋 설치 후:**
-        1. **4-5분 대기** - Collabora 완전 초기화를 위해
-        2. **Nextcloud 접속:** `https://nextcloud-사용자명.nsl.sh`
-        3. **설정 마법사 완료** (관리자 계정 생성)
-        4. **Nextcloud Office 앱 설치:**
-           - **앱** → "**Nextcloud Office**" 검색
-           - **다운로드 및 활성화** 클릭
-        5. **Collabora 구성:**
-           - **설정** → **Office**로 이동
-           - "**Use your own server**" 선택
-           - **서버 URL:** `https://9980-nextcloud-사용자명.nsl.sh/`
-           - **Secret key:** 비워두기
-           - **체크:** "Disable certificate verification" ✅
-           - **고급 설정:** WOPI 허용 목록에 `172.17.0.0/16` 추가
-           - **저장** 클릭
+        ⚠️ **설정에 시간이 걸릴 수 있으며, 표시되지 않을 수도 있습니다.** **무한 로딩이 발생하면 → 앱 재시작**
         
-        **🎯 Collabora 테스트:**
-        - **파일** → **+ 버튼**으로 이동
-        - 다음이 보여야 함: **문서**, **스프레드시트**, **프레젠테이션**
-        - 아무 옵션 클릭 → Collabora 편집기 열림!
+        • 가입 및 설정 완료
+        • MySQL 데이터베이스 선택 (사전 구성됨)
         
-        **💡 문제 해결:**
-        - 첫 문서 로드는 1-2분 소요 (정상)
-        - 연결 실패 시 더 기다리기 - Collabora 초기화 시간 필요
-        - Collabora는 NSL Router 접근을 위해 외부 포트 9980에서 실행
+        **2. 재시작 후:**
         
-        **502 Bad Gateway를 일으키던 TRUSTED_PROXIES 오류를 수정했습니다!**
+        • 웹 인터페이스에 다시 접속
+        • **설정 마법사 건너뛰기** (이미 완료됨)
+        • 관리자 자격 증명으로 로그인
+        
+        **3. 팀 앱 추가 (프로필 → 앱):**
+        
+        **내장 앱 활성화:**
+        ✅ Calendar, Contacts, Mail
+        
+        **앱 스토어에서 설치:**
+        🔍 검색 및 설치: Talk, Deck, Tasks, Nextcloud Office
+        
+        **4. 완료!**
+        완전한 Microsoft Teams 대안이 준비되었습니다.
+        
+        **파일 동기화 위치:** /DATA/Documents & /DATA/Media
   index: /
