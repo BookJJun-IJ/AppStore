@@ -55,13 +55,13 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1536M
-          cpus: '1.0'
+          memory: 3072M  # 3GB
+          cpus: '1.0'    # 2 CPU cores
     expose:
       - 80
     environment:
       TZ: $TZ
-      NODE_OPTIONS: "--max-old-space-size=1024"
+      NODE_OPTIONS: "--max-old-space-size=2048"  # 2GB heap
       VITE_APP_BACKEND_V2_GET_URL: https://8080-$domain/api/v2/
       VITE_APP_BACKEND_V2_POST_URL: https://8080-$domain/api/v2/post/
       VITE_APP_WS_SERVER_URL: https://4401-$domain
@@ -85,36 +85,25 @@ x-casaos:
   category: Productivity
   description:
     en_us: Self-hosted Excalidraw with persistent storage backend. A virtual collaborative whiteboard tool that lets you easily sketch diagrams with a hand-drawn feel. Includes real-time collaboration and secure file storage on your own server.
-    fr_fr: Excalidraw auto-hébergé avec backend de stockage persistant. Un outil de tableau blanc collaboratif virtuel qui vous permet de dessiner facilement des diagrammes avec un aspect dessiné à la main.
-    ko_kr: 지속적인 저장소 백엔드를 갖춘 자체 호스팅 Excalidraw. 손으로 그린 느낌의 다이어그램을 쉽게 스케치할 수 있는 가상 협업 화이트보드 도구입니다.
-    zh_cn: 具有持久存储后端的自托管 Excalidraw。虚拟协作白板工具，让您轻松绘制具有手绘感觉的图表。
-    es_es: Excalidraw autoalojado con backend de almacenamiento persistente. Una herramienta de pizarra colaborativa virtual que te permite dibujar fácilmente diagramas con un aspecto dibujado a mano.
   developer: Excalidraw Team & Cocreators
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/icon.png
   screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/screenshot-1.png
   tagline:
     en_us: Self-hosted collaborative whiteboard with persistent storage
-    fr_fr: Tableau blanc collaboratif auto-hébergé avec stockage persistant
-    ko_kr: 지속적인 저장소를 갖춘 자체 호스팅 협업 화이트보드
-    zh_cn: 具有持久存储的自托管协作白板
-    es_es: Pizarra colaborativa autoalojada con almacenamiento persistente
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/thumbnail.png
   title:
     en_us: Excalidraw
   tips:
     before_install:
       en_us: |
-        **Excalidraw with Persistent Storage**
+        **Excalidraw with Persistent Storage (High Memory)**
+        
+        ⚠️ **Memory Requirement**: This app requires at least 4GB RAM
         
         This setup includes:
-        - **Main App**: Excalidraw whiteboard interface
+        - **Main App**: Excalidraw whiteboard interface (3GB build memory)
         - **Storage Backend**: Persistent file storage for drawings
         - **Collaboration**: Real-time collaborative editing
-        
-        **Access URLs:**
-        - Main App: `https://excalidraw-username.nsl.sh/`
-        - Storage API: `https://8080-excalidraw-username.nsl.sh/`
-        - Collaboration Server: `https://4401-excalidraw-username.nsl.sh/`
         
         **Features:**
         - Save drawings permanently on your server
@@ -126,8 +115,7 @@ x-casaos:
         **Storage Location:**
         Your drawings will be saved in `/DATA/AppData/excalidraw/storage/`
         
-        **Note:** The storage backend and collaboration services run internally. 
-        Only the main Excalidraw interface is exposed via NSL router.
+        **Note:** Uses high memory allocation for build process stability.
   index: /
   webui_port: 80
   pre-install-cmd: |
