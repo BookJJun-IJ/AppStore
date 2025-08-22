@@ -1,68 +1,64 @@
 name: jellyfin
 
 services:
-  app:
-    image: jellyfin/jellyfin:latest
+  jellyfin:
+    image: jellyfin/jellyfin:10.10.7
     container_name: jellyfin
     restart: unless-stopped
-    ports:
-      - "8096:8096"
-      - "8920:8920"
-      - "7359:7359/udp"
-      - "1900:1900/udp"
+    #ports:
+    # Port mappings can be uncommented when the ip feature is available
+    #  - "8920:8920"
+    #  - "7359:7359/udp"
+    #  - "1900:1900/udp"
+    expose:
+      - 8096
     volumes:
-      - /DATA/AppData/$AppID/config:/config
-      - /DATA/AppData/$AppID/cache:/cache
-      - /DATA/Media/Movies:/media/movies:ro
-      - /DATA/Media/TV Show:/media/tvshows:ro
-      - /DATA/Media/Music:/media/music:ro
-      - /DATA/Downloads:/media/downloads:ro
+      - /DATA/AppData/jellyfin/config:/config
+      - /DATA/AppData/jellyfin/cache:/cache
+      - /DATA/Media/Movies:/media/movies
+      - /DATA/Media/TV Shows:/media/tvshows
+      - /DATA/Media/Music:/media/music
+      - /DATA/Downloads:/media/downloads
+    user: $PUID:$PGID
     environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Asia/Seoul
-      - JELLYFIN_PublishedServerUrl=http://localhost:8096
-    devices:
-      - /dev/dri:/dev/dri
-    networks:
-      pcs: null
-
-networks:
-  pcs:
-    name: pcs
+      PGID: $PGID
+      PUID: $PUID
+      TZ: $TZ
+    cpu_shares: 50
+    deploy:
+      resources:
+        limits:
+          memory: 256M
 
 x-casaos:
   architectures:
     - amd64
     - arm64
-  author: self
-  category: media
+  author: Yundera Team
+  category: Media
+  developer: Jellyfin Project
   description:
     en_us: Jellyfin - The Free Software Media System that puts you in control of managing and streaming your media. Stream to any device from your own server.
+    fr_fr: Jellyfin - Le système multimédia libre qui vous donne le contrôle total de la gestion et du streaming de vos médias. Diffusez vers n'importe quel appareil depuis votre propre serveur.
+    es_es: Jellyfin - El sistema multimedia de software libre que te da control total sobre la gestión y transmisión de tus medios. Transmite a cualquier dispositivo desde tu propio servidor.
     zh_cn: Jellyfin - 免费开源媒体系统，让您完全控制媒体的管理和流媒体播放。从您自己的服务器流式传输到任何设备。
     ko_kr: Jellyfin - 미디어 관리 및 스트리밍을 완전히 제어할 수 있는 무료 오픈소스 미디어 시스템입니다. 자체 서버에서 모든 기기로 스트리밍하세요.
-  icon: https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Jellyfin/icons.png
+  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Jellyfin/icon.png
   screenshot_link:
-    - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Jellyfin/screenshots1.png
-    - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Jellyfin/screenshots2.png
-    - https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Jellyfin/screenshots3.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Jellyfin/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Jellyfin/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Jellyfin/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Jellyfin/thumbnail.png
   index: /
   tagline:
-    en_us: Your personal media streaming server with no strings attached
+    en_us: This is your Movie Hub. Watch your own movies, shows, and live TV - just like a streaming app, but fully hosted by you.
+    fr_fr: Votre serveur de streaming multimédia personnel sans contraintes
+    es_es: Tu servidor personal de transmisión multimedia sin ataduras
     zh_cn: 您的个人媒体流媒体服务器，完全自由
     ko_kr: 완전히 자유로운 개인 미디어 스트리밍 서버
-  port_map: "8096"
-  store_app_id: jellyfin
   title:
     en_us: Jellyfin
-    zh_cn: Jellyfin
-    ko_kr: Jellyfin
-  main: app
+  store_app_id: jellyfin
+  main: jellyfin
   is_uncontrolled: false
-  volumes:
-    - /DATA/AppData/$AppID/config
-    - /DATA/AppData/$AppID/cache
-    - /DATA/Media/Movies
-    - /DATA/Media/TV Show
-    - /DATA/Media/Music
-    - /DATA/Downloads
+  webui_port: 8096
