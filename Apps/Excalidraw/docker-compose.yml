@@ -1,7 +1,7 @@
 name: excalidraw
 
 services:
-  # Redis - 데이터 저장소
+  # Redis - Data storage / Redis - 데이터 저장소
   redis:
     image: redis:7-alpine
     container_name: redis
@@ -15,9 +15,9 @@ services:
       - /DATA/AppData/$AppID/redis:/data
     command: redis-server --appendonly yes
 
-  # Storage Backend - 그림 저장 및 공유 서버
+  # Storage Backend - Drawing storage and sharing server / Storage Backend - 그림 저장 및 공유 서버
   storage:
-    image: kiliandeca/excalidraw-storage-backend:latest
+    image: kiliandeca/excalidraw-storage-backend:v2.0.0
     platform: linux/amd64
     container_name: storage
     restart: unless-stopped
@@ -31,12 +31,14 @@ services:
       - STORAGE_URI=redis://redis:6379
       - LOG_LEVEL=info
       - GLOBAL_PREFIX=/api/v2
-      # CORS 설정 추가
+      # CORS configuration / CORS 설정 추가
       - CORS_ORIGIN=*
+      # CasaOS system variables / CasaOS 시스템 변수
+      - PUID=0
+      - PGID=0
+      - TZ=$TZ
     expose:
       - 8081
-    ports:
-      - "8081:8081"  # 브라우저에서 직접 접근하기 위해
     depends_on:
       - redis
     healthcheck:
@@ -46,7 +48,7 @@ services:
       retries: 5
       start_period: 30s
 
-  # Room Server - 실시간 협업 서버 (포트 변경)
+  # Room Server - Real-time collaboration server / Room Server - 실시간 협업 서버
   room:
     image: excalidraw/excalidraw-room:sha-49bf529
     platform: linux/amd64
@@ -58,13 +60,15 @@ services:
           memory: 128M
           cpus: '0.1'
     environment:
-      - PORT=3002  # 포트를 3002로 변경
+      - PORT=3002
+      # CasaOS system variables / CasaOS 시스템 변수
+      - PUID=0
+      - PGID=0
+      - TZ=$TZ
     expose:
       - 3002
-    ports:
-      - "3002:3002"  # WebSocket 연결을 위한 포트 매핑
 
-  # Excalidraw Frontend - 메인 애플리케이션
+  # Excalidraw Frontend - Main application / Excalidraw Frontend - 메인 애플리케이션
   excalidraw:
     image: alswl/excalidraw:v0.17.3-fork-b1
     platform: linux/amd64
@@ -79,16 +83,19 @@ services:
     expose:
       - 80
     environment:
+      # CasaOS system variables / CasaOS 시스템 변수
+      - PUID=0
+      - PGID=0
       - TZ=$TZ
       - DOMAIN=$domain
-      # Storage Backend 연결 설정 (동적 도메인 사용)
+      # Storage Backend connection settings (dynamic domain) / Storage Backend 연결 설정 (동적 도메인 사용)
       - VITE_APP_BACKEND_V2_GET_URL=https://8081-$domain/api/v2/scenes/
       - VITE_APP_BACKEND_V2_POST_URL=https://8081-$domain/api/v2/scenes/
       - VITE_APP_HTTP_STORAGE_BACKEND_URL=https://8081-$domain/api/v2
       - VITE_APP_STORAGE_BACKEND=http
-      # Room Server 연결 설정 (동적 도메인 사용)
+      # Room Server connection settings (dynamic domain) / Room Server 연결 설정 (동적 도메인 사용)
       - VITE_APP_WS_SERVER_URL=wss://3002-$domain
-      # Firebase 비활성화
+      # Disable Firebase / Firebase 비활성화
       - VITE_APP_FIREBASE_CONFIG={}
     depends_on:
       - storage
