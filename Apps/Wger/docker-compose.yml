@@ -1,0 +1,209 @@
+name: wger
+
+services:
+  db:
+    image: postgres:15
+    user: $PUID:$PGID
+    environment:
+      POSTGRES_DB: wger
+      POSTGRES_USER: wger
+      POSTGRES_PASSWORD: $default_pwd
+      PUID: $PUID
+      PGID: $PGID
+    volumes:
+      - /DATA/AppData/$AppID/postgresql:/var/lib/postgresql/data
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wger"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  cache:
+    image: redis:7
+    user: $PUID:$PGID
+    volumes:
+      - /DATA/AppData/$AppID/redis:/data
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  web:
+    image: wger/server:latest
+    user: $PUID:$PGID
+    expose:
+      - 80
+    environment:
+      DJANGO_DB_ENGINE: django.db.backends.postgresql
+      DJANGO_DB_DATABASE: wger
+      DJANGO_DB_USER: wger
+      DJANGO_DB_PASSWORD: $default_pwd
+      DJANGO_DB_HOST: db
+      DJANGO_DB_PORT: 5432
+      DJANGO_CACHE_BACKEND: django_redis.cache.RedisCache
+      DJANGO_CACHE_LOCATION: redis://cache:6379/1
+      DJANGO_DEBUG: "False"
+      DJANGO_SECRET_KEY: $default_pwd
+      ALLOW_REGISTRATION: "True"
+      ALLOW_GUEST_USERS: "True"
+      ALLOW_UPLOAD_VIDEOS: "True"
+      MIN_ACCOUNT_AGE_TO_TRUST: 21
+      WGER_USE_CELERY: "True"
+      SITE_URL: https://$domain
+      CSRF_TRUSTED_ORIGINS: https://$domain
+      PUID: $PUID
+      PGID: $PGID
+      TZ: $TZ
+    volumes:
+      - /DATA/AppData/$AppID/media:/home/wger/media
+      - /DATA/AppData/$AppID/static:/home/wger/static
+    depends_on:
+      db:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/en/"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  celery_worker:
+    image: wger/server:latest
+    user: $PUID:$PGID
+    command: /start-worker
+    environment:
+      DJANGO_DB_ENGINE: django.db.backends.postgresql
+      DJANGO_DB_DATABASE: wger
+      DJANGO_DB_USER: wger
+      DJANGO_DB_PASSWORD: $default_pwd
+      DJANGO_DB_HOST: db
+      DJANGO_DB_PORT: 5432
+      DJANGO_CACHE_BACKEND: django_redis.cache.RedisCache
+      DJANGO_CACHE_LOCATION: redis://cache:6379/1
+      DJANGO_DEBUG: "False"
+      DJANGO_SECRET_KEY: $default_pwd
+      WGER_USE_CELERY: "True"
+      PUID: $PUID
+      PGID: $PGID
+      TZ: $TZ
+    volumes:
+      - /DATA/AppData/$AppID/media:/home/wger/media
+    depends_on:
+      web:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+    healthcheck:
+      test: ["CMD", "celery", "-A", "wger", "inspect", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  celery_beat:
+    image: wger/server:latest
+    user: $PUID:$PGID
+    command: /start-beat
+    environment:
+      DJANGO_DB_ENGINE: django.db.backends.postgresql
+      DJANGO_DB_DATABASE: wger
+      DJANGO_DB_USER: wger
+      DJANGO_DB_PASSWORD: $default_pwd
+      DJANGO_DB_HOST: db
+      DJANGO_DB_PORT: 5432
+      DJANGO_CACHE_BACKEND: django_redis.cache.RedisCache
+      DJANGO_CACHE_LOCATION: redis://cache:6379/1
+      DJANGO_DEBUG: "False"
+      DJANGO_SECRET_KEY: $default_pwd
+      WGER_USE_CELERY: "True"
+      PUID: $PUID
+      PGID: $PGID
+      TZ: $TZ
+    volumes:
+      - /DATA/AppData/$AppID/celery-beat:/home/wger/beat
+    depends_on:
+      celery_worker:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  main: web
+  author: CasaOS Team
+  category: Health
+  description:
+    en_us: |
+      wger is a free, open-source web application that helps you manage your personal workouts, weight and diet plans. It can also be used as a simple gym management utility.
+      
+      **Features:**
+      • Custom workout routines with automatic weight progression
+      • Comprehensive tracking of diet plans, body weight, and measurements  
+      • Nutrition management with calorie logging
+      • Progress gallery to track fitness photos
+      • Exercise wiki with built-in exercises
+      • Multi-user support with basic gym management
+      • REST API for third-party integrations
+      • Multilingual support
+      
+      **Default Login:**
+      After installation, register a new account or log in as admin with the default password.
+  developer: wger Team
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/wger/icon.png
+  screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/wger/screenshot-1.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/wger/thumbnail.png
+  tagline:
+    en_us: Free workout and fitness manager with nutrition tracking
+  title:
+    en_us: wger Workout Manager
+  tips:
+    before_install:
+      en_us: |
+        **Initial Setup Information:**
+        
+        After installation, you can register a new account or use the default admin credentials:
+        - **Username**: `admin`
+        - **Password**: Check your CasaOS dashboard for the generated password
+        
+        **First Launch:**
+        1. Access the web interface
+        2. Register a new account or log in as admin
+        3. Configure your profile and preferences
+        4. Start creating your workout routines
+        
+        **Data Storage:**
+        - All data is stored in `/DATA/AppData/wger/`
+        - Media files (exercise images, progress photos) are in `/media/`
+        - Database is PostgreSQL with persistent storage
+  index: /
+  webui_port: 80
