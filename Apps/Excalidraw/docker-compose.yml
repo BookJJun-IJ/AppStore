@@ -18,16 +18,16 @@ services:
       FILE_SIZE_LIMIT: 10485760  # 10MB
       STORAGE_MODULE: local
       LOCAL_STORAGE_PATH: /storage
-      CORS_ALLOW_ORIGINS: https://$domain,https://excalidraw-$domain
+      CORS_ALLOW_ORIGINS: https://$domain
+      OVERRIDE_PROTOCOL: https
     volumes:
       - /DATA/AppData/$AppID/storage:/storage
-      - /DATA/AppData/$AppID/config:/config
     restart: unless-stopped
     networks:
       - excalidraw-net
 
   excalidraw-room:
-    image: excalidraw/excalidraw-room:sha-bd85d3b
+    image: excalidraw/excalidraw-room:sha-49bf529
     user: $PUID:$PGID
     deploy:
       resources:
@@ -67,8 +67,6 @@ services:
       VITE_APP_BACKEND_V2_GET_URL: https://storage-$domain/api/v2/
       VITE_APP_BACKEND_V2_POST_URL: https://storage-$domain/api/v2/post/
       VITE_APP_WS_SERVER_URL: https://room-$domain
-    volumes:
-      - /DATA/AppData/$AppID/app-config:/app/config
     restart: unless-stopped
     networks:
       - excalidraw-net
@@ -116,9 +114,9 @@ x-casaos:
         - **Collaboration**: Real-time collaborative editing
         
         **Access URLs:**
-        - Main App: `https://excalidraw-username.nsl.sh/`
-        - Storage Backend: `https://storage-excalidraw-username.nsl.sh/`
-        - Collaboration Server: `https://room-excalidraw-username.nsl.sh/`
+        - Main App: `https://excalidraw-backend-username.nsl.sh/`
+        - Storage API: Available at port 8080 (internal)
+        - Collaboration Server: Available at port 80 (internal)
         
         **Features:**
         - Save drawings permanently on your server
@@ -127,6 +125,14 @@ x-casaos:
         - Import existing .excalidraw files
         - No data sent to external servers
         
+        **Storage Location:**
         Your drawings will be saved in `/DATA/AppData/excalidraw-backend/storage/`
+        
+        **Note:** The storage backend and collaboration services run internally. 
+        Only the main Excalidraw interface is exposed via NSL router.
   index: /
   webui_port: 80
+  pre-install-cmd: |
+    mkdir -p /DATA/AppData/excalidraw-backend/storage &&
+    mkdir -p /DATA/AppData/excalidraw-backend/room-config &&
+    chown -R $PUID:$PGID /DATA/AppData/excalidraw-backend/
