@@ -1,4 +1,4 @@
-name: excalidraw-backend
+name: excalidraw
 services:
   excalidraw-storage:
     image: ghcr.io/cocreators-ee/excalidraw-alternative-store:latest
@@ -35,12 +35,12 @@ services:
           memory: 256M
           cpus: '0.3'
     expose:
-      - 80
+      - 4401
     environment:
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
-      PORT: 80
+      PORT: 4401
       CORS_ORIGIN: https://$domain
     volumes:
       - /DATA/AppData/$AppID/room-config:/app/config
@@ -64,9 +64,9 @@ services:
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
-      VITE_APP_BACKEND_V2_GET_URL: https://storage-$domain/api/v2/
-      VITE_APP_BACKEND_V2_POST_URL: https://storage-$domain/api/v2/post/
-      VITE_APP_WS_SERVER_URL: https://room-$domain
+      VITE_APP_BACKEND_V2_GET_URL: https://8080-$domain/api/v2/
+      VITE_APP_BACKEND_V2_POST_URL: https://8080-$domain/api/v2/post/
+      VITE_APP_WS_SERVER_URL: https://4401-$domain
     restart: unless-stopped
     networks:
       - excalidraw-net
@@ -92,17 +92,17 @@ x-casaos:
     zh_cn: 具有持久存储后端的自托管 Excalidraw。虚拟协作白板工具，让您轻松绘制具有手绘感觉的图表。
     es_es: Excalidraw autoalojado con backend de almacenamiento persistente. Una herramienta de pizarra colaborativa virtual que te permite dibujar fácilmente diagramas con un aspecto dibujado a mano.
   developer: Excalidraw Team & Cocreators
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ExcalidrawBackend/icon.png
-  screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ExcalidrawBackend/screenshot-1.png
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/icon.png
+  screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/screenshot-1.png
   tagline:
     en_us: Self-hosted collaborative whiteboard with persistent storage
     fr_fr: Tableau blanc collaboratif auto-hébergé avec stockage persistant
     ko_kr: 지속적인 저장소를 갖춘 자체 호스팅 협업 화이트보드
     zh_cn: 具有持久存储的自托管协作白板
     es_es: Pizarra colaborativa autoalojada con almacenamiento persistente
-  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ExcalidrawBackend/thumbnail.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/thumbnail.png
   title:
-    en_us: Excalidraw Backend
+    en_us: Excalidraw
   tips:
     before_install:
       en_us: |
@@ -114,9 +114,9 @@ x-casaos:
         - **Collaboration**: Real-time collaborative editing
         
         **Access URLs:**
-        - Main App: `https://excalidraw-backend-username.nsl.sh/`
-        - Storage API: Available at port 8080 (internal)
-        - Collaboration Server: Available at port 80 (internal)
+        - Main App: `https://excalidraw-username.nsl.sh/`
+        - Storage API: `https://8080-excalidraw-username.nsl.sh/`
+        - Collaboration Server: `https://4401-excalidraw-username.nsl.sh/`
         
         **Features:**
         - Save drawings permanently on your server
@@ -126,13 +126,13 @@ x-casaos:
         - No data sent to external servers
         
         **Storage Location:**
-        Your drawings will be saved in `/DATA/AppData/excalidraw-backend/storage/`
+        Your drawings will be saved in `/DATA/AppData/excalidraw/storage/`
         
         **Note:** The storage backend and collaboration services run internally. 
         Only the main Excalidraw interface is exposed via NSL router.
   index: /
   webui_port: 80
   pre-install-cmd: |
-    mkdir -p /DATA/AppData/excalidraw-backend/storage &&
-    mkdir -p /DATA/AppData/excalidraw-backend/room-config &&
-    chown -R $PUID:$PGID /DATA/AppData/excalidraw-backend/
+    mkdir -p /DATA/AppData/excalidraw/storage &&
+    mkdir -p /DATA/AppData/excalidraw/room-config &&
+    chown -R $PUID:$PGID /DATA/AppData/excalidraw/
