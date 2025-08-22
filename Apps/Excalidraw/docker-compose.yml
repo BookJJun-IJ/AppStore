@@ -109,103 +109,224 @@ x-casaos:
   author: CasaOS Team
   category: Productivity
   description:
-    en_us: Excalidraw is a virtual collaborative whiteboard tool with real-time collaboration, server-side storage, and working shareable links functionality.
-    ko_kr: 실시간 협업, 서버 저장, 작동하는 공유 링크 기능을 갖춘 가상 협업 화이트보드 도구입니다.
-    zh_cn: Excalidraw 是一个具有实时协作、服务器端存储和工作共享链接功能的虚拟协作白板工具。
-    fr_fr: Excalidraw est un outil de tableau blanc collaboratif virtuel avec collaboration en temps réel, stockage côté serveur et fonctionnalité de liens partageables fonctionnelle.
-    es_es: Excalidraw es una herramienta de pizarra colaborativa virtual con colaboración en tiempo real, almacenamiento del lado del servidor y funcionalidad de enlaces compartibles que funciona.
+    en_us: |
+      **✏️ What is Excalidraw?**
+      
+      **Excalidraw** is your virtual collaborative whiteboard that makes brainstorming feel natural and human. Instead of fighting with complex design tools or rigid software, you get **a simple, intuitive canvas where ideas flow freely**.
+      
+      Just open your browser and start sketching. No accounts, no downloads, no friction — just pure creativity with that beautiful hand-drawn feel.
+      
+      You can:
+      • Sketch diagrams, wireframes, and flowcharts instantly
+      • Collaborate in real-time with your team
+      • Share your work with a single link
+      • Export to PNG, SVG, or clipboard
+      • Use extensive shape libraries and templates
+      
+      Everything is **self-hosted on your server**, so your brainstorming sessions and sensitive diagrams stay completely private.
+      
+      **🚀 Why Choose Excalidraw?**
+      
+      **Excalidraw** runs on your own server, giving you complete control over your creative workspace. Think of it like having your own private design studio instead of relying on cloud services.
+      
+      Why choose Excalidraw?
+      • **Your ideas stay with you** — no cloud dependency or data mining
+      • **Feels natural** — hand-drawn aesthetic that's easy on the eyes
+      • **Zero friction** — no accounts needed, just start drawing
+      • **Real collaboration** — see others draw in real-time like magic
+      
+      With Excalidraw on **Yundera**, you can:
+      • Create unlimited diagrams without storage limits
+      • Collaborate with teams without privacy concerns  
+      • Share work internally or generate public links
+      • Keep your design process private — it never leaves your server
+      
+      **🛠️ Perfect For:**
+      • Teams that need quick visual brainstorming
+      • Designers creating wireframes and mockups
+      • Educators illustrating concepts and processes
+      • Anyone who thinks better with pictures than words
+    fr_fr: |
+      **✏️ Qu'est-ce qu'Excalidraw ?**
+      
+      **Excalidraw** est votre tableau blanc collaboratif virtuel qui rend le brainstorming naturel et humain. Au lieu de lutter avec des outils de conception complexes ou des logiciels rigides, vous obtenez **une toile simple et intuitive où les idées coulent librement**.
+      
+      Ouvrez simplement votre navigateur et commencez à esquisser. Pas de comptes, pas de téléchargements, pas de friction — juste de la créativité pure avec cette belle sensation dessinée à la main.
+      
+      Vous pouvez :
+      • Esquisser des diagrammes, maquettes et organigrammes instantanément
+      • Collaborer en temps réel avec votre équipe
+      • Partager votre travail avec un seul lien
+      • Exporter en PNG, SVG ou presse-papiers
+      • Utiliser des bibliothèques de formes et modèles étendues
+      
+      Tout est **auto-hébergé sur votre serveur**, donc vos sessions de brainstorming et diagrammes sensibles restent complètement privés.
+    ko_kr: |
+      **✏️ Excalidraw란 무엇인가요?**
+      
+      **Excalidraw**는 브레인스토밍을 자연스럽고 인간적으로 만들어주는 가상 협업 화이트보드입니다. 복잡한 디자인 도구나 경직된 소프트웨어와 씨름하는 대신, **아이디어가 자유롭게 흐르는 간단하고 직관적인 캔버스**를 얻을 수 있습니다.
+      
+      브라우저를 열고 스케치를 시작하기만 하면 됩니다. 계정도, 다운로드도, 마찰도 없이 — 아름다운 손으로 그린 느낌의 순수한 창의성만 있을 뿐입니다.
+      
+      할 수 있는 일:
+      • 다이어그램, 와이어프레임, 플로우차트를 즉시 스케치
+      • 팀과 실시간으로 협업
+      • 단일 링크로 작업 공유
+      • PNG, SVG 또는 클립보드로 내보내기
+      • 광범위한 모양 라이브러리 및 템플릿 사용
+      
+      모든 것이 **서버에 자체 호스팅**되므로 브레인스토밍 세션과 민감한 다이어그램이 완전히 비공개로 유지됩니다.
+    zh_cn: |
+      **✏️ 什么是 Excalidraw？**
+      
+      **Excalidraw** 是您的虚拟协作白板，让头脑风暴感觉自然而人性化。无需与复杂的设计工具或僵化的软件作斗争，您可以获得**一个简单直观的画布，让想法自由流淌**。
+      
+      只需打开浏览器开始绘制。无需账户，无需下载，无摩擦 — 只有纯粹的创造力和美丽的手绘感觉。
+      
+      您可以：
+      • 即时绘制图表、线框图和流程图
+      • 与您的团队实时协作
+      • 通过单个链接分享您的工作
+      • 导出为 PNG、SVG 或剪贴板
+      • 使用广泛的形状库和模板
+      
+      一切都在**您的服务器上自托管**，因此您的头脑风暴会话和敏感图表完全保持私密。
+    es_es: |
+      **✏️ ¿Qué es Excalidraw?**
+      
+      **Excalidraw** es tu pizarra colaborativa virtual que hace que la lluvia de ideas se sienta natural y humana. En lugar de luchar con herramientas de diseño complejas o software rígido, obtienes **un lienzo simple e intuitivo donde las ideas fluyen libremente**.
+      
+      Solo abre tu navegador y comienza a dibujar. Sin cuentas, sin descargas, sin fricción — solo creatividad pura con esa hermosa sensación dibujada a mano.
+      
+      Puedes:
+      • Dibujar diagramas, wireframes y diagramas de flujo al instante
+      • Colaborar en tiempo real con tu equipo
+      • Compartir tu trabajo con un solo enlace
+      • Exportar a PNG, SVG o portapapeles
+      • Usar bibliotecas extensas de formas y plantillas
+      
+      Todo está **auto-hospedado en tu servidor**, por lo que tus sesiones de lluvia de ideas y diagramas sensibles permanecen completamente privados.
   developer: Excalidraw Team
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/icon.png
-  screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/screenshot-1.png
+  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Excalidraw/icon.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Excalidraw/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Excalidraw/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Excalidraw/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Excalidraw/screenshot-1.png
   tagline:
-    en_us: Collaborative whiteboard with working share features
-    ko_kr: 작동하는 공유 기능을 갖춘 협업 화이트보드
-    zh_cn: 具有工作共享功能的协作白板
-    fr_fr: Tableau blanc collaboratif avec fonctionnalités de partage fonctionnelles
-    es_es: Pizarra colaborativa con funciones de compartir que funcionan
-  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Excalidraw/thumbnail.png
+    en_us: Think it, sketch it, share it instantly
+    fr_fr: Pensez-le, esquissez-le, partagez-le instantanément
+    ko_kr: 생각하고, 스케치하고, 즉시 공유하세요
+    zh_cn: 思考它，绘制它，立即分享它
+    es_es: Piénsalo, dibújalo, compártelo al instante
   title:
     en_us: Excalidraw
   tips:
     before_install:
       en_us: |
-        **🚀 Stable Excalidraw with Working Share Features:**
+        **🚀 Self-Hosted Excalidraw with Full Features**
         
-        **✅ All Core Features**
+        **✅ What Works:**
         - Real-time collaboration ✅
-        - Server-side storage in Redis ✅  
-        - **WORKING: Shareable links** ✅
-        - **WORKING: Export to Link** ✅
+        - Shareable links ✅
+        - Export to PNG/SVG ✅
+        - Hand-drawn style ✅
+        - No accounts needed ✅
         
-        **🔧 Port Configuration Fixed**
-        - Main App: Port 80 (clean URL)
-        - Storage API: Port 8081
-        - **Room Server: Port 3002** (prevents conflicts)
-        - No more collision server messages!
-        
-        **📱 How Share Features Work:**
-        1. Click "Export to Link" → Creates shareable URL
-        2. Click "Shareable link" → Generates public link
-        3. Both save to Redis and provide working links
-        4. Links work across devices and users
-        
-        **🌐 Access URLs:**
-        - Main App: `https://excalidraw-[username].nsl.sh/`
-        - Storage API: `https://8081-excalidraw-[username].nsl.sh/`
-        - Collaboration: `wss://3002-excalidraw-[username].nsl.sh/`
-        
-        **⚙️ Dynamic Configuration:**
-        - Uses `$domain` system variable for automatic URL generation
-        - No manual domain configuration needed
+        **🔧 Auto-Configuration:**
+        - Uses `$domain` for automatic setup
+        - No manual URL configuration needed
         - Works for any username automatically
         
-        **🔧 Total Resources:**
-        - Memory: ~768MB (4 core services)
-        - CPU: ~0.7 cores
+        **📱 Quick Start:**
+        1. Open the app URL
+        2. Start drawing immediately
+        3. Click "Live collaboration" to invite others
+        4. Use "Export to link" to share your work
         
-        **✅ Fixed Issues:**
-        - ❌ "Excalidraw collaboration server is up :)" page
-        - ✅ Proper port separation
-        - ✅ Stable WebSocket connections
-        - ✅ No more random redirects
+        **🌐 Access:**
+        - Main App: `https://excalidraw-[username].nsl.sh/`
+        - Direct collaboration and sharing work instantly
+        
+        **💾 Resources:** ~768MB memory, ~0.7 CPU cores
+      fr_fr: |
+        **🚀 Excalidraw auto-hébergé avec toutes les fonctionnalités**
+        
+        **✅ Ce qui fonctionne :**
+        - Collaboration en temps réel ✅
+        - Liens partageables ✅
+        - Export PNG/SVG ✅
+        - Style dessiné à la main ✅
+        - Aucun compte nécessaire ✅
+        
+        **🔧 Configuration automatique :**
+        - Utilise `$domain` pour la configuration automatique
+        - Aucune configuration d'URL manuelle nécessaire
+        - Fonctionne automatiquement pour tout nom d'utilisateur
+        
+        **📱 Démarrage rapide :**
+        1. Ouvrir l'URL de l'application
+        2. Commencer à dessiner immédiatement
+        3. Cliquer sur "Collaboration en direct" pour inviter d'autres
+        4. Utiliser "Exporter vers lien" pour partager votre travail
       ko_kr: |
-        **🚀 작동하는 공유 기능을 갖춘 안정적인 Excalidraw:**
+        **🚀 모든 기능을 갖춘 자체 호스팅 Excalidraw**
         
-        **✅ 모든 핵심 기능**
+        **✅ 작동하는 기능:**
         - 실시간 협업 ✅
-        - Redis 서버 측 저장 ✅  
-        - **작동함: 공유 링크** ✅
-        - **작동함: 링크로 내보내기** ✅
+        - 공유 링크 ✅
+        - PNG/SVG 내보내기 ✅
+        - 손으로 그린 스타일 ✅
+        - 계정 불필요 ✅
         
-        **🔧 포트 설정 수정됨**
-        - 메인 앱: 포트 80 (깔끔한 URL)
-        - Storage API: 포트 8081
-        - **Room 서버: 포트 3002** (충돌 방지)
-        - 더 이상 충돌 서버 메시지 없음!
+        **🔧 자동 설정:**
+        - `$domain`을 사용한 자동 설정
+        - 수동 URL 설정 불필요
+        - 모든 사용자명에 자동 작동
         
-        **📱 공유 기능 작동 방식:**
-        1. "링크로 내보내기" 클릭 → 공유 가능한 URL 생성
-        2. "공유 링크" 클릭 → 공개 링크 생성
-        3. 둘 다 Redis에 저장하고 작동하는 링크 제공
-        4. 링크는 여러 기기와 사용자 간에 작동
+        **📱 빠른 시작:**
+        1. 앱 URL 열기
+        2. 즉시 그리기 시작
+        3. "실시간 협업" 클릭하여 다른 사람 초대
+        4. "링크로 내보내기"로 작업 공유
+      zh_cn: |
+        **🚀 具有完整功能的自托管 Excalidraw**
         
-        **🌐 접근 URL:**
-        - 메인 앱: `https://excalidraw-[username].nsl.sh/`
-        - Storage API: `https://8081-excalidraw-[username].nsl.sh/`
-        - 협업: `wss://3002-excalidraw-[username].nsl.sh/`
+        **✅ 有效功能：**
+        - 实时协作 ✅
+        - 可分享链接 ✅
+        - 导出 PNG/SVG ✅
+        - 手绘风格 ✅
+        - 无需账户 ✅
         
-        **⚙️ 동적 설정:**
-        - `$domain` 시스템 변수를 사용한 자동 URL 생성
-        - 수동 도메인 설정 불필요
-        - 모든 사용자명에 대해 자동 작동
+        **🔧 自动配置：**
+        - 使用 `$domain` 进行自动设置
+        - 无需手动 URL 配置
+        - 自动适用于任何用户名
         
-        **🔧 총 리소스:**
-        - 메모리: ~768MB (4개 핵심 서비스)
-        - CPU: ~0.7 코어
+        **📱 快速开始：**
+        1. 打开应用 URL
+        2. 立即开始绘制
+        3. 点击"实时协作"邀请他人
+        4. 使用"导出到链接"分享您的工作
+      es_es: |
+        **🚀 Excalidraw auto-hospedado con todas las funciones**
         
-        **✅ 수정된 문제:**
-        - ❌ "Excalidraw collaboration server is up :)" 페이지
-        - ✅ 적절한 포트 분리
-        - ✅ 안정적인 WebSocket 연결
-        - ✅ 더 이상 무작위 리디렉션 없음
+        **✅ Lo que funciona:**
+        - Colaboración en tiempo real ✅
+        - Enlaces compartibles ✅
+        - Exportar PNG/SVG ✅
+        - Estilo dibujado a mano ✅
+        - No se necesitan cuentas ✅
+        
+        **🔧 Configuración automática:**
+        - Usa `$domain` para configuración automática
+        - No se necesita configuración manual de URL
+        - Funciona automáticamente para cualquier nombre de usuario
+        
+        **📱 Inicio rápido:**
+        1. Abrir la URL de la aplicación
+        2. Comenzar a dibujar inmediatamente
+        3. Hacer clic en "Colaboración en vivo" para invitar a otros
+        4. Usar "Exportar a enlace" para compartir tu trabajo
   index: /
