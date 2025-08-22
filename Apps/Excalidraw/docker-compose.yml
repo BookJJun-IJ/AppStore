@@ -52,18 +52,16 @@ services:
 
   excalidraw:
     image: ghcr.io/cocreators-ee/excalidraw:latest
-    user: $PUID:$PGID
     deploy:
       resources:
         limits:
-          memory: 512M
-          cpus: '0.5'
+          memory: 1536M
+          cpus: '1.0'
     expose:
       - 80
     environment:
-      PUID: $PUID
-      PGID: $PGID
       TZ: $TZ
+      NODE_OPTIONS: "--max-old-space-size=1024"
       VITE_APP_BACKEND_V2_GET_URL: https://8080-$domain/api/v2/
       VITE_APP_BACKEND_V2_POST_URL: https://8080-$domain/api/v2/post/
       VITE_APP_WS_SERVER_URL: https://4401-$domain
