@@ -46,7 +46,7 @@ services:
       retries: 5
       start_period: 30s
 
-  # Room Server - 실시간 협업 서버
+  # Room Server - 실시간 협업 서버 (포트 변경)
   room:
     image: excalidraw/excalidraw-room:sha-49bf529
     platform: linux/amd64
@@ -57,8 +57,12 @@ services:
         limits:
           memory: 128M
           cpus: '0.1'
+    environment:
+      - PORT=3002  # 포트를 3002로 변경
     expose:
-      - 80
+      - 3002
+    ports:
+      - "3002:3002"  # WebSocket 연결을 위한 포트 매핑
 
   # Excalidraw Frontend - 메인 애플리케이션
   excalidraw:
@@ -77,14 +81,13 @@ services:
     environment:
       - TZ=$TZ
       - DOMAIN=$domain
-      # Storage Backend 연결 설정 (실제 NSL 도메인 사용)
-      # 주의: 아래 URL에서 "ikjunyundera" 부분을 실제 사용자명으로 변경하세요
-      - VITE_APP_BACKEND_V2_GET_URL=https://8081-excalidraw-ikjunyundera.nsl.sh/api/v2/scenes/
-      - VITE_APP_BACKEND_V2_POST_URL=https://8081-excalidraw-ikjunyundera.nsl.sh/api/v2/scenes/
-      - VITE_APP_HTTP_STORAGE_BACKEND_URL=https://8081-excalidraw-ikjunyundera.nsl.sh/api/v2
+      # Storage Backend 연결 설정 (동적 도메인 사용)
+      - VITE_APP_BACKEND_V2_GET_URL=https://8081-$domain/api/v2/scenes/
+      - VITE_APP_BACKEND_V2_POST_URL=https://8081-$domain/api/v2/scenes/
+      - VITE_APP_HTTP_STORAGE_BACKEND_URL=https://8081-$domain/api/v2
       - VITE_APP_STORAGE_BACKEND=http
-      # Room Server 연결 설정  
-      - VITE_APP_WS_SERVER_URL=ws://room:80
+      # Room Server 연결 설정 (동적 도메인 사용)
+      - VITE_APP_WS_SERVER_URL=wss://3002-$domain
       # Firebase 비활성화
       - VITE_APP_FIREBASE_CONFIG={}
     depends_on:
@@ -134,11 +137,11 @@ x-casaos:
         - **WORKING: Shareable links** ✅
         - **WORKING: Export to Link** ✅
         
-        **🔧 Technical Solution**
-        - Storage Backend accessible via port 8081
-        - Proper NSL router domain configuration  
-        - CORS headers enabled for browser access
-        - Direct port mapping for API calls
+        **🔧 Port Configuration Fixed**
+        - Main App: Port 80 (clean URL)
+        - Storage API: Port 8081
+        - **Room Server: Port 3002** (prevents conflicts)
+        - No more collision server messages!
         
         **📱 How Share Features Work:**
         1. Click "Export to Link" → Creates shareable URL
@@ -149,17 +152,22 @@ x-casaos:
         **🌐 Access URLs:**
         - Main App: `https://excalidraw-[username].nsl.sh/`
         - Storage API: `https://8081-excalidraw-[username].nsl.sh/`
+        - Collaboration: `wss://3002-excalidraw-[username].nsl.sh/`
+        
+        **⚙️ Dynamic Configuration:**
+        - Uses `$domain` system variable for automatic URL generation
+        - No manual domain configuration needed
+        - Works for any username automatically
         
         **🔧 Total Resources:**
-        - Memory: ~768MB (4 core services only)
+        - Memory: ~768MB (4 core services)
         - CPU: ~0.7 cores
         
-        **✅ What Works:**
-        - Drawing and editing
-        - Real-time collaboration  
-        - Share buttons (both types)
-        - Persistent storage
-        - Cross-device access
+        **✅ Fixed Issues:**
+        - ❌ "Excalidraw collaboration server is up :)" page
+        - ✅ Proper port separation
+        - ✅ Stable WebSocket connections
+        - ✅ No more random redirects
       ko_kr: |
         **🚀 작동하는 공유 기능을 갖춘 안정적인 Excalidraw:**
         
@@ -169,11 +177,11 @@ x-casaos:
         - **작동함: 공유 링크** ✅
         - **작동함: 링크로 내보내기** ✅
         
-        **🔧 기술적 솔루션**
-        - 포트 8081을 통한 Storage Backend 접근
-        - 적절한 NSL 라우터 도메인 설정  
-        - 브라우저 접근을 위한 CORS 헤더 활성화
-        - API 호출을 위한 직접 포트 매핑
+        **🔧 포트 설정 수정됨**
+        - 메인 앱: 포트 80 (깔끔한 URL)
+        - Storage API: 포트 8081
+        - **Room 서버: 포트 3002** (충돌 방지)
+        - 더 이상 충돌 서버 메시지 없음!
         
         **📱 공유 기능 작동 방식:**
         1. "링크로 내보내기" 클릭 → 공유 가능한 URL 생성
@@ -184,15 +192,20 @@ x-casaos:
         **🌐 접근 URL:**
         - 메인 앱: `https://excalidraw-[username].nsl.sh/`
         - Storage API: `https://8081-excalidraw-[username].nsl.sh/`
+        - 협업: `wss://3002-excalidraw-[username].nsl.sh/`
+        
+        **⚙️ 동적 설정:**
+        - `$domain` 시스템 변수를 사용한 자동 URL 생성
+        - 수동 도메인 설정 불필요
+        - 모든 사용자명에 대해 자동 작동
         
         **🔧 총 리소스:**
-        - 메모리: ~768MB (4개 핵심 서비스만)
+        - 메모리: ~768MB (4개 핵심 서비스)
         - CPU: ~0.7 코어
         
-        **✅ 작동하는 기능:**
-        - 그리기 및 편집
-        - 실시간 협업  
-        - 공유 버튼 (두 종류 모두)
-        - 지속적 저장
-        - 여러 기기 간 접근
+        **✅ 수정된 문제:**
+        - ❌ "Excalidraw collaboration server is up :)" 페이지
+        - ✅ 적절한 포트 분리
+        - ✅ 안정적인 WebSocket 연결
+        - ✅ 더 이상 무작위 리디렉션 없음
   index: /
