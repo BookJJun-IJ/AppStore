@@ -3,13 +3,10 @@ name: wger
 services:
   db:
     image: postgres:15
-    user: $PUID:$PGID
     environment:
       POSTGRES_DB: wger
       POSTGRES_USER: wger
       POSTGRES_PASSWORD: $default_pwd
-      PUID: $PUID
-      PGID: $PGID
     volumes:
       - /DATA/AppData/$AppID/postgresql:/var/lib/postgresql/data
     restart: unless-stopped
@@ -26,7 +23,6 @@ services:
 
   cache:
     image: redis:7
-    user: $PUID:$PGID
     volumes:
       - /DATA/AppData/$AppID/redis:/data
     restart: unless-stopped
@@ -45,7 +41,7 @@ services:
     image: wger/server:latest
     user: $PUID:$PGID
     expose:
-      - 80
+      - 8000
     environment:
       # Database settings
       DJANGO_DB_ENGINE: django.db.backends.postgresql
@@ -59,7 +55,7 @@ services:
       # Cache settings
       DJANGO_CACHE_BACKEND: django_redis.cache.RedisCache
       DJANGO_CACHE_LOCATION: redis://cache:6379/1
-      DJANGO_CACHE_TIMEOUT: 1296000  # 15 days in seconds
+      DJANGO_CACHE_TIMEOUT: 1296000
       DJANGO_CACHE_CLIENT_CLASS: django_redis.client.DefaultClient
       
       # Celery settings
@@ -72,9 +68,11 @@ services:
       DJANGO_DEBUG: "False"
       DJANGO_SECRET_KEY: $default_pwd
       DJANGO_CLEAR_STATIC_FIRST: "False"
+      WGER_USE_GUNICORN: "True"
       
       # Site settings
-      SITE_URL: https://$domain
+      SITE_URL: $domain
+      DJANGO_ALLOWED_HOSTS: $domain,localhost,127.0.0.1
       CSRF_TRUSTED_ORIGINS: https://$domain
       ALLOW_REGISTRATION: "True"
       ALLOW_GUEST_USERS: "True"
@@ -93,7 +91,7 @@ services:
       AXES_COOLOFF_TIME: 30
       AXES_HANDLER: axes.handlers.cache.AxesCacheHandler
       
-      # Email settings (disabled by default)
+      # Email settings
       ENABLE_EMAIL: "False"
       FROM_EMAIL: "wger Workout Manager <wger@localhost>"
       
@@ -116,10 +114,11 @@ services:
           memory: 1G
           cpus: '1.0'
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/en/"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8000/en/"]
       interval: 30s
       timeout: 10s
       retries: 5
+      start_period: 60s
 
   celery_worker:
     image: wger/server:latest
@@ -137,7 +136,7 @@ services:
       # Cache settings
       DJANGO_CACHE_BACKEND: django_redis.cache.RedisCache
       DJANGO_CACHE_LOCATION: redis://cache:6379/1
-      DJANGO_CACHE_TIMEOUT: 1296000  # 15 days in seconds
+      DJANGO_CACHE_TIMEOUT: 1296000
       DJANGO_CACHE_CLIENT_CLASS: django_redis.client.DefaultClient
       
       # Celery settings
@@ -191,7 +190,7 @@ services:
       # Cache settings
       DJANGO_CACHE_BACKEND: django_redis.cache.RedisCache
       DJANGO_CACHE_LOCATION: redis://cache:6379/1
-      DJANGO_CACHE_TIMEOUT: 1296000  # 15 days in seconds
+      DJANGO_CACHE_TIMEOUT: 1296000
       DJANGO_CACHE_CLIENT_CLASS: django_redis.client.DefaultClient
       
       # Celery settings
@@ -338,4 +337,4 @@ x-casaos:
         - Media files (exercise images, progress photos) are in `/media/`
         - Database is PostgreSQL with persistent storage
   index: /
-  webui_port: 80
+  webui_port: 8000
