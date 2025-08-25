@@ -4,6 +4,7 @@ services:
   db:
     image: postgres:15.3
     container_name: wger-db
+    user: $PUID:$PGID
     environment:
       POSTGRES_DB: wger
       POSTGRES_USER: wger
@@ -21,8 +22,9 @@ services:
     restart: unless-stopped
 
   wger:
-    image: wger/wger:2.2.0   # ← latest 대신 특정 버전 사용 권장
+    image: wger/wger:2.2.0
     container_name: wger-app
+    user: $PUID:$PGID
     depends_on:
       - db
     environment:
