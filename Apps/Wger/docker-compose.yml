@@ -16,10 +16,11 @@ services:
           memory: 512M
           cpus: '0.5'
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U wger"]
+      test: ["CMD-SHELL", "pg_isready -U wger -d wger"]
       interval: 30s
-      timeout: 5s
+      timeout: 10s
       retries: 5
+      start_period: 30s
 
   cache:
     image: redis:7
@@ -32,10 +33,11 @@ services:
           memory: 256M
           cpus: '0.25'
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
       interval: 30s
-      timeout: 5s
+      timeout: 10s
       retries: 5
+      start_period: 30s
 
   web:
     image: wger/server:latest
@@ -107,10 +109,8 @@ services:
       - /DATA/AppData/$AppID/media:/home/wger/media
       - /DATA/AppData/$AppID/static:/home/wger/static
     depends_on:
-      db:
-        condition: service_healthy
-      cache:
-        condition: service_healthy
+      - db
+      - cache
     restart: unless-stopped
     deploy:
       resources:
@@ -163,8 +163,7 @@ services:
     volumes:
       - /DATA/AppData/$AppID/media:/home/wger/media
     depends_on:
-      web:
-        condition: service_healthy
+      - web
     restart: unless-stopped
     deploy:
       resources:
@@ -217,8 +216,7 @@ services:
     volumes:
       - /DATA/AppData/$AppID/celery-beat:/home/wger/beat
     depends_on:
-      celery_worker:
-        condition: service_healthy
+      - celery_worker
     restart: unless-stopped
     deploy:
       resources:
