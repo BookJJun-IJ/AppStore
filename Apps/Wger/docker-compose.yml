@@ -90,8 +90,9 @@ services:
       POSTGRES_DB: wger
       POSTGRES_USER: wger
       POSTGRES_PASSWORD: $default_pwd
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
     volumes:
-      - /DATA/AppData/wger/pgdata:/var/lib/postgresql/data
+      - wger_postgres_data:/var/lib/postgresql/data
     expose:
       - 5432
     deploy:
@@ -100,20 +101,20 @@ services:
           memory: 512M
           cpus: '0.5'
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U wger -d wger"]
-      interval: 15s
+      test: ["CMD-SHELL", "pg_isready -U wger -d wger || exit 1"]
+      interval: 30s
       timeout: 10s
       retries: 10
-      start_period: 60s
+      start_period: 120s
     restart: unless-stopped
 
   cache:
     image: redis:7-alpine
-    command: ["redis-server", "--appendonly", "yes"]
+    command: ["redis-server", "--appendonly", "yes", "--dir", "/data"]
     environment:
       TZ: $TZ
     volumes:
-      - /DATA/AppData/wger/redis-data:/data
+      - wger_redis_data:/data
     expose:
       - 6379
     deploy:
@@ -123,9 +124,9 @@ services:
           cpus: '0.3'
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 15s
+      interval: 30s
       timeout: 10s
-      retries: 10
+      retries: 5
       start_period: 30s
     restart: unless-stopped
 
@@ -198,14 +199,35 @@ services:
       CELERY_BACKEND: redis://cache:6379/2
       DJANGO_SECRET_KEY: $default_pwd
     volumes:
-      - /DATA/AppData/wger/celery-beat:/home/wger/beat
+      - /DATA/AppData/wger/media:/home/wger/media
       - /DATA/AppData/wger/logs:/home/wger/logs
+      - wger_celery_beat:/home/wger/beat
     deploy:
       resources:
         limits:
           memory: 256M
           cpus: '0.3'
     restart: unless-stopped
+
+volumes:
+  wger_postgres_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /DATA/AppData/wger/pgdata
+  wger_redis_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /DATA/AppData/wger/redis-data
+  wger_celery_beat:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /DATA/AppData/wger/celery-beat
 
 networks:
   default:
@@ -269,10 +291,9 @@ x-casaos:
   index: /
   webui_port: 80
   pre-install-cmd: |
-    mkdir -p /DATA/AppData/wger/{media,static,redis-data,celery-beat,logs} &&
-    mkdir -p /DATA/AppData/wger/pgdata &&
-    chown -R $PUID:$PGID /DATA/AppData/wger/media /DATA/AppData/wger/static /DATA/AppData/wger/redis-data /DATA/AppData/wger/celery-beat /DATA/AppData/wger/logs &&
-    chown -R 999:999 /DATA/AppData/wger/pgdata &&
+    mkdir -p /DATA/AppData/wger/{media,static,pgdata,redis-data,celery-beat,logs} &&
+    chmod 755 /DATA/AppData/wger/pgdata &&
+    chown -R $PUID:$PGID /DATA/AppData/wger/media /DATA/AppData/wger/static /DATA/AppData/wger/celery-beat /DATA/AppData/wger/logs &&
     cat > /DATA/AppData/wger/nginx.conf << 'EOF'
     upstream wger {
         server web:8000;
