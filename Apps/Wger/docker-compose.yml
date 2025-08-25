@@ -65,5 +65,10 @@ x-casaos:
         | Username | Password       |
         | -------- | -------------- |
         | `admin`  | `$default_pwd` |
+  pre-install-cmd: |
+    docker run --rm \
+      -v /DATA/AppData/wger:/data \
+      ubuntu:22.04 \
+      bash -c "mkdir -p /data/db /data/config && chown -R $PUID:$PGID /data"
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Wger/icon.png
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Wger/thumbnail.png
