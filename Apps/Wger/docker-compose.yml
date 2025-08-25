@@ -30,34 +30,18 @@ services:
       resources:
         limits:
           memory: 256M
-          cpus: '0.5'
+          cpus: '0.25'
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 30s
       timeout: 5s
       retries: 5
 
-  nginx:
-    image: nginx:alpine
-    user: 0:0
-    expose:
-      - 80
-    volumes:
-      - /DATA/AppData/$AppID/static:/home/wger/static:ro
-      - /DATA/AppData/$AppID/nginx.conf:/etc/nginx/conf.d/default.conf:ro
-    depends_on:
-      web:
-        condition: service_healthy
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 128M
-          cpus: '0.2'
-
   web:
     image: wger/server:latest
     user: $PUID:$PGID
+    expose:
+      - 8000
     environment:
       # Database settings
       DJANGO_DB_ENGINE: django.db.backends.postgresql
@@ -83,11 +67,15 @@ services:
       # Django core settings
       DJANGO_DEBUG: "False"
       DJANGO_SECRET_KEY: $default_pwd
-      DJANGO_CLEAR_STATIC_FIRST: "False"
+      DJANGO_CLEAR_STATIC_FIRST: "True"
       WGER_USE_GUNICORN: "True"
       
+      # Static files settings (critical for static file serving)
+      DJANGO_STATIC_ROOT: /home/wger/static
+      DJANGO_STATIC_URL: /static/
+      
       # Site settings
-      SITE_URL: $domain
+      SITE_URL: https://$domain
       DJANGO_ALLOWED_HOSTS: $domain,localhost,127.0.0.1
       CSRF_TRUSTED_ORIGINS: https://$domain
       ALLOW_REGISTRATION: "True"
@@ -242,7 +230,7 @@ x-casaos:
   architectures:
     - amd64
     - arm64
-  main: nginx
+  main: web
   author: CasaOS Team
   category: Productivity
   description:
@@ -292,7 +280,7 @@ x-casaos:
       **기본 로그인:**
       설치 후 새 계정을 등록하거나 기본 비밀번호로 관리자로 로그인하세요.
     zh_cn: |
-      wger是一个免费的开源Web应용程序，可帮助您管理个人锻炼、体重和饮食计划。它还可以用作简单的健身房管理工具。
+      wger是一个免费的开源Web应用程序，可帮助您管理个人锻炼、体重和饮食计划。它还可以用作简单的健身房管理工具。
       
       **功能:**
       • 具有自动重量递增的自定义锻炼例程
@@ -352,27 +340,7 @@ x-casaos:
         - All data is stored in `/DATA/AppData/wger/`
         - Media files (exercise images, progress photos) are in `/media/`
         - Database is PostgreSQL with persistent storage
+        
+        **Note:** Static files (CSS, JS, images) are automatically configured during startup. If you experience missing images, the container will automatically collect static files on first run.
   index: /
-  webui_port: 80
-  pre_install_cmd: |
-    mkdir -p /DATA/AppData/wger && cat > /DATA/AppData/wger/nginx.conf << 'EOF'
-    server {
-        listen 80;
-        server_name _;
-        client_max_body_size 100M;
-
-        location /static/ {
-            alias /home/wger/static/;
-            expires 1y;
-            add_header Cache-Control public;
-        }
-
-        location / {
-            proxy_pass http://web:8000;
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto https;
-        }
-    }
-    EOF
+  webui_port: 8000
