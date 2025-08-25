@@ -61,7 +61,6 @@ services:
 
   nginx:
     image: nginx:1.25-alpine
-    user: $PUID:$PGID
     depends_on:
       web:
         condition: service_healthy
@@ -86,17 +85,13 @@ services:
 
   db:
     image: postgres:15-alpine
-    user: $PUID:$PGID
     environment:
-      PUID: $PUID
-      PGID: $PGID
       TZ: $TZ
       POSTGRES_DB: wger
       POSTGRES_USER: wger
       POSTGRES_PASSWORD: $default_pwd
-      PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
-      - /DATA/AppData/wger/pgdata:/var/lib/postgresql/data/pgdata
+      - /DATA/AppData/wger/pgdata:/var/lib/postgresql/data
     expose:
       - 5432
     deploy:
@@ -105,20 +100,17 @@ services:
           memory: 512M
           cpus: '0.5'
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U wger"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
+      test: ["CMD-SHELL", "pg_isready -U wger -d wger"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
     restart: unless-stopped
 
   cache:
     image: redis:7-alpine
-    user: $PUID:$PGID
     command: ["redis-server", "--appendonly", "yes"]
     environment:
-      PUID: $PUID
-      PGID: $PGID
       TZ: $TZ
     volumes:
       - /DATA/AppData/wger/redis-data:/data
@@ -131,9 +123,9 @@ services:
           cpus: '0.3'
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      interval: 15s
+      timeout: 10s
+      retries: 10
       start_period: 30s
     restart: unless-stopped
 
@@ -277,8 +269,10 @@ x-casaos:
   index: /
   webui_port: 80
   pre-install-cmd: |
-    mkdir -p /DATA/AppData/wger/{media,static,pgdata,redis-data,celery-beat,logs} &&
-    chown -R $PUID:$PGID /DATA/AppData/wger &&
+    mkdir -p /DATA/AppData/wger/{media,static,redis-data,celery-beat,logs} &&
+    mkdir -p /DATA/AppData/wger/pgdata &&
+    chown -R $PUID:$PGID /DATA/AppData/wger/media /DATA/AppData/wger/static /DATA/AppData/wger/redis-data /DATA/AppData/wger/celery-beat /DATA/AppData/wger/logs &&
+    chown -R 999:999 /DATA/AppData/wger/pgdata &&
     cat > /DATA/AppData/wger/nginx.conf << 'EOF'
     upstream wger {
         server web:8000;
