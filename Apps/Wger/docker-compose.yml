@@ -43,6 +43,7 @@ services:
     expose:
       - 8000
     environment:
+      # Database settings
       DJANGO_DB_ENGINE: django.db.backends.postgresql
       DJANGO_DB_DATABASE: wger
       DJANGO_DB_USER: wger
@@ -50,35 +51,55 @@ services:
       DJANGO_DB_HOST: db
       DJANGO_DB_PORT: 5432
       DJANGO_PERFORM_MIGRATIONS: "True"
+      
+      # Cache settings
       DJANGO_CACHE_BACKEND: django_redis.cache.RedisCache
       DJANGO_CACHE_LOCATION: redis://cache:6379/1
       DJANGO_CACHE_TIMEOUT: 1296000
       DJANGO_CACHE_CLIENT_CLASS: django_redis.client.DefaultClient
+      
+      # Celery settings
       WGER_USE_CELERY: "True"
       USE_CELERY: "True"
       CELERY_BROKER: redis://cache:6379/2
       CELERY_BACKEND: redis://cache:6379/2
+      
+      # Django core settings
       DJANGO_DEBUG: "False"
       DJANGO_SECRET_KEY: $default_pwd
       DJANGO_CLEAR_STATIC_FIRST: "True"
       WGER_USE_GUNICORN: "True"
-      SITE_URL: $domain
+      
+      # Static files settings (critical for static file serving)
+      DJANGO_STATIC_ROOT: /home/wger/static
+      DJANGO_STATIC_URL: /static/
+      
+      # Site settings
+      SITE_URL: https://$domain
       DJANGO_ALLOWED_HOSTS: $domain,localhost,127.0.0.1
       CSRF_TRUSTED_ORIGINS: https://$domain
       ALLOW_REGISTRATION: "True"
       ALLOW_GUEST_USERS: "True"
       ALLOW_UPLOAD_VIDEOS: "True"
       MIN_ACCOUNT_AGE_TO_TRUST: 21
+      
+      # Exercise and data settings
       SYNC_EXERCISES_ON_STARTUP: "False"
       DOWNLOAD_EXERCISE_IMAGES_ON_STARTUP: "False"
       DOWNLOAD_INGREDIENTS_FROM: "WGER"
       EXERCISE_CACHE_TTL: 3600
+      
+      # Security settings
       AXES_ENABLED: "True"
       AXES_FAILURE_LIMIT: 10
       AXES_COOLOFF_TIME: 30
       AXES_HANDLER: axes.handlers.cache.AxesCacheHandler
+      
+      # Email settings
       ENABLE_EMAIL: "False"
       FROM_EMAIL: "wger Workout Manager <wger@localhost>"
+      
+      # System environment
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
@@ -97,34 +118,45 @@ services:
           memory: 1G
           cpus: '1.0'
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/"] || exit 1
-      interval: 60s
-      timeout: 30s
-      retries: 3
-      start_period: 120s
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8000/en/"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 
   celery_worker:
     image: wger/server:latest
     user: $PUID:$PGID
     command: /start-worker
     environment:
+      # Database settings
       DJANGO_DB_ENGINE: django.db.backends.postgresql
       DJANGO_DB_DATABASE: wger
       DJANGO_DB_USER: wger
       DJANGO_DB_PASSWORD: $default_pwd
       DJANGO_DB_HOST: db
       DJANGO_DB_PORT: 5432
+      
+      # Cache settings
       DJANGO_CACHE_BACKEND: django_redis.cache.RedisCache
       DJANGO_CACHE_LOCATION: redis://cache:6379/1
       DJANGO_CACHE_TIMEOUT: 1296000
       DJANGO_CACHE_CLIENT_CLASS: django_redis.client.DefaultClient
+      
+      # Celery settings
       WGER_USE_CELERY: "True"
       USE_CELERY: "True"
       CELERY_BROKER: redis://cache:6379/2
       CELERY_BACKEND: redis://cache:6379/2
+      
+      # Django core settings
       DJANGO_DEBUG: "False"
       DJANGO_SECRET_KEY: $default_pwd
+      
+      # Exercise and data settings
       EXERCISE_CACHE_TTL: 3600
+      
+      # System environment
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
@@ -132,36 +164,53 @@ services:
       - /DATA/AppData/$AppID/media:/home/wger/media
     depends_on:
       web:
-        condition: service_started
+        condition: service_healthy
     restart: unless-stopped
     deploy:
       resources:
         limits:
           memory: 512M
           cpus: '0.5'
+    healthcheck:
+      test: ["CMD", "celery", "-A", "wger", "inspect", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
 
   celery_beat:
     image: wger/server:latest
     user: $PUID:$PGID
     command: /start-beat
     environment:
+      # Database settings
       DJANGO_DB_ENGINE: django.db.backends.postgresql
       DJANGO_DB_DATABASE: wger
       DJANGO_DB_USER: wger
       DJANGO_DB_PASSWORD: $default_pwd
       DJANGO_DB_HOST: db
       DJANGO_DB_PORT: 5432
+      
+      # Cache settings
       DJANGO_CACHE_BACKEND: django_redis.cache.RedisCache
       DJANGO_CACHE_LOCATION: redis://cache:6379/1
       DJANGO_CACHE_TIMEOUT: 1296000
       DJANGO_CACHE_CLIENT_CLASS: django_redis.client.DefaultClient
+      
+      # Celery settings
       WGER_USE_CELERY: "True"
       USE_CELERY: "True"
       CELERY_BROKER: redis://cache:6379/2
       CELERY_BACKEND: redis://cache:6379/2
+      
+      # Django core settings
       DJANGO_DEBUG: "False"
       DJANGO_SECRET_KEY: $default_pwd
+      
+      # Exercise and data settings
       EXERCISE_CACHE_TTL: 3600
+      
+      # System environment
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
@@ -169,7 +218,7 @@ services:
       - /DATA/AppData/$AppID/celery-beat:/home/wger/beat
     depends_on:
       celery_worker:
-        condition: service_started
+        condition: service_healthy
     restart: unless-stopped
     deploy:
       resources:
@@ -291,5 +340,11 @@ x-casaos:
         - All data is stored in `/DATA/AppData/wger/`
         - Media files (exercise images, progress photos) are in `/media/`
         - Database is PostgreSQL with persistent storage
+        
+        **Note:** Static files (CSS, JS, images) are automatically configured during startup.
+  pre-install-cmd: |
+    mkdir -p /DATA/AppData/$AppID/static /DATA/AppData/$AppID/media &&
+    chown -R $PUID:$PGID /DATA/AppData/$AppID &&
+    docker run --rm -v /DATA/AppData/$AppID/static:/tmp/static -e DJANGO_SECRET_KEY=$default_pwd -e DJANGO_CLEAR_STATIC_FIRST=True wger/server:latest python3 manage.py collectstatic --noinput --clear
   index: /
   webui_port: 8000
