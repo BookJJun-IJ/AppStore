@@ -49,7 +49,7 @@ services:
       start_period: 30s
 
   web:
-    image: wger/server:2.3
+    image: wger/server:2.2-dev
     user: $PUID:$PGID
     expose:
       - 8000
@@ -125,7 +125,7 @@ services:
       start_period: 60s
 
   celery_worker:
-    image: wger/server:2.3
+    image: wger/server:2.2-dev
     user: $PUID:$PGID
     command: /start-worker
     environment:
@@ -173,7 +173,7 @@ services:
       start_period: 30s
 
   celery_beat:
-    image: wger/server:2.3
+    image: wger/server:2.2-dev
     user: $PUID:$PGID
     command: /start-beat
     environment:
