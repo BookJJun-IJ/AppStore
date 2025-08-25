@@ -62,8 +62,6 @@ services:
       DJANGO_SECRET_KEY: $default_pwd
       DJANGO_CLEAR_STATIC_FIRST: "True"
       WGER_USE_GUNICORN: "True"
-      DJANGO_STATIC_URL: /static/
-      DJANGO_STATIC_ROOT: /home/wger/static
       SITE_URL: $domain
       DJANGO_ALLOWED_HOSTS: $domain,localhost,127.0.0.1
       CSRF_TRUSTED_ORIGINS: https://$domain
@@ -99,11 +97,11 @@ services:
           memory: 1G
           cpus: '1.0'
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8000/en/"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 60s
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"] || exit 1
+      interval: 60s
+      timeout: 30s
+      retries: 3
+      start_period: 120s
 
   celery_worker:
     image: wger/server:latest
@@ -134,19 +132,13 @@ services:
       - /DATA/AppData/$AppID/media:/home/wger/media
     depends_on:
       web:
-        condition: service_healthy
+        condition: service_started
     restart: unless-stopped
     deploy:
       resources:
         limits:
           memory: 512M
           cpus: '0.5'
-    healthcheck:
-      test: ["CMD", "celery", "-A", "wger", "inspect", "ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
 
   celery_beat:
     image: wger/server:latest
@@ -177,7 +169,7 @@ services:
       - /DATA/AppData/$AppID/celery-beat:/home/wger/beat
     depends_on:
       celery_worker:
-        condition: service_healthy
+        condition: service_started
     restart: unless-stopped
     deploy:
       resources:
