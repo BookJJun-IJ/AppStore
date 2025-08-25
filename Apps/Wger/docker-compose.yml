@@ -22,7 +22,7 @@ services:
     restart: unless-stopped
 
   wger:
-    image: wger/wger:2.2.0
+    image: ghcr.io/wger-project/wger:2.2.0
     container_name: wger-app
     user: $PUID:$PGID
     depends_on:
