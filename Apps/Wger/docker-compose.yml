@@ -1,138 +1,128 @@
 name: wger
-
 services:
-  web:
-    image: wger/server:latest
+  wger:
+    image: wger/server:2.4
+    container_name: wger
     user: $PUID:$PGID
-    depends_on:
-      db:
-        condition: service_healthy
-      cache:
-        condition: service_healthy
-    environment:
-      PUID: $PUID
-      PGID: $PGID
-      TZ: $TZ
-      PASSWORD: $default_pwd
-      DOMAIN: $domain
-    volumes:
-      - /DATA/AppData/wger/static:/home/wger/static
-      - /DATA/AppData/wger/media:/home/wger/media
-    expose:
-      - 8000
-    deploy:
-      resources:
-        limits:
-          memory: 1G
-          cpus: "1.0"
-    restart: unless-stopped
-
-  nginx:
-    image: nginx:1.27.2
-    depends_on:
-      - web
-    volumes:
-      - /DATA/AppData/wger/nginx.conf:/etc/nginx/conf.d/default.conf
-      - /DATA/AppData/wger/static:/wger/static:ro
-      - /DATA/AppData/wger/media:/wger/media:ro
     expose:
       - 80
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-          cpus: "0.5"
-    restart: unless-stopped
-
-  db:
-    image: postgres:15.8-alpine
     environment:
-      POSTGRES_USER: wger
-      POSTGRES_PASSWORD: wger
-      POSTGRES_DB: wger
-      TZ: $TZ
-    volumes:
-      - /DATA/AppData/wger/postgres:/var/lib/postgresql/data/
-    expose:
-      - 5432
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-          cpus: "0.5"
-    restart: unless-stopped
-
-  cache:
-    image: redis:7.4.0-alpine
-    expose:
-      - 6379
-    volumes:
-      - /DATA/AppData/wger/redis.conf:/usr/local/etc/redis/redis.conf
-      - /DATA/AppData/wger/redis-data:/data
-    command: [ "redis-server", "/usr/local/etc/redis/redis.conf" ]
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-          cpus: "0.5"
-    restart: unless-stopped
-
-  celery_worker:
-    image: wger/server:latest
-    command: /start-worker
-    user: $PUID:$PGID
-    environment:
+      # System
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
-      PASSWORD: $default_pwd
-      DOMAIN: $domain
+      
+      # Django settings
+      DJANGO_DEBUG: "False"
+      DJANGO_SECRET_KEY: $default_pwd
+      
+      # Database - SQLite for simplicity
+      DJANGO_DB_ENGINE: django.db.backends.sqlite3
+      DJANGO_DB_DATABASE: /home/wger/db/database.sqlite
+      
+      # Media and static files
+      DJANGO_MEDIA_ROOT: /home/wger/media
+      DJANGO_STATIC_ROOT: /home/wger/static
+      
+      # Wger specific settings
+      WGER_INSTANCE: $domain
+      SITE_URL: https://$domain
+      
+      # Email settings (optional - can be configured later)
+      DJANGO_EMAIL_HOST: ""
+      DJANGO_EMAIL_PORT: 587
+      DJANGO_EMAIL_HOST_USER: ""
+      DJANGO_EMAIL_HOST_PASSWORD: ""
+      DJANGO_EMAIL_USE_TLS: "True"
+      FROM_EMAIL: "wger@$domain"
+      
+      # Allow all hosts for NSL router
+      DJANGO_ALLOWED_HOSTS: "*"
+      
+      # CSRF settings for proxy
+      CSRF_TRUSTED_ORIGINS: "https://$domain"
+      
+      # Disable signup by default for security
+      WGER_SETTINGS__ALLOW_REGISTRATION: "False"
+      
+      # Enable exercise sync on startup
+      SYNC_EXERCISES_ON_STARTUP: "True"
+      DOWNLOAD_EXERCISE_IMAGES_ON_STARTUP: "True"
+      
+      # Set server port
+      GUNICORN_PORT: 80
+      GUNICORN_WORKERS: 2
+      
     volumes:
-      - /DATA/AppData/wger/media:/home/wger/media
-    depends_on:
-      web:
-        condition: service_healthy
+      # App data
+      - /DATA/AppData/$AppID/db:/home/wger/db
+      - /DATA/AppData/$AppID/static:/home/wger/static
+      - /DATA/AppData/$AppID/media:/home/wger/media
+      - /DATA/AppData/$AppID/config:/home/wger/config
+      
     deploy:
       resources:
         limits:
-          memory: 512M
-          cpus: "0.5"
-
-  celery_beat:
-    image: wger/server:latest
-    command: /start-beat
-    user: $PUID:$PGID
-    volumes:
-      - /DATA/AppData/wger/celery-beat:/home/wger/beat/
-    environment:
-      PUID: $PUID
-      PGID: $PGID
-      TZ: $TZ
-    depends_on:
-      - celery_worker
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-          cpus: "0.5"
+          memory: 1024M
+          cpus: "1.0"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
 x-casaos:
-  main: nginx
-  webui_port: 80
-  category: Health
   architectures:
     - amd64
     - arm64
+  main: wger
+  author: CasaOS Team
+  category: Health
+  webui_port: 80
   description:
-    en_us: Wger is a self-hosted fitness and workout manager with exercise logs, meal planning, and more.
-    ko_kr: Wger는 운동 기록, 식단 관리 등을 지원하는 셀프 호스팅 피트니스 매니저입니다.
-  title:
-    en_us: Wger
+    en_us: wger is a free, open source web-based personal workout, fitness and weight tracker. It helps you manage your exercises, workouts and nutrition with a comprehensive database of exercises, ingredients and meals. Track your weight, create custom workout routines, and monitor your fitness progress over time.
+    zh_cn: wger 是一个免费、开源的基于网络的个人锻炼、健身和体重追踪器。它帮助您通过全面的运动、成分和膳食数据库管理您的锻炼、训练和营养。追踪您的体重，创建自定义锻炼计划，并监控您的健身进度。
+    es_es: wger es un rastreador personal gratuito y de código abierto basado en web para entrenamientos, fitness y peso. Te ayuda a gestionar tus ejercicios, entrenamientos y nutrición con una base de datos completa de ejercicios, ingredientes y comidas.
+    fr_fr: wger est un tracker personnel gratuit et open source basé sur le web pour l'entraînement, le fitness et le poids. Il vous aide à gérer vos exercices, vos entraînements et votre nutrition avec une base de données complète d'exercices, d'ingrédients et de repas.
+    ko_kr: wger는 무료 오픈소스 웹 기반 개인 운동, 피트니스 및 체중 추적기입니다. 운동, 재료 및 식사의 포괄적인 데이터베이스로 운동, 훈련 및 영양을 관리하는 데 도움이 됩니다. 체중을 추적하고, 맞춤형 운동 루틴을 만들고, 시간이 지남에 따라 피트니스 진행 상황을 모니터링하세요.
+  developer: wger Project
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/wger/icon.png
   tagline:
-    en_us: Self-hosted fitness and workout manager
+    en_us: Free fitness tracker for workouts and nutrition
+    zh_cn: 免费的健身和营养追踪器
+    es_es: Rastreador gratuito de fitness para entrenamientos y nutrición
+    fr_fr: Tracker de fitness gratuit pour les entraînements et la nutrition
+    ko_kr: 운동과 영양을 위한 무료 피트니스 트래커
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/wger/thumbnail.png
+  title:
+    en_us: wger Workout Manager
   tips:
     before_install:
       en_us: |
-        Default account will be created on first run.
-        Username: `admin`
-        Password: `$default_pwd`
+        ## Default Admin Account
+        
+        After installation, access wger and create your first user account through the web interface.
+        
+        The app will automatically sync exercise data on first startup, which may take a few minutes.
+        
+        **Note**: User registration is disabled by default for security. You can enable it in the environment variables after installation if needed.
+        
+        ## Features
+        - Track workouts and exercises
+        - Nutrition diary and meal planning
+        - Weight tracking with charts
+        - Custom workout routines
+        - Exercise database with images and videos
+        - REST API for third-party apps
+  index: /
+  port_map: "80"
+  scheme: http
+  store_app_id: wger
+  pre-install-cmd: |
+    mkdir -p /DATA/AppData/$AppID/db && \
+    mkdir -p /DATA/AppData/$AppID/static && \
+    mkdir -p /DATA/AppData/$AppID/media && \
+    mkdir -p /DATA/AppData/$AppID/config && \
+    chown -R $PUID:$PGID /DATA/AppData/$AppID
