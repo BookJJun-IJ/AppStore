@@ -2,7 +2,7 @@ name: wger
 
 services:
   web:
-    image: wger/server:2.2.0
+    image: wger/server:latest
     user: $PUID:$PGID
     depends_on:
       db:
@@ -78,7 +78,7 @@ services:
     restart: unless-stopped
 
   celery_worker:
-    image: wger/server:2.2.0
+    image: wger/server:latest
     command: /start-worker
     user: $PUID:$PGID
     environment:
@@ -99,7 +99,7 @@ services:
           cpus: "0.5"
 
   celery_beat:
-    image: wger/server:2.2.0
+    image: wger/server:latest
     command: /start-beat
     user: $PUID:$PGID
     volumes:
