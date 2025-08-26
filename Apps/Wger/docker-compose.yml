@@ -1,7 +1,7 @@
 name: wger
 services:
   wger:
-    image: wger/server:2.4
+    image: wger/server:2.3
     container_name: wger
     user: $PUID:$PGID
     expose:
