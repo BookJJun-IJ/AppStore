@@ -1,342 +1,339 @@
 name: wger
+
 services:
-  # PostgreSQL Database
-  wger-db:
-    image: postgres:15-alpine
-    container_name: wger-db
+  db:
+    image: postgres:15
     environment:
+      POSTGRES_DB: wger
       POSTGRES_USER: wger
       POSTGRES_PASSWORD: $default_pwd
-      POSTGRES_DB: wger
-      TZ: $TZ
     volumes:
-      - /DATA/AppData/$AppID/postgres:/var/lib/postgresql/data
-    expose:
-      - 5432
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U wger"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
+      - /DATA/AppData/$AppID/postgresql:/var/lib/postgresql/data
     restart: unless-stopped
     deploy:
       resources:
         limits:
           memory: 512M
-          cpus: "0.5"
-
-  # Redis Cache
-  wger-cache:
-    image: redis:7-alpine
-    container_name: wger-cache
-    volumes:
-      - /DATA/AppData/$AppID/redis:/data
-    expose:
-      - 6379
-    command: redis-server --appendonly yes
+          cpus: '0.5'
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U wger"]
+      interval: 30s
       timeout: 5s
       retries: 5
-      start_period: 30s
+
+  cache:
+    image: redis:7
+    volumes:
+      - /DATA/AppData/$AppID/redis:/data
     restart: unless-stopped
     deploy:
       resources:
         limits:
           memory: 256M
-          cpus: "0.3"
+          cpus: '0.25'
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
 
-  # Main wger Application
-  wger:
+  web:
     image: wger/server:latest
-    container_name: wger
-    depends_on:
-      wger-db:
-        condition: service_healthy
-      wger-cache:
-        condition: service_healthy
+    user: $PUID:$PGID
     expose:
       - 8000
     environment:
-      # Database Configuration
+      # Database settings
       DJANGO_DB_ENGINE: django.db.backends.postgresql
       DJANGO_DB_DATABASE: wger
       DJANGO_DB_USER: wger
       DJANGO_DB_PASSWORD: $default_pwd
-      DJANGO_DB_HOST: wger-db
+      DJANGO_DB_HOST: db
       DJANGO_DB_PORT: 5432
+      DJANGO_PERFORM_MIGRATIONS: "True"
       
-      # Redis Configuration
+      # Cache settings
       DJANGO_CACHE_BACKEND: django_redis.cache.RedisCache
-      DJANGO_CACHE_LOCATION: redis://wger-cache:6379/1
+      DJANGO_CACHE_LOCATION: redis://cache:6379/1
+      DJANGO_CACHE_TIMEOUT: 1296000
+      DJANGO_CACHE_CLIENT_CLASS: django_redis.client.DefaultClient
       
-      # Django Settings
+      # Celery settings
+      WGER_USE_CELERY: "True"
+      USE_CELERY: "True"
+      CELERY_BROKER: redis://cache:6379/2
+      CELERY_BACKEND: redis://cache:6379/2
+      
+      # Django core settings
       DJANGO_DEBUG: "False"
-      SECRET_KEY: $default_pwd
-      SIGNING_KEY: $default_pwd
+      DJANGO_SECRET_KEY: $default_pwd
+      DJANGO_CLEAR_STATIC_FIRST: "False"
+      WGER_USE_GUNICORN: "True"
       
-      # Site Configuration
-      SITE_URL: https://$domain
-      ALLOWED_HOSTS: "*"
+      # Site settings
+      SITE_URL: $domain
+      DJANGO_ALLOWED_HOSTS: $domain,localhost,127.0.0.1
       CSRF_TRUSTED_ORIGINS: https://$domain
+      ALLOW_REGISTRATION: "True"
+      ALLOW_GUEST_USERS: "True"
+      ALLOW_UPLOAD_VIDEOS: "True"
+      MIN_ACCOUNT_AGE_TO_TRUST: 21
       
-      # Email Configuration (optional)
-      DJANGO_EMAIL_HOST: ""
-      DJANGO_EMAIL_PORT: 587
-      DJANGO_EMAIL_HOST_USER: ""
-      DJANGO_EMAIL_HOST_PASSWORD: ""
-      DJANGO_EMAIL_USE_TLS: "True"
-      FROM_EMAIL: "wger@$domain"
+      # Exercise and data settings
+      SYNC_EXERCISES_ON_STARTUP: "False"
+      DOWNLOAD_EXERCISE_IMAGES_ON_STARTUP: "False"
+      DOWNLOAD_INGREDIENTS_FROM: "WGER"
+      EXERCISE_CACHE_TTL: 3600
       
-      # Wger Settings
-      ALLOW_REGISTRATION: "False"
-      ALLOW_GUEST_USERS: "False"
-      WGER_INSTANCE: https://$domain
+      # Security settings
+      AXES_ENABLED: "True"
+      AXES_FAILURE_LIMIT: 10
+      AXES_COOLOFF_TIME: 30
+      AXES_HANDLER: axes.handlers.cache.AxesCacheHandler
       
-      # Sync Settings
-      SYNC_EXERCISES_ON_STARTUP: "True"
-      DOWNLOAD_EXERCISE_IMAGES_ON_STARTUP: "True"
+      # Email settings
+      ENABLE_EMAIL: "False"
+      FROM_EMAIL: "wger Workout Manager <wger@localhost>"
       
-      # Celery Configuration
-      CELERY_BROKER: redis://wger-cache:6379/2
-      CELERY_BACKEND: redis://wger-cache:6379/2
-      
-      # User Settings
+      # System environment
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
-      
-      # Performance
-      GUNICORN_WORKERS: 2
-      GUNICORN_TIMEOUT: 120
-      
     volumes:
-      - /DATA/AppData/$AppID/static:/home/wger/static
       - /DATA/AppData/$AppID/media:/home/wger/media
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8000"]
-      interval: 10s
-      timeout: 5s
-      start_period: 300s
-      retries: 5
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 1024M
-          cpus: "1.0"
-
-  # Nginx Web Server
-  wger-nginx:
-    image: nginx:stable-alpine
-    container_name: wger-nginx
+      - /DATA/AppData/$AppID/static:/home/wger/static
     depends_on:
-      - wger
-    expose:
-      - 80
-    volumes:
-      - /DATA/AppData/$AppID/nginx.conf:/etc/nginx/conf.d/default.conf:ro
-      - /DATA/AppData/$AppID/static:/wger/static:ro
-      - /DATA/AppData/$AppID/media:/wger/media:ro
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-          cpus: "0.3"
-
-  # Celery Worker
-  wger-celery-worker:
-    image: wger/server:latest
-    container_name: wger-celery-worker
-    command: /start-worker
-    depends_on:
-      wger:
+      db:
         condition: service_healthy
+      cache:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8000/en/"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  celery_worker:
+    image: wger/server:latest
+    user: $PUID:$PGID
+    command: /start-worker
     environment:
-      # Same database configuration as main app
+      # Database settings
       DJANGO_DB_ENGINE: django.db.backends.postgresql
       DJANGO_DB_DATABASE: wger
       DJANGO_DB_USER: wger
       DJANGO_DB_PASSWORD: $default_pwd
-      DJANGO_DB_HOST: wger-db
+      DJANGO_DB_HOST: db
       DJANGO_DB_PORT: 5432
       
-      # Redis Configuration
+      # Cache settings
       DJANGO_CACHE_BACKEND: django_redis.cache.RedisCache
-      DJANGO_CACHE_LOCATION: redis://wger-cache:6379/1
-      CELERY_BROKER: redis://wger-cache:6379/2
-      CELERY_BACKEND: redis://wger-cache:6379/2
+      DJANGO_CACHE_LOCATION: redis://cache:6379/1
+      DJANGO_CACHE_TIMEOUT: 1296000
+      DJANGO_CACHE_CLIENT_CLASS: django_redis.client.DefaultClient
       
-      # Django Settings
-      SECRET_KEY: $default_pwd
-      SIGNING_KEY: $default_pwd
+      # Celery settings
+      WGER_USE_CELERY: "True"
+      USE_CELERY: "True"
+      CELERY_BROKER: redis://cache:6379/2
+      CELERY_BACKEND: redis://cache:6379/2
       
-      # User Settings
+      # Django core settings
+      DJANGO_DEBUG: "False"
+      DJANGO_SECRET_KEY: $default_pwd
+      
+      # Exercise and data settings
+      EXERCISE_CACHE_TTL: 3600
+      
+      # System environment
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
     volumes:
       - /DATA/AppData/$AppID/media:/home/wger/media
-    healthcheck:
-      test: ["CMD-SHELL", "celery -A wger inspect ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
+    depends_on:
+      web:
+        condition: service_healthy
     restart: unless-stopped
     deploy:
       resources:
         limits:
           memory: 512M
-          cpus: "0.5"
+          cpus: '0.5'
+    healthcheck:
+      test: ["CMD", "celery", "-A", "wger", "inspect", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
 
-  # Celery Beat Scheduler
-  wger-celery-beat:
+  celery_beat:
     image: wger/server:latest
-    container_name: wger-celery-beat
+    user: $PUID:$PGID
     command: /start-beat
-    depends_on:
-      wger-celery-worker:
-        condition: service_healthy
     environment:
-      # Same configuration as celery worker
+      # Database settings
       DJANGO_DB_ENGINE: django.db.backends.postgresql
       DJANGO_DB_DATABASE: wger
       DJANGO_DB_USER: wger
       DJANGO_DB_PASSWORD: $default_pwd
-      DJANGO_DB_HOST: wger-db
+      DJANGO_DB_HOST: db
       DJANGO_DB_PORT: 5432
       
+      # Cache settings
       DJANGO_CACHE_BACKEND: django_redis.cache.RedisCache
-      DJANGO_CACHE_LOCATION: redis://wger-cache:6379/1
-      CELERY_BROKER: redis://wger-cache:6379/2
-      CELERY_BACKEND: redis://wger-cache:6379/2
+      DJANGO_CACHE_LOCATION: redis://cache:6379/1
+      DJANGO_CACHE_TIMEOUT: 1296000
+      DJANGO_CACHE_CLIENT_CLASS: django_redis.client.DefaultClient
       
-      SECRET_KEY: $default_pwd
-      SIGNING_KEY: $default_pwd
+      # Celery settings
+      WGER_USE_CELERY: "True"
+      USE_CELERY: "True"
+      CELERY_BROKER: redis://cache:6379/2
+      CELERY_BACKEND: redis://cache:6379/2
       
+      # Django core settings
+      DJANGO_DEBUG: "False"
+      DJANGO_SECRET_KEY: $default_pwd
+      
+      # Exercise and data settings
+      EXERCISE_CACHE_TTL: 3600
+      
+      # System environment
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
     volumes:
       - /DATA/AppData/$AppID/celery-beat:/home/wger/beat
+    depends_on:
+      celery_worker:
+        condition: service_healthy
     restart: unless-stopped
     deploy:
       resources:
         limits:
           memory: 256M
-          cpus: "0.2"
+          cpus: '0.25'
 
 x-casaos:
   architectures:
     - amd64
     - arm64
-  main: wger-nginx
+  main: web
   author: CasaOS Team
-  category: Health
-  webui_port: 80
+  category: Productivity
   description:
-    en_us: wger is a comprehensive fitness and workout tracker with exercise database, nutrition tracking, and workout planning. It features a full REST API, supports multiple users, and includes detailed exercise instructions with images and videos. Perfect for personal trainers and fitness enthusiasts who want full control over their fitness data.
-    zh_cn: wger 是一个综合性的健身和锻炼追踪器，包含运动数据库、营养跟踪和锻炼计划功能。它具有完整的 REST API，支持多用户，并包含带有图片和视频的详细运动说明。非常适合想要完全控制自己健身数据的私人教练和健身爱好者。
-    es_es: wger es un rastreador integral de fitness y entrenamientos con base de datos de ejercicios, seguimiento nutricional y planificación de entrenamientos. Cuenta con una API REST completa, soporte multiusuario e incluye instrucciones detalladas de ejercicios con imágenes y videos.
-    fr_fr: wger est un tracker de fitness et d'entraînement complet avec base de données d'exercices, suivi nutritionnel et planification d'entraînements. Il dispose d'une API REST complète, prend en charge plusieurs utilisateurs et inclut des instructions détaillées d'exercices avec images et vidéos.
-    ko_kr: wger는 운동 데이터베이스, 영양 추적 및 운동 계획 기능을 갖춘 종합적인 피트니스 및 운동 추적기입니다. 완전한 REST API를 제공하고 다중 사용자를 지원하며, 이미지와 비디오가 포함된 상세한 운동 지침을 포함합니다.
-  developer: wger Project
+    en_us: |
+      wger is a free, open-source web application that helps you manage your personal workouts, weight and diet plans. It can also be used as a simple gym management utility.
+      
+      **Features:**
+      • Custom workout routines with automatic weight progression
+      • Comprehensive tracking of diet plans, body weight, and measurements  
+      • Nutrition management with calorie logging
+      • Progress gallery to track fitness photos
+      • Exercise wiki with built-in exercises
+      • Multi-user support with basic gym management
+      • REST API for third-party integrations
+      • Multilingual support
+      
+      **Default Login:**
+      After installation, register a new account or log in as admin with the default password.
+    fr_fr: |
+      wger est une application web gratuite et open-source qui vous aide à gérer vos entraînements personnels, votre poids et vos plans alimentaires. Elle peut également être utilisée comme utilitaire simple de gestion de salle de sport.
+      
+      **Fonctionnalités:**
+      • Routines d'entraînement personnalisées avec progression automatique
+      • Suivi complet des plans alimentaires, poids corporel et mesures
+      • Gestion nutritionnelle avec journalisation des calories
+      • Galerie de progression pour suivre les photos de fitness
+      • Wiki d'exercices avec exercices intégrés
+      • Support multi-utilisateurs avec gestion de salle de sport
+      • API REST pour intégrations tierces
+      • Support multilingue
+      
+      **Connexion par défaut:**
+      Après installation, créez un nouveau compte ou connectez-vous en tant qu'admin avec le mot de passe par défaut.
+    ko_kr: |
+      wger는 개인 운동, 체중 및 식단 계획을 관리하는 데 도움이 되는 무료 오픈소스 웹 애플리케이션입니다. 간단한 체육관 관리 유틸리티로도 사용할 수 있습니다.
+      
+      **기능:**
+      • 자동 무게 증가 기능이 있는 맞춤형 운동 루틴
+      • 식단 계획, 체중, 측정값의 포괄적인 추적
+      • 칼로리 로깅이 있는 영양 관리
+      • 피트니스 사진을 추적하는 진행 갤러리
+      • 내장 운동이 있는 운동 위키
+      • 기본 체육관 관리 기능이 있는 다중 사용자 지원
+      • 타사 통합을 위한 REST API
+      • 다국어 지원
+      
+      **기본 로그인:**
+      설치 후 새 계정을 등록하거나 기본 비밀번호로 관리자로 로그인하세요.
+    zh_cn: |
+      wger是一个免费的开源Web应用程序，可帮助您管理个人锻炼、体重和饮食计划。它还可以用作简单的健身房管理工具。
+      
+      **功能:**
+      • 具有自动重量递增的自定义锻炼例程
+      • 饮食计划、体重和测量的综合跟踪
+      • 具有卡路里记录的营养管理
+      • 用于跟踪健身照片的进度图库
+      • 具有内置练习的练习百科
+      • 具有基本健身房管理功能的多用户支持
+      • 用于第三方集成的REST API
+      • 多语言支持
+      
+      **默认登录:**
+      安装后，注册新账户或使用默认密码以管理员身份登录。
+    es_es: |
+      wger es una aplicación web gratuita y de código abierto que te ayuda a gestionar tus entrenamientos personales, peso y planes de dieta. También puede utilizarse como una utilidad simple de gestión de gimnasio.
+      
+      **Características:**
+      • Rutinas de entrenamiento personalizadas con progresión automática de peso
+      • Seguimiento integral de planes de dieta, peso corporal y medidas
+      • Gestión nutricional con registro de calorías
+      • Galería de progreso para rastrear fotos de fitness
+      • Wiki de ejercicios con ejercicios incorporados
+      • Soporte multiusuario con gestión básica de gimnasio
+      • API REST para integraciones de terceros
+      • Soporte multiidioma
+      
+      **Inicio de sesión predeterminado:**
+      Después de la instalación, registre una nueva cuenta o inicie sesión como administrador con la contraseña predeterminada.
+  developer: wger Team
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/wger/icon.png
-  tagline:
-    en_us: Professional open-source fitness tracker
-    zh_cn: 专业的开源健身追踪器
-    es_es: Rastreador de fitness profesional de código abierto
-    fr_fr: Tracker de fitness professionnel open source
-    ko_kr: 전문 오픈소스 피트니스 트래커
+  screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/wger/screenshot-1.png
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/wger/thumbnail.png
+  tagline:
+    en_us: Free workout and fitness manager with nutrition tracking
+    fr_fr: Gestionnaire gratuit d'entraînement et de fitness avec suivi nutritionnel
+    ko_kr: 영양 추적 기능을 갖춘 무료 운동 및 피트니스 매니저
+    zh_cn: 免费的锻炼和健身管理器，具有营养跟踪功能
+    es_es: Gestor gratuito de ejercicios y fitness con seguimiento nutricional
   title:
     en_us: wger Workout Manager
   tips:
     before_install:
       en_us: |
-        ## First Setup
+        **Initial Setup Information:**
         
-        After installation, wger will take 5-10 minutes to initialize:
-        1. Database setup and migrations
-        2. Exercise data synchronization
-        3. Static files collection
+        After installation, you can register a new account or use the default admin credentials:
+        - **Username**: `admin`
+        - **Password**: Check your CasaOS dashboard for the generated password
         
-        ## Default Admin Account
+        **First Launch:**
+        1. Access the web interface
+        2. Register a new account or log in as admin
+        3. Configure your profile and preferences
+        4. Start creating your workout routines
         
-        Create your admin account through the web interface after installation.
-        Registration is disabled by default for security - enable it in settings if needed.
-        
-        ## Features
-        - 📊 Comprehensive workout logging
-        - 🍎 Nutrition tracking with 70,000+ ingredients
-        - 📈 Progress tracking with charts
-        - 🏋️ Exercise database with images/videos
-        - 📱 REST API for mobile apps
-        - 👥 Multi-user support
-        - 🌍 Multiple languages
-        
-        ## Performance Note
-        The app uses multiple services for optimal performance:
-        - PostgreSQL for data storage
-        - Redis for caching
-        - Celery for background tasks
-        - Nginx for static files
+        **Data Storage:**
+        - All data is stored in `/DATA/AppData/wger/`
+        - Media files (exercise images, progress photos) are in `/media/`
+        - Database is PostgreSQL with persistent storage
   index: /
-  port_map: "80"
-  scheme: http
-  store_app_id: wger
-  pre-install-cmd: |
-    # Create directories
-    mkdir -p /DATA/AppData/$AppID/static && \
-    mkdir -p /DATA/AppData/$AppID/media && \
-    mkdir -p /DATA/AppData/$AppID/postgres && \
-    mkdir -p /DATA/AppData/$AppID/redis && \
-    mkdir -p /DATA/AppData/$AppID/celery-beat && \
-    
-    # Create nginx configuration
-    cat > /DATA/AppData/$AppID/nginx.conf << 'EOF'
-    upstream wger {
-        server wger:8000;
-    }
-    
-    server {
-        listen 80;
-        
-        location / {
-            proxy_pass http://wger;
-            proxy_set_header Host $http_host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
-            proxy_redirect off;
-            client_max_body_size 100M;
-        }
-        
-        location /static/ {
-            alias /wger/static/;
-        }
-        
-        location /media/ {
-            alias /wger/media/;
-        }
-        
-        location = /favicon.ico {
-            alias /wger/static/images/favicon.png;
-        }
-    }
-    EOF
-    
-    # Set permissions
-    chown -R 1000:1000 /DATA/AppData/$AppID/static && \
-    chown -R 1000:1000 /DATA/AppData/$AppID/media && \
-    chown -R 1000:1000 /DATA/AppData/$AppID/celery-beat
