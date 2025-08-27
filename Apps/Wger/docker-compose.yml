@@ -43,10 +43,10 @@ services:
       - 6379
 
   web:
-    image: wger/server:2.3-dev
+    image: wger/server:2.4-dev
     user: $PUID:$PGID
     expose:
-      - 80
+      - 8000
     environment:
       # Django 설정
       DJANGO_STATIC_SERVE: "True"
@@ -78,7 +78,7 @@ services:
       # 웹서버 설정
       WGER_USE_GUNICORN: "True"
       SITE_URL: https://$domain
-      DJANGO_ALLOWED_HOSTS: $domain,localhost,127.0.0.1
+      DJANGO_ALLOWED_HOSTS: $domain,localhost,127.0.0.1,nginx
       CSRF_TRUSTED_ORIGINS: https://$domain
       
       # 애플리케이션 설정
@@ -164,7 +164,7 @@ services:
           cpus: '0.5'
 
   celery_beat:
-    image: wger/server:2.3-dev
+    image: wger/server:2.4-dev
     user: $PUID:$PGID
     command: /start-beat
     environment:
@@ -204,6 +204,24 @@ services:
       resources:
         limits:
           memory: 256M
+          cpus: '0.25'
+
+  nginx:
+    image: nginx:1.27-alpine
+    expose:
+      - 80
+    volumes:
+      - /DATA/AppData/$AppID/nginx:/etc/nginx/conf.d
+      - /DATA/AppData/$AppID/static:/home/wger/static:ro
+      - /DATA/AppData/$AppID/media:/home/wger/media:ro
+    depends_on:
+      web:
+        condition: service_started
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 128M
           cpus: '0.25'
 
 x-casaos:
