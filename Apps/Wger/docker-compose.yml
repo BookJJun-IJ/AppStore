@@ -43,6 +43,7 @@ services:
     expose:
       - 8000                    # Gunicorn이 8000에서 뜨더라도, 컨테이너 내부 80으로 매핑 필요
     environment:
+      DJANGO_STATIC_SERVE: "True"
       DJANGO_DB_ENGINE: django.db.backends.postgresql
       DJANGO_DB_DATABASE: wger
       DJANGO_DB_USER: wger
