@@ -3,13 +3,10 @@ name: wger
 services:
   db:
     image: postgres:15.4
-    user: $PUID:$PGID
     environment:
       POSTGRES_DB: wger
       POSTGRES_USER: wger
       POSTGRES_PASSWORD: $default_pwd
-      PUID: $PUID
-      PGID: $PGID
     volumes:
       - /DATA/AppData/$AppID/postgresql:/var/lib/postgresql/data
     restart: unless-stopped
@@ -26,10 +23,6 @@ services:
 
   cache:
     image: redis:7.4.5
-    user: $PUID:$PGID
-    environment:
-      PUID: $PUID
-      PGID: $PGID
     volumes:
       - /DATA/AppData/$AppID/redis:/data
     restart: unless-stopped
@@ -48,7 +41,7 @@ services:
     image: wger/server:2.4-dev
     user: $PUID:$PGID
     expose:
-      - 80
+      - 8000
     environment:
       DJANGO_STATIC_SERVE: "True"
       DJANGO_DB_ENGINE: django.db.backends.postgresql
@@ -70,7 +63,6 @@ services:
       DJANGO_SECRET_KEY: $default_pwd
       DJANGO_CLEAR_STATIC_FIRST: "False"
       WGER_USE_GUNICORN: "True"
-      WGER_PORT: 80
       SITE_URL: https://$domain
       DJANGO_ALLOWED_HOSTS: $domain,localhost,127.0.0.1
       CSRF_TRUSTED_ORIGINS: https://$domain
@@ -185,7 +177,7 @@ x-casaos:
     - amd64
     - arm64
   main: web
-  webui_port: 80
+  webui_port: 8000
   author: CasaOS Team
   category: Productivity
   description:
