@@ -38,11 +38,15 @@ services:
       retries: 5
 
   web:
-    image: wger/server:2.4-dev
+    image: wger/server:latest
     user: $PUID:$PGID
     expose:
       - 8000
     environment:
+      # Core secrets
+      SECRET_KEY: $default_pwd
+      SIGNING_KEY: $default_pwd
+      
       # Database configuration
       DJANGO_DB_ENGINE: django.db.backends.postgresql
       DJANGO_DB_DATABASE: wger
@@ -66,19 +70,12 @@ services:
       
       # Django configuration
       DJANGO_DEBUG: "False"
-      DJANGO_SECRET_KEY: $default_pwd
-      SECRET_KEY: $default_pwd
-      SIGNING_KEY: $default_pwd
-      
-      # Server configuration
       WGER_USE_GUNICORN: "True"
+      
+      # URL and CSRF settings
+      SITE_URL: https://$domain
       DJANGO_ALLOWED_HOSTS: $domain,localhost,127.0.0.1
       CSRF_TRUSTED_ORIGINS: https://$domain
-      SITE_URL: https://$domain
-      
-      # Static files
-      DJANGO_STATIC_SERVE: "True"
-      DJANGO_CLEAR_STATIC_FIRST: "False"
       
       # Application settings
       ALLOW_REGISTRATION: "True"
@@ -87,8 +84,6 @@ services:
       MIN_ACCOUNT_AGE_TO_TRUST: 21
       SYNC_EXERCISES_ON_STARTUP: "False"
       DOWNLOAD_EXERCISE_IMAGES_ON_STARTUP: "False"
-      DOWNLOAD_INGREDIENTS_FROM: "WGER"
-      EXERCISE_CACHE_TTL: 3600
       
       # Security settings
       AXES_ENABLED: "True"
@@ -101,10 +96,11 @@ services:
       FROM_EMAIL: "wger Workout Manager <wger@localhost>"
       
       # System variables
+      TIME_ZONE: Europe/Berlin
+      TZ: Europe/Berlin
+      EXERCISE_CACHE_TTL: 3600
       PUID: $PUID
       PGID: $PGID
-      TZ: $TZ
-      TIME_ZONE: $TZ
       
     volumes:
       - /DATA/AppData/$AppID/media:/home/wger/media
@@ -122,7 +118,7 @@ services:
           cpus: '1.0'
 
   celery_worker:
-    image: wger/server:2.4-dev
+    image: wger/server:latest
     user: $PUID:$PGID
     command: /start-worker
     environment:
@@ -146,16 +142,14 @@ services:
       CELERY_BROKER: redis://cache:6379/2
       CELERY_BACKEND: redis://cache:6379/2
       
-      # Django configuration
-      DJANGO_DEBUG: "False"
-      DJANGO_SECRET_KEY: $default_pwd
+      # System configuration
       SECRET_KEY: $default_pwd
-      
-      # System variables
+      DJANGO_DEBUG: "False"
+      TIME_ZONE: Europe/Berlin
+      TZ: Europe/Berlin
       EXERCISE_CACHE_TTL: 3600
       PUID: $PUID
       PGID: $PGID
-      TZ: $TZ
     volumes:
       - /DATA/AppData/$AppID/media:/home/wger/media
     depends_on:
@@ -169,7 +163,7 @@ services:
           cpus: '0.5'
 
   celery_beat:
-    image: wger/server:2.4-dev
+    image: wger/server:latest
     user: $PUID:$PGID
     command: /start-beat
     environment:
@@ -193,16 +187,14 @@ services:
       CELERY_BROKER: redis://cache:6379/2
       CELERY_BACKEND: redis://cache:6379/2
       
-      # Django configuration
-      DJANGO_DEBUG: "False"
-      DJANGO_SECRET_KEY: $default_pwd
+      # System configuration
       SECRET_KEY: $default_pwd
-      
-      # System variables
+      DJANGO_DEBUG: "False"
+      TIME_ZONE: Europe/Berlin
+      TZ: Europe/Berlin
       EXERCISE_CACHE_TTL: 3600
       PUID: $PUID
       PGID: $PGID
-      TZ: $TZ
     volumes:
       - /DATA/AppData/$AppID/celery-beat:/home/wger/beat
     depends_on:
@@ -246,4 +238,10 @@ x-casaos:
         | `admin`    | `adminadmin`   |
         
         **Note**: The app may take 2-3 minutes to fully initialize on first startup.
+  pre-install-cmd: |
+    docker run --rm -v /DATA/AppData/wger/:/data ubuntu:22.04 sh -c "
+      mkdir -p /data/media /data/static /data/postgresql /data/redis /data/celery-beat &&
+      chown -R 1000:1000 /data/media /data/static /data/celery-beat &&
+      chmod -R 755 /data
+    "
   index: /
