@@ -2,11 +2,12 @@ name: wger
 
 services:
   db:
-    image: postgres:15.4
+    image: postgres:15.4-alpine
     environment:
       POSTGRES_DB: wger
       POSTGRES_USER: wger
       POSTGRES_PASSWORD: $default_pwd
+      TZ: $TZ
     volumes:
       - /DATA/AppData/$AppID/postgresql:/var/lib/postgresql/data
     restart: unless-stopped
@@ -20,9 +21,11 @@ services:
       interval: 30s
       timeout: 5s
       retries: 5
+    expose:
+      - 5432
 
   cache:
-    image: redis:7.4.5
+    image: redis:7.4.5-alpine
     volumes:
       - /DATA/AppData/$AppID/redis:/data
     restart: unless-stopped
@@ -36,14 +39,22 @@ services:
       interval: 30s
       timeout: 5s
       retries: 5
+    expose:
+      - 6379
 
   web:
-    image: wger/server:2.4-dev   # latest 대신 특정 버전
+    image: wger/server:2.3-dev
     user: $PUID:$PGID
     expose:
-      - 8000                    # Gunicorn이 8000에서 뜨더라도, 컨테이너 내부 80으로 매핑 필요
+      - 80
     environment:
+      # Django 설정
       DJANGO_STATIC_SERVE: "True"
+      DJANGO_DEBUG: "False"
+      DJANGO_SECRET_KEY: $default_pwd
+      DJANGO_CLEAR_STATIC_FIRST: "False"
+      
+      # 데이터베이스 설정
       DJANGO_DB_ENGINE: django.db.backends.postgresql
       DJANGO_DB_DATABASE: wger
       DJANGO_DB_USER: wger
@@ -51,21 +62,26 @@ services:
       DJANGO_DB_HOST: db
       DJANGO_DB_PORT: 5432
       DJANGO_PERFORM_MIGRATIONS: "True"
+      
+      # 캐시 설정
       DJANGO_CACHE_BACKEND: django_redis.cache.RedisCache
       DJANGO_CACHE_LOCATION: redis://cache:6379/1
       DJANGO_CACHE_TIMEOUT: 1296000
       DJANGO_CACHE_CLIENT_CLASS: django_redis.client.DefaultClient
+      
+      # Celery 설정
       WGER_USE_CELERY: "True"
       USE_CELERY: "True"
       CELERY_BROKER: redis://cache:6379/2
       CELERY_BACKEND: redis://cache:6379/2
-      DJANGO_DEBUG: "False"
-      DJANGO_SECRET_KEY: $default_pwd
-      DJANGO_CLEAR_STATIC_FIRST: "False"
+      
+      # 웹서버 설정
       WGER_USE_GUNICORN: "True"
-      SITE_URL: $domain
+      SITE_URL: https://$domain
       DJANGO_ALLOWED_HOSTS: $domain,localhost,127.0.0.1
       CSRF_TRUSTED_ORIGINS: https://$domain
+      
+      # 애플리케이션 설정
       ALLOW_REGISTRATION: "True"
       ALLOW_GUEST_USERS: "True"
       ALLOW_UPLOAD_VIDEOS: "True"
@@ -74,12 +90,18 @@ services:
       DOWNLOAD_EXERCISE_IMAGES_ON_STARTUP: "False"
       DOWNLOAD_INGREDIENTS_FROM: "WGER"
       EXERCISE_CACHE_TTL: 3600
+      
+      # 보안 설정
       AXES_ENABLED: "True"
       AXES_FAILURE_LIMIT: 10
       AXES_COOLOFF_TIME: 30
       AXES_HANDLER: axes.handlers.cache.AxesCacheHandler
+      
+      # 이메일 설정 (기본 비활성화)
       ENABLE_EMAIL: "False"
       FROM_EMAIL: "wger Workout Manager <wger@localhost>"
+      
+      # 시스템 변수
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
@@ -99,24 +121,30 @@ services:
           cpus: '1.0'
 
   celery_worker:
-    image: wger/server:2.4-dev
+    image: wger/server:2.3-dev
     user: $PUID:$PGID
     command: /start-worker
     environment:
+      # 데이터베이스 설정
       DJANGO_DB_ENGINE: django.db.backends.postgresql
       DJANGO_DB_DATABASE: wger
       DJANGO_DB_USER: wger
       DJANGO_DB_PASSWORD: $default_pwd
       DJANGO_DB_HOST: db
       DJANGO_DB_PORT: 5432
+      
+      # 캐시 설정
       DJANGO_CACHE_BACKEND: django_redis.cache.RedisCache
       DJANGO_CACHE_LOCATION: redis://cache:6379/1
       DJANGO_CACHE_TIMEOUT: 1296000
       DJANGO_CACHE_CLIENT_CLASS: django_redis.client.DefaultClient
+      
+      # Celery 설정
       WGER_USE_CELERY: "True"
       USE_CELERY: "True"
       CELERY_BROKER: redis://cache:6379/2
       CELERY_BACKEND: redis://cache:6379/2
+      
       DJANGO_DEBUG: "False"
       DJANGO_SECRET_KEY: $default_pwd
       EXERCISE_CACHE_TTL: 3600
@@ -136,24 +164,30 @@ services:
           cpus: '0.5'
 
   celery_beat:
-    image: wger/server:2.4-dev
+    image: wger/server:2.3-dev
     user: $PUID:$PGID
     command: /start-beat
     environment:
+      # 데이터베이스 설정
       DJANGO_DB_ENGINE: django.db.backends.postgresql
       DJANGO_DB_DATABASE: wger
       DJANGO_DB_USER: wger
       DJANGO_DB_PASSWORD: $default_pwd
       DJANGO_DB_HOST: db
       DJANGO_DB_PORT: 5432
+      
+      # 캐시 설정
       DJANGO_CACHE_BACKEND: django_redis.cache.RedisCache
       DJANGO_CACHE_LOCATION: redis://cache:6379/1
       DJANGO_CACHE_TIMEOUT: 1296000
       DJANGO_CACHE_CLIENT_CLASS: django_redis.client.DefaultClient
+      
+      # Celery 설정
       WGER_USE_CELERY: "True"
       USE_CELERY: "True"
       CELERY_BROKER: redis://cache:6379/2
       CELERY_BACKEND: redis://cache:6379/2
+      
       DJANGO_DEBUG: "False"
       DJANGO_SECRET_KEY: $default_pwd
       EXERCISE_CACHE_TTL: 3600
@@ -172,45 +206,48 @@ services:
           memory: 256M
           cpus: '0.25'
 
-  nginx:
-    image: nginx:1.27
-    ports:
-      - "8000:80"   # CasaOS에서는 expose 대신 ports 필요할 수도 있음 (외부 접근용)
-    volumes:
-      - /DATA/AppData/$AppID/nginx.conf:/etc/nginx/nginx.conf:ro
-      - /DATA/AppData/$AppID/static:/home/wger/static:ro
-      - /DATA/AppData/$AppID/media:/home/wger/media:ro
-    depends_on:
-      - web
-    restart: unless-stopped
-
 x-casaos:
   architectures:
     - amd64
     - arm64
   main: web
-  webui_port: 8000
+  webui_port: 80
   author: CasaOS Team
   category: Productivity
   description:
-    en_us: Free, open-source workout manager with nutrition tracking
-    fr_fr: Gestionnaire gratuit d'entraînement et de fitness avec suivi nutritionnel
-    ko_kr: 영양 추적 기능을 갖춘 무료 운동 및 피트니스 매니저
-    zh_cn: 免费的锻炼和健身管理器，具有营养跟踪功能
-    es_es: Gestor gratuito de ejercicios y fitness con seguimiento nutricional
+    en_us: "Free, open-source workout manager and nutrition tracker. Plan workouts, track progress, manage nutrition, and monitor weight with comprehensive fitness tools."
+    fr_fr: "Gestionnaire d'entraînement gratuit et open-source avec suivi nutritionnel. Planifiez vos séances, suivez vos progrès et gérez votre nutrition."
+    ko_kr: "무료 오픈소스 운동 관리자 및 영양 추적기. 운동을 계획하고 진행 상황을 추적하며 영양을 관리합니다."
+    zh_cn: "免费开源的锻炼管理器和营养追踪器。规划锻炼、跟踪进度、管理营养和监控体重。"
+    es_es: "Gestor de ejercicios gratuito y de código abierto con seguimiento nutricional. Planifica entrenamientos, rastrea progresos y gestiona nutrición."
   developer: wger Team
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/wger/icon.png
   screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/wger/screenshot-1.png
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/wger/thumbnail.png
   tagline:
-    en_us: Free workout and fitness manager with nutrition tracking
+    en_us: "Complete workout and fitness manager with nutrition tracking"
+    fr_fr: "Gestionnaire complet d'entraînement avec suivi nutritionnel"
+    ko_kr: "영양 추적 기능을 갖춘 완전한 운동 관리자"
+    zh_cn: "具有营养跟踪功能的完整锻炼管理器"
+    es_es: "Gestor completo de ejercicios con seguimiento nutricional"
   title:
     en_us: wger Workout Manager
   tips:
     before_install:
       en_us: |
-        Default Account
-        | Username   | Password       |
-        | --------   | ------------   |
-        | `admin`    | `$default_pwd` |
+        **Default Login**
+        
+        Access your wger instance and register a new account.
+        The first registered user automatically becomes administrator.
+        
+        **Features**
+        - Workout planning and tracking
+        - Nutrition management
+        - Weight monitoring
+        - Exercise database
+        - Progress tracking
+        - Mobile app integration
   index: /
+  pre-install-cmd: |
+    mkdir -p /DATA/AppData/$AppID/{postgresql,redis,media,static,celery-beat} &&
+    chown -R $PUID:$PGID /DATA/AppData/$AppID
