@@ -43,7 +43,7 @@ services:
     expose:
       - 8000
     environment:
-      DJANGO_STATIC_SERVE: "True"
+      # Database configuration
       DJANGO_DB_ENGINE: django.db.backends.postgresql
       DJANGO_DB_DATABASE: wger
       DJANGO_DB_USER: wger
@@ -51,21 +51,36 @@ services:
       DJANGO_DB_HOST: db
       DJANGO_DB_PORT: 5432
       DJANGO_PERFORM_MIGRATIONS: "True"
+      
+      # Cache configuration
       DJANGO_CACHE_BACKEND: django_redis.cache.RedisCache
       DJANGO_CACHE_LOCATION: redis://cache:6379/1
       DJANGO_CACHE_TIMEOUT: 1296000
       DJANGO_CACHE_CLIENT_CLASS: django_redis.client.DefaultClient
+      
+      # Celery configuration
       WGER_USE_CELERY: "True"
       USE_CELERY: "True"
       CELERY_BROKER: redis://cache:6379/2
       CELERY_BACKEND: redis://cache:6379/2
+      
+      # Django configuration
       DJANGO_DEBUG: "False"
       DJANGO_SECRET_KEY: $default_pwd
-      DJANGO_CLEAR_STATIC_FIRST: "False"
+      SECRET_KEY: $default_pwd
+      SIGNING_KEY: $default_pwd
+      
+      # Server configuration
       WGER_USE_GUNICORN: "True"
-      SITE_URL: https://$domain
       DJANGO_ALLOWED_HOSTS: $domain,localhost,127.0.0.1
       CSRF_TRUSTED_ORIGINS: https://$domain
+      SITE_URL: https://$domain
+      
+      # Static files
+      DJANGO_STATIC_SERVE: "True"
+      DJANGO_CLEAR_STATIC_FIRST: "False"
+      
+      # Application settings
       ALLOW_REGISTRATION: "True"
       ALLOW_GUEST_USERS: "True"
       ALLOW_UPLOAD_VIDEOS: "True"
@@ -74,15 +89,23 @@ services:
       DOWNLOAD_EXERCISE_IMAGES_ON_STARTUP: "False"
       DOWNLOAD_INGREDIENTS_FROM: "WGER"
       EXERCISE_CACHE_TTL: 3600
+      
+      # Security settings
       AXES_ENABLED: "True"
       AXES_FAILURE_LIMIT: 10
       AXES_COOLOFF_TIME: 30
       AXES_HANDLER: axes.handlers.cache.AxesCacheHandler
+      
+      # Email settings
       ENABLE_EMAIL: "False"
       FROM_EMAIL: "wger Workout Manager <wger@localhost>"
+      
+      # System variables
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
+      TIME_ZONE: $TZ
+      
     volumes:
       - /DATA/AppData/$AppID/media:/home/wger/media
       - /DATA/AppData/$AppID/static:/home/wger/static
@@ -103,22 +126,32 @@ services:
     user: $PUID:$PGID
     command: /start-worker
     environment:
+      # Database configuration
       DJANGO_DB_ENGINE: django.db.backends.postgresql
       DJANGO_DB_DATABASE: wger
       DJANGO_DB_USER: wger
       DJANGO_DB_PASSWORD: $default_pwd
       DJANGO_DB_HOST: db
       DJANGO_DB_PORT: 5432
+      
+      # Cache configuration
       DJANGO_CACHE_BACKEND: django_redis.cache.RedisCache
       DJANGO_CACHE_LOCATION: redis://cache:6379/1
       DJANGO_CACHE_TIMEOUT: 1296000
       DJANGO_CACHE_CLIENT_CLASS: django_redis.client.DefaultClient
+      
+      # Celery configuration
       WGER_USE_CELERY: "True"
       USE_CELERY: "True"
       CELERY_BROKER: redis://cache:6379/2
       CELERY_BACKEND: redis://cache:6379/2
+      
+      # Django configuration
       DJANGO_DEBUG: "False"
       DJANGO_SECRET_KEY: $default_pwd
+      SECRET_KEY: $default_pwd
+      
+      # System variables
       EXERCISE_CACHE_TTL: 3600
       PUID: $PUID
       PGID: $PGID
@@ -140,22 +173,32 @@ services:
     user: $PUID:$PGID
     command: /start-beat
     environment:
+      # Database configuration
       DJANGO_DB_ENGINE: django.db.backends.postgresql
       DJANGO_DB_DATABASE: wger
       DJANGO_DB_USER: wger
       DJANGO_DB_PASSWORD: $default_pwd
       DJANGO_DB_HOST: db
       DJANGO_DB_PORT: 5432
+      
+      # Cache configuration
       DJANGO_CACHE_BACKEND: django_redis.cache.RedisCache
       DJANGO_CACHE_LOCATION: redis://cache:6379/1
       DJANGO_CACHE_TIMEOUT: 1296000
       DJANGO_CACHE_CLIENT_CLASS: django_redis.client.DefaultClient
+      
+      # Celery configuration
       WGER_USE_CELERY: "True"
       USE_CELERY: "True"
       CELERY_BROKER: redis://cache:6379/2
       CELERY_BACKEND: redis://cache:6379/2
+      
+      # Django configuration
       DJANGO_DEBUG: "False"
       DJANGO_SECRET_KEY: $default_pwd
+      SECRET_KEY: $default_pwd
+      
+      # System variables
       EXERCISE_CACHE_TTL: 3600
       PUID: $PUID
       PGID: $PGID
