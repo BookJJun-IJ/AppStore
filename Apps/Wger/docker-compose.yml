@@ -41,7 +41,7 @@ services:
     image: wger/server:2.4-dev   # latest 대신 특정 버전
     user: $PUID:$PGID
     expose:
-      - 80                    # Gunicorn이 8000에서 뜨더라도, 컨테이너 내부 80으로 매핑 필요
+      - 8000                    # Gunicorn이 8000에서 뜨더라도, 컨테이너 내부 80으로 매핑 필요
     environment:
       DJANGO_DB_ENGINE: django.db.backends.postgresql
       DJANGO_DB_DATABASE: wger
@@ -176,7 +176,7 @@ x-casaos:
     - amd64
     - arm64
   main: web
-  webui_port: 80
+  webui_port: 8000
   author: CasaOS Team
   category: Productivity
   description:
