@@ -39,8 +39,11 @@ x-casaos:
     - arm64
   main: mealie
   pre-install-cmd: |
-    mkdir -p /DATA/AppData/$AppID/data &&
-    chown -R $PUID:$PGID /DATA/AppData/$AppID
+    docker run --rm -v /DATA/AppData/$AppID:/data alpine:latest sh -c '
+    mkdir -p /data/data &&
+    chown -R 1000:1000 /data &&
+    chmod -R 755 /data/data
+    '
   author: CasaOS Team
   category: Utilities
   description:
