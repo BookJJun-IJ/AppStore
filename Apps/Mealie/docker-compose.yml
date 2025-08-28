@@ -11,27 +11,23 @@ services:
           memory: 1G
           cpus: '1.0'
     expose:
-      - 80
+      - 9000                    # Mealie v3의 기본 포트 사용
     environment:
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
       # Security settings / 보안 설정
       ALLOW_SIGNUP: "false"
-      # Mealie v3 default account (first installation) / Mealie v3 기본 계정 (첫 설치 시)
-      # changeme@example.com / MyPassword
       # NSL Router settings / NSL Router 설정
       BASE_URL: https://$domain
       # Performance settings / 성능 설정
       MAX_WORKERS: 1
       WEB_CONCURRENCY: 1
-      # Port settings / 포트 설정
-      API_PORT: 80
     volumes:
       - /DATA/AppData/$AppID/data:/app/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/api/app/about"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9000/api/app/about"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -207,12 +203,12 @@ x-casaos:
       • Planificar comidas familiares y crear automáticamente listas de compras
       • Mantener tus datos culinarios privados — nunca salen de tu servidor
   developer: Mealie Recipes Team    
-  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Mealie/icon.png
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mealie/icon.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Mealie/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Mealie/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Mealie/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Mealie/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mealie/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mealie/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mealie/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mealie/thumbnail.png
   tagline:
     en_us: Your family recipes, organized and accessible forever
     fr_fr: Vos recettes familiales, organisées et accessibles pour toujours
@@ -298,5 +294,5 @@ x-casaos:
         4. Configuración admin → Deshabilitar "Allow Signup"
         
         **Importación funciona con:** AllRecipes, Food Network, ¡y 1000+ sitios de recetas!
-  webui_port: 80
+  webui_port: 9000                 # healthcheck와 일치하도록 9000번 포트로 변경
   index: /
