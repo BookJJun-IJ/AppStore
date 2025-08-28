@@ -20,7 +20,7 @@ services:
       timeout: 30s
       start_period: 10s
       start_interval: 1s
-      retries: 30
+      retries: 3
     
     volumes:
       - /DATA/AppData/$AppID/mongodb:/data/db
