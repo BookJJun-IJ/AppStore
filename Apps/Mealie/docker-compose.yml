@@ -11,7 +11,7 @@ services:
           memory: 1G
           cpus: '1.0'
     expose:
-      - 9000                    # Mealie v3의 기본 포트 사용
+      - 9000                    # Use default ports for Mealie v3 / Mealie v3의 기본 포트 사용
     environment:
       PUID: $PUID
       PGID: $PGID
@@ -209,12 +209,12 @@ x-casaos:
       • Planificar comidas familiares y crear automáticamente listas de compras
       • Mantener tus datos culinarios privados — nunca salen de tu servidor
   developer: Mealie Recipes Team    
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mealie/icon.png
+  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Mealie/icon.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mealie/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mealie/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mealie/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mealie/thumbnail.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Mealie/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Mealie/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Mealie/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Mealie/screenshot-1.png
   tagline:
     en_us: Your family recipes, organized and accessible forever
     fr_fr: Vos recettes familiales, organisées et accessibles pour toujours
