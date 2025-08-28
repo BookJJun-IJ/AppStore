@@ -3,24 +3,43 @@ name: rocketchat
 services:
   mongodb:
     image: mongo:7.0
-    user: $PUID:$PGID
+    # MongoDB 7.0은 기본적으로 mongodb 사용자(999:999)로 실행됨
+    # CasaOS의 PUID/PGID와의 호환성을 위해 user 제거
     deploy:
       resources:
         limits:
           memory: 1G
           cpus: "0.5"
     environment:
-      PUID: $PUID                                    # Process user ID / 프로세스 사용자 ID
-      PGID: $PGID                                    # Process group ID / 프로세스 그룹 ID
+      # MongoDB는 자체 사용자 관리를 하므로 PUID/PGID 제거
+      # MONGO_INITDB_ROOT_USERNAME: admin
+      # MONGO_INITDB_ROOT_PASSWORD: $default_pwd
     command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27017"]
     
+    # 개선된 healthcheck - host.docker.internal 대신 컨테이너명 사용
     healthcheck:
-      test: echo "try { rs.status() } catch (err) { rs.initiate({_id:'rs0',members:[{_id:0,host:'mongodb:27017'}]}) }" | mongosh --port 27017 --quiet
-      interval: 5s
+      test: |
+        mongosh --port 27017 --quiet --eval "
+          try { 
+            rs.status() 
+          } catch (err) { 
+            if (err.code === 94) {
+              print('Initializing replica set...');
+              rs.initiate({
+                _id: 'rs0',
+                members: [{
+                  _id: 0,
+                  host: 'mongodb:27017'
+                }]
+              });
+            } else {
+              throw err;
+            }
+          }"
+      interval: 10s
       timeout: 30s
-      start_period: 10s
-      start_interval: 1s
-      retries: 30
+      start_period: 40s
+      retries: 3
     
     volumes:
       - /DATA/AppData/$AppID/mongodb:/data/db
@@ -36,63 +55,46 @@ services:
           memory: 2G
           cpus: "1.0"
     environment:
-      # MongoDB connection settings
+      # MongoDB 연결 설정 (인증 제거로 단순화)
       MONGO_URL: mongodb://mongodb:27017/rocketchat?replicaSet=rs0
       MONGO_OPLOG_URL: mongodb://mongodb:27017/local?replicaSet=rs0
-      MONGO_WATCHDB_ENABLED: "true"
       
-      # Server connection settings
-      ROOT_URL: http://localhost:80                                      # 기본 localhost URL
+      # 서버 연결 설정
+      ROOT_URL: https://$domain
       PORT: 80
       BIND_IP: "0.0.0.0"
       
-      # Admin account settings
+      # 관리자 계정 설정
       ADMIN_USERNAME: admin
       ADMIN_PASS: $default_pwd
-      ADMIN_EMAIL: admin@localhost
+      ADMIN_EMAIL: admin@$domain
       
-      # System settings
+      # 시스템 설정
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
-      LOG_LEVEL: "info"
       
-      # Microservices settings (disabled for simplicity)
+      # 성능 최적화
       MOLECULER_DISABLED: "true"
       DISABLE_MICROSERVICES: "true"
-      MICRO_SERVICES_ENABLED: "false"
       
-      # Privacy and telemetry settings
-      ROCKETCHAT_STATISTICS_OPT_OUT: "true"
-      ROCKETCHAT_UPDATE_CHECK_ENABLED: "false"
-      ROCKETCHAT_FEDERATION_ENABLED: "false"
-      
-      # Apps marketplace settings - Jitsi 설치를 위해 필수
+      # 앱 마켓플레이스 활성화
       ROCKETCHAT_APPS_ENGINE_ENABLED: "true"
       OVERWRITE_SETTING_APPS_ENGINE_ENABLED: "true"
       OVERWRITE_SETTING_MARKETPLACE_ENABLED: "true"
       
-      # Cloud workspace settings
+      # 프라이버시 설정
+      ROCKETCHAT_STATISTICS_OPT_OUT: "true"
+      ROCKETCHAT_UPDATE_CHECK_ENABLED: "false"
       ROCKETCHAT_CLOUD_WORKSPACE_REGISTRATION_REQUIRED: "false"
-      OVERWRITE_SETTING_CLOUD_WORKSPACE_REGISTRATION_REQUIRED: "false"
       
-      # Real-time communication settings
-      OVERWRITE_SETTING_WEBSOCKET_ENABLED: "true"
-      OVERWRITE_SETTING_REALTIME_ENABLED: "true"
-      DDP_DEFAULT_CONNECTION_REUSE_ENABLED: "true"
-      
-      # Performance optimization
-      METEOR_DISABLE_OPTIMISTIC_CACHING: "1"
-      
-      # Feature toggles (disabled for simplicity)
-      OVERWRITE_SETTING_LIVECHAT_ENABLED: "false"
-      OVERWRITE_SETTING_OMNICHANNEL_ENABLED: "false"
-      OVERWRITE_SETTING_WEBRTC_ENABLED: "false"                          # Disable WebRTC for video calls
-      
-      # Security settings
+      # 보안 설정
       OVERWRITE_SETTING_ACCOUNTS_ALLOW_ANONYMOUS_READ: "false"
       OVERWRITE_SETTING_ACCOUNTS_ALLOW_ANONYMOUS_WRITE: "false"
-      OVERWRITE_SETTING_API_ENABLE_CORS: "false"
+      
+      # WebRTC 및 Jitsi 설정
+      OVERWRITE_SETTING_WEBRTC_ENABLED: "true"
+      OVERWRITE_SETTING_JITSI_ENABLED: "true"
     
     expose:
       - 80
@@ -104,108 +106,113 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+# Pre-install 명령어로 권한 설정
 x-casaos:
+  pre-install-cmd: |
+    mkdir -p /DATA/AppData/$AppID/mongodb /DATA/AppData/$AppID/mongodb-config /DATA/AppData/$AppID/uploads /DATA/AppData/$AppID/data &&
+    chown -R 999:999 /DATA/AppData/$AppID/mongodb /DATA/AppData/$AppID/mongodb-config &&
+    chown -R $PUID:$PGID /DATA/AppData/$AppID/uploads /DATA/AppData/$AppID/data
   architectures:
     - amd64
     - arm64
   main: rocketchat
   author: Yundera Team
   category: Communication
-  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/RocketChat/icon.png
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/RocketChat/icon.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/RocketChat/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/RocketChat/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/RocketChat/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/RocketChat/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/RocketChat/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/RocketChat/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/RocketChat/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/RocketChat/thumbnail.png
   description:
-    en_us: Rocket.Chat 7.8.3 with marketplace enabled for team collaboration. Uses latest MongoDB 7.0 with verified replica set configuration.
-    ko_kr: 마켓플레이스가 활성화된 팀 협업용 Rocket.Chat 7.8.3. 최신 MongoDB 7.0과 검증된 replica set 구성 사용.
+    en_us: Rocket.Chat 7.8.3 with enhanced stability, MongoDB 7.0 replica set, and marketplace enabled for team collaboration. Optimized for CasaOS with proper permission handling.
+    ko_kr: 향상된 안정성, MongoDB 7.0 replica set, 팀 협업용 마켓플레이스가 활성화된 Rocket.Chat 7.8.3. CasaOS에 최적화되고 적절한 권한 처리가 적용됨.
   developer: Rocket.Chat Technologies Corp.
   tagline:
-    en_us: Latest team communication with marketplace & MongoDB 7.0
-    ko_kr: 마켓플레이스와 MongoDB 7.0을 지원하는 최신 팀 커뮤니케이션
+    en_us: Enhanced team communication with MongoDB 7.0 and stable replica set
+    ko_kr: MongoDB 7.0과 안정적인 replica set을 갖춘 향상된 팀 커뮤니케이션
   title:
     en_us: Rocket.Chat
     ko_kr: Rocket.Chat
   tips:
     before_install:
       en_us: |
-        **Rocket.Chat 7.8.3 with Apps Marketplace Enabled**
+        **Rocket.Chat 7.8.3 - Enhanced Stability Edition**
         
         **Default Account**
         | Username    | Password       |
         | ----------- | -------------- |
         | `admin`     | `$default_pwd` |
         
-        **Latest Features (7.8.3):**
-        - ✅ Apps Marketplace (install integrations)
-        - ✅ MongoDB 7.0 support (latest database)
-        - ✅ Node.js 20.x and Meteor 3.0 performance boost
-        - ✅ Enhanced security and stability
-        - ✅ Real-time messaging with replica set
-        - ✅ VoIP for Team Collaboration (beta)
+        **Key Improvements:**
+        - ✅ Enhanced MongoDB replica set initialization
+        - ✅ Proper permission handling for CasaOS
+        - ✅ Stable container networking
+        - ✅ Apps Marketplace ready
+        - ✅ Optimized for NSL Router ($domain)
         
-        **Privacy Settings:**
-        - ❌ Statistics reporting disabled
-        - ❌ Automatic updates disabled  
-        - ❌ Federation disabled
-        - ✅ Your data stays on your server
+        **Features:**
+        - 📱 Real-time messaging and file sharing
+        - 🎥 Jitsi video conferencing integration
+        - 🔗 Apps marketplace (GitHub, Jira, Google Drive)
+        - 🔒 Privacy-focused (no external telemetry)
+        - ⚡ MongoDB 7.0 performance boost
         
         **Setup Process:**
-        1. Initial setup wizard will appear
-        2. Complete email verification for marketplace access
-        3. Apps marketplace will be available in admin panel
-        4. Install apps like GitHub, Jira, Google Drive integrations
+        1. Installation completes automatically with proper permissions
+        2. Access via your NSL domain: https://$domain
+        3. Login with admin/$default_pwd
+        4. Complete setup wizard and verify email
+        5. Install marketplace apps from Administration panel
         
-        **Jitsi Video Conferencing Setup:**
+        **Jitsi Video Setup:**
         1. Go to **Administration → Apps → Marketplace**
-        2. Search for "Jitsi" and click **Install**
-        3. Use `/jitsi` command in any chat to start video calls
-        4. Custom room: `/jitsi @MeetingRoom`
-        5. Share the generated link with participants
+        2. Search and install "Jitsi Meet"
+        3. Use `/jitsi MeetingName` in any channel
+        4. Share generated link with participants
         
-        **MongoDB 7.0 Benefits:**
-        - Better performance and scalability
-        - Enhanced security features
-        - Future-proof database version
+        **Troubleshooting:**
+        - If MongoDB fails to start, wait 2-3 minutes for replica set initialization
+        - Check container logs if marketplace is not available after 5 minutes
+        - Restart the app if connection issues persist
       ko_kr: |
-        **앱 마켓플레이스가 활성화된 Rocket.Chat 7.8.3**
+        **Rocket.Chat 7.8.3 - 향상된 안정성 에디션**
         
         **기본 계정**
         | 사용자명     | 비밀번호        |
         | ----------- | -------------- |
         | `admin`     | `$default_pwd` |
         
-        **최신 기능 (7.8.3):**
-        - ✅ 앱 마켓플레이스 (통합 앱 설치)
-        - ✅ MongoDB 7.0 지원 (최신 데이터베이스)
-        - ✅ Node.js 20.x 및 Meteor 3.0 성능 향상
-        - ✅ 강화된 보안성과 안정성
-        - ✅ Replica set 실시간 메시징
-        - ✅ 팀 협업용 VoIP (베타)
+        **주요 개선사항:**
+        - ✅ 향상된 MongoDB replica set 초기화
+        - ✅ CasaOS용 적절한 권한 처리
+        - ✅ 안정적인 컨테이너 네트워킹
+        - ✅ 앱 마켓플레이스 준비 완료
+        - ✅ NSL 라우터 최적화 ($domain)
         
-        **프라이버시 설정:**
-        - ❌ 통계 리포팅 비활성화
-        - ❌ 자동 업데이트 비활성화
-        - ❌ 연합 기능 비활성화
-        - ✅ 데이터는 사용자 서버에만 보관
+        **기능:**
+        - 📱 실시간 메시징 및 파일 공유
+        - 🎥 Jitsi 화상회의 통합
+        - 🔗 앱 마켓플레이스 (GitHub, Jira, Google Drive)
+        - 🔒 프라이버시 중심 (외부 원격측정 없음)
+        - ⚡ MongoDB 7.0 성능 향상
         
         **설정 과정:**
-        1. 초기 설정 마법사가 나타남
-        2. 마켓플레이스 접근을 위한 이메일 인증 완료
-        3. 관리자 패널에서 앱 마켓플레이스 사용 가능
-        4. GitHub, Jira, Google Drive 통합 등 앱 설치 가능
+        1. 적절한 권한으로 자동 설치 완료
+        2. NSL 도메인으로 접속: https://$domain
+        3. admin/$default_pwd로 로그인
+        4. 설정 마법사 완료 및 이메일 인증
+        5. 관리 패널에서 마켓플레이스 앱 설치
         
         **Jitsi 화상회의 설정:**
         1. **관리 → 앱 → 마켓플레이스**로 이동
-        2. "Jitsi" 검색 후 **설치** 클릭
-        3. 채팅에서 `/jitsi` 명령어로 화상통화 시작
-        4. 커스텀 룸: `/jitsi @회의실`
-        5. 생성된 링크를 참가자들과 공유
+        2. "Jitsi Meet" 검색 및 설치
+        3. 채널에서 `/jitsi 회의명` 사용
+        4. 생성된 링크를 참가자와 공유
         
-        **MongoDB 7.0 장점:**
-        - 향상된 성능과 확장성
-        - 강화된 보안 기능
-        - 미래 지향적 데이터베이스 버전
+        **문제 해결:**
+        - MongoDB 시작 실패 시 replica set 초기화를 위해 2-3분 대기
+        - 5분 후에도 마켓플레이스가 없으면 컨테이너 로그 확인
+        - 연결 문제가 지속되면 앱 재시작
   index: /
   webui_port: 80
