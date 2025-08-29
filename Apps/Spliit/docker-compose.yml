@@ -20,6 +20,7 @@ services:
 
   spliit:
     image: crazymax/spliit:1.14.1
+    user: $PUID:$PGID
     depends_on:
       - db
     deploy:
@@ -55,6 +56,9 @@ x-casaos:
     - amd64
     - arm64
   main: spliit
+  pre-install-cmd: |
+    mkdir -p /DATA/AppData/$AppID/postgres &&
+    chown -R 999:999 /DATA/AppData/$AppID/postgres
   author: CasaOS Team
   category: Finance
   description:
@@ -70,8 +74,8 @@ x-casaos:
       - 💳 Optimized reimbursement calculations
       - 🔒 No account required, privacy-focused
       - 📷 Attach receipt images to expenses (optional)
-      - 🔄 Recurring expenses support
-      - 🌐 Multi-language support
+      - 📄 Recurring expenses support
+      - 🌍 Multi-language support
       - 📱 Mobile-friendly responsive design
       
       Perfect for roommates, travel groups, families, and anyone who needs to split bills fairly and transparently.
@@ -87,8 +91,8 @@ x-casaos:
       - 💳 최적화된 상환 계산
       - 🔒 계정 불필요, 개인정보 보호 중심
       - 📷 비용에 영수증 이미지 첨부 (선택사항)
-      - 🔄 반복 비용 지원
-      - 🌐 다국어 지원
+      - 📄 반복 비용 지원
+      - 🌍 다국어 지원
       - 📱 모바일 친화적 반응형 디자인
       
       룸메이트, 여행 그룹, 가족, 그리고 공정하고 투명하게 청구서를 분할해야 하는 모든 사람에게 완벽합니다.
@@ -104,8 +108,8 @@ x-casaos:
       - 💳 Calculs de remboursement optimisés
       - 🔒 Aucun compte requis, axé sur la confidentialité
       - 📷 Joindre des images de reçus aux dépenses (optionnel)
-      - 🔄 Support des dépenses récurrentes
-      - 🌐 Support multilingue
+      - 📄 Support des dépenses récurrentes
+      - 🌍 Support multilingue
       - 📱 Design réactif adapté aux mobiles
       
       Parfait pour les colocataires, groupes de voyage, familles, et tous ceux qui ont besoin de diviser les factures équitablement et en toute transparence.
@@ -121,8 +125,8 @@ x-casaos:
       - 💳 Cálculos de reembolso optimizados
       - 🔒 No requiere cuenta, enfocado en la privacidad
       - 📷 Adjuntar imágenes de recibos a gastos (opcional)
-      - 🔄 Soporte para gastos recurrentes
-      - 🌐 Soporte multiidioma
+      - 📄 Soporte para gastos recurrentes
+      - 🌍 Soporte multiidioma
       - 📱 Diseño responsivo adaptado para móviles
       
       Perfecto para compañeros de cuarto, grupos de viaje, familias, y cualquiera que necesite dividir facturas de manera justa y transparente.
@@ -138,8 +142,8 @@ x-casaos:
       - 💳 优化的报销计算
       - 🔒 无需账户，注重隐私
       - 📷 为费用附加收据图片（可选）
-      - 🔄 定期费用支持
-      - 🌐 多语言支持
+      - 📄 定期费用支持
+      - 🌍 多语言支持
       - 📱 移动友好的响应式设计
       
       非常适合室友、旅行团体、家庭，以及任何需要公平透明地分摊账单的人。
@@ -207,6 +211,3 @@ x-casaos:
         룸메이트, 여행 그룹, 가족, 그리고 공정하게 비용을 분할하려는 모든 사람에게 완벽합니다!
   index: /
   webui_port: 3000
-  pre-install-cmd: |
-    mkdir -p /DATA/AppData/$AppID/postgres &&
-    chown -R 999:999 /DATA/AppData/$AppID/postgres
