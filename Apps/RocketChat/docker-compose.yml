@@ -3,7 +3,8 @@ name: rocketchat
 services:
   mongodb:
     image: mongo:7.0
-    user: $PUID:$PGID
+    # MongoDB 컨테이너는 기본 사용자로 실행 (UID 999 충돌 방지)
+    # user 필드 제거하여 MongoDB 내부 사용자 사용
     deploy:
       resources:
         limits:
@@ -15,7 +16,29 @@ services:
     command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27017"]
     
     healthcheck:
-      test: echo "try { rs.status() } catch (err) { rs.initiate({_id:'rs0',members:[{_id:0,host:'mongodb:27017'}]}) }" | mongosh --port 27017 --quiet
+      test: |
+        mongosh --port 27017 --quiet --eval "
+        try { 
+          var status = rs.status(); 
+          if (status.ok === 1) { 
+            print('replica set already initialized'); 
+            quit(0); 
+          } 
+        } catch (err) { 
+          if (err.message.includes('no replset config')) { 
+            var result = rs.initiate({_id:'rs0',members:[{_id:0,host:'mongodb:27017'}]}); 
+            if (result.ok === 1) { 
+              print('replica set initialized successfully'); 
+              quit(0); 
+            } else { 
+              print('failed to initialize replica set: ' + result.errmsg); 
+              quit(1); 
+            } 
+          } else { 
+            print('unexpected error: ' + err.message); 
+            quit(1); 
+          } 
+        }"
       interval: 5s
       timeout: 30s
       start_period: 10s
@@ -23,8 +46,8 @@ services:
       retries: 30
     
     volumes:
-      - /DATA/AppData/$AppID/mongodb:/data/db
-      - /DATA/AppData/$AppID/mongodb-config:/data/configdb
+      # /data로 마운트하여 권한 문제 해결
+      - /DATA/AppData/$AppID/mongodb:/data
     restart: unless-stopped
 
   rocketchat:
@@ -111,31 +134,41 @@ x-casaos:
   main: rocketchat
   author: Yundera Team
   category: Communication
-  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/RocketChat/icon.png
+  pre-install-cmd: |
+    mkdir -p /DATA/AppData/$AppID/uploads /DATA/AppData/$AppID/data /DATA/AppData/$AppID/mongodb &&
+    chown -R $PUID:$PGID /DATA/AppData/$AppID/uploads /DATA/AppData/$AppID/data
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/RocketChat/icon.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/RocketChat/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/RocketChat/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/RocketChat/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/RocketChat/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/RocketChat/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/RocketChat/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/RocketChat/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/RocketChat/screenshot-1.png
   description:
-    en_us: Rocket.Chat 7.8.3 with marketplace enabled for team collaboration. Uses latest MongoDB 7.0 with verified replica set configuration.
-    ko_kr: 마켓플레이스가 활성화된 팀 협업용 Rocket.Chat 7.8.3. 최신 MongoDB 7.0과 검증된 replica set 구성 사용.
+    en_us: Rocket.Chat 7.8.3 with enhanced security and stable MongoDB 7.0 replica set. Optimized for secure environments with proper permission handling.
+    ko_kr: 강화된 보안과 안정적인 MongoDB 7.0 replica set을 가진 Rocket.Chat 7.8.3. 적절한 권한 처리로 보안 환경에 최적화됨.
   developer: Rocket.Chat Technologies Corp.
   tagline:
-    en_us: Latest team communication with marketplace & MongoDB 7.0
-    ko_kr: 마켓플레이스와 MongoDB 7.0을 지원하는 최신 팀 커뮤니케이션
+    en_us: Secure team communication with enhanced MongoDB permissions
+    ko_kr: 향상된 MongoDB 권한을 가진 안전한 팀 커뮤니케이션
   title:
     en_us: Rocket.Chat
     ko_kr: Rocket.Chat
   tips:
     before_install:
       en_us: |
-        **Rocket.Chat 7.8.3 with Apps Marketplace Enabled**
+        **Rocket.Chat 7.8.3 - Security Enhanced Version**
         
         **Default Account**
         | Username    | Password       |
         | ----------- | -------------- |
         | `admin`     | `$default_pwd` |
+        
+        **Security Improvements:**
+        - ✅ Resolved MongoDB UID conflicts (no more UID 999 issues)
+        - ✅ Enhanced replica set initialization with error handling
+        - ✅ Proper volume permissions for secure environments
+        - ✅ Pre-installation directory setup with correct ownership
+        - ✅ Robust healthcheck for replica set stability
         
         **Latest Features (7.8.3):**
         - ✅ Apps Marketplace (install integrations)
@@ -143,38 +176,43 @@ x-casaos:
         - ✅ Node.js 20.x and Meteor 3.0 performance boost
         - ✅ Enhanced security and stability
         - ✅ Real-time messaging with replica set
-        - ✅ VoIP for Team Collaboration (beta)
         
-        **Privacy Settings:**
-        - ❌ Statistics reporting disabled
-        - ❌ Automatic updates disabled  
-        - ❌ Federation disabled
-        - ✅ Your data stays on your server
+        **Fixed Issues:**
+        - 🔧 MongoDB permission errors in strict environments
+        - 🔧 Replica set initialization failures
+        - 🔧 Volume mounting permission conflicts
+        - 🔧 UID 999 conflicts with system users
         
         **Setup Process:**
-        1. Initial setup wizard will appear
-        2. Complete email verification for marketplace access
-        3. Apps marketplace will be available in admin panel
-        4. Install apps like GitHub, Jira, Google Drive integrations
+        1. Pre-install script creates directories with correct permissions
+        2. MongoDB starts without user conflicts
+        3. Replica set initializes automatically with better error handling
+        4. RocketChat connects successfully to MongoDB
+        5. Marketplace becomes available after setup
         
-        **Jitsi Video Conferencing Setup:**
+        **Jitsi Video Conferencing:**
         1. Go to **Administration → Apps → Marketplace**
-        2. Search for "Jitsi" and click **Install**
-        3. Use `/jitsi` command in any chat to start video calls
-        4. Custom room: `/jitsi @MeetingRoom`
-        5. Share the generated link with participants
+        2. Search for "Jitsi" and install
+        3. Use `/jitsi` command in chats
         
-        **MongoDB 7.0 Benefits:**
-        - Better performance and scalability
-        - Enhanced security features
-        - Future-proof database version
+        **Troubleshooting:**
+        - If MongoDB fails to start, check logs for permission errors
+        - Pre-install script handles most permission issues automatically
+        - Replica set healthcheck provides detailed error messages
       ko_kr: |
-        **앱 마켓플레이스가 활성화된 Rocket.Chat 7.8.3**
+        **Rocket.Chat 7.8.3 - 보안 강화 버전**
         
         **기본 계정**
         | 사용자명     | 비밀번호        |
         | ----------- | -------------- |
         | `admin`     | `$default_pwd` |
+        
+        **보안 개선사항:**
+        - ✅ MongoDB UID 충돌 해결 (UID 999 문제 해결)
+        - ✅ 오류 처리가 포함된 replica set 초기화 개선
+        - ✅ 보안 환경을 위한 적절한 볼륨 권한
+        - ✅ 올바른 소유권으로 사전 설치 디렉토리 설정
+        - ✅ Replica set 안정성을 위한 강화된 healthcheck
         
         **최신 기능 (7.8.3):**
         - ✅ 앱 마켓플레이스 (통합 앱 설치)
@@ -182,30 +220,28 @@ x-casaos:
         - ✅ Node.js 20.x 및 Meteor 3.0 성능 향상
         - ✅ 강화된 보안성과 안정성
         - ✅ Replica set 실시간 메시징
-        - ✅ 팀 협업용 VoIP (베타)
         
-        **프라이버시 설정:**
-        - ❌ 통계 리포팅 비활성화
-        - ❌ 자동 업데이트 비활성화
-        - ❌ 연합 기능 비활성화
-        - ✅ 데이터는 사용자 서버에만 보관
+        **해결된 문제들:**
+        - 🔧 엄격한 환경에서의 MongoDB 권한 오류
+        - 🔧 Replica set 초기화 실패
+        - 🔧 볼륨 마운트 권한 충돌
+        - 🔧 시스템 사용자와의 UID 999 충돌
         
         **설정 과정:**
-        1. 초기 설정 마법사가 나타남
-        2. 마켓플레이스 접근을 위한 이메일 인증 완료
-        3. 관리자 패널에서 앱 마켓플레이스 사용 가능
-        4. GitHub, Jira, Google Drive 통합 등 앱 설치 가능
+        1. 사전 설치 스크립트가 올바른 권한으로 디렉토리 생성
+        2. MongoDB가 사용자 충돌 없이 시작
+        3. 향상된 오류 처리로 replica set 자동 초기화
+        4. RocketChat이 MongoDB에 성공적으로 연결
+        5. 설정 후 마켓플레이스 사용 가능
         
-        **Jitsi 화상회의 설정:**
+        **Jitsi 화상회의:**
         1. **관리 → 앱 → 마켓플레이스**로 이동
-        2. "Jitsi" 검색 후 **설치** 클릭
-        3. 채팅에서 `/jitsi` 명령어로 화상통화 시작
-        4. 커스텀 룸: `/jitsi @회의실`
-        5. 생성된 링크를 참가자들과 공유
+        2. "Jitsi" 검색 후 설치
+        3. 채팅에서 `/jitsi` 명령어 사용
         
-        **MongoDB 7.0 장점:**
-        - 향상된 성능과 확장성
-        - 강화된 보안 기능
-        - 미래 지향적 데이터베이스 버전
+        **문제해결:**
+        - MongoDB 시작 실패 시 권한 오류 로그 확인
+        - 사전 설치 스크립트가 대부분의 권한 문제 자동 처리
+        - Replica set healthcheck가 상세한 오류 메시지 제공
   index: /
   webui_port: 80
