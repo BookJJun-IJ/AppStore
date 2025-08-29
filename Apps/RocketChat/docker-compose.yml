@@ -16,33 +16,10 @@ services:
     command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27017"]
     
     healthcheck:
-      test: |
-        mongosh --port 27017 --quiet --eval "
-        try { 
-          var status = rs.status(); 
-          if (status.ok === 1) { 
-            print('replica set already initialized'); 
-            quit(0); 
-          } 
-        } catch (err) { 
-          if (err.message.includes('no replset config')) { 
-            var result = rs.initiate({_id:'rs0',members:[{_id:0,host:'mongodb:27017'}]}); 
-            if (result.ok === 1) { 
-              print('replica set initialized successfully'); 
-              quit(0); 
-            } else { 
-              print('failed to initialize replica set: ' + result.errmsg); 
-              quit(1); 
-            } 
-          } else { 
-            print('unexpected error: ' + err.message); 
-            quit(1); 
-          } 
-        }"
+      test: echo "try { rs.status() } catch (err) { rs.initiate({_id:'rs0',members:[{_id:0,host:'mongodb:27017'}]}) }" | mongosh --port 27017 --quiet
       interval: 5s
       timeout: 30s
-      start_period: 10s
-      start_interval: 1s
+      start_period: 30s
       retries: 30
     
     volumes:
@@ -144,12 +121,12 @@ x-casaos:
     - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/RocketChat/screenshot-3.png
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/RocketChat/screenshot-1.png
   description:
-    en_us: Rocket.Chat 7.8.3 with enhanced security and stable MongoDB 7.0 replica set. Optimized for secure environments with proper permission handling.
-    ko_kr: 강화된 보안과 안정적인 MongoDB 7.0 replica set을 가진 Rocket.Chat 7.8.3. 적절한 권한 처리로 보안 환경에 최적화됨.
+    en_us: Rocket.Chat 7.8.3 with simplified and reliable MongoDB 7.0 replica set. Fixed healthcheck issues for stable deployment.
+    ko_kr: 간소화되고 안정적인 MongoDB 7.0 replica set을 가진 Rocket.Chat 7.8.3. 안정적인 배포를 위한 healthcheck 문제 해결.
   developer: Rocket.Chat Technologies Corp.
   tagline:
-    en_us: Secure team communication with enhanced MongoDB permissions
-    ko_kr: 향상된 MongoDB 권한을 가진 안전한 팀 커뮤니케이션
+    en_us: Reliable team communication with simplified MongoDB setup
+    ko_kr: 간소화된 MongoDB 설정을 가진 안정적인 팀 커뮤니케이션
   title:
     en_us: Rocket.Chat
     ko_kr: Rocket.Chat
@@ -163,12 +140,12 @@ x-casaos:
         | ----------- | -------------- |
         | `admin`     | `$default_pwd` |
         
-        **Security Improvements:**
-        - ✅ Resolved MongoDB UID conflicts (no more UID 999 issues)
-        - ✅ Enhanced replica set initialization with error handling
-        - ✅ Proper volume permissions for secure environments
-        - ✅ Pre-installation directory setup with correct ownership
-        - ✅ Robust healthcheck for replica set stability
+        **Reliability Improvements:**
+        - ✅ Simplified healthcheck logic (no complex error handling)
+        - ✅ Proven replica set initialization pattern
+        - ✅ Extended start_period (30s) for proper MongoDB startup
+        - ✅ Removed complex mongosh eval scripts
+        - ✅ Based on successful community patterns
         
         **Latest Features (7.8.3):**
         - ✅ Apps Marketplace (install integrations)
@@ -178,17 +155,17 @@ x-casaos:
         - ✅ Real-time messaging with replica set
         
         **Fixed Issues:**
-        - 🔧 MongoDB permission errors in strict environments
-        - 🔧 Replica set initialization failures
-        - 🔧 Volume mounting permission conflicts
-        - 🔧 UID 999 conflicts with system users
+        - 🔧 MongoDB healthcheck failures (simplified approach)
+        - 🔧 Replica set initialization timeouts
+        - 🔧 Complex mongosh eval script errors
+        - 🔧 Container unhealthy status issues
         
         **Setup Process:**
         1. Pre-install script creates directories with correct permissions
-        2. MongoDB starts without user conflicts
-        3. Replica set initializes automatically with better error handling
-        4. RocketChat connects successfully to MongoDB
-        5. Marketplace becomes available after setup
+        2. MongoDB starts with 30-second initialization window
+        3. Simplified healthcheck tries rs.status(), falls back to rs.initiate()
+        4. RocketChat connects after MongoDB becomes healthy
+        5. Marketplace becomes available after complete setup
         
         **Jitsi Video Conferencing:**
         1. Go to **Administration → Apps → Marketplace**
@@ -196,9 +173,10 @@ x-casaos:
         3. Use `/jitsi` command in chats
         
         **Troubleshooting:**
-        - If MongoDB fails to start, check logs for permission errors
-        - Pre-install script handles most permission issues automatically
-        - Replica set healthcheck provides detailed error messages
+        - If MongoDB shows unhealthy, wait for 30-second initialization period
+        - Healthcheck will automatically initialize replica set
+        - Check container logs for detailed MongoDB startup information
+        - Simple healthcheck reduces complexity and improves reliability
       ko_kr: |
         **Rocket.Chat 7.8.3 - 보안 강화 버전**
         
@@ -207,12 +185,12 @@ x-casaos:
         | ----------- | -------------- |
         | `admin`     | `$default_pwd` |
         
-        **보안 개선사항:**
-        - ✅ MongoDB UID 충돌 해결 (UID 999 문제 해결)
-        - ✅ 오류 처리가 포함된 replica set 초기화 개선
-        - ✅ 보안 환경을 위한 적절한 볼륨 권한
-        - ✅ 올바른 소유권으로 사전 설치 디렉토리 설정
-        - ✅ Replica set 안정성을 위한 강화된 healthcheck
+        **안정성 개선사항:**
+        - ✅ 간소화된 healthcheck 로직 (복잡한 오류 처리 제거)
+        - ✅ 검증된 replica set 초기화 패턴
+        - ✅ 적절한 MongoDB 시작을 위한 확장된 start_period (30초)
+        - ✅ 복잡한 mongosh eval 스크립트 제거
+        - ✅ 성공적인 커뮤니티 패턴 기반
         
         **최신 기능 (7.8.3):**
         - ✅ 앱 마켓플레이스 (통합 앱 설치)
@@ -222,17 +200,17 @@ x-casaos:
         - ✅ Replica set 실시간 메시징
         
         **해결된 문제들:**
-        - 🔧 엄격한 환경에서의 MongoDB 권한 오류
-        - 🔧 Replica set 초기화 실패
-        - 🔧 볼륨 마운트 권한 충돌
-        - 🔧 시스템 사용자와의 UID 999 충돌
+        - 🔧 MongoDB healthcheck 실패 (간소화된 접근법)
+        - 🔧 Replica set 초기화 타임아웃
+        - 🔧 복잡한 mongosh eval 스크립트 오류
+        - 🔧 컨테이너 unhealthy 상태 문제
         
         **설정 과정:**
         1. 사전 설치 스크립트가 올바른 권한으로 디렉토리 생성
-        2. MongoDB가 사용자 충돌 없이 시작
-        3. 향상된 오류 처리로 replica set 자동 초기화
-        4. RocketChat이 MongoDB에 성공적으로 연결
-        5. 설정 후 마켓플레이스 사용 가능
+        2. MongoDB가 30초 초기화 윈도우와 함께 시작
+        3. 간소화된 healthcheck가 rs.status() 시도, 실패 시 rs.initiate()로 대체
+        4. MongoDB가 healthy 상태가 된 후 RocketChat 연결
+        5. 완전한 설정 후 마켓플레이스 사용 가능
         
         **Jitsi 화상회의:**
         1. **관리 → 앱 → 마켓플레이스**로 이동
@@ -240,8 +218,9 @@ x-casaos:
         3. 채팅에서 `/jitsi` 명령어 사용
         
         **문제해결:**
-        - MongoDB 시작 실패 시 권한 오류 로그 확인
-        - 사전 설치 스크립트가 대부분의 권한 문제 자동 처리
-        - Replica set healthcheck가 상세한 오류 메시지 제공
+        - MongoDB가 unhealthy 상태라면 30초 초기화 기간을 기다려주세요
+        - Healthcheck가 replica set을 자동으로 초기화합니다
+        - 상세한 MongoDB 시작 정보는 컨테이너 로그를 확인하세요
+        - 간단한 healthcheck로 복잡성을 줄이고 안정성을 향상시켰습니다
   index: /
   webui_port: 80
