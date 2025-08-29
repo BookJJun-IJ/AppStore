@@ -12,8 +12,14 @@ services:
       POSTGRES_USER: spliit
       POSTGRES_PASSWORD: $default_pwd
       POSTGRES_INITDB_ARGS: "--encoding=UTF8"
+      PGUSER: postgres
     volumes:
       - /DATA/AppData/$AppID/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U spliit -d spliit"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     restart: unless-stopped
     networks:
       - spliit_network
@@ -22,7 +28,8 @@ services:
     image: crazymax/spliit:1.14.1
     user: $PUID:$PGID
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     deploy:
       resources:
         limits:
@@ -57,8 +64,10 @@ x-casaos:
     - arm64
   main: spliit
   pre-install-cmd: |
+    rm -rf /DATA/AppData/$AppID/postgres &&
     mkdir -p /DATA/AppData/$AppID/postgres &&
-    chown -R 999:999 /DATA/AppData/$AppID/postgres
+    chown -R 999:999 /DATA/AppData/$AppID/postgres &&
+    chmod -R 755 /DATA/AppData/$AppID/postgres
   author: CasaOS Team
   category: Finance
   description:
