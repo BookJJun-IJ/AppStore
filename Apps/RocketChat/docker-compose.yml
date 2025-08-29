@@ -3,8 +3,6 @@ name: rocketchat
 services:
   mongodb:
     image: mongo:7.0
-    # MongoDB 컨테이너는 기본 사용자로 실행 (UID 999 충돌 방지)
-    # user 필드 제거하여 MongoDB 내부 사용자 사용
     deploy:
       resources:
         limits:
@@ -19,12 +17,13 @@ services:
       test: echo "try { rs.status() } catch (err) { rs.initiate({_id:'rs0',members:[{_id:0,host:'mongodb:27017'}]}) }" | mongosh --port 27017 --quiet
       interval: 5s
       timeout: 30s
-      start_period: 30s
+      start_period: 10s
+      start_interval: 1s
       retries: 30
     
     volumes:
-      # /data로 마운트하여 권한 문제 해결
-      - /DATA/AppData/$AppID/mongodb:/data
+      - /DATA/AppData/$AppID/mongodb:/data/db
+      - /DATA/AppData/$AppID/mongodb-config:/data/configdb
     restart: unless-stopped
 
   rocketchat:
@@ -111,41 +110,31 @@ x-casaos:
   main: rocketchat
   author: Yundera Team
   category: Communication
-  pre-install-cmd: |
-    mkdir -p /DATA/AppData/$AppID/uploads /DATA/AppData/$AppID/data /DATA/AppData/$AppID/mongodb &&
-    chown -R $PUID:$PGID /DATA/AppData/$AppID/uploads /DATA/AppData/$AppID/data
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/RocketChat/icon.png
+  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/RocketChat/icon.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/RocketChat/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/RocketChat/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/RocketChat/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/RocketChat/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/RocketChat/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/RocketChat/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/RocketChat/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/RocketChat/screenshot-1.png
   description:
-    en_us: Rocket.Chat 7.8.3 with simplified and reliable MongoDB 7.0 replica set. Fixed healthcheck issues for stable deployment.
-    ko_kr: 간소화되고 안정적인 MongoDB 7.0 replica set을 가진 Rocket.Chat 7.8.3. 안정적인 배포를 위한 healthcheck 문제 해결.
+    en_us: Rocket.Chat 7.8.3 with marketplace enabled for team collaboration. Uses latest MongoDB 7.0 with verified replica set configuration.
+    ko_kr: 마켓플레이스가 활성화된 팀 협업용 Rocket.Chat 7.8.3. 최신 MongoDB 7.0과 검증된 replica set 구성 사용.
   developer: Rocket.Chat Technologies Corp.
   tagline:
-    en_us: Reliable team communication with simplified MongoDB setup
-    ko_kr: 간소화된 MongoDB 설정을 가진 안정적인 팀 커뮤니케이션
+    en_us: Latest team communication with marketplace & MongoDB 7.0
+    ko_kr: 마켓플레이스와 MongoDB 7.0을 지원하는 최신 팀 커뮤니케이션
   title:
     en_us: Rocket.Chat
     ko_kr: Rocket.Chat
   tips:
     before_install:
       en_us: |
-        **Rocket.Chat 7.8.3 - Security Enhanced Version**
+        **Rocket.Chat 7.8.3 with Apps Marketplace Enabled**
         
         **Default Account**
         | Username    | Password       |
         | ----------- | -------------- |
         | `admin`     | `$default_pwd` |
-        
-        **Reliability Improvements:**
-        - ✅ Simplified healthcheck logic (no complex error handling)
-        - ✅ Proven replica set initialization pattern
-        - ✅ Extended start_period (30s) for proper MongoDB startup
-        - ✅ Removed complex mongosh eval scripts
-        - ✅ Based on successful community patterns
         
         **Latest Features (7.8.3):**
         - ✅ Apps Marketplace (install integrations)
@@ -153,44 +142,38 @@ x-casaos:
         - ✅ Node.js 20.x and Meteor 3.0 performance boost
         - ✅ Enhanced security and stability
         - ✅ Real-time messaging with replica set
+        - ✅ VoIP for Team Collaboration (beta)
         
-        **Fixed Issues:**
-        - 🔧 MongoDB healthcheck failures (simplified approach)
-        - 🔧 Replica set initialization timeouts
-        - 🔧 Complex mongosh eval script errors
-        - 🔧 Container unhealthy status issues
+        **Privacy Settings:**
+        - ❌ Statistics reporting disabled
+        - ❌ Automatic updates disabled  
+        - ❌ Federation disabled
+        - ✅ Your data stays on your server
         
         **Setup Process:**
-        1. Pre-install script creates directories with correct permissions
-        2. MongoDB starts with 30-second initialization window
-        3. Simplified healthcheck tries rs.status(), falls back to rs.initiate()
-        4. RocketChat connects after MongoDB becomes healthy
-        5. Marketplace becomes available after complete setup
+        1. Initial setup wizard will appear
+        2. Complete email verification for marketplace access
+        3. Apps marketplace will be available in admin panel
+        4. Install apps like GitHub, Jira, Google Drive integrations
         
-        **Jitsi Video Conferencing:**
+        **Jitsi Video Conferencing Setup:**
         1. Go to **Administration → Apps → Marketplace**
-        2. Search for "Jitsi" and install
-        3. Use `/jitsi` command in chats
+        2. Search for "Jitsi" and click **Install**
+        3. Use `/jitsi` command in any chat to start video calls
+        4. Custom room: `/jitsi @MeetingRoom`
+        5. Share the generated link with participants
         
-        **Troubleshooting:**
-        - If MongoDB shows unhealthy, wait for 30-second initialization period
-        - Healthcheck will automatically initialize replica set
-        - Check container logs for detailed MongoDB startup information
-        - Simple healthcheck reduces complexity and improves reliability
+        **MongoDB 7.0 Benefits:**
+        - Better performance and scalability
+        - Enhanced security features
+        - Future-proof database version
       ko_kr: |
-        **Rocket.Chat 7.8.3 - 보안 강화 버전**
+        **앱 마켓플레이스가 활성화된 Rocket.Chat 7.8.3**
         
         **기본 계정**
         | 사용자명     | 비밀번호        |
         | ----------- | -------------- |
         | `admin`     | `$default_pwd` |
-        
-        **안정성 개선사항:**
-        - ✅ 간소화된 healthcheck 로직 (복잡한 오류 처리 제거)
-        - ✅ 검증된 replica set 초기화 패턴
-        - ✅ 적절한 MongoDB 시작을 위한 확장된 start_period (30초)
-        - ✅ 복잡한 mongosh eval 스크립트 제거
-        - ✅ 성공적인 커뮤니티 패턴 기반
         
         **최신 기능 (7.8.3):**
         - ✅ 앱 마켓플레이스 (통합 앱 설치)
@@ -198,29 +181,30 @@ x-casaos:
         - ✅ Node.js 20.x 및 Meteor 3.0 성능 향상
         - ✅ 강화된 보안성과 안정성
         - ✅ Replica set 실시간 메시징
+        - ✅ 팀 협업용 VoIP (베타)
         
-        **해결된 문제들:**
-        - 🔧 MongoDB healthcheck 실패 (간소화된 접근법)
-        - 🔧 Replica set 초기화 타임아웃
-        - 🔧 복잡한 mongosh eval 스크립트 오류
-        - 🔧 컨테이너 unhealthy 상태 문제
+        **프라이버시 설정:**
+        - ❌ 통계 리포팅 비활성화
+        - ❌ 자동 업데이트 비활성화
+        - ❌ 연합 기능 비활성화
+        - ✅ 데이터는 사용자 서버에만 보관
         
         **설정 과정:**
-        1. 사전 설치 스크립트가 올바른 권한으로 디렉토리 생성
-        2. MongoDB가 30초 초기화 윈도우와 함께 시작
-        3. 간소화된 healthcheck가 rs.status() 시도, 실패 시 rs.initiate()로 대체
-        4. MongoDB가 healthy 상태가 된 후 RocketChat 연결
-        5. 완전한 설정 후 마켓플레이스 사용 가능
+        1. 초기 설정 마법사가 나타남
+        2. 마켓플레이스 접근을 위한 이메일 인증 완료
+        3. 관리자 패널에서 앱 마켓플레이스 사용 가능
+        4. GitHub, Jira, Google Drive 통합 등 앱 설치 가능
         
-        **Jitsi 화상회의:**
+        **Jitsi 화상회의 설정:**
         1. **관리 → 앱 → 마켓플레이스**로 이동
-        2. "Jitsi" 검색 후 설치
-        3. 채팅에서 `/jitsi` 명령어 사용
+        2. "Jitsi" 검색 후 **설치** 클릭
+        3. 채팅에서 `/jitsi` 명령어로 화상통화 시작
+        4. 커스텀 룸: `/jitsi @회의실`
+        5. 생성된 링크를 참가자들과 공유
         
-        **문제해결:**
-        - MongoDB가 unhealthy 상태라면 30초 초기화 기간을 기다려주세요
-        - Healthcheck가 replica set을 자동으로 초기화합니다
-        - 상세한 MongoDB 시작 정보는 컨테이너 로그를 확인하세요
-        - 간단한 healthcheck로 복잡성을 줄이고 안정성을 향상시켰습니다
+        **MongoDB 7.0 장점:**
+        - 향상된 성능과 확장성
+        - 강화된 보안 기능
+        - 미래 지향적 데이터베이스 버전
   index: /
   webui_port: 80
