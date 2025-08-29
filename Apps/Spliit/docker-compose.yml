@@ -207,3 +207,6 @@ x-casaos:
         룸메이트, 여행 그룹, 가족, 그리고 공정하게 비용을 분할하려는 모든 사람에게 완벽합니다!
   index: /
   webui_port: 3000
+  pre-install-cmd: |
+    mkdir -p /DATA/AppData/$AppID/postgres &&
+    chown -R 999:999 /DATA/AppData/$AppID/postgres
