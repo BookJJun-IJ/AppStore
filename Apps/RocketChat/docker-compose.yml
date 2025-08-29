@@ -115,12 +115,12 @@ x-casaos:
     chown -R $PUID:$PGID /DATA/AppData/$AppID/uploads /DATA/AppData/$AppID/data &&
     chown -R 999:999 /DATA/AppData/$AppID/mongodb &&
     chmod -R 755 /DATA/AppData/$AppID/mongodb
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/RocketChat/icon.png
+  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/appstore@Create/Apps/RocketChat/icon.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/RocketChat/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/RocketChat/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/RocketChat/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/RocketChat/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/appstore@Create/Apps/RocketChat/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/appstore@Create/Apps/RocketChat/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/appstore@Create/Apps/RocketChat/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/appstore@Create/Apps/RocketChat/screenshot-1.png
   description:
     en_us: Rocket.Chat 7.8.3 with simplified and reliable MongoDB 7.0 replica set. Fixed healthcheck issues for stable deployment.
     ko_kr: 간소화되고 안정적인 MongoDB 7.0 replica set을 가진 Rocket.Chat 7.8.3. 안정적인 배포를 위한 healthcheck 문제 해결.
