@@ -44,156 +44,75 @@ x-casaos:
   developer: Deluan Quintão
   description:
     en_us: |
-      **🎵 Your Personal Music Streaming Server**
+      **Stream your music collection anywhere like Spotify**
       
-      **Navidrome** transforms your music collection into a modern streaming service that you control completely. Instead of paying for multiple music subscriptions or losing access to your favorite songs, you get **unlimited access to your own music library** from anywhere.
+      Have a music collection on your computer but can't access it when you're out? Navidrome turns your personal music files into your own private Spotify. Stream your entire music library to any device, anywhere.
       
-      Just point Navidrome to your music folder and it automatically organizes everything into a beautiful, fast streaming interface that works on any device.
+      **What you can do:**
+      • Listen to your music from anywhere with internet
+      • Use the beautiful web player or connect mobile music apps
+      • Share your music library with family members
+      • Works with all music formats (MP3, FLAC, etc.)
       
-      **🎧 What Can You Do with Navidrome?**
+      **Think of it like:** Having your own personal Spotify, but with your music collection instead of paying monthly fees.
       
-      • **Stream anywhere** — Access your music from any device with a web browser
-      • **Mobile apps** — Use dozens of compatible iOS/Android apps (Subsonic protocol)
-      • **Smart organization** — Automatically sorts by artist, album, genre, year
-      • **High-quality streaming** — Supports FLAC, MP3, OGG, M4A, WAV formats
-      • **Multiple users** — Share your music library with family members
-      • **Playlists & favorites** — Create custom playlists and mark favorites
-      • **Last.fm integration** — Scrobble your plays to Last.fm automatically
-      
-      **🚀 Why Choose Navidrome?**
-      
-      • **Your music, your server, your rules** — No subscription fees or content removal
-      • **Works with existing apps** — Compatible with 50+ mobile music apps
-      • **Lightning-fast** — Local server means instant song loading
-      • **Privacy-focused** — Your music stays on your server, never uploaded anywhere
-      
-      With Navidrome on **Yundera**, you can:
-      • Build your permanent music library that never disappears
-      • Access your entire collection from any device (mobile, tablet, desktop)
-      • Share music with family without violating any terms of service
-      • Keep your listening habits completely private
-      
-      **🎼 Perfect For:**
-      • Music collectors who want to access their library anywhere
-      • Families who want to share their music collection
-      • Audiophiles with high-quality music files (FLAC, etc.)
-      • Anyone tired of music streaming service limitations
+      **Perfect if you:** Have a music collection on your computer, want to listen anywhere, or want to share your music with family without violating streaming service rules.
     ko_kr: |
-      **🎵 개인 음악 스트리밍 서버**
+      **스포티파이처럼 어디서나 내 음악 스트리밍**
       
-      **Navidrome**은 당신의 음악 컬렉션을 완전히 제어할 수 있는 현대적인 스트리밍 서비스로 변환합니다. 여러 음악 구독료를 지불하거나 좋아하는 노래에 대한 접근을 잃는 대신, **어디서나 자신의 음악 라이브러리에 무제한 접근**할 수 있습니다.
+      컴퓨터에 음악 컬렉션이 있지만 외출할 때 들을 수 없나요? 나비드롬은 개인 음악 파일을 나만의 프라이빗 스포티파이로 바꿔줍니다. 어디서나 모든 장치에서 전체 음악 라이브러리를 스트리밍하세요.
       
-      Navidrome에 음악 폴더를 지정하기만 하면 모든 장치에서 작동하는 아름답고 빠른 스트리밍 인터페이스로 자동으로 정리됩니다.
+      **할 수 있는 것:**
+      • 인터넷이 있는 곳 어디서나 내 음악 듣기
+      • 아름다운 웹 플레이어 사용 또는 모바일 음악 앱 연결
+      • 가족들과 음악 라이브러리 공유
+      • 모든 음악 형식과 호환 (MP3, FLAC 등)
       
-      **🎧 Navidrome으로 무엇을 할 수 있나요?**
+      **이렇게 생각해보세요:** 월별 요금을 내는 대신 내 음악 컬렉션으로 만든 나만의 개인 스포티파이.
       
-      • **어디서나 스트리밍** — 웹 브라우저가 있는 모든 장치에서 음악 접근
-      • **모바일 앱** — 호환되는 수십 개의 iOS/Android 앱 사용 (Subsonic 프로토콜)
-      • **스마트 정리** — 아티스트, 앨범, 장르, 연도별로 자동 정렬
-      • **고품질 스트리밍** — FLAC, MP3, OGG, M4A, WAV 형식 지원
-      • **다중 사용자** — 가족 구성원과 음악 라이브러리 공유
-      • **플레이리스트 & 즐겨찾기** — 맞춤 플레이리스트 생성 및 즐겨찾기 표시
-      • **Last.fm 연동** — Last.fm에 재생 기록 자동 전송
-      
-      **🚀 왜 Navidrome을 선택해야 할까요?**
-      
-      • **당신의 음악, 당신의 서버, 당신의 규칙** — 구독료나 콘텐츠 제거 없음
-      • **기존 앱과 호환** — 50개 이상의 모바일 음악 앱과 호환
-      • **초고속** — 로컬 서버로 즉시 노래 로딩
-      • **프라이버시 중심** — 음악이 서버에 유지되며 어디에도 업로드되지 않음
-      
-      **Yundera**의 Navidrome으로 다음을 할 수 있습니다:
-      • 절대 사라지지 않는 영구 음악 라이브러리 구축
-      • 모든 장치에서 전체 컬렉션 접근 (모바일, 태블릿, 데스크톱)
-      • 서비스 약관 위반 없이 가족과 음악 공유
-      • 청취 습관을 완전히 비공개로 유지
-    fr_fr: |
-      **🎵 Votre Serveur de Streaming Musical Personnel**
-      
-      **Navidrome** transforme votre collection musicale en un service de streaming moderne que vous contrôlez complètement. Au lieu de payer plusieurs abonnements musicaux ou de perdre l'accès à vos chansons préférées, vous obtenez **un accès illimité à votre propre bibliothèque musicale** depuis n'importe où.
-      
-      Pointez simplement Navidrome vers votre dossier musical et il organise automatiquement tout dans une interface de streaming belle et rapide qui fonctionne sur n'importe quel appareil.
-      
-      **🎧 Que pouvez-vous faire avec Navidrome ?**
-      
-      • **Streaming partout** — Accédez à votre musique depuis n'importe quel appareil avec navigateur web
-      • **Applications mobiles** — Utilisez des dizaines d'applications iOS/Android compatibles (protocole Subsonic)
-      • **Organisation intelligente** — Trie automatiquement par artiste, album, genre, année
-      • **Streaming haute qualité** — Supporte les formats FLAC, MP3, OGG, M4A, WAV
-      • **Utilisateurs multiples** — Partagez votre bibliothèque musicale avec les membres de la famille
-      • **Playlists et favoris** — Créez des playlists personnalisées et marquez les favoris
-      • **Intégration Last.fm** — Scrobble automatiquement vos écoutes sur Last.fm
-      
-      **🚀 Pourquoi choisir Navidrome ?**
-      
-      • **Votre musique, votre serveur, vos règles** — Pas de frais d'abonnement ou de suppression de contenu
-      • **Compatible avec les applications existantes** — Compatible avec 50+ applications musicales mobiles
-      • **Ultra-rapide** — Serveur local signifie chargement instantané des chansons
-      • **Axé sur la confidentialité** — Votre musique reste sur votre serveur, jamais téléchargée ailleurs
-      
-      Avec Navidrome sur **Yundera**, vous pouvez :
-      • Construire votre bibliothèque musicale permanente qui ne disparaît jamais
-      • Accéder à toute votre collection depuis n'importe quel appareil
-      • Partager de la musique avec la famille sans violer les conditions de service
-      • Garder vos habitudes d'écoute complètement privées
+      **이런 분께 완벽해요:** 컴퓨터에 음악 컬렉션이 있고, 어디서나 듣고 싶거나, 스트리밍 서비스 규칙을 위반하지 않고 가족과 음악을 공유하고 싶은 분들.
     zh_cn: |
-      **🎵 您的个人音乐流媒体服务器**
+      **像Spotify一样随处流媒体您的音乐收藏**
       
-      **Navidrome** 将您的音乐收藏转换为完全由您控制的现代流媒体服务。不需要支付多个音乐订阅费用或失去对喜爱歌曲的访问权限，您可以从任何地方**无限制地访问自己的音乐库**。
+      您的电脑上有音乐收藏但外出时无法访问？Navidrome将您的个人音乐文件转换为您自己的私人Spotify。随时随地在任何设备上流媒体您的整个音乐库。
       
-      只需将Navidrome指向您的音乐文件夹，它就会自动将所有内容整理成美观、快速的流媒体界面，可在任何设备上运行。
+      **您可以做的事:**
+      • 在有网络的任何地方听您的音乐
+      • 使用美观的网页播放器或连接移动音乐应用
+      • 与家庭成员分享您的音乐库
+      • 适用于所有音乐格式（MP3、FLAC等）
       
-      **🎧 您可以用Navidrome做什么？**
+      **可以这样想:** 拥有自己的个人Spotify，但使用您的音乐收藏而不是支付月费。
       
-      • **随处流媒体** — 从任何有网页浏览器的设备访问您的音乐
-      • **移动应用** — 使用数十个兼容的iOS/Android应用（Subsonic协议）
-      • **智能整理** — 按艺术家、专辑、流派、年份自动排序
-      • **高质量流媒体** — 支持FLAC、MP3、OGG、M4A、WAV格式
-      • **多用户** — 与家庭成员分享您的音乐库
-      • **播放列表和收藏** — 创建自定义播放列表并标记收藏
-      • **Last.fm集成** — 自动将播放记录发送到Last.fm
+      **非常适合:** 在电脑上有音乐收藏、想在任何地方收听，或想与家人分享音乐而不违反流媒体服务规则的人。
+    fr_fr: |
+      **Streamez votre collection musicale partout comme Spotify**
       
-      **🚀 为什么选择Navidrome？**
+      Vous avez une collection musicale sur votre ordinateur mais ne pouvez pas y accéder quand vous sortez ? Navidrome transforme vos fichiers musicaux personnels en votre propre Spotify privé. Streamez toute votre bibliothèque musicale sur n'importe quel appareil, partout.
       
-      • **您的音乐，您的服务器，您的规则** — 无订阅费用或内容删除
-      • **与现有应用兼容** — 兼容50+移动音乐应用
-      • **闪电般快速** — 本地服务器意味着歌曲瞬间加载
-      • **注重隐私** — 您的音乐保留在服务器上，永不上传到其他地方
+      **Ce que vous pouvez faire :**
+      • Écouter votre musique depuis n'importe où avec internet
+      • Utiliser le beau lecteur web ou connecter des applications musicales mobiles
+      • Partager votre bibliothèque musicale avec les membres de la famille
+      • Fonctionne avec tous les formats musicaux (MP3, FLAC, etc.)
       
-      在**Yundera**上使用Navidrome，您可以：
-      • 建立永不消失的永久音乐库
-      • 从任何设备访问整个收藏（手机、平板、桌面）
-      • 在不违反服务条款的情况下与家人分享音乐
-      • 保持听歌习惯完全私密
+      **Pensez-y comme :** Avoir votre propre Spotify personnel, mais avec votre collection musicale au lieu de payer des frais mensuels.
+      
+      **Parfait si vous :** Avez une collection musicale sur votre ordinateur, voulez écouter partout, ou voulez partager votre musique avec la famille sans violer les règles des services de streaming.
     es_es: |
-      **🎵 Tu Servidor Personal de Streaming Musical**
+      **Reproduce tu colección musical en cualquier lugar como Spotify**
       
-      **Navidrome** transforma tu colección musical en un servicio de streaming moderno que controlas completamente. En lugar de pagar múltiples suscripciones musicales o perder acceso a tus canciones favoritas, obtienes **acceso ilimitado a tu propia biblioteca musical** desde cualquier lugar.
+      ¿Tienes una colección musical en tu computadora pero no puedes acceder cuando sales? Navidrome convierte tus archivos musicales personales en tu propio Spotify privado. Reproduce toda tu biblioteca musical en cualquier dispositivo, en cualquier lugar.
       
-      Solo señala Navidrome hacia tu carpeta de música y automáticamente organiza todo en una interfaz de streaming hermosa y rápida que funciona en cualquier dispositivo.
+      **Lo que puedes hacer:**
+      • Escuchar tu música desde cualquier lugar con internet
+      • Usar el hermoso reproductor web o conectar aplicaciones musicales móviles
+      • Compartir tu biblioteca musical con miembros de la familia
+      • Funciona con todos los formatos musicales (MP3, FLAC, etc.)
       
-      **🎧 ¿Qué puedes hacer con Navidrome?**
+      **Piénsalo como:** Tener tu propio Spotify personal, pero con tu colección musical en lugar de pagar tarifas mensuales.
       
-      • **Streaming en todas partes** — Accede a tu música desde cualquier dispositivo con navegador web
-      • **Aplicaciones móviles** — Usa docenas de aplicaciones iOS/Android compatibles (protocolo Subsonic)
-      • **Organización inteligente** — Ordena automáticamente por artista, álbum, género, año
-      • **Streaming de alta calidad** — Soporta formatos FLAC, MP3, OGG, M4A, WAV
-      • **Múltiples usuarios** — Comparte tu biblioteca musical con miembros de la familia
-      • **Listas de reproducción y favoritos** — Crea listas personalizadas y marca favoritos
-      • **Integración Last.fm** — Envía automáticamente tus reproducciones a Last.fm
-      
-      **🚀 ¿Por qué elegir Navidrome?**
-      
-      • **Tu música, tu servidor, tus reglas** — Sin tarifas de suscripción o eliminación de contenido
-      • **Compatible con aplicaciones existentes** — Compatible con 50+ aplicaciones musicales móviles
-      • **Ultra-rápido** — Servidor local significa carga instantánea de canciones
-      • **Enfocado en la privacidad** — Tu música permanece en tu servidor, nunca se sube a otro lugar
-      
-      Con Navidrome en **Yundera**, puedes:
-      • Construir tu biblioteca musical permanente que nunca desaparece
-      • Acceder a toda tu colección desde cualquier dispositivo
-      • Compartir música con la familia sin violar términos de servicio
-      • Mantener tus hábitos de escucha completamente privados
+      **Perfecto si:** Tienes una colección musical en tu computadora, quieres escuchar en cualquier lugar, o quieres compartir tu música con la familia sin violar las reglas de servicios de streaming.
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Navidrome/icon.png
   screenshot_link:
     - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Navidrome/screenshot-1.png
@@ -211,120 +130,135 @@ x-casaos:
   tips:
     before_install:
       en_us: |
-        **🎵 Music Setup Guide**
+        **Getting Started**
         
         **1. Add Your Music:**
-        Place your music files in `/DATA/Media/Music/`
-        Navidrome will automatically scan and organize your collection.
+        Upload your music files to the Music folder on your server
+        Navidrome will automatically find and organize your collection.
         
-        **2. Supported Formats:**
-        MP3, FLAC, OGG, M4A, WAV, AIFF
+        **2. Supported Music Files:**
+        MP3, FLAC, OGG, M4A, WAV, AIFF (basically any music file!)
         
         **3. First-Time Setup:**
-        Create your admin account on first visit to the web interface.
-        No default credentials - you set everything up on first login.
+        1. Visit the website - it will automatically scan your music
+        2. Create your account on first visit (no default password)
+        3. Start listening with the web player
         
-        **4. Mobile Apps:**
-        Download any Subsonic-compatible app:
-        - **iOS:** play:Sub, Amperfy, iSub
+        **4. Listen on Your Phone:**
+        Download any music app that works with "Subsonic":
+        - **iPhone:** play:Sub, Amperfy, iSub
         - **Android:** DSub, Audinaut, Ultrasonic
         
-        **5. Server URL for Mobile Apps:**
-        `https://navidrome-username.nsl.sh`
+        **5. Connect Mobile Apps:**
+        Server: `https://navidrome-username.nsl.sh`
+        Username: [your account name]
+        Password: [your password]
         
-        **💡 Pro Tip:** Organize your music in Artist/Album/Track.mp3 format for best results!
+        **Pro Tip:** Organize your music like "Artist/Album/Song.mp3" for the best experience!
       ko_kr: |
-        **🎵 음악 설정 가이드**
+        **시작하기**
         
-        **1. 음악 추가:**
-        음악 파일을 `/DATA/Media/Music/` 폴더에 넣어주세요
-        Navidrome이 자동으로 스캔하고 정리합니다.
+        **1. 음악 추가하기:**
+        서버의 Music 폴더에 음악 파일을 업로드하세요
+        나비드롬이 자동으로 컬렉션을 찾아서 정리합니다.
         
-        **2. 지원 형식:**
-        MP3, FLAC, OGG, M4A, WAV, AIFF
+        **2. 지원하는 음악 파일:**
+        MP3, FLAC, OGG, M4A, WAV, AIFF (기본적으로 모든 음악 파일!)
         
-        **3. 초기 설정:**
-        웹 인터페이스에 처음 접속할 때 관리자 계정을 생성하세요.
-        기본 자격 증명 없음 - 첫 로그인 시 모든 것을 설정합니다.
+        **3. 처음 설정하기:**
+        1. 웹사이트 방문 - 자동으로 음악을 스캔합니다
+        2. 첫 방문 시 계정 생성 (기본 비밀번호 없음)
+        3. 웹 플레이어로 듣기 시작
         
-        **4. 모바일 앱:**
-        Subsonic 호환 앱을 다운로드하세요:
-        - **iOS:** play:Sub, Amperfy, iSub
-        - **Android:** DSub, Audinaut, Ultrasonic
+        **4. 휴대폰에서 듣기:**
+        "Subsonic"과 호환되는 음악 앱을 다운로드하세요:
+        - **아이폰:** play:Sub, Amperfy, iSub
+        - **안드로이드:** DSub, Audinaut, Ultrasonic
         
-        **5. 모바일 앱용 서버 URL:**
-        `https://navidrome-username.nsl.sh`
+        **5. 모바일 앱 연결:**
+        서버: `https://navidrome-username.nsl.sh`
+        사용자명: [내 계정명]
+        비밀번호: [내 비밀번호]
         
-        **💡 프로 팁:** 최상의 결과를 위해 음악을 아티스트/앨범/트랙.mp3 형식으로 정리하세요!
-      fr_fr: |
-        **🎵 Guide de Configuration Musicale**
-        
-        **1. Ajoutez Votre Musique:**
-        Placez vos fichiers musicaux dans `/DATA/Media/Music/`
-        Navidrome analysera et organisera automatiquement votre collection.
-        
-        **2. Formats Supportés:**
-        MP3, FLAC, OGG, M4A, WAV, AIFF
-        
-        **3. Configuration Initiale:**
-        Créez votre compte administrateur lors de votre première visite de l'interface web.
-        Pas d'identifiants par défaut - vous configurez tout lors de la première connexion.
-        
-        **4. Applications Mobiles:**
-        Téléchargez toute application compatible Subsonic :
-        - **iOS:** play:Sub, Amperfy, iSub
-        - **Android:** DSub, Audinaut, Ultrasonic
-        
-        **5. URL du Serveur pour Applications Mobiles:**
-        `https://navidrome-username.nsl.sh`
-        
-        **💡 Conseil Pro:** Organisez votre musique au format Artiste/Album/Piste.mp3 pour de meilleurs résultats !
+        **프로 팁:** "아티스트/앨범/곡.mp3" 형식으로 음악을 정리하면 최상의 경험을 할 수 있어요!
       zh_cn: |
-        **🎵 音乐设置指南**
+        **开始使用**
         
         **1. 添加音乐:**
-        将音乐文件放在 `/DATA/Media/Music/` 文件夹中
-        Navidrome将自动扫描并整理您的收藏。
+        将音乐文件上传到服务器的Music文件夹
+        Navidrome会自动找到并整理您的收藏。
         
-        **2. 支持格式:**
-        MP3, FLAC, OGG, M4A, WAV, AIFF
+        **2. 支持的音乐文件:**
+        MP3、FLAC、OGG、M4A、WAV、AIFF（基本上任何音乐文件！）
         
         **3. 首次设置:**
-        首次访问网页界面时创建您的管理员账户。
-        无默认凭据 - 您在首次登录时设置一切。
+        1. 访问网站 - 它会自动扫描您的音乐
+        2. 首次访问时创建账户（无默认密码）
+        3. 使用网页播放器开始收听
         
-        **4. 移动应用:**
-        下载任何Subsonic兼容应用:
-        - **iOS:** play:Sub, Amperfy, iSub
+        **4. 在手机上收听:**
+        下载任何与"Subsonic"兼容的音乐应用:
+        - **iPhone:** play:Sub, Amperfy, iSub
         - **Android:** DSub, Audinaut, Ultrasonic
         
-        **5. 移动应用服务器URL:**
-        `https://navidrome-username.nsl.sh`
+        **5. 连接移动应用:**
+        服务器: `https://navidrome-username.nsl.sh`
+        用户名: [您的账户名]
+        密码: [您的密码]
         
-        **💡 专业提示:** 以艺术家/专辑/曲目.mp3格式整理音乐以获得最佳效果！
+        **专业提示:** 按"艺术家/专辑/歌曲.mp3"格式整理音乐可获得最佳体验！
+      fr_fr: |
+        **Commencer**
+        
+        **1. Ajoutez Votre Musique:**
+        Téléchargez vos fichiers musicaux dans le dossier Music sur votre serveur
+        Navidrome trouvera et organisera automatiquement votre collection.
+        
+        **2. Fichiers Musicaux Supportés:**
+        MP3, FLAC, OGG, M4A, WAV, AIFF (pratiquement tout fichier musical !)
+        
+        **3. Configuration Initiale:**
+        1. Visitez le site web - il scannera automatiquement votre musique
+        2. Créez votre compte lors de la première visite (pas de mot de passe par défaut)
+        3. Commencez à écouter avec le lecteur web
+        
+        **4. Écoutez sur Votre Téléphone:**
+        Téléchargez toute application musicale compatible avec "Subsonic":
+        - **iPhone:** play:Sub, Amperfy, iSub
+        - **Android:** DSub, Audinaut, Ultrasonic
+        
+        **5. Connectez les Applications Mobiles:**
+        Serveur: `https://navidrome-username.nsl.sh`
+        Nom d'utilisateur: [nom de votre compte]
+        Mot de passe: [votre mot de passe]
+        
+        **Conseil Pro:** Organisez votre musique comme "Artiste/Album/Chanson.mp3" pour la meilleure expérience !
       es_es: |
-        **🎵 Guía de Configuración Musical**
+        **Comenzar**
         
         **1. Agrega Tu Música:**
-        Coloca tus archivos de música en `/DATA/Media/Music/`
-        Navidrome escaneará y organizará automáticamente tu colección.
+        Sube tus archivos musicales a la carpeta Music en tu servidor
+        Navidrome encontrará y organizará automáticamente tu colección.
         
-        **2. Formatos Soportados:**
-        MP3, FLAC, OGG, M4A, WAV, AIFF
+        **2. Archivos Musicales Soportados:**
+        MP3, FLAC, OGG, M4A, WAV, AIFF (¡básicamente cualquier archivo musical!)
         
         **3. Configuración Inicial:**
-        Crea tu cuenta de administrador en la primera visita a la interfaz web.
-        Sin credenciales predeterminadas - configuras todo en el primer inicio de sesión.
+        1. Visita el sitio web - escaneará automáticamente tu música
+        2. Crea tu cuenta en la primera visita (sin contraseña predeterminada)
+        3. Comienza a escuchar con el reproductor web
         
-        **4. Aplicaciones Móviles:**
-        Descarga cualquier aplicación compatible con Subsonic:
-        - **iOS:** play:Sub, Amperfy, iSub
+        **4. Escucha en Tu Teléfono:**
+        Descarga cualquier aplicación musical compatible con "Subsonic":
+        - **iPhone:** play:Sub, Amperfy, iSub
         - **Android:** DSub, Audinaut, Ultrasonic
         
-        **5. URL del Servidor para Aplicaciones Móviles:**
-        `https://navidrome-username.nsl.sh`
+        **5. Conecta Aplicaciones Móviles:**
+        Servidor: `https://navidrome-username.nsl.sh`
+        Usuario: [nombre de tu cuenta]
+        Contraseña: [tu contraseña]
         
-        **💡 Consejo Pro:** ¡Organiza tu música en formato Artista/Álbum/Pista.mp3 para mejores resultados!
+        **Consejo Pro:** ¡Organiza tu música como "Artista/Álbum/Canción.mp3" para la mejor experiencia!
   store_app_id: navidrome
   webui_port: 80
   index: /

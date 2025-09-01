@@ -99,13 +99,13 @@ x-casaos:
     - amd64
     - arm64
   main: suwayomi
-  author: Yundera Team
   pre-install-cmd: |
     docker run --rm -v /DATA/AppData/suwayomi:/fix-permissions ubuntu:22.04 sh -c "
     mkdir -p /fix-permissions/data /fix-permissions/flaresolverr &&
     chown -R 1000:1000 /fix-permissions &&
     chmod -R 755 /fix-permissions
     "
+  author: Yundera Team
   category: Media
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Suwayomi/icon.png
   screenshot_link:
@@ -115,120 +115,75 @@ x-casaos:
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Suwayomi/screenshot-1.png
   description:
     en_us: |
-      **📚 What is Suwayomi?**
+      **Read manga like Netflix for comics**
       
-      **Suwayomi** is your own personal manga library server — like **Netflix for manga**, but fully under your control. 
+      Suwayomi lets you read thousands of manga (Japanese comics) from around the world, all in one place. Instead of visiting dozens of different websites or losing track of where you left off, everything is organized in one beautiful app.
       
-      Instead of paying for multiple manga subscription services or worrying about content disappearing, you get access to **1200+ manga sources** from around the world, all organized in one beautiful interface.
+      **What you can do:**
+      • Read manga on your phone, tablet, or computer
+      • Automatically keeps track of what you've read
+      • Download chapters to read offline (great for commutes!)
+      • Works with popular manga apps you already use
       
-      **🔧 What Can You Do with Suwayomi?**
+      **Think of it like:** A personal library that automatically organizes all your favorite comics and remembers exactly where you stopped reading.
       
-      • **Read on any device** — Web browser, phone apps, or any OPDS-compatible reader
-      • **Download for offline reading** — Perfect for commutes or travel  
-      • **Organize your library** — Track what you're reading, mark favorites
-      • **Share with family** — Multiple users can have their own reading lists
-      • **No subscriptions** — Access thousands of manga sources without monthly fees
-      
-      **🚀 Why Use Suwayomi?**
-      
-      • **Your manga, your server, your rules** — No content removal or region blocking
-      • **Works with existing apps** — Compatible with Tachiyomi mobile apps and OPDS readers
-      • **Lightning-fast** — Local server means instant page loading
-      • **Privacy-focused** — Your reading habits stay private
-      
-      Perfect for manga enthusiasts who want unlimited access without the limitations of commercial platforms. Suwayomi gives you the freedom to read what you want, when you want, from your own private server.
+      **Perfect if you:** Love reading manga, want to keep track of multiple series, or get frustrated when manga websites go down or change.
     ko_kr: |
-      **📚 Suwayomi란 무엇인가요?**
+      **만화를 위한 넷플릭스처럼 읽기**
       
-      **Suwayomi**는 당신만의 개인 만화 라이브러리 서버입니다 — 마치 **만화를 위한 Netflix**처럼, 하지만 완전히 당신의 통제 하에 있습니다.
+      스와요미는 전 세계 수천 개의 만화를 한 곳에서 읽을 수 있게 해줍니다. 수십 개의 다른 웹사이트를 방문하거나 어디까지 읽었는지 잊어버리는 대신, 모든 것이 하나의 아름다운 앱에서 정리됩니다.
       
-      여러 만화 구독 서비스에 돈을 지불하거나 콘텐츠가 사라질 걱정 대신, 전 세계 **1200개 이상의 만화 소스**에 접근할 수 있으며, 모든 것이 하나의 아름다운 인터페이스에 정리되어 있습니다.
+      **할 수 있는 것:**
+      • 휴대폰, 태블릿, 컴퓨터에서 만화 읽기
+      • 읽은 내용을 자동으로 기록
+      • 오프라인으로 읽기 위해 챕터 다운로드 (통근할 때 좋아요!)
+      • 이미 사용 중인 인기 만화 앱과 연동
       
-      **🔧 Suwayomi로 무엇을 할 수 있나요?**
+      **이렇게 생각해보세요:** 좋아하는 모든 만화를 자동으로 정리하고 정확히 어디서 읽기를 멈췄는지 기억하는 개인 도서관.
       
-      • **모든 기기에서 읽기** — 웹 브라우저, 휴대폰 앱, 또는 OPDS 호환 리더
-      • **오프라인 읽기를 위한 다운로드** — 통근이나 여행에 완벽
-      • **라이브러리 정리** — 읽고 있는 것 추적, 즐겨찾기 표시
-      • **가족과 공유** — 여러 사용자가 각자의 읽기 목록을 가질 수 있음
-      • **구독 없음** — 월별 요금 없이 수천 개의 만화 소스에 접근
-      
-      **🚀 왜 Suwayomi를 사용해야 하나요?**
-      
-      • **당신의 만화, 당신의 서버, 당신의 규칙** — 콘텐츠 제거나 지역 차단 없음
-      • **기존 앱과 호환** — Tachiyomi 모바일 앱과 OPDS 리더와 호환
-      • **초고속** — 로컬 서버로 즉시 페이지 로딩
-      • **프라이버시 중심** — 당신의 읽기 습관은 비공개로 유지
-      
-      상업적 플랫폼의 제한 없이 무제한 접근을 원하는 만화 애호가들에게 완벽합니다. Suwayomi는 당신이 원하는 것을, 원할 때, 당신만의 개인 서버에서 읽을 자유를 제공합니다.
+      **이런 분께 완벽해요:** 만화를 좋아하고, 여러 시리즈를 추적하고 싶거나, 만화 웹사이트가 다운되거나 변경될 때 짜증나는 분들.
     zh_cn: |
-      **📚 什么是 Suwayomi？**
+      **像Netflix一样阅读漫画**
       
-      **Suwayomi** 是您自己的个人漫画图书馆服务器 — 就像**漫画界的 Netflix**，但完全在您的控制之下。
+      Suwayomi让您在一个地方阅读来自世界各地的数千部漫画。不再需要访问数十个不同的网站或忘记读到哪里，所有内容都在一个美观的应用中整理。
       
-      无需为多个漫画订阅服务付费或担心内容消失，您可以访问来自世界各地的 **1200+ 漫画源**，所有内容都在一个精美的界面中进行整理。
+      **您可以做的事:**
+      • 在手机、平板或电脑上阅读漫画
+      • 自动跟踪您的阅读进度
+      • 下载章节离线阅读（通勤时很棒！）
+      • 与您已使用的热门漫画应用配合使用
       
-      **🔧 使用 Suwayomi 可以做什么？**
+      **可以这样想:** 一个自动整理所有喜爱漫画并准确记住您停止阅读位置的个人图书馆。
       
-      • **在任何设备上阅读** — 网页浏览器、手机应用或任何兼容 OPDS 的阅读器
-      • **下载离线阅读** — 非常适合通勤或旅行
-      • **整理您的图书馆** — 跟踪您正在阅读的内容，标记收藏
-      • **与家人分享** — 多个用户可以拥有自己的阅读列表
-      • **无订阅费用** — 无需月费即可访问数千个漫画源
-      
-      **🚀 为什么使用 Suwayomi？**
-      
-      • **您的漫画，您的服务器，您的规则** — 无内容删除或地区屏蔽
-      • **与现有应用兼容** — 兼容 Tachiyomi 手机应用和 OPDS 阅读器
-      • **闪电般快速** — 本地服务器意味着页面即时加载
-      • **注重隐私** — 您的阅读习惯保持私密
-      
-      非常适合希望不受商业平台限制而获得无限访问权限的漫画爱好者。Suwayomi 让您自由地在自己的私人服务器上阅读您想要的内容。
+      **非常适合:** 喜欢阅读漫画、想要跟踪多个系列或因漫画网站宕机或更改而感到沮丧的人。
     fr_fr: |
-      **📚 Qu'est-ce que Suwayomi ?**
+      **Lire des mangas comme Netflix pour les bandes dessinées**
       
-      **Suwayomi** est votre propre serveur de bibliothèque manga personnel — comme **Netflix pour les mangas**, mais entièrement sous votre contrôle.
+      Suwayomi vous permet de lire des milliers de mangas du monde entier, tout en un seul endroit. Au lieu de visiter des dizaines de sites web différents ou de perdre le fil de votre lecture, tout est organisé dans une belle application.
       
-      Au lieu de payer plusieurs services d'abonnement manga ou de vous inquiéter de la disparition du contenu, vous avez accès à **plus de 1200 sources de manga** du monde entier, toutes organisées dans une interface magnifique.
+      **Ce que vous pouvez faire :**
+      • Lire des mangas sur votre téléphone, tablette ou ordinateur
+      • Suit automatiquement ce que vous avez lu
+      • Télécharger des chapitres pour lire hors ligne (parfait pour les trajets !)
+      • Fonctionne avec les applications manga populaires que vous utilisez déjà
       
-      **🔧 Que pouvez-vous faire avec Suwayomi ?**
+      **Pensez-y comme :** Une bibliothèque personnelle qui organise automatiquement tous vos mangas favoris et se souvient exactement où vous avez arrêté de lire.
       
-      • **Lire sur n'importe quel appareil** — Navigateur web, applications mobiles, ou tout lecteur compatible OPDS
-      • **Télécharger pour la lecture hors ligne** — Parfait pour les trajets ou les voyages
-      • **Organiser votre bibliothèque** — Suivre ce que vous lisez, marquer les favoris
-      • **Partager avec la famille** — Plusieurs utilisateurs peuvent avoir leurs propres listes de lecture
-      • **Pas d'abonnements** — Accès à des milliers de sources manga sans frais mensuels
-      
-      **🚀 Pourquoi utiliser Suwayomi ?**
-      
-      • **Vos mangas, votre serveur, vos règles** — Pas de suppression de contenu ou de blocage régional
-      • **Compatible avec les applications existantes** — Compatible avec les applications mobiles Tachiyomi et les lecteurs OPDS
-      • **Ultra-rapide** — Serveur local signifie chargement instantané des pages
-      • **Axé sur la confidentialité** — Vos habitudes de lecture restent privées
-      
-      Parfait pour les passionnés de manga qui veulent un accès illimité sans les limitations des plateformes commerciales. Suwayomi vous donne la liberté de lire ce que vous voulez, quand vous voulez, depuis votre propre serveur privé.
+      **Parfait si vous :** Aimez lire des mangas, voulez suivre plusieurs séries, ou êtes frustré quand les sites de manga tombent en panne ou changent.
     es_es: |
-      **📚 ¿Qué es Suwayomi?**
+      **Lee manga como Netflix para cómics**
       
-      **Suwayomi** es tu propio servidor personal de biblioteca de manga — como **Netflix para manga**, pero completamente bajo tu control.
+      Suwayomi te permite leer miles de mangas de todo el mundo, todo en un solo lugar. En lugar de visitar docenas de sitios web diferentes o perder la pista de dónde lo dejaste, todo está organizado en una hermosa aplicación.
       
-      En lugar de pagar múltiples servicios de suscripción de manga o preocuparte por la desaparición del contenido, obtienes acceso a **más de 1200 fuentes de manga** de todo el mundo, todas organizadas en una interfaz hermosa.
+      **Lo que puedes hacer:**
+      • Leer manga en tu teléfono, tablet o computadora
+      • Automáticamente lleva registro de lo que has leído
+      • Descargar capítulos para leer sin conexión (¡genial para viajes!)
+      • Funciona con aplicaciones de manga populares que ya usas
       
-      **🔧 ¿Qué puedes hacer con Suwayomi?**
+      **Piénsalo como:** Una biblioteca personal que organiza automáticamente todos tus cómics favoritos y recuerda exactamente dónde dejaste de leer.
       
-      • **Leer en cualquier dispositivo** — Navegador web, aplicaciones móviles, o cualquier lector compatible con OPDS
-      • **Descargar para lectura sin conexión** — Perfecto para viajes o desplazamientos
-      • **Organizar tu biblioteca** — Seguir lo que estás leyendo, marcar favoritos
-      • **Compartir con la familia** — Múltiples usuarios pueden tener sus propias listas de lectura
-      • **Sin suscripciones** — Acceso a miles de fuentes de manga sin tarifas mensuales
-      
-      **🚀 ¿Por qué usar Suwayomi?**
-      
-      • **Tu manga, tu servidor, tus reglas** — Sin eliminación de contenido o bloqueo regional
-      • **Compatible con aplicaciones existentes** — Compatible con aplicaciones móviles Tachiyomi y lectores OPDS
-      • **Súper rápido** — Servidor local significa carga instantánea de páginas
-      • **Enfocado en la privacidad** — Tus hábitos de lectura se mantienen privados
-      
-      Perfecto para entusiastas del manga que quieren acceso ilimitado sin las limitaciones de las plataformas comerciales. Suwayomi te da la libertad de leer lo que quieras, cuando quieras, desde tu propio servidor privado.
+      **Perfecto si:** Amas leer manga, quieres seguir múltiples series, o te frustras cuando los sitios de manga se caen o cambian.
   developer: Suwayomi Project
   tagline:
     en_us: Your personal manga library with 1200+ sources
@@ -241,129 +196,89 @@ x-casaos:
   tips:
     before_install:
       en_us: |
-        **🔐 Login Credentials**
+        **Getting Started**
         | Username | Password       |
         | -------- | -------------- |
         | `admin`  | `$default_pwd` |
         
-        **📚 Quick Start Guide**
+        **How to use:**
+        1. Open the website in your browser
+        2. Login with the username and password above
+        3. Click "Browse" to find manga sources
+        4. Search for your favorite manga titles
+        5. Start reading! Your progress saves automatically
         
-        **1. Install Extensions:**
-        Settings → Browse → Extensions
-        **Recommended:** MangaDex, Mangakakalot, Mangafire, AsuraScans
+        **Popular manga you can find:**
+        One Piece, Naruto, Attack on Titan, Demon Slayer, and thousands more from sites worldwide.
         
-        **2. Mobile Reading:**
-        Download **Tachiyomi** or **Mihon** app on your phone
-        Add server: `https://suwayomi-username.nsl.sh`
-        
-        **3. Web Reading:**
-        Access directly from your browser - works on any device!
-        
-        **📁 Your Files:**
-        • **Manga Downloads**: `/DATA/Media/Mangas/mangas/`
-        • **Thumbnails**: `/DATA/Media/Mangas/thumbnails/`
-        
-        **💡 Pro Tip:** 
-        Perfect for offline reading during travel - download chapters ahead of time!
+        **Tip:** Download chapters when on WiFi, then read offline during commutes!
       ko_kr: |
-        **🔐 로그인 정보**
+        **시작하기**
         | 사용자명 | 비밀번호       |
         | -------- | -------------- |
         | `admin`  | `$default_pwd` |
         
-        **📚 빠른 시작 가이드**
+        **사용 방법:**
+        1. 브라우저에서 웹사이트 열기
+        2. 위의 사용자명과 비밀번호로 로그인
+        3. "찾아보기"를 클릭하여 만화 소스 찾기
+        4. 좋아하는 만화 제목 검색
+        5. 읽기 시작! 진행 상황이 자동으로 저장됩니다
         
-        **1. 확장 프로그램 설치:**
-        설정 → 찾아보기 → 확장 프로그램
-        **추천:** MangaDex, Mangakakalot, Mangafire, AsuraScans
+        **찾을 수 있는 인기 만화:**
+        원피스, 나루토, 진격의 거인, 귀멸의 칼날 등 전 세계 사이트에서 수천 개 더.
         
-        **2. 모바일 읽기:**
-        휴대폰에 **Tachiyomi** 또는 **Mihon** 앱 다운로드
-        서버 추가: `https://suwayomi-username.nsl.sh`
-        
-        **3. 웹 읽기:**
-        브라우저에서 바로 접속 - 모든 기기에서 작동!
-        
-        **📁 파일 위치:**
-        • **만화 다운로드**: `/DATA/Media/Mangas/mangas/`
-        • **썸네일**: `/DATA/Media/Mangas/thumbnails/`
-        
-        **💡 프로 팁:** 
-        여행 중 오프라인 읽기에 완벽 - 미리 챕터를 다운로드하세요!
+        **팁:** WiFi에서 챕터를 다운로드한 후 통근 중에 오프라인으로 읽어보세요!
       zh_cn: |
-        **🔐 登录凭据**
+        **开始使用**
         | 用户名   | 密码           |
         | -------- | -------------- |
         | `admin`  | `$default_pwd` |
         
-        **📚 快速入门指南**
+        **使用方法:**
+        1. 在浏览器中打开网站
+        2. 使用上述用户名和密码登录
+        3. 点击"浏览"查找漫画源
+        4. 搜索您喜爱的漫画标题
+        5. 开始阅读！您的进度会自动保存
         
-        **1. 安装扩展:**
-        设置 → 浏览 → 扩展
-        **推荐:** MangaDex, Mangakakalot, Mangafire, AsuraScans
+        **您可以找到的热门漫画:**
+        海贼王、火影忍者、进击的巨人、鬼灭之刃，以及来自世界各地网站的数千部作品。
         
-        **2. 移动阅读:**
-        在手机上下载 **Tachiyomi** 或 **Mihon** 应用
-        添加服务器: `https://suwayomi-username.nsl.sh`
-        
-        **3. 网页阅读:**
-        直接从浏览器访问 - 适用于任何设备！
-        
-        **📁 您的文件:**
-        • **漫画下载**: `/DATA/Media/Mangas/mangas/`
-        • **缩略图**: `/DATA/Media/Mangas/thumbnails/`
-        
-        **💡 专业提示:** 
-        非常适合旅行时离线阅读 - 提前下载章节！
+        **提示:** 在WiFi下下载章节，然后在通勤时离线阅读！
       fr_fr: |
-        **🔐 Identifiants de connexion**
+        **Commencer**
         | Nom d'utilisateur | Mot de passe   |
         | ----------------- | -------------- |
         | `admin`           | `$default_pwd` |
         
-        **📚 Guide de démarrage rapide**
+        **Comment utiliser:**
+        1. Ouvrez le site web dans votre navigateur
+        2. Connectez-vous avec le nom d'utilisateur et mot de passe ci-dessus
+        3. Cliquez sur "Parcourir" pour trouver des sources de manga
+        4. Recherchez vos titres de manga favoris
+        5. Commencez à lire ! Votre progression se sauvegarde automatiquement
         
-        **1. Installer les extensions :**
-        Paramètres → Parcourir → Extensions
-        **Recommandées :** MangaDex, Mangakakalot, Mangafire, AsuraScans
+        **Mangas populaires que vous pouvez trouver:**
+        One Piece, Naruto, L'Attaque des Titans, Demon Slayer, et des milliers d'autres de sites du monde entier.
         
-        **2. Lecture mobile :**
-        Télécharger l'application **Tachiyomi** ou **Mihon** sur votre téléphone
-        Ajouter le serveur : `https://suwayomi-username.nsl.sh`
-        
-        **3. Lecture web :**
-        Accès direct depuis votre navigateur - fonctionne sur n'importe quel appareil !
-        
-        **📁 Vos fichiers :**
-        • **Téléchargements manga :** `/DATA/Media/Mangas/mangas/`
-        • **Miniatures :** `/DATA/Media/Mangas/thumbnails/`
-        
-        **💡 Conseil pro :** 
-        Parfait pour la lecture hors ligne en voyage - téléchargez les chapitres à l'avance !
+        **Astuce:** Téléchargez les chapitres en WiFi, puis lisez hors ligne pendant les trajets !
       es_es: |
-        **🔐 Credenciales de acceso**
+        **Comenzar**
         | Usuario  | Contraseña     |
         | -------- | -------------- |
         | `admin`  | `$default_pwd` |
         
-        **📚 Guía de inicio rápido**
+        **Cómo usar:**
+        1. Abre el sitio web en tu navegador
+        2. Inicia sesión con el usuario y contraseña de arriba
+        3. Haz clic en "Explorar" para encontrar fuentes de manga
+        4. Busca tus títulos de manga favoritos
+        5. ¡Comienza a leer! Tu progreso se guarda automáticamente
         
-        **1. Instalar extensiones:**
-        Configuración → Explorar → Extensiones
-        **Recomendadas:** MangaDex, Mangakakalot, Mangafire, AsuraScans
+        **Manga popular que puedes encontrar:**
+        One Piece, Naruto, Ataque a los Titanes, Demon Slayer, y miles más de sitios de todo el mundo.
         
-        **2. Lectura móvil:**
-        Descarga la aplicación **Tachiyomi** o **Mihon** en tu teléfono
-        Agregar servidor: `https://suwayomi-username.nsl.sh`
-        
-        **3. Lectura web:**
-        Acceso directo desde tu navegador - ¡funciona en cualquier dispositivo!
-        
-        **📁 Tus archivos:**
-        • **Descargas de manga**: `/DATA/Media/Mangas/mangas/`
-        • **Miniaturas**: `/DATA/Media/Mangas/thumbnails/`
-        
-        **💡 Consejo profesional:** 
-        Perfecto para lectura sin conexión durante viajes - ¡descarga capítulos con anticipación!
+        **Consejo:** ¡Descarga capítulos en WiFi, luego lee sin conexión durante viajes!
   index: /
   webui_port: 80
