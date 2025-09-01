@@ -11,18 +11,28 @@ services:
           memory: 1G
           cpus: '1.0'
     expose:
-      - 9000                    # Use default ports for Mealie v3 / Mealie v3의 기본 포트 사용
+      - 9000                    # Default port for Mealie v3
     environment:
-      PUID: $PUID
-      PGID: $PGID
-      TZ: $TZ
-      # Security settings / 보안 설정
-      ALLOW_SIGNUP: "false"
-      # NSL Router settings / NSL Router 설정
-      BASE_URL: https://$domain
-      # Performance settings / 성능 설정
-      MAX_WORKERS: 1
-      WEB_CONCURRENCY: 1
+      PUID: $PUID              # Process user ID
+      PGID: $PGID              # Process group ID
+      TZ: $TZ                  # Timezone setting
+      
+      # Security settings
+      ALLOW_SIGNUP: "false"    # Disable user registration after initial setup
+      
+      # NSL Router settings
+      BASE_URL: https://$domain  # Set base URL for proper routing
+      
+      # Performance settings
+      MAX_WORKERS: 1           # Single worker for resource efficiency
+      WEB_CONCURRENCY: 1       # Single concurrent process
+      
+      # Database settings
+      DB_ENGINE: sqlite        # Use SQLite for simplicity
+      
+      # Default admin user (will be created on first run)
+      DEFAULT_EMAIL: changeme@example.com
+      DEFAULT_PASSWORD: MyPassword
     volumes:
       - /DATA/AppData/$AppID/data:/app/data
     restart: unless-stopped
@@ -39,12 +49,12 @@ x-casaos:
     - arm64
   main: mealie
   pre-install-cmd: |
-    docker run --rm -v /DATA/AppData/$AppID:/data alpine:latest sh -c '
-    mkdir -p /data/data &&
-    chown -R 1000:1000 /data &&
-    chmod -R 755 /data/data
-    '
-  author: CasaOS Team
+    docker run --rm -v /DATA/AppData/$AppID:/fix-permissions ubuntu:22.04 sh -c "
+    mkdir -p /fix-permissions/data &&
+    chown -R 1000:1000 /fix-permissions &&
+    chmod -R 755 /fix-permissions/data
+    "
+  author: Yundera Team
   category: Utilities
   description:
     en_us: |
@@ -209,12 +219,12 @@ x-casaos:
       • Planificar comidas familiares y crear automáticamente listas de compras
       • Mantener tus datos culinarios privados — nunca salen de tu servidor
   developer: Mealie Recipes Team    
-  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Mealie/icon.png
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mealie/icon.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Mealie/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Mealie/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Mealie/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Mealie/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mealie/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mealie/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mealie/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mealie/screenshot-1.png
   tagline:
     en_us: Your family recipes, organized and accessible forever
     fr_fr: Vos recettes familiales, organisées et accessibles pour toujours
@@ -226,79 +236,83 @@ x-casaos:
   tips:
     before_install:
       en_us: |
-        **Default Account**
+        **🔐 Default Account**
         | Username | Password |
         | -------- | -------- |
         | `changeme@example.com` | `MyPassword` |
         
         **⚠️ Change these credentials after first login!**
         
-        **Quick Start:**
+        **📚 Quick Start:**
         1. Login with default credentials
         2. Go to Profile Settings → Change email & password
         3. Click **+ button** → **Link icon** → Paste recipe URL
         4. Admin Settings → Disable "Allow Signup"
         
-        **Import works with:** 10000recipe.com, AllRecipes, Food Network, and 1000+ recipe sites!
+        **🌐 Import works with:** AllRecipes, Food Network, BBC Good Food, and 1000+ recipe sites!
+        
+        **💡 Pro Tip:** Try importing from popular Korean sites like 10000recipe.com!
       fr_fr: |
-        **Compte par défaut**
+        **🔐 Compte par défaut**
         | Nom d'utilisateur | Mot de passe |
         | ----------------- | ------------ |
         | `changeme@example.com` | `MyPassword` |
         
         **⚠️ Changez ces identifiants après la première connexion !**
         
-        **Démarrage rapide :**
+        **📚 Démarrage rapide :**
         1. Connectez-vous avec les identifiants par défaut
         2. Paramètres du profil → Changez email et mot de passe
         3. Cliquez **+ bouton** → **Icône lien** → Collez URL de recette
         4. Paramètres admin → Désactiver "Allow Signup"
         
-        **Import fonctionne avec :** AllRecipes, Food Network, et 1000+ sites de recettes !
+        **🌐 Import fonctionne avec :** AllRecipes, Food Network, et 1000+ sites de recettes !
       ko_kr: |
-        **기본 계정**
+        **🔐 기본 계정**
         | 사용자명 | 비밀번호 |
         | ------- | ------- |
         | `changeme@example.com` | `MyPassword` |
         
         **⚠️ 첫 로그인 후 자격 증명을 변경하세요!**
         
-        **빠른 시작:**
+        **📚 빠른 시작:**
         1. 기본 자격 증명으로 로그인
         2. 프로필 설정 → 이메일 및 비밀번호 변경
         3. **+ 버튼** 클릭 → **링크 아이콘** → 레시피 URL 붙여넣기
         4. 관리자 설정 → "Allow Signup" 비활성화
         
-        **가져오기 지원:** 만개의레시피, AllRecipes, Food Network 등 1000+ 사이트!
+        **🌐 가져오기 지원:** 만개의레시피, AllRecipes, Food Network 등 1000+ 사이트!
+        
+        **💡 프로 팁:** 만개의레시피.com 같은 인기 한국 사이트에서 가져와보세요!
       zh_cn: |
-        **默认账户**
+        **🔐 默认账户**
         | 用户名 | 密码 |
         | ----- | ---- |
         | `changeme@example.com` | `MyPassword` |
         
         **⚠️ 首次登录后请更改这些凭据！**
         
-        **快速开始：**
+        **📚 快速开始：**
         1. 使用默认凭据登录
         2. 个人资料设置 → 更改邮箱和密码
         3. 点击 **+ 按钮** → **链接图标** → 粘贴食谱URL
         4. 管理员设置 → 禁用"Allow Signup"
         
-        **导入支持：** AllRecipes, Food Network 等 1000+ 食谱网站！
+        **🌐 导入支持：** AllRecipes, Food Network 等 1000+ 食谱网站！
       es_es: |
-        **Cuenta predeterminada**
+        **🔐 Cuenta predeterminada**
         | Usuario | Contraseña |
         | ------- | ---------- |
         | `changeme@example.com` | `MyPassword` |
         
         **⚠️ ¡Cambia estas credenciales después del primer inicio de sesión!**
         
-        **Inicio rápido:**
+        **📚 Inicio rápido:**
         1. Inicia sesión con credenciales predeterminadas
         2. Configuración de perfil → Cambiar email y contraseña
         3. Clic **+ botón** → **Icono enlace** → Pegar URL de receta
         4. Configuración admin → Deshabilitar "Allow Signup"
         
-        **Importación funciona con:** AllRecipes, Food Network, ¡y 1000+ sitios de recetas!
-  webui_port: 9000                 # healthcheck와 일치하도록 9000번 포트로 변경
+        **🌐 Importación funciona con:** AllRecipes, Food Network, ¡y 1000+ sitios de recetas!
+  webui_port: 9000
   index: /
