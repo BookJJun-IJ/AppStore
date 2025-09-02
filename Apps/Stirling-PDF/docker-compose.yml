@@ -46,7 +46,24 @@ x-casaos:
   store_app_id: stirlingpdf
   is_uncontrolled: false
   pre-install-cmd: |
-    docker run --rm -v /DATA/AppData/$AppID:/fix-permissions ubuntu:22.04 sh -c "mkdir -p /fix-permissions/tessdata /fix-permissions/configs /fix-permissions/logs /fix-permissions/customFiles && chown -R 1000:1000 /fix-permissions && chmod -R 777 /fix-permissions/logs && chmod -R 755 /fix-permissions"
+    docker run --rm -v /DATA/AppData/$AppID:/fix-permissions ubuntu:22.04 sh -c "mkdir -p /fix-permissions/tessdata /fix-permissions/configs /fix-permissions/logs /fix-permissions/customFiles && chown -R 1000:1000 /fix-permissions && chmod -R 777 /fix-permissions && cat > /fix-permissions/configs/settings.yml << 'EOF'
+    security:
+      enableLogin: true
+      csrfDisabled: false
+      loginAttemptCount: 5
+      loginResetTimeMinutes: 120
+      initialLogin:
+        username: admin
+        password: admin
+    system:
+      defaultLocale: en-US
+      googlevisibility: false
+      tessdataDir: /usr/share/tessdata
+    ui:
+      appName: Stirling PDF
+      homeDescription: Your locally hosted PDF toolkit
+    EOF
+    chown 1000:1000 /fix-permissions/configs/settings.yml"
   author: Yundera Team
   category: Office
   developer: Stirling Tools
