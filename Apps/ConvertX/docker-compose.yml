@@ -49,18 +49,18 @@ x-casaos:
     fr_fr: ConvertX est votre propre convertisseur de fichiers universel qui prend en charge plus de 1000 formats de fichiers différents. Pensez-y comme un couteau suisse pour les fichiers - convertissez des images, vidéos, audio, documents, modèles 3D et plus, tout depuis votre navigateur. Au lieu d'utiliser plusieurs sites web de conversion en ligne (qui ont souvent des limites de taille de fichier, des filigranes ou des problèmes de confidentialité), vous obtenez un outil de conversion puissant et privé fonctionnant sur votre propre serveur.
     es_es: ConvertX es tu propio convertidor de archivos universal que admite más de 1000 formatos de archivo diferentes. Piénsalo como una navaja suiza para archivos convierte imágenes, videos, audio, documentos, modelos 3D y más, todo desde tu navegador. En lugar de usar múltiples sitios web de conversión en línea (que a menudo tienen límites de tamaño de archivo, marcas de agua o problemas de privacidad), obtienes una herramienta de conversión potente y privada que funciona en tu propio servidor.
   developer: C4illin
-  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/ConvertX/icon.png
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ConvertX/icon.png
   screenshot:
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/ConvertX/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/ConvertX/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/ConvertX/screenshot-3.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ConvertX/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ConvertX/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ConvertX/screenshot-3.png
   tagline:
     en_us: Universal file converter supporting 1000+ formats with complete privacy
     ko_kr: 완전한 개인정보 보호와 함께 1000개 이상의 형식을 지원하는 범용 파일 변환기
     zh_cn: 支持1000多种格式的通用文件转换器，完全保护隐私
     fr_fr: Convertisseur de fichiers universel supportant plus de 1000 formats avec confidentialité complète
     es_es: Convertidor de archivos universal que admite más de 1000 formatos con privacidad completa
-  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/ConvertX/thumbnail.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ConvertX/thumbnail.png
   title:
     en_us: ConvertX
   tips:
@@ -93,5 +93,7 @@ x-casaos:
         - 문서: PDF, DOCX, HTML, Markdown
         
         **참고:** 모든 변환이 로컬에서 처리되어 파일이 서버를 벗어나지 않습니다.
+  pre-install-cmd: |
+    docker run --rm -v /DATA/AppData/$AppID:/data ubuntu:22.04 chown -R $PUID:$PGID /data
   index: /
   webui_port: 3000
