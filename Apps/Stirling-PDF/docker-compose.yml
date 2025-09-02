@@ -11,32 +11,109 @@ services:
       - /DATA/AppData/$AppID/tessdata:/usr/share/tessdata
       - /DATA/AppData/$AppID/configs:/configs
       - /DATA/AppData/$AppID/logs:/logs
+      - /DATA/AppData/$AppID/customFiles:/customFiles
       - /DATA/Downloads:/downloads
     user: $PUID:$PGID
     environment:
       PGID: $PGID                              # Group ID for file permissions
       PUID: $PUID                              # User ID for file permissions
       TZ: $TZ                                  # Timezone setting
+      
+      # Security features (required for login)
       DOCKER_ENABLE_SECURITY: true            # Enable security jar download (required for login)
       SECURITY_ENABLE_LOGIN: true             # Enable login authentication
       SECURITY_INITIALLOGIN_USERNAME: admin   # Default admin username
-      SECURITY_INITIALLOGIN_PASSWORD: admin   # Default admin password (change after first login)
-    cpu_shares: 100
+      SECURITY_INITIALLOGIN_PASSWORD: $default_pwd # Use secure default password
+      
+      # Additional security settings
+      SECURITY_CSRFDISABLED: false            # Keep CSRF protection enabled for security
+      
+      # Optional features
+      INSTALL_BOOK_AND_ADVANCED_HTML_OPS: false # Disable to save resources
+      
+      # UI customization
+      UI_APPNAME: "Stirling PDF"
+      UI_HOMEDESCRIPTION: "Your locally hosted PDF toolkit"
+      SYSTEM_DEFAULTLOCALE: en-US
     deploy:
       resources:
         limits:
           memory: 2G
+          cpus: '1.0'
+    healthcheck:
+      test: ["CMD", "timeout", "10s", "bash", "-c", "</dev/tcp/127.0.0.1/8080"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
 
 x-casaos:
   architectures:
     - amd64
     - arm64
-  author: CasaOS Team
+  main: stirlingpdf
+  pre-install-cmd: |
+    docker run --rm -v /DATA/AppData/$AppID:/fix-permissions ubuntu:22.04 sh -c "
+    # Create all necessary directories
+    mkdir -p /fix-permissions/tessdata &&
+    mkdir -p /fix-permissions/configs &&
+    mkdir -p /fix-permissions/logs &&
+    mkdir -p /fix-permissions/customFiles &&
+    mkdir -p /fix-permissions/customFiles/static &&
+    mkdir -p /fix-permissions/customFiles/templates &&
+    
+    # Set proper ownership for all directories
+    chown -R 1000:1000 /fix-permissions &&
+    
+    # Set proper permissions
+    chmod -R 755 /fix-permissions &&
+    chmod -R 777 /fix-permissions/logs &&
+    chmod -R 755 /fix-permissions/configs &&
+    chmod -R 755 /fix-permissions/tessdata &&
+    chmod -R 755 /fix-permissions/customFiles &&
+    
+    # Create initial settings.yml file for security configuration
+    cat > /fix-permissions/configs/settings.yml << 'EOF'
+security:
+  enableLogin: true
+  csrfDisabled: false
+  loginAttemptCount: 5
+  loginResetTimeMinutes: 120
+  initialLogin:
+    username: admin
+    password: admin
+system:
+  defaultLocale: en-US
+  googlevisibility: false
+  enableAlphaFunctionality: false
+  showUpdate: true
+  showUpdateOnlyAdmin: true
+  customHTMLFiles: false
+  tessdataDir: /usr/share/tessdata
+ui:
+  appName: Stirling PDF
+  homeDescription: Your locally hosted PDF toolkit
+  appNameNavbar: Stirling PDF
+endpoints:
+  toRemove: []
+  groupsToRemove: []
+metrics:
+  enabled: true
+  enableAuth: true
+EOF
+    
+    # Set proper ownership for the settings file
+    chown 1000:1000 /fix-permissions/configs/settings.yml &&
+    chmod 644 /fix-permissions/configs/settings.yml
+    "
+  author: Yundera Team
   category: Office
   developer: Stirling Tools
   description:
     en_us: |
-      Stirling PDF is your complete PDF toolkit - everything you need to work with PDF files, right from your web browser.
+      **Your complete PDF toolkit - everything you need to work with PDF files, right from your web browser.**
+
+      Tired of paying for expensive PDF software or worried about uploading sensitive documents to online services? Stirling PDF solves this by running entirely on your server - your files never leave your device.
 
       **What you can do:**
       • **Split & Merge**: Break large PDFs into smaller files or combine multiple PDFs into one
@@ -55,28 +132,10 @@ x-casaos:
       • **Professional quality**: Get the same results as expensive PDF software
 
       Perfect for students, professionals, or anyone who works with PDF documents regularly. No more paying for expensive PDF software or worrying about uploading sensitive documents to online services.
-    en_gb: |
-      Stirling PDF is your complete PDF toolkit - everything you need to work with PDF files, right from your web browser.
-
-      **What you can do:**
-      • **Split & Merge**: Break large PDFs into smaller files or combine multiple PDFs into one
-      • **Convert**: Turn PDFs into images, Word documents, Excel files, or PowerPoint presentations
-      • **Compress**: Reduce file size to save space and make sharing easier  
-      • **Edit**: Add text, images, signatures, watermarks, or remove pages
-      • **Organise**: Rotate pages, reorder sections, or extract specific pages
-      • **Security**: Add passwords, remove passwords, or redact sensitive information
-      • **OCR**: Extract text from scanned documents and images
-
-      **Why choose Stirling PDF:**
-      • **Private & Secure**: All processing happens on your server - your files never leave your device
-      • **No file size limits**: Work with PDFs of any size
-      • **No subscription fees**: Completely free with no ads or hidden costs
-      • **Works anywhere**: Access from any device with a web browser
-      • **Professional quality**: Get the same results as expensive PDF software
-
-      Perfect for students, professionals, or anyone who works with PDF documents regularly. No more paying for expensive PDF software or worrying about uploading sensitive documents to online services.
     ko_kr: |
-      Stirling PDF는 완전한 PDF 툴킷입니다 - 웹 브라우저에서 바로 PDF 파일 작업에 필요한 모든 것을 제공합니다.
+      **완전한 PDF 툴킷 - 웹 브라우저에서 바로 PDF 파일 작업에 필요한 모든 것.**
+
+      비싼 PDF 소프트웨어 비용을 지불하거나 민감한 문서를 온라인 서비스에 업로드하는 것에 대해 걱정하시나요? Stirling PDF는 완전히 당신의 서버에서 실행되어 이 문제를 해결합니다 - 파일이 기기를 떠나지 않습니다.
 
       **할 수 있는 일들:**
       • **분할 및 병합**: 큰 PDF를 작은 파일로 나누거나 여러 PDF를 하나로 합치기
@@ -96,27 +155,31 @@ x-casaos:
 
       PDF 문서를 정기적으로 다루는 학생, 전문가, 또는 누구에게나 완벽합니다. 더 이상 비싼 PDF 소프트웨어 비용을 지불하거나 민감한 문서를 온라인 서비스에 업로드하는 것에 대해 걱정할 필요가 없습니다.
     zh_cn: |
-      Stirling PDF是您完整的PDF工具包 - 直接从网页浏览器处理PDF文件所需的一切。
+      **您完整的PDF工具包 - 直接从网页浏览器处理PDF文件所需的一切。**
 
-      **您可以做什么：**
-      • **拆分和合并**：将大PDF分解为小文件或将多个PDF合并为一个
-      • **转换**：将PDF转换为图像、Word文档、Excel文件或PowerPoint演示文稿
-      • **压缩**：减少文件大小以节省空间并使共享更容易
-      • **编辑**：添加文本、图像、签名、水印或删除页面
-      • **整理**：旋转页面、重新排序部分或提取特定页面
-      • **安全**：添加密码、删除密码或编辑敏感信息
-      • **OCR**：从扫描的文档和图像中提取文本
+      厌倦了支付昂贵的PDF软件费用或担心将敏感文档上传到在线服务？Stirling PDF通过完全在您的服务器上运行来解决这个问题 - 您的文件永远不会离开您的设备。
 
-      **为什么选择Stirling PDF：**
-      • **私密和安全**：所有处理都在您的服务器上进行 - 您的文件永远不会离开您的设备
-      • **无文件大小限制**：处理任何大小的PDF
-      • **无订阅费用**：完全免费，无广告或隐藏费用
-      • **随处可用**：从任何有网页浏览器的设备访问
-      • **专业品质**：获得与昂贵PDF软件相同的结果
+      **您可以做什么:**
+      • **拆分和合并**: 将大PDF分解为小文件或将多个PDF合并为一个
+      • **转换**: 将PDF转换为图像、Word文档、Excel文件或PowerPoint演示文稿
+      • **压缩**: 减少文件大小以节省空间并使共享更容易
+      • **编辑**: 添加文本、图像、签名、水印或删除页面
+      • **整理**: 旋转页面、重新排序部分或提取特定页面
+      • **安全**: 添加密码、删除密码或编辑敏感信息
+      • **OCR**: 从扫描的文档和图像中提取文本
 
-      非常适合经常处理PDF文档的学生、专业人士或任何人。无需再为昂贵的PDF软件付费，也无需担心将敏感文档上传到在线服务。
+      **为什么选择Stirling PDF:**
+      • **私密和安全**: 所有处理都在您的服务器上进行 - 您的文件永远不会离开您的设备
+      • **无文件大小限制**: 处理任何大小的PDF
+      • **无订阅费用**: 完全免费，无广告或隐藏费用
+      • **随处可用**: 从任何有网页浏览器的设备访问
+      • **专业品质**: 获得与昂贵PDF软件相同的结果
+
+      非常适合经常处理PDF文档的学生、专业人士或任何人。无需再为昂贵的PDF软件付费或担心将敏感文档上传到在线服务。
     fr_fr: |
-      Stirling PDF est votre boîte à outils PDF complète - tout ce dont vous avez besoin pour travailler avec des fichiers PDF, directement depuis votre navigateur web.
+      **Votre boîte à outils PDF complète - tout ce dont vous avez besoin pour travailler avec des fichiers PDF, directement depuis votre navigateur web.**
+
+      Fatigué de payer pour des logiciels PDF coûteux ou inquiet de télécharger des documents sensibles vers des services en ligne ? Stirling PDF résout ce problème en fonctionnant entièrement sur votre serveur - vos fichiers ne quittent jamais votre appareil.
 
       **Ce que vous pouvez faire :**
       • **Diviser et fusionner** : Séparer de gros PDF en fichiers plus petits ou combiner plusieurs PDF en un seul
@@ -135,28 +198,10 @@ x-casaos:
       • **Qualité professionnelle** : Obtenez les mêmes résultats que les logiciels PDF coûteux
 
       Parfait pour les étudiants, les professionnels ou toute personne qui travaille régulièrement avec des documents PDF. Fini de payer pour des logiciels PDF coûteux ou de s'inquiéter de télécharger des documents sensibles vers des services en ligne.
-    de_de: |
-      Stirling PDF ist Ihr komplettes PDF-Toolkit - alles was Sie brauchen, um mit PDF-Dateien zu arbeiten, direkt von Ihrem Webbrowser aus.
-
-      **Was Sie tun können:**
-      • **Teilen & Zusammenführen**: Große PDFs in kleinere Dateien aufteilen oder mehrere PDFs zu einer zusammenfassen
-      • **Konvertieren**: PDFs in Bilder, Word-Dokumente, Excel-Dateien oder PowerPoint-Präsentationen umwandeln
-      • **Komprimieren**: Dateigröße reduzieren um Speicherplatz zu sparen und das Teilen zu erleichtern
-      • **Bearbeiten**: Text, Bilder, Signaturen, Wasserzeichen hinzufügen oder Seiten entfernen
-      • **Organisieren**: Seiten drehen, Abschnitte neu anordnen oder bestimmte Seiten extrahieren
-      • **Sicherheit**: Passwörter hinzufügen, Passwörter entfernen oder sensible Informationen schwärzen
-      • **OCR**: Text aus gescannten Dokumenten und Bildern extrahieren
-
-      **Warum Stirling PDF wählen:**
-      • **Privat & Sicher**: Alle Verarbeitung findet auf Ihrem Server statt - Ihre Dateien verlassen niemals Ihr Gerät
-      • **Keine Dateigrößenbegrenzung**: Arbeiten Sie mit PDFs jeder Größe
-      • **Keine Abonnementgebühren**: Völlig kostenlos ohne Werbung oder versteckte Kosten
-      • **Funktioniert überall**: Zugriff von jedem Gerät mit Webbrowser
-      • **Professionelle Qualität**: Erhalten Sie die gleichen Ergebnisse wie teure PDF-Software
-
-      Perfekt für Studenten, Berufstätige oder jeden, der regelmäßig mit PDF-Dokumenten arbeitet. Keine teuren PDF-Software mehr bezahlen oder sich Sorgen über das Hochladen sensibler Dokumente zu Online-Diensten machen.
     es_es: |
-      Stirling PDF es tu kit de herramientas PDF completo - todo lo que necesitas para trabajar con archivos PDF, directamente desde tu navegador web.
+      **Tu kit completo de herramientas PDF - todo lo que necesitas para trabajar con archivos PDF, directamente desde tu navegador web.**
+
+      ¿Cansado de pagar por software PDF caro o preocupado por subir documentos sensibles a servicios en línea? Stirling PDF resuelve esto ejecutándose completamente en tu servidor - tus archivos nunca salen de tu dispositivo.
 
       **Lo que puedes hacer:**
       • **Dividir y combinar**: Separar PDFs grandes en archivos más pequeños o combinar múltiples PDFs en uno
@@ -175,123 +220,131 @@ x-casaos:
       • **Calidad profesional**: Obtén los mismos resultados que el software PDF caro
 
       Perfecto para estudiantes, profesionales o cualquiera que trabaje regularmente con documentos PDF. No más pagar por software PDF caro o preocuparse por subir documentos sensibles a servicios en línea.
-  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Stirling-PDF/icon.png
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Stirling-PDF/icon.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Stirling-PDF/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Stirling-PDF/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Stirling-PDF/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Stirling-PDF/thumbnail.png
-  index: /
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Stirling-PDF/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Stirling-PDF/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Stirling-PDF/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Stirling-PDF/thumbnail.png
   tagline:
     en_us: Your complete PDF toolkit in your browser
-    en_gb: Your complete PDF toolkit in your browser
     ko_kr: 브라우저 안의 완전한 PDF 툴킷
     zh_cn: 浏览器中的完整PDF工具包
     fr_fr: Votre boîte à outils PDF complète dans votre navigateur
-    de_de: Ihr komplettes PDF-Toolkit in Ihrem Browser
     es_es: Tu kit completo de herramientas PDF en tu navegador
   title:
     en_us: Stirling PDF
-    en_gb: Stirling PDF
-    ko_kr: Stirling PDF
-    zh_cn: Stirling PDF
-    fr_fr: Stirling PDF
-    de_de: Stirling PDF
-    es_es: Stirling PDF
-  store_app_id: stirlingpdf
-  main: stirlingpdf
-  is_uncontrolled: false
-  webui_port: 8080
   tips:
     before_install:
       en_us: |
-        ⏰ **Setup Time:**
+        **⏰ Setup Time:**
         This app takes about 5-10 minutes to set up after installation. Please be patient and wait before trying to access it.
 
-        🔐 **Login Information:**
-        • Username: `admin`
-        • Password: `admin`
+        **🔐 Default Login Information:**
+        | Username | Password |
+        | -------- | -------- |
+        | `admin`  | `$default_pwd` |
 
-        🔒 **Important Security Note:**
-        After your first login, go to settings and change both the username and password to something secure. This protects your PDF files from unauthorized access.
+        **🔒 Important Security Note:**
+        After your first login, go to Admin Settings → User Management and change both the username and password to something secure. This protects your PDF files from unauthorized access.
 
-        **How to use:**
-        Once ready, you can upload PDF files through your web browser and start editing them right away!
-      en_gb: |
-        ⏰ **Setup Time:**
-        This app takes about 5-10 minutes to set up after installation. Please be patient and wait before trying to access it.
-
-        🔐 **Login Information:**
-        • Username: `admin`
-        • Password: `admin`
-
-        🔒 **Important Security Note:**
-        After your first login, go to settings and change both the username and password to something secure. This protects your PDF files from unauthorised access.
+        **✨ Features Available:**
+        • Split, merge, and organize PDFs
+        • Convert between PDF and other formats
+        • Add watermarks, signatures, and annotations
+        • Password protection and encryption
+        • OCR text extraction from scanned documents
+        • Compress PDFs to reduce file size
 
         **How to use:**
         Once ready, you can upload PDF files through your web browser and start editing them right away!
       ko_kr: |
-        ⏰ **설정 시간:**
+        **⏰ 설정 시간:**
         이 앱은 설치 후 설정이 완료되기까지 약 5-10분이 걸립니다. 인내심을 갖고 접속하기 전에 기다려 주세요.
 
-        🔐 **로그인 정보:**
-        • 사용자명: `admin`
-        • 비밀번호: `admin`
+        **🔐 기본 로그인 정보:**
+        | 사용자명 | 비밀번호 |
+        | -------- | -------- |
+        | `admin`  | `$default_pwd` |
 
-        🔒 **중요한 보안 알림:**
-        첫 로그인 후 설정으로 가서 사용자명과 비밀번호를 안전한 것으로 변경하세요. 이렇게 하면 PDF 파일을 무단 접근으로부터 보호할 수 있습니다.
+        **🔒 중요한 보안 알림:**
+        첫 로그인 후 관리자 설정 → 사용자 관리로 가서 사용자명과 비밀번호를 안전한 것으로 변경하세요. 이렇게 하면 PDF 파일을 무단 접근으로부터 보호할 수 있습니다.
+
+        **✨ 사용 가능한 기능:**
+        • PDF 분할, 병합, 정리
+        • PDF와 다른 형식 간 변환
+        • 워터마크, 서명, 주석 추가
+        • 비밀번호 보호 및 암호화
+        • 스캔한 문서에서 OCR 텍스트 추출
+        • PDF 압축으로 파일 크기 줄이기
 
         **사용 방법:**
         준비가 되면 웹 브라우저를 통해 PDF 파일을 업로드하고 바로 편집을 시작할 수 있습니다!
       zh_cn: |
-        ⏰ **设置时间：**
+        **⏰ 设置时间:**
         此应用在安装后需要约5-10分钟来完成设置。请耐心等待，在尝试访问之前请等待。
 
-        🔐 **登录信息：**
-        • 用户名：`admin`
-        • 密码：`admin`
+        **🔐 默认登录信息:**
+        | 用户名   | 密码 |
+        | -------- | ---- |
+        | `admin`  | `$default_pwd` |
 
-        🔒 **重要安全提示：**
-        首次登录后，请前往设置并将用户名和密码更改为安全的内容。这可以保护您的PDF文件免受未经授权的访问。
+        **🔒 重要安全提示:**
+        首次登录后，请前往管理员设置 → 用户管理，并将用户名和密码更改为安全的内容。这可以保护您的PDF文件免受未经授权的访问。
 
-        **如何使用：**
-        准备就绪后，您可以通过网页浏览器上传PDF文件并立即开始编辑它们！
+        **✨ 可用功能:**
+        • 拆分、合并和整理PDF
+        • PDF与其他格式之间的转换
+        • 添加水印、签名和注释
+        • 密码保护和加密
+        • 从扫描文档中OCR文本提取
+        • 压缩PDF以减少文件大小
+
+        **如何使用:**
+        准备就绪后，您可以通过网页浏览器上传PDF文件并立即开始编辑！
       fr_fr: |
-        ⏰ **Temps d'installation :**
+        **⏰ Temps d'installation :**
         Cette application prend environ 5-10 minutes pour s'installer après l'installation. Veuillez être patient et attendre avant d'essayer d'y accéder.
 
-        🔐 **Informations de connexion :**
-        • Nom d'utilisateur : `admin`
-        • Mot de passe : `admin`
+        **🔐 Informations de connexion par défaut :**
+        | Nom d'utilisateur | Mot de passe |
+        | ----------------- | ------------ |
+        | `admin`           | `$default_pwd` |
 
-        🔒 **Note de sécurité importante :**
-        Après votre première connexion, allez dans les paramètres et changez le nom d'utilisateur et le mot de passe pour quelque chose de sécurisé. Cela protège vos fichiers PDF des accès non autorisés.
+        **🔒 Note de sécurité importante :**
+        Après votre première connexion, allez dans Paramètres Admin → Gestion des Utilisateurs et changez le nom d'utilisateur et le mot de passe pour quelque chose de sécurisé. Cela protège vos fichiers PDF des accès non autorisés.
+
+        **✨ Fonctionnalités disponibles :**
+        • Diviser, fusionner et organiser les PDF
+        • Convertir entre PDF et autres formats
+        • Ajouter des filigranes, signatures et annotations
+        • Protection par mot de passe et chiffrement
+        • Extraction de texte OCR des documents scannés
+        • Compresser les PDF pour réduire la taille
 
         **Comment utiliser :**
         Une fois prêt, vous pouvez télécharger des fichiers PDF via votre navigateur web et commencer à les éditer immédiatement !
-      de_de: |
-        ⏰ **Einrichtungszeit:**
-        Diese App benötigt etwa 5-10 Minuten zur Einrichtung nach der Installation. Bitte haben Sie Geduld und warten Sie, bevor Sie versuchen darauf zuzugreifen.
-
-        🔐 **Login-Informationen:**
-        • Benutzername: `admin`
-        • Passwort: `admin`
-
-        🔒 **Wichtiger Sicherheitshinweis:**
-        Nach Ihrem ersten Login gehen Sie zu den Einstellungen und ändern Sie sowohl Benutzername als auch Passwort zu etwas Sicherem. Dies schützt Ihre PDF-Dateien vor unbefugtem Zugriff.
-
-        **Wie zu verwenden:**
-        Sobald bereit, können Sie PDF-Dateien über Ihren Webbrowser hochladen und sofort mit der Bearbeitung beginnen!
       es_es: |
-        ⏰ **Tiempo de configuración:**
+        **⏰ Tiempo de configuración:**
         Esta aplicación toma aproximadamente 5-10 minutos para configurarse después de la instalación. Por favor ten paciencia y espera antes de intentar acceder.
 
-        🔐 **Información de inicio de sesión:**
-        • Nombre de usuario: `admin`
-        • Contraseña: `admin`
+        **🔐 Información de inicio de sesión por defecto:**
+        | Usuario | Contraseña |
+        | ------- | ---------- |
+        | `admin` | `$default_pwd` |
 
-        🔒 **Nota de seguridad importante:**
-        Después de tu primer inicio de sesión, ve a configuraciones y cambia tanto el nombre de usuario como la contraseña por algo seguro. Esto protege tus archivos PDF del acceso no autorizado.
+        **🔒 Nota de seguridad importante:**
+        Después de tu primer inicio de sesión, ve a Configuración de Admin → Gestión de Usuarios y cambia tanto el usuario como la contraseña por algo seguro. Esto protege tus archivos PDF del acceso no autorizado.
+
+        **✨ Características disponibles:**
+        • Dividir, combinar y organizar PDFs
+        • Convertir entre PDF y otros formatos
+        • Agregar marcas de agua, firmas y anotaciones
+        • Protección con contraseña y encriptación
+        • Extracción de texto OCR de documentos escaneados
+        • Comprimir PDFs para reducir el tamaño
 
         **Cómo usar:**
         Una vez listo, puedes subir archivos PDF a través de tu navegador web y comenzar a editarlos de inmediato!
+  webui_port: 8080
+  index: /
