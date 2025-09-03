@@ -4,8 +4,7 @@ services:
   mealie:
     image: ghcr.io/mealie-recipes/mealie:v3.1.2
     container_name: mealie
-    # PUID/PGID가 작동하지 않으므로 user 필드로 직접 지정하지 않음
-    # 대신 pre-install-cmd로 권한 문제 해결
+    user: $PUID:$PGID          # Required for proper permissions
     deploy:
       resources:
         limits:
@@ -14,27 +13,31 @@ services:
     expose:
       - 9000                    # Default port for Mealie v3
     environment:
-      # 타임존과 기본 설정
-      TZ: $TZ                   # Timezone setting
+      # Required PUID/PGID for file permissions
+      PUID: $PUID
+      PGID: $PGID
       
-      # 보안 설정
+      # Timezone setting
+      TZ: $TZ
+      
+      # Security settings
       ALLOW_SIGNUP: "false"     # Disable user registration after initial setup
       
-      # NSL Router 설정
+      # NSL Router settings
       BASE_URL: https://$domain  # Set base URL for proper routing
       
-      # 성능 설정 - 메모리 제한 있으므로 워커 수 최소화
+      # Performance settings - memory limited so minimize workers
       MAX_WORKERS: 1            # Single worker for resource efficiency
       WEB_CONCURRENCY: 1        # Single concurrent process
       
-      # 데이터베이스 설정
+      # Database settings
       DB_ENGINE: sqlite         # Use SQLite for simplicity
       
-      # 기본 관리자 계정 (첫 실행 시 생성됨)
+      # Default admin account (created on first run)
       DEFAULT_EMAIL: changeme@example.com
       DEFAULT_PASSWORD: $default_pwd
       
-      # API 설정
+      # API settings
       API_PORT: 9000
     volumes:
       - /DATA/AppData/$AppID/data:/app/data
@@ -52,9 +55,9 @@ x-casaos:
     - arm64
   main: mealie
   pre-install-cmd: |
-    # Mealie v3는 root로 실행되므로 data 디렉토리도 root 소유권으로 설정
+    # Create directory structure and set permissions for PUID:PGID
     mkdir -p /DATA/AppData/$AppID/data &&
-    chown -R root:root /DATA/AppData/$AppID &&
+    chown -R $PUID:$PGID /DATA/AppData/$AppID &&
     chmod -R 755 /DATA/AppData/$AppID
   author: Yundera Team
   category: Utilities
@@ -194,7 +197,7 @@ x-casaos:
         
         **⚠️ 首次登录后请更改这些！**
         
-        **使用方법:**
+        **使用方法:**
         1. 访问网站并使用上述信息登录
         2. 个人资料设置 → 更改您的邮箱和密码
         3. 点击"+"按钮，然后粘贴任何食谱URL
