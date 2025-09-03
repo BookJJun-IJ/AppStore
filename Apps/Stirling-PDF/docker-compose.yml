@@ -6,58 +6,31 @@ services:
     container_name: stirling-pdf
     restart: unless-stopped
     expose:
-      - 80
+      - 8080
     volumes:
       - /DATA/AppData/$AppID/tessdata:/usr/share/tessdata
       - /DATA/AppData/$AppID/configs:/configs
       - /DATA/AppData/$AppID/logs:/logs
-      - /DATA/AppData/$AppID/customFiles:/customFiles
-      - /DATA/AppData/$AppID/pipeline:/pipeline
       - /DATA/Downloads:/downloads
+    user: $PUID:$PGID
     environment:
-      PGID: $PGID
-      PUID: $PUID
-      TZ: $TZ
-      
-      # Security features
-      DOCKER_ENABLE_SECURITY: false
-      SECURITY_ENABLE_LOGIN: false
-      
-      # UI customization
-      UI_APPNAME: "Stirling PDF"
-      UI_HOMEDESCRIPTION: "Your locally hosted PDF toolkit"
-      SYSTEM_DEFAULTLOCALE: en-US
-      
-      # Performance and compatibility  
-      INSTALL_BOOK_AND_ADVANCED_HTML_OPS: false
-      DISABLE_ADDITIONAL_FEATURES: false
-      
-      # Server configuration for port 80
-      SERVER_PORT: 80
-      
+      PGID: $PGID                              # Group ID for file permissions
+      PUID: $PUID                              # User ID for file permissions
+      TZ: $TZ                                  # Timezone setting
+      DOCKER_ENABLE_SECURITY: false            # Enable security jar download (required for login)
+      SECURITY_ENABLE_LOGIN: false             # Enable login authentication
+    cpu_shares: 100
     deploy:
       resources:
         limits:
           memory: 2G
-          cpus: '1.0'
-    healthcheck:
-      test: ["CMD", "timeout", "10s", "bash", "-c", "</dev/tcp/127.0.0.1/80"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 120s
 
 x-casaos:
-  # Pre-install command to set up directories with proper permissions
-  pre-install-cmd: |
-    mkdir -p /DATA/AppData/$AppID/{tessdata,configs,logs,customFiles,pipeline} &&
-    chown -R $PUID:$PGID /DATA/AppData/$AppID &&
-    chmod -R 755 /DATA/AppData/$AppID
   architectures:
     - amd64
     - arm64
   main: stirlingpdf
-  webui_port: 80
+  webui_port: 8080
   author: Yundera Team
   category: Office
   developer: Stirling Tools
