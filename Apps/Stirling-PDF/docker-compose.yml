@@ -11,21 +11,26 @@ services:
       - /DATA/AppData/$AppID/tessdata:/usr/share/tessdata
       - /DATA/AppData/$AppID/configs:/configs
       - /DATA/AppData/$AppID/logs:/logs
+      - /DATA/AppData/$AppID/customFiles:/customFiles
+      - /DATA/AppData/$AppID/pipeline:/pipeline
       - /DATA/Downloads:/downloads
     user: $PUID:$PGID
     environment:
-      PGID: $PGID                              # Group ID for file permissions
-      PUID: $PUID                              # User ID for file permissions
-      TZ: $TZ                                  # Timezone setting
-      DOCKER_ENABLE_SECURITY: true            # Enable security jar download (required for login)
-      SECURITY_ENABLE_LOGIN: true             # Enable login authentication
-      SECURITY_INITIALLOGIN_USERNAME: admin   # Default admin username
-      SECURITY_INITIALLOGIN_PASSWORD: admin   # Default admin password (change after first login)
-    cpu_shares: 100
+      PGID: $PGID                                    # Group ID for file permissions
+      PUID: $PUID                                    # User ID for file permissions
+      TZ: $TZ                                        # Timezone setting
+      DOCKER_ENABLE_SECURITY: true                  # Enable security features
+      SECURITY_ENABLELOGIN: true                    # Enable login authentication  
+      SECURITY_INITIALLOGIN_USERNAME: admin         # Default admin username
+      SECURITY_INITIALLOGIN_PASSWORD: $default_pwd  # Use CasaOS generated password
+      DISABLE_ADDITIONAL_FEATURES: false            # Enable all features including OCR
+      SYSTEM_DEFAULTLOCALE: en_US                   # Default language
+      INSTALL_BOOK_AND_ADVANCED_HTML_OPS: false     # Disable optional features to improve stability
     deploy:
       resources:
         limits:
           memory: 2G
+          cpus: '1.0'
 
 x-casaos:
   architectures:
@@ -36,6 +41,12 @@ x-casaos:
   author: Yundera Team
   category: Office
   developer: Stirling Tools
+  pre-install-cmd: |
+    docker run --rm -v /DATA/AppData/$AppID:/data ubuntu:22.04 sh -c '
+      mkdir -p /data/tessdata /data/configs /data/logs /data/customFiles /data/pipeline &&
+      chown -R $PUID:$PGID /data &&
+      chmod -R 755 /data
+    '
   description:
     en_us: |
       **Your complete PDF toolkit - everything you need to work with PDF files, right from your web browser.**
@@ -156,7 +167,7 @@ x-casaos:
   tagline:
     en_us: Your complete PDF toolkit in your browser
     ko_kr: 브라우저 안의 완전한 PDF 툴킷
-    zh_cn: 浏览器中的完整PDF工具包
+    zh_cn: 浏览器中的완성PDF工具包
     fr_fr: Votre boîte à outils PDF complète dans votre navigateur
     es_es: Tu kit completo de herramientas PDF en tu navegador
   title:
@@ -167,9 +178,14 @@ x-casaos:
         **⏰ Setup Time:**
         This app takes about 5-10 minutes to set up after installation. Please be patient and wait before trying to access it.
 
+        **🔐 Default Login:**
+        | Username   | Password       |
+        | ---------- | -------------- |
+        | `admin`    | `$default_pwd` |
+
         **✨ Features Available:**
         • Split, merge, and organize PDFs
-        • Convert between PDF and other formats
+        • Convert between PDF and other formats  
         • Add watermarks, signatures, and annotations
         • Password protection and encryption
         • OCR text extraction from scanned documents
@@ -183,6 +199,11 @@ x-casaos:
       ko_kr: |
         **⏰ 설정 시간:**
         이 앱은 설치 후 설정이 완료되기까지 약 5-10분이 걸립니다. 인내심을 갖고 접속하기 전에 기다려 주세요.
+
+        **🔐 기본 로그인:**
+        | 사용자명   | 비밀번호       |
+        | --------- | ------------- |
+        | `admin`   | `$default_pwd` |
 
         **✨ 사용 가능한 기능:**
         • PDF 분할, 병합, 정리
@@ -199,29 +220,39 @@ x-casaos:
         웹 브라우저를 통해 PDF 파일을 업로드하고 바로 편집을 시작할 수 있습니다!
       zh_cn: |
         **⏰ 设置时间:**
-        此应用在安装后需要约5-10分钟来完成设置。请耐心等待，在尝试访问之前请等待。
+        此应用在安装后需要约5-10분来完成设置。请耐心등待，在尝试访问之前请等待。
 
-        **✨ 可用功能:**
-        • 拆分、合并和整理PDF
+        **🔐 默认登录:**
+        | 用户명     | 密码          |
+        | --------- | ------------- |
+        | `admin`   | `$default_pwd` |
+
+        **✨ 可用기능:**
+        • PDF拆分、合并和整리
         • PDF与其他格式之间的转换
-        • 添加水印、签名和注释
-        • 密码保护和加密
-        • 从扫描文档中OCR文本提取
-        • 压缩PDF以减少文件大小
+        • 添加수인, 签名和주석
+        • 密码보护和加密
+        • 从扫描문서中OCR텍스트추출
+        • 压缩PDF以减少파일크기
 
         **🌐 访问:**
-        准备就绪后，您的应用将通过无端口号的清洁URL可用！
+        준비就绪后，您的应용将통过无단口号的清洁URL가用！
 
-        **如何使用:**
-        通过网页浏览器上传PDF文件并立即开始编辑！
+        **如何사용:**
+        通过网页브라우저업로드PDF파일并立即开始편집！
       fr_fr: |
         **⏰ Temps d'installation :**
         Cette application prend environ 5-10 minutes pour s'installer après l'installation. Veuillez être patient et attendre avant d'essayer d'y accéder.
 
+        **🔐 Connexion par défaut :**
+        | Nom d'utilisateur | Mot de passe      |
+        | ----------------- | ----------------- |
+        | `admin`           | `$default_pwd`    |
+
         **✨ Fonctionnalités disponibles :**
         • Diviser, fusionner et organiser les PDF
         • Convertir entre PDF et autres formats
-        • Ajouter des filigranes, signatures et annotations
+        • Ajouter des filigranes, signatures et annotations  
         • Protection par mot de passe et chiffrement
         • Extraction de texte OCR des documents scannés
         • Compresser les PDF pour réduire la taille
@@ -234,6 +265,11 @@ x-casaos:
       es_es: |
         **⏰ Tiempo de configuración:**
         Esta aplicación toma aproximadamente 5-10 minutos para configurarse después de la instalación. Por favor ten paciencia y espera antes de intentar acceder.
+
+        **🔐 Inicio de sesión predeterminado:**
+        | Nombre de usuario | Contraseña        |
+        | ----------------- | ----------------- |
+        | `admin`           | `$default_pwd`    |
 
         **✨ Características disponibles:**
         • Dividir, combinar y organizar PDFs
