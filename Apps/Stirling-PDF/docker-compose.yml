@@ -19,11 +19,9 @@ services:
       PGID: $PGID                                    # Group ID for file permissions
       PUID: $PUID                                    # User ID for file permissions
       TZ: $TZ                                        # Timezone setting
-      DOCKER_ENABLE_SECURITY: true                  # Enable security features
-      SECURITY_ENABLELOGIN: true                    # Enable login authentication  
-      SECURITY_INITIALLOGIN_USERNAME: admin         # Default admin username
-      SECURITY_INITIALLOGIN_PASSWORD: $default_pwd  # Use CasaOS generated password
-      DISABLE_ADDITIONAL_FEATURES: false            # Enable all features including OCR
+      DOCKER_ENABLE_SECURITY: false                  # Enable security features
+      SECURITY_ENABLELOGIN: false                    # Enable login authentication  
+      DISABLE_ADDITIONAL_FEATURES: true            # Enable all features including OCR
       SYSTEM_DEFAULTLOCALE: en_US                   # Default language
       INSTALL_BOOK_AND_ADVANCED_HTML_OPS: false     # Disable optional features to improve stability
     deploy:
