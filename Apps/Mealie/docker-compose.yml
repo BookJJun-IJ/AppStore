@@ -52,9 +52,9 @@ x-casaos:
     - arm64
   main: mealie
   pre-install-cmd: |
-    # 권한 문제 해결을 위한 초기 설정
+    # Mealie v3는 root로 실행되므로 data 디렉토리도 root 소유권으로 설정
     mkdir -p /DATA/AppData/$AppID/data &&
-    chown -R $PUID:$PGID /DATA/AppData/$AppID &&
+    chown -R root:root /DATA/AppData/$AppID &&
     chmod -R 755 /DATA/AppData/$AppID
   author: Yundera Team
   category: Utilities
