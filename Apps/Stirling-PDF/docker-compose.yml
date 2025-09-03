@@ -20,16 +20,8 @@ services:
       TZ: $TZ                                  # Timezone setting
       
       # Security features (required for login)
-      DOCKER_ENABLE_SECURITY: true            # Enable security jar download (required for login)
-      SECURITY_ENABLE_LOGIN: true             # Enable login authentication
-      SECURITY_INITIALLOGIN_USERNAME: admin   # Default admin username
-      SECURITY_INITIALLOGIN_PASSWORD: $default_pwd # Use secure default password
-      
-      # Additional security settings
-      SECURITY_CSRFDISABLED: false            # Keep CSRF protection enabled for security
-      
-      # Optional features
-      INSTALL_BOOK_AND_ADVANCED_HTML_OPS: false # Disable to save resources
+      DOCKER_ENABLE_SECURITY: false            # Enable security jar download (required for login)
+      SECURITY_ENABLE_LOGIN: false             # Enable login authentication      
       
       # UI customization
       UI_APPNAME: "Stirling PDF"
