@@ -14,16 +14,18 @@ services:
       - /DATA/AppData/$AppID/customFiles:/customFiles
       - /DATA/AppData/$AppID/pipeline:/pipeline
       - /DATA/Downloads:/downloads
-    user: $PUID:$PGID
+    # 권한 문제 해결을 위해 user 지시어 제거 (컨테이너가 내부적으로 권한 관리)
     environment:
-      PGID: $PGID                                    # Group ID for file permissions
-      PUID: $PUID                                    # User ID for file permissions
-      TZ: $TZ                                        # Timezone setting
-      DOCKER_ENABLE_SECURITY: false                  # Enable security features
-      SECURITY_ENABLELOGIN: false                    # Enable login authentication  
-      DISABLE_ADDITIONAL_FEATURES: true            # Enable all features including OCR
-      SYSTEM_DEFAULTLOCALE: en_US                   # Default language
-      INSTALL_BOOK_AND_ADVANCED_HTML_OPS: false     # Disable optional features to improve stability
+      PGID: $PGID
+      PUID: $PUID
+      TZ: $TZ
+      DOCKER_ENABLE_SECURITY: false
+      SECURITY_ENABLELOGIN: false
+      DISABLE_ADDITIONAL_FEATURES: true
+      SYSTEM_DEFAULTLOCALE: en_US
+      INSTALL_BOOK_AND_ADVANCED_HTML_OPS: false
+      # 권한 문제 해결을 위한 추가 환경변수
+      UMASK: "022"
     deploy:
       resources:
         limits:
@@ -42,8 +44,7 @@ x-casaos:
   pre-install-cmd: |
     docker run --rm -v /DATA/AppData/$AppID:/data ubuntu:22.04 sh -c '
       mkdir -p /data/tessdata /data/configs /data/logs /data/customFiles /data/pipeline &&
-      chown -R $PUID:$PGID /data &&
-      chmod -R 755 /data
+      chmod -R 777 /data
     '
   description:
     en_us: |
@@ -109,7 +110,7 @@ x-casaos:
       • **无文件大小限制**: 处理任何大小的PDF
       • **无订阅费用**: 完全免费，无广告或隐藏费用
       • **随处可用**: 从任何有网页浏览器的设备访问
-      • **专业品质**: 获得与昂贵PDF软件相同的结果
+      • **专业品质**: 获得与昂贵PDF软件相同的결果
 
       非常适合经常处理PDF文档的学生、专业人士或任何人。无需再为昂贵的PDF软件付费或担心将敏感文档上传到在线服务。
     fr_fr: |
@@ -165,7 +166,7 @@ x-casaos:
   tagline:
     en_us: Your complete PDF toolkit in your browser
     ko_kr: 브라우저 안의 완전한 PDF 툴킷
-    zh_cn: 浏览器中的완성PDF工具包
+    zh_cn: 浏览器中的완整PDF工具包
     fr_fr: Votre boîte à outils PDF complète dans votre navigateur
     es_es: Tu kit completo de herramientas PDF en tu navegador
   title:
@@ -176,10 +177,8 @@ x-casaos:
         **⏰ Setup Time:**
         This app takes about 5-10 minutes to set up after installation. Please be patient and wait before trying to access it.
 
-        **🔐 Default Login:**
-        | Username   | Password       |
-        | ---------- | -------------- |
-        | `admin`    | `$default_pwd` |
+        **🔐 No Login Required:**
+        This app is configured without authentication for easier access. All PDF processing happens locally on your server.
 
         **✨ Features Available:**
         • Split, merge, and organize PDFs
@@ -198,10 +197,8 @@ x-casaos:
         **⏰ 설정 시간:**
         이 앱은 설치 후 설정이 완료되기까지 약 5-10분이 걸립니다. 인내심을 갖고 접속하기 전에 기다려 주세요.
 
-        **🔐 기본 로그인:**
-        | 사용자명   | 비밀번호       |
-        | --------- | ------------- |
-        | `admin`   | `$default_pwd` |
+        **🔐 로그인 필요 없음:**
+        이 앱은 쉬운 접근을 위해 인증 없이 구성되었습니다. 모든 PDF 처리는 로컬 서버에서 이루어집니다.
 
         **✨ 사용 가능한 기능:**
         • PDF 분할, 병합, 정리
@@ -217,35 +214,31 @@ x-casaos:
         **사용 방법:**
         웹 브라우저를 통해 PDF 파일을 업로드하고 바로 편집을 시작할 수 있습니다!
       zh_cn: |
-        **⏰ 设置时间:**
-        此应用在安装后需要约5-10분来完成设置。请耐心등待，在尝试访问之前请等待。
+        **⏰ 설정 시간:**
+        此应용在안装후需要약5-10분来완成设정。请耐心등待，在尝试访问之前请等待。
 
-        **🔐 默认登录:**
-        | 用户명     | 密码          |
-        | --------- | ------------- |
-        | `admin`   | `$default_pwd` |
+        **🔐 무需登录:**
+        此응용程序배置为无身份验证，以便于访问。所有PDF处리都在本地服务器上进행。
 
-        **✨ 可用기능:**
-        • PDF拆分、合并和整리
+        **✨ 可용功능:**
+        • PDF拆分、合병和整리
         • PDF与其他格式之间的转换
-        • 添加수인, 签名和주석
-        • 密码보护和加密
+        • 添加水印、签名和注释
+        • 密码保护和加密
         • 从扫描문서中OCR텍스트추출
-        • 压缩PDF以减少파일크기
+        • 압축PDF以减少파일크기
 
         **🌐 访问:**
-        준비就绪后，您的应용将통过无단口号的清洁URL가用！
+        준비就绪后，您的응용将통过无단口호的清洁URL可용！
 
-        **如何사용:**
-        通过网页브라우저업로드PDF파일并立即开始편집！
+        **如何使用:**
+        통过网页브라우저업로드PDF파일并立即开始편집！
       fr_fr: |
         **⏰ Temps d'installation :**
         Cette application prend environ 5-10 minutes pour s'installer après l'installation. Veuillez être patient et attendre avant d'essayer d'y accéder.
 
-        **🔐 Connexion par défaut :**
-        | Nom d'utilisateur | Mot de passe      |
-        | ----------------- | ----------------- |
-        | `admin`           | `$default_pwd`    |
+        **🔐 Aucune connexion requise :**
+        Cette application est configurée sans authentification pour un accès plus facile. Tout le traitement PDF se fait localement sur votre serveur.
 
         **✨ Fonctionnalités disponibles :**
         • Diviser, fusionner et organiser les PDF
@@ -264,10 +257,8 @@ x-casaos:
         **⏰ Tiempo de configuración:**
         Esta aplicación toma aproximadamente 5-10 minutos para configurarse después de la instalación. Por favor ten paciencia y espera antes de intentar acceder.
 
-        **🔐 Inicio de sesión predeterminado:**
-        | Nombre de usuario | Contraseña        |
-        | ----------------- | ----------------- |
-        | `admin`           | `$default_pwd`    |
+        **🔐 Sin inicio de sesión requerido:**
+        Esta aplicación está configurada sin autenticación para un acceso más fácil. Todo el procesamiento de PDF ocurre localmente en tu servidor.
 
         **✨ Características disponibles:**
         • Dividir, combinar y organizar PDFs
@@ -281,5 +272,5 @@ x-casaos:
         Una vez listo, tu aplicación estará disponible en una URL limpia sin números de puerto!
 
         **Cómo usar:**
-        ¡Sube archivos PDF a través de tu navegador web y comienza a editarlos de inmediato!
+        ¡Sube archivos PDF a través de tu navegador web y comienza a editarlos de inmediatamente!
   index: /
