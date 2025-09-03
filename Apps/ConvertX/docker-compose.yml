@@ -4,7 +4,7 @@ services:
   convertx:
     image: ghcr.io/c4illin/convertx:v0.14.1
     container_name: convertx
-    user: $PUID:$PGID  # 필수 - 사용자 디렉토리 접근 때문
+    # user 설정 제거 - 컨테이너가 내부적으로 권한 처리
     restart: unless-stopped
     deploy:
       resources:
@@ -33,20 +33,20 @@ services:
       FFMPEG_ARGS: "-preset fast"
       
     volumes:
-      # AppData - 앱 전용 데이터
+      # AppData - 앱 전용 데이터 (SQLite DB 포함)
       - /DATA/AppData/$AppID/data:/app/data
       - /DATA/AppData/$AppID/cache:/app/cache
       
-      # 사용자 디렉토리 - PUID:PGID 필수
+      # 사용자 디렉토리
       - /DATA/Downloads:/downloads
       - /DATA/Documents:/documents
       
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/health || wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1"]
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1"]
       interval: 60s
       timeout: 20s
       retries: 5
-      start_period: 60s
+      start_period: 90s  # 시작 대기 시간 증가
       
     logging:
       driver: "json-file"
@@ -90,55 +90,57 @@ x-casaos:
       so your files never leave your control.
     fr_fr: |
       ConvertX est votre propre convertisseur de fichiers universel qui prend en charge plus de 1000 
-      formats de fichiers différents. Pensez-y comme un couteau suisse pour les fichiers - convertissez 
-      des images, vidéos, audio, documents, modèles 3D et plus, tout depuis votre navigateur.
+      formats de fichiers différents. Pensez-y comme un couteau suisse pour les fichiers.
     ko_kr: |
       ConvertX는 1000개 이상의 다양한 파일 형식을 지원하는 당신만의 범용 파일 변환기입니다. 
       파일을 위한 스위스 아미 나이프처럼 브라우저에서 이미지, 비디오, 오디오, 문서, 3D 모델 등을 
-      변환할 수 있습니다. 모든 것이 서버에서 로컬로 처리되므로 파일이 당신의 통제를 벗어나지 않습니다.
+      변환할 수 있습니다.
     zh_cn: |
-      ConvertX是您自己的通用文件转换器，支持1000多种不同的文件格式。把它想象成文件的瑞士军刀 - 
-      在浏览器中转换图像、视频、音频、文档、3D模型等。所有内容都在您的服务器上本地处理，
-      因此您的文件永远不会脱离您的控制。
+      ConvertX是您自己的通用文件转换器，支持1000多种不同的文件格式。把它想象成文件的瑞士军刀。
     es_es: |
       ConvertX es tu propio convertidor de archivos universal que admite más de 1000 formatos de archivo 
-      diferentes. Piénsalo como una navaja suiza para archivos - convierte imágenes, videos, audio, 
-      documentos, modelos 3D y más, todo desde tu navegador.
+      diferentes.
   
   tips:
     before_install:
       en_us: |
-        **Default Account**
+        **Important Notice:**
         
-        The first user account created becomes the admin account.
-        Use the secure password provided by CasaOS.
+        ConvertX will create its database on first launch.
+        The first user account created becomes the admin.
         
-        **Important Settings:**
-        - Auto-delete is disabled by default for stability
-        - Files are stored in /DATA/AppData/convertx/data
-        - Access your Downloads and Documents folders directly
-        
-        **Supported Formats:**
-        - Images: PNG, JPG, WebP, AVIF, SVG, PDF
-        - Videos: MP4, WebM, AVI, MOV, MKV
-        - Audio: MP3, WAV, FLAC, OGG, AAC
-        - Documents: PDF, DOCX, HTML, Markdown
-        - 3D Models: STL, OBJ, GLB, FBX
+        **If you encounter database errors:**
+        Run these commands via SSH:
+        ```
+        docker exec -it convertx sh
+        cd /app/data
+        touch mydb.sqlite
+        chmod 666 mydb.sqlite
+        exit
+        docker restart convertx
+        ```
       ko_kr: |
-        **기본 계정**
+        **중요 공지:**
         
-        첫 번째로 생성된 사용자 계정이 관리자 계정이 됩니다.
-        CasaOS가 제공하는 안전한 비밀번호를 사용하세요.
+        ConvertX는 첫 실행시 데이터베이스를 생성합니다.
+        첫 번째로 생성된 사용자가 관리자가 됩니다.
         
-        **중요 설정:**
-        - 안정성을 위해 자동 삭제가 비활성화되어 있습니다
-        - 파일은 /DATA/AppData/convertx/data에 저장됩니다
-        - Downloads 및 Documents 폴더에 직접 접근 가능합니다
+        **데이터베이스 오류 발생시:**
+        SSH로 다음 명령어 실행:
+        ```
+        docker exec -it convertx sh
+        cd /app/data
+        touch mydb.sqlite
+        chmod 666 mydb.sqlite
+        exit
+        docker restart convertx
+        ```
   
   # Pre-install 명령어 - 디렉토리 생성 및 권한 설정
   pre-install-cmd: |
     mkdir -p /DATA/AppData/$AppID/data /DATA/AppData/$AppID/cache &&
-    chown -R $PUID:$PGID /DATA/AppData/$AppID
+    chmod 777 /DATA/AppData/$AppID/data &&
+    chmod 777 /DATA/AppData/$AppID/cache
   
   # Web UI 설정
   index: /
