@@ -6,44 +6,61 @@ services:
     container_name: stirling-pdf
     restart: unless-stopped
     expose:
-      - 8080
+      - 80
     volumes:
       - /DATA/AppData/$AppID/tessdata:/usr/share/tessdata
       - /DATA/AppData/$AppID/configs:/configs
       - /DATA/AppData/$AppID/logs:/logs
       - /DATA/AppData/$AppID/customFiles:/customFiles
+      - /DATA/AppData/$AppID/pipeline:/pipeline
       - /DATA/Downloads:/downloads
     user: $PUID:$PGID
     environment:
-      PGID: $PGID                              # Group ID for file permissions
-      PUID: $PUID                              # User ID for file permissions
-      TZ: $TZ                                  # Timezone setting
+      PGID: $PGID
+      PUID: $PUID
+      TZ: $TZ
       
-      # Security features (required for login)
-      DOCKER_ENABLE_SECURITY: false            # Enable security jar download (required for login)
-      SECURITY_ENABLE_LOGIN: false             # Enable login authentication      
+      # Security features
+      DOCKER_ENABLE_SECURITY: false
+      SECURITY_ENABLE_LOGIN: false
       
       # UI customization
       UI_APPNAME: "Stirling PDF"
       UI_HOMEDESCRIPTION: "Your locally hosted PDF toolkit"
       SYSTEM_DEFAULTLOCALE: en-US
+      
+      # Performance and compatibility  
+      INSTALL_BOOK_AND_ADVANCED_HTML_OPS: false
+      DISABLE_ADDITIONAL_FEATURES: false
+      
+      # Server configuration for port 80
+      SERVER_PORT: 80
+      
     deploy:
       resources:
         limits:
           memory: 2G
           cpus: '1.0'
     healthcheck:
-      test: ["CMD", "timeout", "10s", "bash", "-c", "</dev/tcp/127.0.0.1/8080"]
+      test: ["CMD", "timeout", "10s", "bash", "-c", "</dev/tcp/127.0.0.1/80"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 120s
 
 x-casaos:
+  # Pre-install command to set up directories with proper permissions
+  pre-install-cmd: |
+    docker run --rm -v /DATA/AppData/$AppID:/data ubuntu:22.04 bash -c '
+      mkdir -p /data/{tessdata,configs,logs,customFiles,pipeline} &&
+      chown -R $PUID:$PGID /data &&
+      chmod -R 755 /data
+    '
   architectures:
     - amd64
     - arm64
   main: stirlingpdf
+  webui_port: 80
   author: Yundera Team
   category: Office
   developer: Stirling Tools
@@ -186,8 +203,11 @@ x-casaos:
         • OCR text extraction from scanned documents
         • Compress PDFs to reduce file size
 
+        **🌐 Access:**
+        Once ready, your app will be available at a clean URL without port numbers!
+
         **How to use:**
-        Once ready, you can upload PDF files through your web browser and start editing them right away!
+        Upload PDF files through your web browser and start editing them right away!
       ko_kr: |
         **⏰ 설정 시간:**
         이 앱은 설치 후 설정이 완료되기까지 약 5-10분이 걸립니다. 인내심을 갖고 접속하기 전에 기다려 주세요.
@@ -200,8 +220,11 @@ x-casaos:
         • 스캔한 문서에서 OCR 텍스트 추출
         • PDF 압축으로 파일 크기 줄이기
 
+        **🌐 접근:**
+        준비가 되면 포트 번호 없는 깔끔한 URL로 앱에 접근할 수 있습니다!
+
         **사용 방법:**
-        준비가 되면 웹 브라우저를 통해 PDF 파일을 업로드하고 바로 편집을 시작할 수 있습니다!
+        웹 브라우저를 통해 PDF 파일을 업로드하고 바로 편집을 시작할 수 있습니다!
       zh_cn: |
         **⏰ 设置时间:**
         此应用在安装后需要约5-10分钟来完成设置。请耐心等待，在尝试访问之前请等待。
@@ -214,8 +237,11 @@ x-casaos:
         • 从扫描文档中OCR文本提取
         • 压缩PDF以减少文件大小
 
+        **🌐 访问:**
+        准备就绪后，您的应用将通过无端口号的清洁URL可用！
+
         **如何使用:**
-        准备就绪后，您可以通过网页浏览器上传PDF文件并立即开始编辑！
+        通过网页浏览器上传PDF文件并立即开始编辑！
       fr_fr: |
         **⏰ Temps d'installation :**
         Cette application prend environ 5-10 minutes pour s'installer après l'installation. Veuillez être patient et attendre avant d'essayer d'y accéder.
@@ -228,15 +254,14 @@ x-casaos:
         • Extraction de texte OCR des documents scannés
         • Compresser les PDF pour réduire la taille
 
+        **🌐 Accès :**
+        Une fois prêt, votre application sera disponible via une URL propre sans numéros de port !
+
         **Comment utiliser :**
-        Une fois prêt, vous pouvez télécharger des fichiers PDF via votre navigateur web et commencer à les éditer immédiatement !
+        Téléchargez des fichiers PDF via votre navigateur web et commencez à les éditer immédiatement !
       es_es: |
         **⏰ Tiempo de configuración:**
         Esta aplicación toma aproximadamente 5-10 minutos para configurarse después de la instalación. Por favor ten paciencia y espera antes de intentar acceder.
-
-
-        **🔒 Nota de seguridad importante:**
-        Después de tu primer inicio de sesión, ve a Configuración de Admin → Gestión de Usuarios y cambia tanto el usuario como la contraseña por algo seguro. Esto protege tus archivos PDF del acceso no autorizado.
 
         **✨ Características disponibles:**
         • Dividir, combinar y organizar PDFs
@@ -246,7 +271,9 @@ x-casaos:
         • Extracción de texto OCR de documentos escaneados
         • Comprimir PDFs para reducir el tamaño
 
+        **🌐 Acceso:**
+        Una vez listo, tu aplicación estará disponible en una URL limpia sin números de puerto!
+
         **Cómo usar:**
-        Una vez listo, puedes subir archivos PDF a través de tu navegador web y comenzar a editarlos de inmediato!
-  webui_port: 8080
+        ¡Sube archivos PDF a través de tu navegador web y comienza a editarlos de inmediato!
   index: /
