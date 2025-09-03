@@ -4,7 +4,7 @@ services:
   convertx:
     image: ghcr.io/c4illin/convertx:v0.14.1
     container_name: convertx
-    user: $PUID:$PGID
+    user: $PUID:$PGID  # 필수 - 사용자 디렉토리 접근 때문
     restart: unless-stopped
     deploy:
       resources:
@@ -12,28 +12,47 @@ services:
           memory: 2G
           cpus: '1.0'
     expose:
-      - 3000
+      - 3000  # NSL 라우터용 expose
     environment:
+      # 시스템 변수
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
-      JWT_SECRET: $default_pwd
+      
+      # 보안 설정
+      JWT_SECRET: $default_pwd  # CasaOS가 생성하는 안전한 비밀번호
       ACCOUNT_REGISTRATION: "false"
       HTTP_ALLOWED: "false"
       ALLOW_UNAUTHENTICATED: "false"
-      AUTO_DELETE_EVERY_N_HOURS: "24"
+      
+      # 자동 삭제 비활성화 (안정성 향상)
+      AUTO_DELETE_EVERY_N_HOURS: "0"
+      
+      # 기타 설정
       HIDE_HISTORY: "false"
       FFMPEG_ARGS: "-preset fast"
+      
     volumes:
+      # AppData - 앱 전용 데이터
       - /DATA/AppData/$AppID/data:/app/data
+      - /DATA/AppData/$AppID/cache:/app/cache
+      
+      # 사용자 디렉토리 - PUID:PGID 필수
       - /DATA/Downloads:/downloads
       - /DATA/Documents:/documents
+      
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/health || wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1"]
+      interval: 60s
+      timeout: 20s
+      retries: 5
+      start_period: 60s
+      
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 x-casaos:
   architectures:
@@ -42,58 +61,85 @@ x-casaos:
   main: convertx
   author: CasaOS Team
   category: Utilities
-  description:
-    en_us: ConvertX is your own universal file converter that supports over 1000+ different file formats. Think of it as having a Swiss Army knife for files - convert images, videos, audio, documents, 3D models, and more, all from your browser. Instead of using multiple online conversion websites (which often have file size limits, watermarks, or privacy concerns), you get a powerful, private conversion tool running on your own server. Everything is processed locally on your server, so your files never leave your control. Perfect for content creators, businesses, families, or anyone who wants complete privacy and no file size limits.
-    ko_kr: ConvertX는 1000개 이상의 다양한 파일 형식을 지원하는 당신만의 범용 파일 변환기입니다. 파일을 위한 스위스 아미 나이프처럼 생각하세요 - 브라우저에서 이미지, 비디오, 오디오, 문서, 3D 모델 등을 변환할 수 있습니다. 파일 크기 제한, 워터마크, 개인정보 보호 문제가 있는 여러 온라인 변환 웹사이트를 사용하는 대신, 자신의 서버에서 실행되는 강력하고 사적인 변환 도구를 얻을 수 있습니다. 모든 것이 서버에서 로컬로 처리되므로 파일이 당신의 통제를 벗어나지 않습니다.
-    zh_cn: ConvertX是您自己的通用文件转换器，支持1000多种不同的文件格式。把它想象成文件的瑞士军刀 - 在浏览器中转换图像、视频、音频、文档、3D模型等。您无需使用多个在线转换网站（通常有文件大小限制、水印或隐私问题），而是在自己的服务器上获得功能强大的私人转换工具。所有内容都在您的服务器上本地处理，因此您的文件永远不会脱离您的控制。
-    fr_fr: ConvertX est votre propre convertisseur de fichiers universel qui prend en charge plus de 1000 formats de fichiers différents. Pensez-y comme un couteau suisse pour les fichiers - convertissez des images, vidéos, audio, documents, modèles 3D et plus, tout depuis votre navigateur. Au lieu d'utiliser plusieurs sites web de conversion en ligne (qui ont souvent des limites de taille de fichier, des filigranes ou des problèmes de confidentialité), vous obtenez un outil de conversion puissant et privé fonctionnant sur votre propre serveur.
-    es_es: ConvertX es tu propio convertidor de archivos universal que admite más de 1000 formatos de archivo diferentes. Piénsalo como una navaja suiza para archivos convierte imágenes, videos, audio, documentos, modelos 3D y más, todo desde tu navegador. En lugar de usar múltiples sitios web de conversión en línea (que a menudo tienen límites de tamaño de archivo, marcas de agua o problemas de privacidad), obtienes una herramienta de conversión potente y privada que funciona en tu propio servidor.
   developer: C4illin
+  
+  # 필수 메타데이터
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ConvertX/icon.png
   screenshot:
     - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ConvertX/screenshot-1.png
     - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ConvertX/screenshot-2.png
     - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ConvertX/screenshot-3.png
-  tagline:
-    en_us: Universal file converter supporting 1000+ formats with complete privacy
-    ko_kr: 완전한 개인정보 보호와 함께 1000개 이상의 형식을 지원하는 범용 파일 변환기
-    zh_cn: 支持1000多种格式的通用文件转换器，完全保护隐私
-    fr_fr: Convertisseur de fichiers universel supportant plus de 1000 formats avec confidentialité complète
-    es_es: Convertidor de archivos universal que admite más de 1000 formatos con privacidad completa
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ConvertX/thumbnail.png
+  
+  # 다국어 지원 (필수: en_us, fr_fr, ko_kr, zh_cn, es_es)
   title:
     en_us: ConvertX
+  
+  tagline:
+    en_us: Universal file converter supporting 1000+ formats with complete privacy
+    fr_fr: Convertisseur de fichiers universel supportant plus de 1000 formats avec confidentialité complète
+    ko_kr: 완전한 개인정보 보호와 함께 1000개 이상의 형식을 지원하는 범용 파일 변환기
+    zh_cn: 支持1000多种格式的通用文件转换器，完全保护隐私
+    es_es: Convertidor de archivos universal que admite más de 1000 formatos con privacidad completa
+  
+  description:
+    en_us: |
+      ConvertX is your own universal file converter that supports over 1000+ different file formats. 
+      Think of it as having a Swiss Army knife for files - convert images, videos, audio, documents, 
+      3D models, and more, all from your browser. Everything is processed locally on your server, 
+      so your files never leave your control.
+    fr_fr: |
+      ConvertX est votre propre convertisseur de fichiers universel qui prend en charge plus de 1000 
+      formats de fichiers différents. Pensez-y comme un couteau suisse pour les fichiers - convertissez 
+      des images, vidéos, audio, documents, modèles 3D et plus, tout depuis votre navigateur.
+    ko_kr: |
+      ConvertX는 1000개 이상의 다양한 파일 형식을 지원하는 당신만의 범용 파일 변환기입니다. 
+      파일을 위한 스위스 아미 나이프처럼 브라우저에서 이미지, 비디오, 오디오, 문서, 3D 모델 등을 
+      변환할 수 있습니다. 모든 것이 서버에서 로컬로 처리되므로 파일이 당신의 통제를 벗어나지 않습니다.
+    zh_cn: |
+      ConvertX是您自己的通用文件转换器，支持1000多种不同的文件格式。把它想象成文件的瑞士军刀 - 
+      在浏览器中转换图像、视频、音频、文档、3D模型等。所有内容都在您的服务器上本地处理，
+      因此您的文件永远不会脱离您的控制。
+    es_es: |
+      ConvertX es tu propio convertidor de archivos universal que admite más de 1000 formatos de archivo 
+      diferentes. Piénsalo como una navaja suiza para archivos - convierte imágenes, videos, audio, 
+      documentos, modelos 3D y más, todo desde tu navegador.
+  
   tips:
     before_install:
       en_us: |
-        **Quick Start:**
+        **Default Account**
         
-        1. Create your first account (becomes admin automatically)
-        2. Drag & drop files to convert instantly
-        3. Files auto-delete after 24 hours to save space
+        The first user account created becomes the admin account.
+        Use the secure password provided by CasaOS.
+        
+        **Important Settings:**
+        - Auto-delete is disabled by default for stability
+        - Files are stored in /DATA/AppData/convertx/data
+        - Access your Downloads and Documents folders directly
         
         **Supported Formats:**
         - Images: PNG, JPG, WebP, AVIF, SVG, PDF
         - Videos: MP4, WebM, AVI, MOV, MKV
         - Audio: MP3, WAV, FLAC, OGG, AAC
         - Documents: PDF, DOCX, HTML, Markdown
-        
-        **Note:** All conversions happen locally - your files never leave your server.
+        - 3D Models: STL, OBJ, GLB, FBX
       ko_kr: |
-        **빠른 시작:**
+        **기본 계정**
         
-        1. 첫 번째 계정 생성 (자동으로 관리자가 됨)
-        2. 파일을 드래그 앤 드롭하여 즉시 변환
-        3. 파일은 24시간 후 자동 삭제되어 공간 절약
+        첫 번째로 생성된 사용자 계정이 관리자 계정이 됩니다.
+        CasaOS가 제공하는 안전한 비밀번호를 사용하세요.
         
-        **지원 형식:**
-        - 이미지: PNG, JPG, WebP, AVIF, SVG, PDF
-        - 비디오: MP4, WebM, AVI, MOV, MKV
-        - 오디오: MP3, WAV, FLAC, OGG, AAC
-        - 문서: PDF, DOCX, HTML, Markdown
-        
-        **참고:** 모든 변환이 로컬에서 처리되어 파일이 서버를 벗어나지 않습니다.
+        **중요 설정:**
+        - 안정성을 위해 자동 삭제가 비활성화되어 있습니다
+        - 파일은 /DATA/AppData/convertx/data에 저장됩니다
+        - Downloads 및 Documents 폴더에 직접 접근 가능합니다
+  
+  # Pre-install 명령어 - 디렉토리 생성 및 권한 설정
   pre-install-cmd: |
-    docker run --rm -v /DATA/AppData/$AppID:/data ubuntu:22.04 chown -R $PUID:$PGID /data
+    mkdir -p /DATA/AppData/$AppID/data /DATA/AppData/$AppID/cache &&
+    chown -R $PUID:$PGID /DATA/AppData/$AppID
+  
+  # Web UI 설정
   index: /
-  webui_port: 3000
+  webui_port: 3000  # expose와 일치해야 함
