@@ -14,7 +14,10 @@ services:
       - /DATA/AppData/$AppID/customFiles:/customFiles
       - /DATA/AppData/$AppID/pipeline:/pipeline
       - /DATA/Downloads:/downloads
-    # 권한 문제 해결을 위해 user 지시어 제거 (컨테이너가 내부적으로 권한 관리)
+      # 임시 디렉토리를 위한 볼륨 추가
+      - /DATA/AppData/$AppID/tmp:/tmp
+    # 루트 사용자로 실행 (권한 문제 해결)
+    user: "0:0"
     environment:
       PGID: $PGID
       PUID: $PUID
@@ -24,8 +27,10 @@ services:
       DISABLE_ADDITIONAL_FEATURES: true
       SYSTEM_DEFAULTLOCALE: en_US
       INSTALL_BOOK_AND_ADVANCED_HTML_OPS: false
-      # 권한 문제 해결을 위한 추가 환경변수
-      UMASK: "022"
+      # 임시 디렉토리 경로 지정
+      TMPDIR: /tmp
+      # Java 옵션에서 임시 디렉토리 지정
+      JAVA_OPTS: "-Djava.io.tmpdir=/tmp"
     deploy:
       resources:
         limits:
@@ -42,9 +47,11 @@ x-casaos:
   category: Office
   developer: Stirling Tools
   pre-install-cmd: |
+    # 모든 필요한 디렉토리 생성 및 권한 설정
     docker run --rm -v /DATA/AppData/$AppID:/data ubuntu:22.04 sh -c '
-      mkdir -p /data/tessdata /data/configs /data/logs /data/customFiles /data/pipeline &&
-      chmod -R 777 /data
+      mkdir -p /data/tessdata /data/configs /data/logs /data/customFiles /data/pipeline /data/tmp &&
+      chmod -R 777 /data &&
+      echo "Directories created and permissions set successfully"
     '
   description:
     en_us: |
@@ -166,7 +173,7 @@ x-casaos:
   tagline:
     en_us: Your complete PDF toolkit in your browser
     ko_kr: 브라우저 안의 완전한 PDF 툴킷
-    zh_cn: 浏览器中的완整PDF工具包
+    zh_cn: 浏览器中的完整PDF工具包
     fr_fr: Votre boîte à outils PDF complète dans votre navigateur
     es_es: Tu kit completo de herramientas PDF en tu navegador
   title:
@@ -215,13 +222,13 @@ x-casaos:
         웹 브라우저를 통해 PDF 파일을 업로드하고 바로 편집을 시작할 수 있습니다!
       zh_cn: |
         **⏰ 설정 시간:**
-        此应용在안装후需要약5-10분来완成设정。请耐心등待，在尝试访问之前请等待。
+        此应用在安装후需要약5-10분来완成设정。请耐心등待，在尝试访问之前请等待。
 
         **🔐 무需登录:**
-        此응용程序배置为无身份验证，以便于访问。所有PDF处리都在本地服务器上进행。
+        此응용程序배치为无身份验证，以便于访问。所有PDF处리都在本地服务器上进行。
 
-        **✨ 可용功능:**
-        • PDF拆分、合병和整리
+        **✨ 可用功능:**
+        • PDF拆分、合併和整理
         • PDF与其他格式之间的转换
         • 添加水印、签名和注释
         • 密码保护和加密
@@ -229,7 +236,7 @@ x-casaos:
         • 압축PDF以减少파일크기
 
         **🌐 访问:**
-        준비就绪后，您的응용将통过无단口호的清洁URL可용！
+        준비就绪后，您的응용将통过无단口호的清洁URL可用！
 
         **如何使用:**
         통过网页브라우저업로드PDF파일并立即开始편집！
