@@ -2,62 +2,37 @@ name: wordpress
 
 services:
   app:
-    image: wordpress:6.7.1-php8.3-apache
+    image: wordpress:6.7-apache
     container_name: wordpress
     restart: unless-stopped
-    user: $PUID:$PGID
     expose:
       - 80
     volumes:
-      - /DATA/AppData/$AppID/wordpress:/var/www/html
-      - /DATA/Downloads:/downloads
+      - /DATA/AppData/$AppID/html:/var/www/html
     environment:
-      TZ: $TZ
-      PUID: $PUID
-      PGID: $PGID
-      DOMAIN: $domain
       WORDPRESS_DB_HOST: database:3306
       WORDPRESS_DB_USER: wordpress
       WORDPRESS_DB_PASSWORD: $default_pwd
       WORDPRESS_DB_NAME: wordpress
-      WORDPRESS_TABLE_PREFIX: wp_
-      WORDPRESS_CONFIG_EXTRA: |
-        define('FS_METHOD', 'direct');
-        define('WP_MEMORY_LIMIT', '256M');
-        define('WP_MAX_MEMORY_LIMIT', '256M');
-        if (!empty($_ENV['DOMAIN'])) {
-          define('WP_HOME', 'https://' . $_ENV['DOMAIN']);
-          define('WP_SITEURL', 'https://' . $_ENV['DOMAIN']);
-        }
     depends_on:
-      database:
-        condition: service_healthy
+      - database
     deploy:
       resources:
         limits:
-          memory: 1G
-          cpus: '1.0'
+          memory: 512M
+          cpus: '0.5'
 
   database:
-    image: mariadb:11.4.4
+    image: mariadb:10.11
     container_name: wordpress_db
     restart: unless-stopped
     volumes:
       - /DATA/AppData/$AppID/db:/var/lib/mysql
     environment:
-      TZ: $TZ
+      MYSQL_ROOT_PASSWORD: $default_pwd
       MYSQL_DATABASE: wordpress
       MYSQL_USER: wordpress
       MYSQL_PASSWORD: $default_pwd
-      MYSQL_ROOT_PASSWORD: $default_pwd
-      MARIADB_AUTO_UPGRADE: 1
-    command: --default-authentication-plugin=mysql_native_password --innodb-buffer-pool-size=256M --max_connections=200 --wait_timeout=300
-    healthcheck:
-      test: ["CMD", "mariadb-admin", "ping", "-h", "localhost", "-u", "root", "-p$default_pwd"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
     deploy:
       resources:
         limits:
@@ -72,101 +47,11 @@ x-casaos:
   category: Web
   developer: WordPress Foundation
   description:
-    en_us: |
-      **The world's most popular website builder and content management system.**
-      WordPress powers over 40% of all websites on the internet. Create beautiful websites, blogs, and online stores with thousands of themes and plugins available.
-      
-      **Key Features:**
-      • Easy-to-use visual editor and block-based content creation
-      • Thousands of free and premium themes
-      • Extensive plugin ecosystem for unlimited functionality
-      • Built-in SEO optimization tools
-      • Multi-user support with role management
-      • Mobile-responsive designs
-      • E-commerce ready with WooCommerce
-      
-      **Perfect for:**
-      • Personal blogs and portfolios
-      • Business websites
-      • Online stores and marketplaces
-      • News and magazine sites
-      • Community forums
-    zh_cn: |
-      **世界上最受欢迎的网站构建器和内容管理系统。**
-      WordPress为互联网上超过40%的网站提供支持。使用数千种主题和插件创建美丽的网站、博客和在线商店。
-      
-      **主要功能：**
-      • 易于使用的可视化编辑器和基于块的内容创建
-      • 数千种免费和付费主题
-      • 广泛的插件生态系统，功能无限
-      • 内置SEO优化工具
-      • 多用户支持和角色管理
-      • 移动响应式设计
-      • 通过WooCommerce支持电子商务
-      
-      **适用于：**
-      • 个人博客和作品集
-      • 商业网站
-      • 在线商店和市场
-      • 新闻和杂志网站
-      • 社区论坛
-    ko_kr: |
-      **세계에서 가장 인기 있는 웹사이트 빌더이자 콘텐츠 관리 시스템.**
-      WordPress는 인터넷상의 모든 웹사이트 중 40% 이상을 지원합니다. 수천 가지 테마와 플러그인으로 아름다운 웹사이트, 블로그, 온라인 스토어를 만드세요.
-      
-      **주요 기능:**
-      • 사용하기 쉬운 시각적 편집기 및 블록 기반 콘텐츠 생성
-      • 수천 가지 무료 및 프리미엄 테마
-      • 무제한 기능을 위한 광범위한 플러그인 생태계
-      • 내장 SEO 최적화 도구
-      • 역할 관리가 포함된 다중 사용자 지원
-      • 모바일 반응형 디자인
-      • WooCommerce로 전자상거래 지원
-      
-      **다음 용도에 적합:**
-      • 개인 블로그 및 포트폴리오
-      • 비즈니스 웹사이트
-      • 온라인 스토어 및 마켓플레이스
-      • 뉴스 및 매거진 사이트
-      • 커뮤니티 포럼
-    fr_fr: |
-      **Le créateur de sites web et système de gestion de contenu le plus populaire au monde.**
-      WordPress alimente plus de 40% de tous les sites web sur internet. Créez de beaux sites web, blogs et boutiques en ligne avec des milliers de thèmes et plugins disponibles.
-      
-      **Fonctionnalités clés :**
-      • Éditeur visuel facile à utiliser et création de contenu par blocs
-      • Des milliers de thèmes gratuits et premium
-      • Écosystème de plugins étendu pour une fonctionnalité illimitée
-      • Outils d'optimisation SEO intégrés
-      • Support multi-utilisateurs avec gestion des rôles
-      • Designs responsifs mobiles
-      • Prêt pour l'e-commerce avec WooCommerce
-      
-      **Parfait pour :**
-      • Blogs personnels et portfolios
-      • Sites web d'entreprise
-      • Boutiques en ligne et places de marché
-      • Sites d'actualités et magazines
-      • Forums communautaires
-    es_es: |
-      **El constructor de sitios web y sistema de gestión de contenido más popular del mundo.**
-      WordPress impulsa más del 40% de todos los sitios web en internet. Crea hermosos sitios web, blogs y tiendas online con miles de temas y plugins disponibles.
-      
-      **Características principales:**
-      • Editor visual fácil de usar y creación de contenido basada en bloques
-      • Miles de temas gratuitos y premium
-      • Amplio ecosistema de plugins para funcionalidad ilimitada
-      • Herramientas de optimización SEO integradas
-      • Soporte multiusuario con gestión de roles
-      • Diseños responsivos móviles
-      • Listo para e-commerce con WooCommerce
-      
-      **Perfecto para:**
-      • Blogs personales y portfolios
-      • Sitios web empresariales
-      • Tiendas online y mercados
-      • Sitios de noticias y revistas
-      • Foros comunitarios
+    en_us: WordPress is the world's most popular website builder. Create beautiful websites, blogs, and online stores with thousands of themes and plugins.
+    zh_cn: WordPress是世界上最受欢迎的网站构建器。使用数千种主题和插件创建美丽的网站、博客和在线商店。
+    ko_kr: WordPress는 세계에서 가장 인기 있는 웹사이트 빌더입니다. 수천 가지 테마와 플러그인으로 아름다운 웹사이트, 블로그, 온라인 스토어를 만드세요.
+    fr_fr: WordPress est le créateur de sites web le plus populaire au monde. Créez de beaux sites, blogs et boutiques avec des milliers de thèmes et plugins.
+    es_es: WordPress es el constructor de sitios web más popular del mundo. Crea hermosos sitios, blogs y tiendas con miles de temas y plugins.
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Wordpress/icon.png
   screenshot_link:
     - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Wordpress/screenshot-1.png
@@ -175,97 +60,22 @@ x-casaos:
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Wordpress/thumbnail.png
   index: /
   tagline:
-    en_us: Create beautiful websites and blogs with ease
-    zh_cn: 轻松创建精美网站和博客
-    ko_kr: 아름다운 웹사이트와 블로그를 손쉽게 만들기
-    fr_fr: Créez facilement de beaux sites web et blogs
-    es_es: Crea hermosos sitios web y blogs con facilidad
+    en_us: Create beautiful websites with ease
+    zh_cn: 轻松创建精美网站
+    ko_kr: 아름다운 웹사이트를 손쉽게 만들기
+    fr_fr: Créez facilement de beaux sites web
+    es_es: Crea hermosos sitios web con facilidad
   title:
     en_us: WordPress
   store_app_id: wordpress
   main: app
   webui_port: 80
-  pre-install-cmd: |
-    docker run --rm -v /DATA/AppData/$AppID/:/data/ ubuntu:22.04 /bin/bash -c "
-    mkdir -p /data/wordpress /data/db &&
-    chown -R $PUID:$PGID /data/wordpress &&
-    chmod -R 755 /data/wordpress &&
-    chown -R 999:999 /data/db &&
-    chmod -R 755 /data/db
-    "
   tips:
     before_install:
       en_us: |
-        🌐 **WordPress (Website Builder)**
+        Default Database Credentials:
+        Username: wordpress
+        Password: $default_pwd
         
-        **Create your own website with WordPress.**
-        
-        **Default Database Password:** `$default_pwd`
-        
-        ⚠️ *Custom domains (like youchoose.com) are not yet supported. Your site will use a subdomain (e.g. wordpress-yourname.nsl.sh) for now. Full domain support coming soon.*
-        
-        **After Installation:**
-        1. WordPress will automatically configure itself on first visit
-        2. Create your admin account during setup
-        3. Your site will be accessible via HTTPS automatically
-        4. The database may take 1-2 minutes to initialize on first startup
-
-      zh_cn: |
-        🌐 **WordPress (网站构建器)**
-        
-        **使用WordPress创建您自己的网站。**
-        
-        **默认数据库密码：** `$default_pwd`
-        
-        ⚠️ *暂不支持自定义域名（如youchoose.com）。您的网站将使用子域名（如wordpress-yourname.nsl.sh）。完整域名支持即将推出。*
-        
-        **安装后：**
-        1. WordPress将在首次访问时自动配置
-        2. 在设置过程中创建您的管理员账户
-        3. 您的网站将自动通过HTTPS访问
-        4. 数据库在首次启动时可能需要1-2分钟初始化
-
-      ko_kr: |
-        🌐 **WordPress (웹사이트 빌더)**
-        
-        **WordPress로 나만의 웹사이트를 만드세요.**
-        
-        **기본 데이터베이스 비밀번호:** `$default_pwd`
-        
-        ⚠️ *사용자 정의 도메인(예: youchoose.com)은 아직 지원되지 않습니다. 현재는 서브도메인(예: wordpress-yourname.nsl.sh)을 사용합니다. 전체 도메인 지원이 곧 제공될 예정입니다.*
-        
-        **설치 후:**
-        1. WordPress가 첫 방문 시 자동으로 설정됩니다
-        2. 설정 중에 관리자 계정을 생성하세요
-        3. 사이트가 HTTPS를 통해 자동으로 접근 가능합니다
-        4. 첫 시작 시 데이터베이스 초기화에 1-2분 소요될 수 있습니다
-
-      fr_fr: |
-        🌐 **WordPress (Créateur de sites web)**
-        
-        **Créez votre propre site web avec WordPress.**
-        
-        **Mot de passe de base de données par défaut :** `$default_pwd`
-        
-        ⚠️ *Les domaines personnalisés (comme votrechoix.com) ne sont pas encore pris en charge. Votre site utilisera un sous-domaine (ex: wordpress-votrenom.nsl.sh) pour l'instant. Le support complet des domaines arrive bientôt.*
-        
-        **Après l'installation :**
-        1. WordPress se configurera automatiquement lors de la première visite
-        2. Créez votre compte administrateur pendant la configuration
-        3. Votre site sera accessible via HTTPS automatiquement
-        4. La base de données peut prendre 1-2 minutes à s'initialiser au premier démarrage
-
-      es_es: |
-        🌐 **WordPress (Constructor de sitios web)**
-        
-        **Crea tu propio sitio web con WordPress.**
-        
-        **Contraseña predeterminada de la base de datos:** `$default_pwd`
-        
-        ⚠️ *Los dominios personalizados (como tuelegir.com) aún no son compatibles. Tu sitio usará un subdominio (ej: wordpress-tunombre.nsl.sh) por ahora. El soporte completo de dominios llegará pronto.*
-        
-        **Después de la instalación:**
-        1. WordPress se configurará automáticamente en la primera visita
-        2. Crea tu cuenta de administrador durante la configuración
-        3. Tu sitio será accesible vía HTTPS automáticamente
-        4. La base de datos puede tardar 1-2 minutos en inicializar en el primer arranque
+        WordPress will configure itself on first visit.
+        Database initialization may take 1-2 minutes.
