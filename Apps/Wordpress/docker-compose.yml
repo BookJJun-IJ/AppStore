@@ -5,7 +5,8 @@ services:
     image: wordpress:6.7-apache
     container_name: wordpress_app
     restart: unless-stopped
-    user: $PUID:$PGID
+    # WordPress도 루트로 실행 (파일 복사 문제 해결)
+    user: 0:0
     expose:
       - 80
     volumes:
@@ -15,6 +16,8 @@ services:
       WORDPRESS_DB_USER: wordpress
       WORDPRESS_DB_PASSWORD: $default_pwd
       WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_SITE_URL: https://wordpress-ikjunyundera.nsl.sh
+      WORDPRESS_HOME: https://wordpress-ikjunyundera.nsl.sh
     depends_on:
       - db
     deploy:
