@@ -4,7 +4,8 @@ services:
   mealie:
     image: ghcr.io/mealie-recipes/mealie:v3.1.2
     container_name: mealie
-    user: $PUID:$PGID          # Required for proper permissions
+    # PUID/PGID가 작동하지 않는 Mealie v3 버그 때문에 user 제거
+    # 대신 pre-install-cmd로 권한 설정
     deploy:
       resources:
         limits:
@@ -13,10 +14,6 @@ services:
     expose:
       - 9000                    # Default port for Mealie v3
     environment:
-      # Required PUID/PGID for file permissions
-      PUID: $PUID
-      PGID: $PGID
-      
       # Timezone setting
       TZ: $TZ
       
@@ -39,6 +36,9 @@ services:
       
       # API settings
       API_PORT: 9000
+      
+      # NOTE: PUID/PGID는 Mealie v3.1.2에서 버그로 인해 작동하지 않음
+      # pre-install-cmd에서 권한 설정으로 대체
     volumes:
       - /DATA/AppData/$AppID/data:/app/data
     restart: unless-stopped
@@ -55,10 +55,20 @@ x-casaos:
     - arm64
   main: mealie
   pre-install-cmd: |
-    # Create directory structure and set permissions for PUID:PGID
+    # Mealie v3에서 PUID/PGID 버그 때문에 pre-install로 권한 설정
+    # 디렉토리 생성
     mkdir -p /DATA/AppData/$AppID/data &&
-    chown -R $PUID:$PGID /DATA/AppData/$AppID &&
-    chmod -R 755 /DATA/AppData/$AppID
+    
+    # 컨테이너가 root로 실행되므로, 모든 사용자가 접근 가능하도록 권한 설정
+    # 755 권한으로 설정 (소유자: 읽기/쓰기/실행, 그룹/기타: 읽기/실행)
+    chown -R root:root /DATA/AppData/$AppID &&
+    chmod -R 755 /DATA/AppData/$AppID &&
+    
+    # data 디렉토리는 더 관대한 권한으로 설정 (모든 사용자 읽기/쓰기 가능)
+    chmod -R 777 /DATA/AppData/$AppID/data &&
+    
+    # SELinux가 활성화된 시스템을 위한 설정 (무시될 수 있음)
+    chcon -Rt container_file_t /DATA/AppData/$AppID 2>/dev/null || true
   author: Yundera Team
   category: Utilities
   description:
@@ -157,6 +167,9 @@ x-casaos:
         
         **⚠️ Change these after your first login!**
         
+        **Important Note:**
+        Due to a bug in Mealie v3.1.2, this app runs as root user. The pre-install script sets appropriate permissions to ensure data accessibility.
+        
         **How to use:**
         1. Visit the website and login with the details above
         2. Go to Profile Settings → Change your email & password
@@ -176,6 +189,9 @@ x-casaos:
         | `changeme@example.com` | `$default_pwd` |
         
         **⚠️ 첫 로그인 후에 이것들을 변경하세요!**
+        
+        **중요한 참고사항:**
+        Mealie v3.1.2의 버그로 인해 이 앱은 root 사용자로 실행됩니다. pre-install 스크립트가 데이터 접근성을 보장하도록 적절한 권한을 설정합니다.
         
         **사용 방법:**
         1. 웹사이트를 방문하고 위의 정보로 로그인
@@ -197,6 +213,9 @@ x-casaos:
         
         **⚠️ 首次登录后请更改这些！**
         
+        **重要说明:**
+        由于 Mealie v3.1.2 的错误，此应用以 root 用户身份运行。预安装脚本设置适当的权限以确保数据可访问性。
+        
         **使用方法:**
         1. 访问网站并使用上述信息登录
         2. 个人资料设置 → 更改您的邮箱和密码
@@ -217,6 +236,9 @@ x-casaos:
         
         **⚠️ Changez ceci après votre première connexion !**
         
+        **Note importante:**
+        En raison d'un bug dans Mealie v3.1.2, cette app fonctionne en utilisateur root. Le script de pré-installation définit les permissions appropriées pour assurer l'accessibilité des données.
+        
         **Comment utiliser:**
         1. Visitez le site web et connectez-vous avec les détails ci-dessus
         2. Paramètres du profil → Changez votre email et mot de passe
@@ -236,6 +258,9 @@ x-casaos:
         | `changeme@example.com` | `$default_pwd` |
         
         **⚠️ ¡Cambia estos después de tu primer inicio de sesión!**
+        
+        **Nota importante:**
+        Debido a un error en Mealie v3.1.2, esta aplicación se ejecuta como usuario root. El script de preinstalación establece los permisos apropiados para asegurar la accesibilidad de datos.
         
         **Cómo usar:**
         1. Visita el sitio web e inicia sesión con los detalles de arriba
