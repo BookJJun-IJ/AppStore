@@ -2,16 +2,19 @@ name: wordpress
 
 services:
   app:
-    image: wordpress:6.8.1
+    image: wordpress:6.7.1-php8.3-apache
     container_name: wordpress
     restart: unless-stopped
+    user: $PUID:$PGID
     expose:
       - 80
     volumes:
-      - /DATA/AppData/$AppID/WordPress:/var/www/html
+      - /DATA/AppData/$AppID/wordpress:/var/www/html
       - /DATA/Downloads:/downloads
     environment:
       TZ: $TZ
+      PUID: $PUID
+      PGID: $PGID
       DOMAIN: $domain
       WORDPRESS_DB_HOST: database:3306
       WORDPRESS_DB_USER: wordpress
@@ -21,14 +24,14 @@ services:
       WORDPRESS_CONFIG_EXTRA: |
         define('FS_METHOD', 'direct');
         define('WP_MEMORY_LIMIT', '256M');
-        define('DB_COLLATE', '');
+        define('WP_MAX_MEMORY_LIMIT', '256M');
         if (!empty($_ENV['DOMAIN'])) {
           define('WP_HOME', 'https://' . $_ENV['DOMAIN']);
           define('WP_SITEURL', 'https://' . $_ENV['DOMAIN']);
         }
-        define('AUTOMATIC_UPDATER_DISABLED', true);
     depends_on:
-      - database
+      database:
+        condition: service_healthy
     deploy:
       resources:
         limits:
@@ -36,7 +39,7 @@ services:
           cpus: '1.0'
 
   database:
-    image: mariadb:11.4.7
+    image: mariadb:11.4.4
     container_name: wordpress_db
     restart: unless-stopped
     volumes:
@@ -47,9 +50,14 @@ services:
       MYSQL_USER: wordpress
       MYSQL_PASSWORD: $default_pwd
       MYSQL_ROOT_PASSWORD: $default_pwd
-      MYSQL_INITDB_SKIP_TZINFO: 1
       MARIADB_AUTO_UPGRADE: 1
-    command: --default-authentication-plugin=mysql_native_password --innodb-buffer-pool-size=256M --wait_timeout=300
+    command: --default-authentication-plugin=mysql_native_password --innodb-buffer-pool-size=256M --max_connections=200 --wait_timeout=300
+    healthcheck:
+      test: ["CMD", "mariadb-admin", "ping", "-h", "localhost", "-u", "root", "-p$default_pwd"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     deploy:
       resources:
         limits:
@@ -174,23 +182,21 @@ x-casaos:
     es_es: Crea hermosos sitios web y blogs con facilidad
   title:
     en_us: WordPress
-    zh_cn: WordPress
-    ko_kr: WordPress
-    fr_fr: WordPress
-    es_es: WordPress
   store_app_id: wordpress
   main: app
   webui_port: 80
   pre-install-cmd: |
     docker run --rm -v /DATA/AppData/$AppID/:/data/ ubuntu:22.04 /bin/bash -c "
-    mkdir -p /data/WordPress /data/db &&
-    chown -R $PUID:$PGID /data/WordPress &&
-    chmod -R 755 /data/WordPress
+    mkdir -p /data/wordpress /data/db &&
+    chown -R $PUID:$PGID /data/wordpress &&
+    chmod -R 755 /data/wordpress &&
+    chown -R 999:999 /data/db &&
+    chmod -R 755 /data/db
     "
   tips:
     before_install:
       en_us: |
-        🌍 **WordPress (Website Builder)**
+        🌐 **WordPress (Website Builder)**
         
         **Create your own website with WordPress.**
         
@@ -205,7 +211,7 @@ x-casaos:
         4. The database may take 1-2 minutes to initialize on first startup
 
       zh_cn: |
-        🌍 **WordPress (网站构建器)**
+        🌐 **WordPress (网站构建器)**
         
         **使用WordPress创建您自己的网站。**
         
@@ -220,7 +226,7 @@ x-casaos:
         4. 数据库在首次启动时可能需要1-2分钟初始化
 
       ko_kr: |
-        🌍 **WordPress (웹사이트 빌더)**
+        🌐 **WordPress (웹사이트 빌더)**
         
         **WordPress로 나만의 웹사이트를 만드세요.**
         
@@ -235,7 +241,7 @@ x-casaos:
         4. 첫 시작 시 데이터베이스 초기화에 1-2분 소요될 수 있습니다
 
       fr_fr: |
-        🌍 **WordPress (Créateur de sites web)**
+        🌐 **WordPress (Créateur de sites web)**
         
         **Créez votre propre site web avec WordPress.**
         
@@ -250,7 +256,7 @@ x-casaos:
         4. La base de données peut prendre 1-2 minutes à s'initialiser au premier démarrage
 
       es_es: |
-        🌍 **WordPress (Constructor de sitios web)**
+        🌐 **WordPress (Constructor de sitios web)**
         
         **Crea tu propio sitio web con WordPress.**
         
