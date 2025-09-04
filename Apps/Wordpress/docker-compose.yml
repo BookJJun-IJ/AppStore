@@ -10,26 +10,29 @@ services:
     volumes:
       - /DATA/AppData/$AppID/WordPress:/var/www/html
       - /DATA/Downloads:/downloads
-    user: $PUID:$PGID
     environment:
       PGID: $PGID
       PUID: $PUID
       TZ: $TZ
-      WORDPRESS_DB_HOST: database
+      DOMAIN: $domain
+      WORDPRESS_DB_HOST: database:3306
       WORDPRESS_DB_USER: wordpress
-      WORDPRESS_DB_PASSWORD: wordpress
+      WORDPRESS_DB_PASSWORD: $default_pwd
       WORDPRESS_DB_NAME: wordpress
       WORDPRESS_TABLE_PREFIX: wp_
       WORDPRESS_CONFIG_EXTRA: |
         define('FS_METHOD', 'direct');
         define('WP_MEMORY_LIMIT', '256M');
+        define('WP_HOME', 'https://' . $_ENV['DOMAIN']);
+        define('WP_SITEURL', 'https://' . $_ENV['DOMAIN']);
     depends_on:
-      - database
-    cpu_shares: 100
+      database:
+        condition: service_healthy
     deploy:
       resources:
         limits:
           memory: 1G
+          cpus: '1.0'
 
   database:
     image: mariadb:11.4.7
@@ -37,29 +40,32 @@ services:
     restart: unless-stopped
     volumes:
       - /DATA/AppData/$AppID/db:/var/lib/mysql
-    user: $PUID:$PGID
     environment:
-      PGID: $PGID
-      PUID: $PUID
       TZ: $TZ
       MYSQL_DATABASE: wordpress
       MYSQL_USER: wordpress
-      MYSQL_PASSWORD: wordpress
-      MYSQL_ROOT_PASSWORD: wordpress
+      MYSQL_PASSWORD: $default_pwd
+      MYSQL_ROOT_PASSWORD: $default_pwd
       MYSQL_INITDB_SKIP_TZINFO: 1
-    command: --default-authentication-plugin=mysql_native_password
-    cpu_shares: 50
+    command: --default-authentication-plugin=mysql_native_password --innodb-buffer-pool-size=256M
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--su-mysql", "--connect", "--innodb_initialized"]
+      start_period: 10s
+      interval: 10s
+      timeout: 5s
+      retries: 3
     deploy:
       resources:
         limits:
           memory: 512M
+          cpus: '0.5'
 
 x-casaos:
   architectures:
     - amd64
     - arm64
   author: CasaOS Team
-  category: web
+  category: Web
   developer: WordPress Foundation
   description:
     en_us: |
@@ -119,25 +125,72 @@ x-casaos:
       • 온라인 스토어 및 마켓플레이스
       • 뉴스 및 매거진 사이트
       • 커뮤니티 포럼
-  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Wordpress/icon.png
+    fr_fr: |
+      **Le créateur de sites web et système de gestion de contenu le plus populaire au monde.**
+      WordPress alimente plus de 40% de tous les sites web sur internet. Créez de beaux sites web, blogs et boutiques en ligne avec des milliers de thèmes et plugins disponibles.
+      
+      **Fonctionnalités clés :**
+      • Éditeur visuel facile à utiliser et création de contenu par blocs
+      • Des milliers de thèmes gratuits et premium
+      • Écosystème de plugins étendu pour une fonctionnalité illimitée
+      • Outils d'optimisation SEO intégrés
+      • Support multi-utilisateurs avec gestion des rôles
+      • Designs responsifs mobiles
+      • Prêt pour l'e-commerce avec WooCommerce
+      
+      **Parfait pour :**
+      • Blogs personnels et portfolios
+      • Sites web d'entreprise
+      • Boutiques en ligne et places de marché
+      • Sites d'actualités et magazines
+      • Forums communautaires
+    es_es: |
+      **El constructor de sitios web y sistema de gestión de contenido más popular del mundo.**
+      WordPress impulsa más del 40% de todos los sitios web en internet. Crea hermosos sitios web, blogs y tiendas online con miles de temas y plugins disponibles.
+      
+      **Características principales:**
+      • Editor visual fácil de usar y creación de contenido basada en bloques
+      • Miles de temas gratuitos y premium
+      • Amplio ecosistema de plugins para funcionalidad ilimitada
+      • Herramientas de optimización SEO integradas
+      • Soporte multiusuario con gestión de roles
+      • Diseños responsivos móviles
+      • Listo para e-commerce con WooCommerce
+      
+      **Perfecto para:**
+      • Blogs personales y portfolios
+      • Sitios web empresariales
+      • Tiendas online y mercados
+      • Sitios de noticias y revistas
+      • Foros comunitarios
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Wordpress/icon.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Wordpress/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Wordpress/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Wordpress/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Wordpress/thumbnail.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Wordpress/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Wordpress/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Wordpress/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Wordpress/thumbnail.png
   index: /
   tagline:
     en_us: Create beautiful websites and blogs with ease
     zh_cn: 轻松创建精美网站和博客
     ko_kr: 아름다운 웹사이트와 블로그를 손쉽게 만들기
+    fr_fr: Créez facilement de beaux sites web et blogs
+    es_es: Crea hermosos sitios web y blogs con facilidad
   title:
     en_us: WordPress
     zh_cn: WordPress
     ko_kr: WordPress
+    fr_fr: WordPress
+    es_es: WordPress
   store_app_id: wordpress
   main: app
-  is_uncontrolled: false
   webui_port: 80
+  pre-install-cmd: |
+    docker run --rm -v /DATA/AppData/$AppID/:/data/ ubuntu:22.04 /bin/bash -c "
+    mkdir -p /data/WordPress /data/db &&
+    chown -R $PUID:$PGID /data/WordPress &&
+    chmod -R 755 /data/WordPress
+    "
   tips:
     before_install:
       en_us: |
@@ -145,14 +198,14 @@ x-casaos:
         
         **Create your own website with WordPress.**
         
-        **Default Login:** Admin setup required during first installation
+        **Default Database Password:** `$default_pwd`
         
-        ⚠️ *Custom domains (like youchoose.com) are not yet supported. Your site will use a subdomain (e.g. wordpress.yourname.nsl.sh) for now. Full domain support coming soon.*
+        ⚠️ *Custom domains (like youchoose.com) are not yet supported. Your site will use a subdomain (e.g. wordpress-yourname.nsl.sh) for now. Full domain support coming soon.*
         
         **After Installation:**
-        1. Access the setup wizard at /wp-admin/install.php
-        2. Follow the installation steps
-        3. Create your admin account
+        1. WordPress will automatically configure itself on first visit
+        2. Create your admin account during setup
+        3. Your site will be accessible via HTTPS automatically
         4. Start building your website!
 
       zh_cn: |
@@ -160,14 +213,14 @@ x-casaos:
         
         **使用WordPress创建您自己的网站。**
         
-        **默认登录：** 首次安装时需要设置管理员
+        **默认数据库密码：** `$default_pwd`
         
-        ⚠️ *暂不支持自定义域名（如youchoose.com）。您的网站将使用子域名（如wordpress.yourname.nsl.sh）。完整域名支持即将推出。*
+        ⚠️ *暂不支持自定义域名（如youchoose.com）。您的网站将使用子域名（如wordpress-yourname.nsl.sh）。完整域名支持即将推出。*
         
         **安装后：**
-        1. 在 /wp-admin/install.php 访问设置向导
-        2. 按照安装步骤操作
-        3. 创建您的管理员账户
+        1. WordPress将在首次访问时自动配置
+        2. 在设置过程中创建您的管理员账户
+        3. 您的网站将自动通过HTTPS访问
         4. 开始构建您的网站！
 
       ko_kr: |
@@ -175,12 +228,42 @@ x-casaos:
         
         **WordPress로 나만의 웹사이트를 만드세요.**
         
-        **기본 로그인:** 첫 설치 시 관리자 계정 설정 필요
+        **기본 데이터베이스 비밀번호:** `$default_pwd`
         
-        ⚠️ *사용자 정의 도메인(예: youchoose.com)은 아직 지원되지 않습니다. 현재는 서브도메인(예: wordpress.yourname.nsl.sh)을 사용합니다. 전체 도메인 지원이 곧 제공될 예정입니다.*
+        ⚠️ *사용자 정의 도메인(예: youchoose.com)은 아직 지원되지 않습니다. 현재는 서브도메인(예: wordpress-yourname.nsl.sh)을 사용합니다. 전체 도메인 지원이 곧 제공될 예정입니다.*
         
         **설치 후:**
-        1. /wp-admin/install.php에서 설정 마법사 접속
-        2. 설치 단계를 따라 진행
-        3. 관리자 계정 생성
-        4. 웹사이트 구축 시작!
+        1. WordPress가 첫 방문 시 자동으로 설정됩니다
+        2. 설정 중에 관리자 계정을 생성하세요
+        3. 사이트가 HTTPS를 통해 자동으로 접근 가능합니다
+        4. 웹사이트 구축을 시작하세요!
+
+      fr_fr: |
+        🌍 **WordPress (Créateur de sites web)**
+        
+        **Créez votre propre site web avec WordPress.**
+        
+        **Mot de passe de base de données par défaut :** `$default_pwd`
+        
+        ⚠️ *Les domaines personnalisés (comme votrechoix.com) ne sont pas encore pris en charge. Votre site utilisera un sous-domaine (ex: wordpress-votrenom.nsl.sh) pour l'instant. Le support complet des domaines arrive bientôt.*
+        
+        **Après l'installation :**
+        1. WordPress se configurera automatiquement lors de la première visite
+        2. Créez votre compte administrateur pendant la configuration
+        3. Votre site sera accessible via HTTPS automatiquement
+        4. Commencez à construire votre site web !
+
+      es_es: |
+        🌍 **WordPress (Constructor de sitios web)**
+        
+        **Crea tu propio sitio web con WordPress.**
+        
+        **Contraseña predeterminada de la base de datos:** `$default_pwd`
+        
+        ⚠️ *Los dominios personalizados (como tuelegir.com) aún no son compatibles. Tu sitio usará un subdominio (ej: wordpress-tunombre.nsl.sh) por ahora. El soporte completo de dominios llegará pronto.*
+        
+        **Después de la instalación:**
+        1. WordPress se configurará automáticamente en la primera visita
+        2. Crea tu cuenta de administrador durante la configuración
+        3. Tu sitio será accesible vía HTTPS automáticamente
+        4. ¡Comienza a construir tu sitio web!
