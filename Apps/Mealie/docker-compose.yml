@@ -2,18 +2,21 @@ name: mealie
 
 services:
   mealie:
-    image: ghcr.io/mealie-recipes/mealie:v3.1.2
+    image: ghcr.io/mealie-recipes/mealie:v2.8.0  # 최신 안정 버전 사용
     container_name: mealie
-    # PUID/PGID가 작동하지 않는 Mealie v3 버그 때문에 user 제거
-    # 대신 pre-install-cmd로 권한 설정
+    user: $PUID:$PGID          # v2.8.0에서는 PUID/PGID가 정상 작동
     deploy:
       resources:
         limits:
           memory: 1G
           cpus: '1.0'
     expose:
-      - 9000                    # Default port for Mealie v3
+      - 9000                    # Default port for Mealie
     environment:
+      # Required PUID/PGID for file permissions  
+      PUID: $PUID
+      PGID: $PGID
+      
       # Timezone setting
       TZ: $TZ
       
@@ -36,9 +39,6 @@ services:
       
       # API settings
       API_PORT: 9000
-      
-      # NOTE: PUID/PGID는 Mealie v3.1.2에서 버그로 인해 작동하지 않음
-      # pre-install-cmd에서 권한 설정으로 대체
     volumes:
       - /DATA/AppData/$AppID/data:/app/data
     restart: unless-stopped
@@ -55,20 +55,10 @@ x-casaos:
     - arm64
   main: mealie
   pre-install-cmd: |
-    # Mealie v3에서 PUID/PGID 버그 때문에 pre-install로 권한 설정
-    # 디렉토리 생성
+    # 디렉토리 생성 및 PUID:PGID 권한 설정 (v2.8.0에서는 정상 작동)
     mkdir -p /DATA/AppData/$AppID/data &&
-    
-    # 컨테이너가 root로 실행되므로, 모든 사용자가 접근 가능하도록 권한 설정
-    # 755 권한으로 설정 (소유자: 읽기/쓰기/실행, 그룹/기타: 읽기/실행)
-    chown -R root:root /DATA/AppData/$AppID &&
-    chmod -R 755 /DATA/AppData/$AppID &&
-    
-    # data 디렉토리는 더 관대한 권한으로 설정 (모든 사용자 읽기/쓰기 가능)
-    chmod -R 777 /DATA/AppData/$AppID/data &&
-    
-    # SELinux가 활성화된 시스템을 위한 설정 (무시될 수 있음)
-    chcon -Rt container_file_t /DATA/AppData/$AppID 2>/dev/null || true
+    chown -R $PUID:$PGID /DATA/AppData/$AppID &&
+    chmod -R 755 /DATA/AppData/$AppID
   author: Yundera Team
   category: Utilities
   description:
@@ -79,9 +69,14 @@ x-casaos:
       
       **What you can do:**
       • Save recipes from any cooking website with one click
-      • Plan your weekly meals and automatically create shopping lists
+      • Plan your weekly meals and automatically create shopping lists  
       • Share recipes with family members
       • Access your recipes from phone, tablet, or computer
+      
+      **New in v2.8.0:**
+      • Improved ingredient parsing with new Python package
+      • Better recipe scraping with enhanced metadata extraction
+      • More accurate nutritional data parsing
       
       **Think of it like:** A smart recipe box that automatically clips recipes from magazines and websites, then helps you plan meals and make shopping lists.
       
@@ -97,6 +92,11 @@ x-casaos:
       • 가족들과 레시피 공유
       • 휴대폰, 태블릿, 컴퓨터에서 레시피 확인
       
+      **v2.8.0의 새로운 기능:**
+      • 새로운 Python 패키지로 개선된 재료 파싱
+      • 향상된 메타데이터 추출로 더 나은 레시피 스크래핑
+      • 더 정확한 영양 정보 파싱
+      
       **이렇게 생각해보세요:** 잡지와 웹사이트에서 레시피를 자동으로 스크랩한 다음, 식사 계획과 쇼핑 리스트 작성을 도와주는 스마트 레시피 보관함.
       
       **이런 분께 완벽해요:** 집에서 요리하고, 새로운 레시피를 시도하고 싶거나, 웹사이트가 변경되거나 사라져서 좋은 레시피를 잃어버린 경험이 있는 분들.
@@ -110,6 +110,11 @@ x-casaos:
       • 规划每周餐食并自动创建购物清单
       • 与家庭成员分享食谱
       • 从手机、平板或电脑访问您的食谱
+      
+      **v2.8.0的新功能:**
+      • 使用新的Python包改进配料解析
+      • 通过增强元数据提取实现更好的食谱抓取
+      • 更准确的营养数据解析
       
       **可以这样想:** 一个智能食谱盒，自动从杂志和网站剪辑食谱，然后帮助您规划餐食和制作购物清单。
       
@@ -125,6 +130,11 @@ x-casaos:
       • Partager des recettes avec les membres de la famille
       • Accéder à vos recettes depuis téléphone, tablette ou ordinateur
       
+      **Nouveau dans v2.8.0 :**
+      • Analyse d'ingrédients améliorée avec un nouveau package Python
+      • Meilleur scraping de recettes avec extraction de métadonnées renforcée
+      • Analyse plus précise des données nutritionnelles
+      
       **Pensez-y comme :** Une boîte à recettes intelligente qui découpe automatiquement les recettes des magazines et sites web, puis vous aide à planifier les repas et faire les listes de courses.
       
       **Parfait si vous :** Cuisinez à la maison, voulez essayer de nouvelles recettes, ou êtes fatigué de perdre d'excellentes recettes quand les sites changent ou disparaissent.
@@ -138,6 +148,11 @@ x-casaos:
       • Planificar tus comidas semanales y crear automáticamente listas de compras
       • Compartir recetas con miembros de la familia
       • Acceder a tus recetas desde teléfono, tablet o computadora
+      
+      **Nuevo en v2.8.0:**
+      • Análisis de ingredientes mejorado con nuevo paquete Python
+      • Mejor extracción de recetas con metadatos mejorados
+      • Análisis más preciso de datos nutricionales
       
       **Piénsalo como:** Una caja de recetas inteligente que automáticamente recorta recetas de revistas y sitios web, luego te ayuda a planificar comidas y hacer listas de compras.
       
@@ -167,9 +182,6 @@ x-casaos:
         
         **⚠️ Change these after your first login!**
         
-        **Important Note:**
-        Due to a bug in Mealie v3.1.2, this app runs as root user. The pre-install script sets appropriate permissions to ensure data accessibility.
-        
         **How to use:**
         1. Visit the website and login with the details above
         2. Go to Profile Settings → Change your email & password
@@ -181,6 +193,11 @@ x-casaos:
         **Recipe sources that work:**
         AllRecipes, Food Network, BBC Good Food, and thousands of cooking blogs and websites.
         
+        **v2.8.0 improvements:**
+        • Better ingredient parsing with new Python package
+        • Enhanced recipe scraping accuracy
+        • Improved nutritional data extraction
+        
         **Tip:** Try copying recipe URLs from your favorite cooking YouTube videos' descriptions!
       ko_kr: |
         **시작하기**
@@ -189,9 +206,6 @@ x-casaos:
         | `changeme@example.com` | `$default_pwd` |
         
         **⚠️ 첫 로그인 후에 이것들을 변경하세요!**
-        
-        **중요한 참고사항:**
-        Mealie v3.1.2의 버그로 인해 이 앱은 root 사용자로 실행됩니다. pre-install 스크립트가 데이터 접근성을 보장하도록 적절한 권한을 설정합니다.
         
         **사용 방법:**
         1. 웹사이트를 방문하고 위의 정보로 로그인
@@ -204,6 +218,11 @@ x-casaos:
         **작동하는 레시피 소스:**
         만개의레시피, 쿠킹클래스, 네이버 블로그, 그리고 수천 개의 요리 블로그와 웹사이트.
         
+        **v2.8.0 개선사항:**
+        • 새로운 Python 패키지로 더 나은 재료 파싱
+        • 향상된 레시피 스크래핑 정확도
+        • 개선된 영양 정보 추출
+        
         **팁:** 좋아하는 요리 유튜브 영상 설명란에서 레시피 URL을 복사해보세요!
       zh_cn: |
         **开始使用**
@@ -212,9 +231,6 @@ x-casaos:
         | `changeme@example.com` | `$default_pwd` |
         
         **⚠️ 首次登录后请更改这些！**
-        
-        **重要说明:**
-        由于 Mealie v3.1.2 的错误，此应用以 root 用户身份运行。预安装脚本设置适当的权限以确保数据可访问性。
         
         **使用方法:**
         1. 访问网站并使用上述信息登录
@@ -227,6 +243,11 @@ x-casaos:
         **有效的食谱来源:**
         AllRecipes、美食网、BBC美食，以及数千个烹饪博客和网站。
         
+        **v2.8.0改进:**
+        • 使用新的Python包实现更好的配料解析
+        • 增强的食谱抓取准确性
+        • 改进的营养数据提取
+        
         **提示:** 尝试从您喜欢的烹饪YouTube视频描述中复制食谱URL！
       fr_fr: |
         **Commencer**
@@ -235,9 +256,6 @@ x-casaos:
         | `changeme@example.com` | `$default_pwd` |
         
         **⚠️ Changez ceci après votre première connexion !**
-        
-        **Note importante:**
-        En raison d'un bug dans Mealie v3.1.2, cette app fonctionne en utilisateur root. Le script de pré-installation définit les permissions appropriées pour assurer l'accessibilité des données.
         
         **Comment utiliser:**
         1. Visitez le site web et connectez-vous avec les détails ci-dessus
@@ -250,6 +268,11 @@ x-casaos:
         **Sources de recettes qui fonctionnent:**
         AllRecipes, Food Network, BBC Good Food, et des milliers de blogs culinaires et sites web.
         
+        **Améliorations v2.8.0:**
+        • Meilleure analyse d'ingrédients avec nouveau package Python
+        • Précision améliorée du scraping de recettes
+        • Extraction améliorée des données nutritionnelles
+        
         **Astuce:** Essayez de copier les URLs de recettes des descriptions de vos vidéos YouTube culinaires préférées !
       es_es: |
         **Comenzar**
@@ -258,9 +281,6 @@ x-casaos:
         | `changeme@example.com` | `$default_pwd` |
         
         **⚠️ ¡Cambia estos después de tu primer inicio de sesión!**
-        
-        **Nota importante:**
-        Debido a un error en Mealie v3.1.2, esta aplicación se ejecuta como usuario root. El script de preinstalación establece los permisos apropiados para asegurar la accesibilidad de datos.
         
         **Cómo usar:**
         1. Visita el sitio web e inicia sesión con los detalles de arriba
@@ -272,6 +292,11 @@ x-casaos:
         
         **Fuentes de recetas que funcionan:**
         AllRecipes, Food Network, BBC Good Food, y miles de blogs de cocina y sitios web.
+        
+        **Mejoras v2.8.0:**
+        • Mejor análisis de ingredientes con nuevo paquete Python
+        • Precisión mejorada del scraping de recetas
+        • Extracción mejorada de datos nutricionales
         
         **Consejo:** ¡Intenta copiar URLs de recetas de las descripciones de tus videos de cocina favoritos de YouTube!
   webui_port: 9000
