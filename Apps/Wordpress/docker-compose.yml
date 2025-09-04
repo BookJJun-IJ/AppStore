@@ -1,33 +1,33 @@
 name: wordpress
 
 services:
-  app:
+  wordpress:
     image: wordpress:6.7-apache
-    container_name: wordpress
+    container_name: wordpress_app
     restart: unless-stopped
     expose:
       - 80
     volumes:
-      - /DATA/AppData/$AppID/html:/var/www/html
+      - wordpress_data:/var/www/html
     environment:
-      WORDPRESS_DB_HOST: database:3306
+      WORDPRESS_DB_HOST: db:3306
       WORDPRESS_DB_USER: wordpress
       WORDPRESS_DB_PASSWORD: $default_pwd
       WORDPRESS_DB_NAME: wordpress
     depends_on:
-      - database
+      - db
     deploy:
       resources:
         limits:
           memory: 512M
           cpus: '0.5'
 
-  database:
+  db:
     image: mariadb:10.11
     container_name: wordpress_db
     restart: unless-stopped
     volumes:
-      - /DATA/AppData/$AppID/db:/var/lib/mysql
+      - db_data:/var/lib/mysql
     environment:
       MYSQL_ROOT_PASSWORD: $default_pwd
       MYSQL_DATABASE: wordpress
@@ -38,6 +38,20 @@ services:
         limits:
           memory: 512M
           cpus: '0.5'
+
+volumes:
+  wordpress_data:
+    driver: local
+    driver_opts:
+      type: none
+      device: /DATA/AppData/$AppID/html
+      o: bind
+  db_data:
+    driver: local
+    driver_opts:
+      type: none
+      device: /DATA/AppData/$AppID/db
+      o: bind
 
 x-casaos:
   architectures:
@@ -68,8 +82,11 @@ x-casaos:
   title:
     en_us: WordPress
   store_app_id: wordpress
-  main: app
+  main: wordpress
   webui_port: 80
+  pre-install-cmd: |
+    mkdir -p /DATA/AppData/$AppID/html /DATA/AppData/$AppID/db &&
+    chmod -R 777 /DATA/AppData/$AppID/html /DATA/AppData/$AppID/db
   tips:
     before_install:
       en_us: |
