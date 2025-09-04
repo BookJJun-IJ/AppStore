@@ -2,9 +2,9 @@ name: mealie
 
 services:
   mealie:
-    image: ghcr.io/mealie-recipes/mealie:v1.12.2
+    image: ghcr.io/mealie-recipes/mealie:v3.1.2
     container_name: mealie
-    # Mealie v1.12.x는 내부적으로 권한 처리
+    # Mealie는 내부적으로 권한 처리
     deploy:
       resources:
         limits:
@@ -13,7 +13,7 @@ services:
     expose:
       - 9000
     environment:
-      # Mealie v1.12.x 권한 설정
+      # 권한 설정
       PUID: $PUID
       PGID: $PGID
       
@@ -33,11 +33,11 @@ services:
       # API settings
       API_PORT: 9000
       
-      # Default admin account (v1.12.x format)
+      # Default admin account
       DEFAULT_EMAIL: admin@example.com
       DEFAULT_PASSWORD: $default_pwd
       
-      # v1.12.x specific settings
+      # Additional settings
       TOKEN_TIME: 720  # 12 hours token expiry
       LOG_LEVEL: info
     volumes:
@@ -74,13 +74,15 @@ x-casaos:
       • **Multi-User Support** - Share recipes with family while keeping some private
       • **Mobile Friendly** - Works perfectly on phones, tablets, and computers
       
-      **v1.12.2 Features:**
+      **v3.1.2 Latest Features:**
       • Enhanced recipe scraping with better site compatibility
       • Improved shopping list merging (combines duplicate ingredients)
       • Better nutrition calculations
       • Faster search and filtering
       • PDF recipe export
       • Webhook support for automation
+      • Improved household management
+      • Better ingredient parsing
       
       **Works with thousands of sites including:**
       AllRecipes, Food Network, BBC Good Food, Serious Eats, NYT Cooking, and most food blogs
@@ -99,13 +101,15 @@ x-casaos:
       • **다중 사용자 지원** - 일부는 비공개로 유지하면서 가족과 레시피 공유
       • **모바일 친화적** - 휴대폰, 태블릿, 컴퓨터에서 완벽 작동
       
-      **v1.12.2 기능:**
+      **v3.1.2 최신 기능:**
       • 더 나은 사이트 호환성으로 향상된 레시피 스크래핑
       • 개선된 쇼핑 리스트 병합 (중복 재료 결합)
       • 더 나은 영양 계산
       • 더 빠른 검색 및 필터링
       • PDF 레시피 내보내기
       • 자동화를 위한 웹훅 지원
+      • 개선된 가구 관리
+      • 더 나은 재료 파싱
       
       **작동하는 사이트:**
       만개의레시피, 네이버 블로그, 쿡패드, 유튜브 레시피 등 대부분의 음식 블로그
@@ -124,13 +128,15 @@ x-casaos:
       • **多用户支持** - 与家人分享食谱，同时保持一些私密
       • **移动友好** - 在手机、平板和电脑上完美运行
       
-      **v1.12.2功能:**
+      **v3.1.2最新功能:**
       • 增强的食谱抓取，更好的网站兼容性
       • 改进的购物清单合并（合并重复配料）
       • 更好的营养计算
       • 更快的搜索和筛选
       • PDF食谱导出
       • 自动化的Webhook支持
+      • 改进的家庭管理
+      • 更好的配料解析
       
       **适用于数千个网站包括:**
       下厨房、美食杰、豆果美食、小红书食谱等大多数美食博客
@@ -149,13 +155,15 @@ x-casaos:
       • **Support multi-utilisateurs** - Partagez avec la famille tout en gardant certaines privées
       • **Mobile friendly** - Fonctionne parfaitement sur téléphones, tablettes et ordinateurs
       
-      **Fonctionnalités v1.12.2:**
+      **Fonctionnalités v3.1.2:**
       • Extraction de recettes améliorée avec meilleure compatibilité
       • Fusion améliorée des listes de courses (combine les ingrédients en double)
       • Meilleurs calculs nutritionnels
       • Recherche et filtrage plus rapides
       • Export PDF de recettes
       • Support Webhook pour l'automatisation
+      • Gestion des foyers améliorée
+      • Meilleure analyse des ingrédients
       
       **Fonctionne avec des milliers de sites incluant:**
       Marmiton, 750g, Cuisine Actuelle, Chef Simon, et la plupart des blogs culinaires
@@ -174,13 +182,15 @@ x-casaos:
       • **Soporte multiusuario** - Comparte con familia mientras mantienes algunas privadas
       • **Amigable móvil** - Funciona perfectamente en teléfonos, tablets y computadoras
       
-      **Características v1.12.2:**
+      **Características v3.1.2:**
       • Extracción mejorada de recetas con mejor compatibilidad
       • Fusión mejorada de listas de compras (combina ingredientes duplicados)
       • Mejores cálculos nutricionales
       • Búsqueda y filtrado más rápidos
       • Exportación PDF de recetas
       • Soporte Webhook para automatización
+      • Gestión de hogares mejorada
+      • Mejor análisis de ingredientes
       
       **Funciona con miles de sitios incluyendo:**
       Cookpad, Directo al Paladar, RecetasGratis, Cocina Fácil, y la mayoría de blogs de cocina
@@ -219,11 +229,12 @@ x-casaos:
         5. Use the Meal Planner to organize your week
         6. Generate shopping lists from your planned meals
         
-        **v1.12.2 Highlights:**
+        **v3.1.2 Highlights:**
         • Better recipe scraping from more websites
         • Smart ingredient merging in shopping lists
         • PDF export for printing or sharing
         • Webhook support for home automation
+        • Improved household management
         
         **Pro Tips:**
         • Import multiple recipes at once using the bulk import feature
@@ -246,11 +257,12 @@ x-casaos:
         5. 식사 플래너를 사용하여 일주일 정리
         6. 계획된 식사에서 쇼핑 리스트 생성
         
-        **v1.12.2 하이라이트:**
+        **v3.1.2 하이라이트:**
         • 더 많은 웹사이트에서 더 나은 레시피 스크래핑
         • 쇼핑 리스트에서 스마트 재료 병합
         • 인쇄 또는 공유를 위한 PDF 내보내기
         • 홈 자동화를 위한 웹훅 지원
+        • 개선된 가구 관리
         
         **프로 팁:**
         • 대량 가져오기 기능으로 여러 레시피 한 번에 가져오기
@@ -273,11 +285,12 @@ x-casaos:
         5. 使用餐食规划器组织您的一周
         6. 从计划的餐食生成购物清单
         
-        **v1.12.2亮点:**
+        **v3.1.2亮点:**
         • 从更多网站更好地抓取食谱
         • 购物清单中的智能配料合并
         • 用于打印或分享的PDF导出
         • 家庭自动化的Webhook支持
+        • 改进的家庭管理
         
         **专业提示:**
         • 使用批量导入功能一次导入多个食谱
@@ -300,11 +313,12 @@ x-casaos:
         5. Utilisez le planificateur de repas pour organiser votre semaine
         6. Générez des listes de courses depuis vos repas planifiés
         
-        **Points forts v1.12.2:**
+        **Points forts v3.1.2:**
         • Meilleure extraction de recettes depuis plus de sites
         • Fusion intelligente d'ingrédients dans les listes
         • Export PDF pour impression ou partage
         • Support Webhook pour domotique
+        • Gestion des foyers améliorée
         
         **Conseils pro:**
         • Importez plusieurs recettes à la fois avec l'import en masse
@@ -327,11 +341,12 @@ x-casaos:
         5. Usa el planificador de comidas para organizar tu semana
         6. Genera listas de compras desde tus comidas planificadas
         
-        **Destacados v1.12.2:**
+        **Destacados v3.1.2:**
         • Mejor extracción de recetas desde más sitios web
         • Fusión inteligente de ingredientes en listas
         • Exportación PDF para imprimir o compartir
         • Soporte Webhook para automatización del hogar
+        • Gestión de hogares mejorada
         
         **Consejos pro:**
         • Importa múltiples recetas a la vez con importación masiva
