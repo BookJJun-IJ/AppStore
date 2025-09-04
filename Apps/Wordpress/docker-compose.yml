@@ -11,8 +11,6 @@ services:
       - /DATA/AppData/$AppID/WordPress:/var/www/html
       - /DATA/Downloads:/downloads
     environment:
-      PGID: $PGID
-      PUID: $PUID
       TZ: $TZ
       DOMAIN: $domain
       WORDPRESS_DB_HOST: database:3306
@@ -23,11 +21,14 @@ services:
       WORDPRESS_CONFIG_EXTRA: |
         define('FS_METHOD', 'direct');
         define('WP_MEMORY_LIMIT', '256M');
-        define('WP_HOME', 'https://' . $_ENV['DOMAIN']);
-        define('WP_SITEURL', 'https://' . $_ENV['DOMAIN']);
+        define('DB_COLLATE', '');
+        if (!empty($_ENV['DOMAIN'])) {
+          define('WP_HOME', 'https://' . $_ENV['DOMAIN']);
+          define('WP_SITEURL', 'https://' . $_ENV['DOMAIN']);
+        }
+        define('AUTOMATIC_UPDATER_DISABLED', true);
     depends_on:
-      database:
-        condition: service_healthy
+      - database
     deploy:
       resources:
         limits:
@@ -47,13 +48,8 @@ services:
       MYSQL_PASSWORD: $default_pwd
       MYSQL_ROOT_PASSWORD: $default_pwd
       MYSQL_INITDB_SKIP_TZINFO: 1
-    command: --default-authentication-plugin=mysql_native_password --innodb-buffer-pool-size=256M
-    healthcheck:
-      test: ["CMD", "healthcheck.sh", "--su-mysql", "--connect", "--innodb_initialized"]
-      start_period: 10s
-      interval: 10s
-      timeout: 5s
-      retries: 3
+      MARIADB_AUTO_UPGRADE: 1
+    command: --default-authentication-plugin=mysql_native_password --innodb-buffer-pool-size=256M --wait_timeout=300
     deploy:
       resources:
         limits:
@@ -206,7 +202,7 @@ x-casaos:
         1. WordPress will automatically configure itself on first visit
         2. Create your admin account during setup
         3. Your site will be accessible via HTTPS automatically
-        4. Start building your website!
+        4. The database may take 1-2 minutes to initialize on first startup
 
       zh_cn: |
         🌍 **WordPress (网站构建器)**
@@ -221,7 +217,7 @@ x-casaos:
         1. WordPress将在首次访问时自动配置
         2. 在设置过程中创建您的管理员账户
         3. 您的网站将自动通过HTTPS访问
-        4. 开始构建您的网站！
+        4. 数据库在首次启动时可能需要1-2分钟初始化
 
       ko_kr: |
         🌍 **WordPress (웹사이트 빌더)**
@@ -236,7 +232,7 @@ x-casaos:
         1. WordPress가 첫 방문 시 자동으로 설정됩니다
         2. 설정 중에 관리자 계정을 생성하세요
         3. 사이트가 HTTPS를 통해 자동으로 접근 가능합니다
-        4. 웹사이트 구축을 시작하세요!
+        4. 첫 시작 시 데이터베이스 초기화에 1-2분 소요될 수 있습니다
 
       fr_fr: |
         🌍 **WordPress (Créateur de sites web)**
@@ -251,7 +247,7 @@ x-casaos:
         1. WordPress se configurera automatiquement lors de la première visite
         2. Créez votre compte administrateur pendant la configuration
         3. Votre site sera accessible via HTTPS automatiquement
-        4. Commencez à construire votre site web !
+        4. La base de données peut prendre 1-2 minutes à s'initialiser au premier démarrage
 
       es_es: |
         🌍 **WordPress (Constructor de sitios web)**
@@ -266,4 +262,4 @@ x-casaos:
         1. WordPress se configurará automáticamente en la primera visita
         2. Crea tu cuenta de administrador durante la configuración
         3. Tu sitio será accesible vía HTTPS automáticamente
-        4. ¡Comienza a construir tu sitio web!
+        4. La base de datos puede tardar 1-2 minutos en inicializar en el primer arranque
