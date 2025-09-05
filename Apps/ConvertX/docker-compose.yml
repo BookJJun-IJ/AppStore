@@ -40,6 +40,9 @@ x-casaos:
     - amd64
     - arm64
   main: convertx
+  pre-install-cmd: |
+    mkdir -p /DATA/AppData/$AppID/data &&
+    chown -R $PUID:$PGID /DATA/AppData/$AppID
   author: CasaOS Team
   category: Utilities
   developer: C4illin
