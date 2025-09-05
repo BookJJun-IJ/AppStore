@@ -4,6 +4,7 @@ services:
   convertx:
     image: ghcr.io/c4illin/convertx:v0.14.1
     container_name: convertx
+    user: $PUID:$PGID
     restart: unless-stopped
     deploy:
       resources:
@@ -12,31 +13,21 @@ services:
           cpus: '1.0'
     expose:
       - 3000
-    ports:
-      - target: 3000
-        published: "3000"
-        protocol: tcp
     environment:
       - PUID=$PUID
       - PGID=$PGID
       - TZ=$TZ
-      - JWT_SECRET=changeme123
+      - JWT_SECRET=$default_pwd
       - ACCOUNT_REGISTRATION=false
       - HTTP_ALLOWED=false
       - ALLOW_UNAUTHENTICATED=false
-      - AUTO_DELETE_EVERY_N_HOURS=0
+      - AUTO_DELETE_EVERY_N_HOURS=24
       - HIDE_HISTORY=false
       - FFMPEG_ARGS=-preset fast
     volumes:
-      - type: bind
-        source: /DATA/AppData/convertx/data
-        target: /app/data
-      - type: bind
-        source: /DATA/Downloads
-        target: /downloads
-      - type: bind
-        source: /DATA/Documents
-        target: /documents
+      - /DATA/AppData/$AppID/data:/app/data
+      - /DATA/Downloads:/downloads
+      - /DATA/Documents:/documents
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
       interval: 30s
@@ -53,15 +44,61 @@ x-casaos:
   category: Utilities
   developer: C4illin
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ConvertX/icon.png
-  screenshot_link:
+  screenshot:
     - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ConvertX/screenshot-1.png
     - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ConvertX/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ConvertX/screenshot-3.png
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ConvertX/thumbnail.png
   title:
     en_us: ConvertX
   tagline:
     en_us: Universal file converter supporting 1000+ formats
+    ko_kr: 1000개 이상의 형식을 지원하는 범용 파일 변환기
+    zh_cn: 支持1000多种格式的通用文件转换器
+    fr_fr: Convertisseur de fichiers universel supportant plus de 1000 formats
+    es_es: Convertidor de archivos universal que admite más de 1000 formatos
   description:
-    en_us: ConvertX is a universal file converter that supports over 1000 different file formats. Convert images, videos, audio, documents, and more from your browser.
+    en_us: ConvertX is a self-hosted universal file converter that supports over 1000 different file formats. Convert images, videos, audio files, documents, 3D models, and more directly from your browser. All processing happens locally on your server, ensuring complete privacy and security. Built with TypeScript and powered by FFmpeg, Pandoc, ImageMagick, and other proven libraries for reliable file conversion.
+    ko_kr: ConvertX는 1000개 이상의 다양한 파일 형식을 지원하는 자가 호스팅 범용 파일 변환기입니다. 브라우저에서 직접 이미지, 비디오, 오디오 파일, 문서, 3D 모델 등을 변환하세요. 모든 처리는 서버에서 로컬로 이루어져 완전한 개인정보 보호와 보안을 보장합니다.
+    zh_cn: ConvertX是一个支持1000多种不同文件格式的自托管通用文件转换器。直接从浏览器转换图像、视频、音频文件、文档、3D模型等。所有处理都在您的服务器上本地进行，确保完全的隐私和安全。
+    fr_fr: ConvertX est un convertisseur de fichiers universel auto-hébergé qui prend en charge plus de 1000 formats de fichiers différents. Convertissez images, vidéos, fichiers audio, documents, modèles 3D et plus directement depuis votre navigateur. Tout le traitement se fait localement sur votre serveur, garantissant une confidentialité et une sécurité complètes.
+    es_es: ConvertX es un convertidor de archivos universal auto-hospedado que admite más de 1000 formatos de archivo diferentes. Convierte imágenes, videos, archivos de audio, documentos, modelos 3D y más directamente desde tu navegador. Todo el procesamiento ocurre localmente en tu servidor, garantizando privacidad y seguridad completas.
+  tips:
+    before_install:
+      en_us: |
+        **Getting Started**
+        
+        - **First User**: The first account registered becomes the admin
+        - **File Cleanup**: Converted files auto-delete after 24 hours to save space
+        - **Privacy**: All conversions happen locally - no data leaves your server
+        - **Performance**: 2GB RAM allocated for handling large file conversions
+        
+        **Supported Formats**
+        - **Images**: PNG, JPG, WebP, AVIF, SVG, GIF, TIFF, BMP, and more
+        - **Videos**: MP4, WebM, AVI, MOV, MKV, FLV using FFmpeg
+        - **Audio**: MP3, WAV, FLAC, OGG, AAC, M4A, and more
+        - **Documents**: PDF, DOCX, HTML, Markdown, TXT via Pandoc
+        - **3D Models**: STL, OBJ, PLY, DAE, and other formats
+        - **Archives**: ZIP, RAR, 7Z, TAR, and more
+        
+        **Usage Tips**
+        - Drag & drop files directly into the web interface
+        - Use FFmpeg presets for faster video conversion
+        - Batch convert multiple files simultaneously
+        - Access via clean HTTPS URL through NSL router
+      ko_kr: |
+        **시작하기**
+        
+        - **첫 번째 사용자**: 등록한 첫 번째 계정이 관리자가 됩니다
+        - **파일 정리**: 변환된 파일은 공간 절약을 위해 24시간 후 자동 삭제됩니다
+        - **개인정보 보호**: 모든 변환은 로컬에서 이루어짐 - 데이터가 서버를 떠나지 않습니다
+        - **성능**: 대용량 파일 변환 처리를 위해 2GB RAM 할당
+        
+        **지원 형식**
+        - **이미지**: PNG, JPG, WebP, AVIF, SVG, GIF, TIFF, BMP 등
+        - **비디오**: FFmpeg를 사용한 MP4, WebM, AVI, MOV, MKV, FLV
+        - **오디오**: MP3, WAV, FLAC, OGG, AAC, M4A 등
+        - **문서**: Pandoc을 통한 PDF, DOCX, HTML, Markdown, TXT
+        - **3D 모델**: STL, OBJ, PLY, DAE 및 기타 형식
   index: /
-  port_map: "3000"
+  webui_port: 3000
