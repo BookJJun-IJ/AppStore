@@ -3,22 +3,15 @@ services:
   db:
     image: postgres:16-alpine
     container_name: spliit-db
-    # user 제거 - PostgreSQL은 root로 시작해야 함
     environment:
       POSTGRES_DB: spliit
       POSTGRES_USER: spliit
-      POSTGRES_PASSWORD: $default_pwd
+      POSTGRES_PASSWORD: spliitpass
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - spliit_postgres:/var/lib/postgresql/data
     restart: unless-stopped
     networks:
       - spliit_network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U spliit -d spliit"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
     deploy:
       resources:
         limits:
@@ -28,27 +21,19 @@ services:
   spliit:
     image: crazymax/spliit:1.14.1
     container_name: spliit
-    # user 제거 - 컨테이너 기본값 사용
     depends_on:
-      db:
-        condition: service_healthy
-    expose:
-      - 3000
+      - db
     ports:
-      - target: 3000
-        published: 3333
-        protocol: tcp
+      - "3333:3000"
     environment:
       TZ: $TZ
       POSTGRES_HOST: db
       POSTGRES_PORT: 5432
       POSTGRES_DB: spliit
       POSTGRES_USER: spliit
-      POSTGRES_PASSWORD: $default_pwd
+      POSTGRES_PASSWORD: spliitpass
       POSTGRES_TIMEOUT: 60
       API_PORT: 3000
-    volumes:
-      - /DATA/AppData/$AppID/data:/data
     restart: unless-stopped
     networks:
       - spliit_network
@@ -59,8 +44,7 @@ services:
           cpus: '1.0'
 
 volumes:
-  postgres_data:
-    driver: local
+  spliit_postgres:
 
 networks:
   spliit_network:
@@ -90,67 +74,59 @@ x-casaos:
     fr_fr: Partagez les dépenses avec amis et famille
   description:
     en_us: |
-      Spliit is a free and open-source alternative to Splitwise. Share expenses with friends and family easily.
+      Spliit is a free and open-source alternative to Splitwise. Share expenses with friends and family.
       
       **Features:**
-      - Create unlimited expense groups
-      - Split expenses by percentage, shares or exact amounts
-      - Real-time balance tracking
+      - Create expense groups
+      - Split expenses equally or by custom amounts
+      - Track balances
       - Settlement optimization
-      - No account required
-      - Privacy-focused design
+      - No registration required
     ko_kr: |
-      Spliit은 Splitwise의 무료 오픈소스 대안입니다. 친구와 가족과 쉽게 비용을 공유하세요.
+      Spliit은 Splitwise의 무료 오픈소스 대안입니다. 친구와 가족과 비용을 공유하세요.
       
       **기능:**
-      - 무제한 비용 그룹 생성
-      - 비율, 몫 또는 정확한 금액으로 비용 분할
-      - 실시간 잔액 추적
+      - 비용 그룹 생성
+      - 균등 또는 사용자 정의 금액으로 비용 분할
+      - 잔액 추적
       - 정산 최적화
-      - 계정 불필요
-      - 개인정보 보호 중심 설계
+      - 등록 불필요
     zh_cn: |
-      Spliit 是 Splitwise 的免费开源替代品。轻松与朋友和家人分摊费用。
+      Spliit 是 Splitwise 的免费开源替代品。与朋友和家人分摊费用。
       
       **功能：**
-      - 创建无限费用群组
-      - 按百分比、份额或确切金额分摊费用
-      - 实时余额跟踪
+      - 创建费用群组
+      - 平均或自定义金额分摊费用
+      - 跟踪余额
       - 结算优化
-      - 无需账户
-      - 注重隐私的设计
+      - 无需注册
     es_es: |
-      Spliit es una alternativa gratuita y de código abierto a Splitwise. Comparte gastos fácilmente.
+      Spliit es una alternativa gratuita y de código abierto a Splitwise. Comparte gastos con amigos y familia.
       
       **Características:**
-      - Crear grupos de gastos ilimitados
-      - Dividir gastos por porcentaje, partes o cantidades exactas
-      - Seguimiento de balances en tiempo real
+      - Crear grupos de gastos
+      - Dividir gastos por igual o cantidades personalizadas
+      - Rastrear balances
       - Optimización de liquidaciones
-      - No requiere cuenta
-      - Diseño centrado en privacidad
+      - No requiere registro
     fr_fr: |
-      Spliit est une alternative gratuite et open source à Splitwise. Partagez les dépenses facilement.
+      Spliit est une alternative gratuite et open source à Splitwise. Partagez les dépenses avec amis et famille.
       
       **Fonctionnalités:**
-      - Créer des groupes de dépenses illimités
-      - Diviser les dépenses par pourcentage, parts ou montants exacts
-      - Suivi des soldes en temps réel
+      - Créer des groupes de dépenses
+      - Diviser les dépenses également ou par montants personnalisés
+      - Suivre les soldes
       - Optimisation des règlements
-      - Aucun compte requis
-      - Conception axée sur la confidentialité
+      - Aucune inscription requise
   tips:
     before_install:
       en_us: |
         **Access:** http://YOUR_SERVER_IP:3333
         
-        Database will initialize automatically on first run.
+        Wait 1-2 minutes for database initialization on first run.
       ko_kr: |
         **접속:** http://YOUR_SERVER_IP:3333
         
-        첫 실행 시 데이터베이스가 자동으로 초기화됩니다.
+        첫 실행 시 데이터베이스 초기화를 위해 1-2분 기다리세요.
   index: /
   port_map: "3333"
-  pre_install_cmd: |
-    mkdir -p /DATA/AppData/$AppID/data && 
-    chmod 777 /DATA/AppData/$AppID/data
