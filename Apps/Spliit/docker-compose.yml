@@ -138,7 +138,6 @@ x-casaos:
         데이터베이스는 보안 비밀번호로 자동 구성됩니다.
         모든 데이터는 /DATA/AppData/spliit/에 저장됩니다.
   index: /
-  port_map: "3000"
   pre_install_cmd: |
     mkdir -p /DATA/AppData/$AppID/postgres /DATA/AppData/$AppID/data && 
     chown -R 999:999 /DATA/AppData/$AppID/postgres && 
