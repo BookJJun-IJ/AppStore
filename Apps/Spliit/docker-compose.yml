@@ -1,30 +1,28 @@
 name: spliit
 services:
   db:
-    image: postgres:16.6-alpine
-    user: $PUID:$PGID
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-          cpus: '0.5'
+    image: postgres:16-alpine
     environment:
       POSTGRES_DB: spliit
       POSTGRES_USER: spliit
       POSTGRES_PASSWORD: $default_pwd
-      PUID: $PUID
-      PGID: $PGID
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
     volumes:
-      - /DATA/AppData/$AppID/postgres:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
     networks:
       - spliit_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U spliit -d spliit"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   spliit:
     image: crazymax/spliit:1.14.1
-    user: $PUID:$PGID
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     deploy:
       resources:
         limits:
@@ -40,12 +38,14 @@ services:
       POSTGRES_USER: spliit
       POSTGRES_PASSWORD: $default_pwd
       POSTGRES_TIMEOUT: 60
-      PUID: $PUID
-      PGID: $PGID
       API_PORT: 80
     restart: unless-stopped
     networks:
       - spliit_network
+
+volumes:
+  postgres_data:
+    driver: local
 
 networks:
   spliit_network:
@@ -170,7 +170,7 @@ x-casaos:
         - Database: PostgreSQL with secure password
         - Web Interface: Available via your CasaOS domain
         - No account required - start creating groups right away
-        - All data stored securely on your server
+        - All data stored securely in Docker volumes
         
         **Getting Started:**
         1. Create a group for your expenses (travel, household, etc.)
@@ -188,7 +188,7 @@ x-casaos:
         - 데이터베이스: 보안 비밀번호를 가진 PostgreSQL
         - 웹 인터페이스: CasaOS 도메인을 통해 사용 가능
         - 계정 불필요 - 즉시 그룹 생성 시작
-        - 모든 데이터는 서버에 안전하게 저장
+        - 모든 데이터는 Docker 볼륨에 안전하게 저장
         
         **시작하기:**
         1. 비용 그룹 생성 (여행, 가정 등)
