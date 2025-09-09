@@ -1,17 +1,19 @@
 name: spliit
 services:
-  spliit-db:
+  db:
     image: postgres:16-alpine
-    container_name: spliit-db
+    user: $PUID:$PGID
     environment:
       POSTGRES_DB: spliit
       POSTGRES_USER: spliit
-      POSTGRES_PASSWORD: spliitpassword2024
+      POSTGRES_PASSWORD: $default_pwd
+      PUID: $PUID
+      PGID: $PGID
     volumes:
       - /DATA/AppData/spliit/postgres:/var/lib/postgresql/data
     restart: unless-stopped
     networks:
-      - spliit-network
+      - spliit_network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U spliit -d spliit"]
       interval: 10s
@@ -25,39 +27,35 @@ services:
           cpus: '0.5'
 
   spliit:
-    image: ghcr.io/spliit-app/spliit:1.14.0
-    container_name: spliit
+    image: bssanchez/spliit:latest
+    user: $PUID:$PGID
     depends_on:
-      spliit-db:
+      db:
         condition: service_healthy
+    expose:
+      - 3000
     ports:
       - "3333:3000"
     environment:
-      # 시스템 변수
-      PUID: 1000
-      PGID: 1000
-      TZ: Asia/Seoul
+      PUID: $PUID
+      PGID: $PGID
+      TZ: $TZ
       
-      # 데이터베이스 설정
-      DATABASE_URL: postgresql://spliit:spliitpassword2024@spliit-db:5432/spliit
+      # Database
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: spliit
+      POSTGRES_USER: spliit
+      POSTGRES_PASSWORD: $default_pwd
       
-      # 앱 설정 - 로컬 접속용
-      NEXT_PUBLIC_BASE_URL: http://localhost:3333
-      NEXTAUTH_URL: http://localhost:3333
-      NEXTAUTH_SECRET: supersecretkey123456789012345678901234567890
-      
-      # 선택적 기능 (필요시 주석 해제)
-      # NEXT_PUBLIC_ENABLE_RECEIPT_UPLOAD: true
-      # S3_ENDPOINT: 
-      # S3_ACCESS_KEY_ID: 
-      # S3_SECRET_ACCESS_KEY: 
-      # S3_BUCKET_NAME: 
-      # S3_REGION: 
+      # App settings
+      PUBLIC_APP_URL: http://$public_ip:3333
+      PORT: 3000
     volumes:
-      - /DATA/AppData/spliit/uploads:/app/uploads
+      - /DATA/AppData/spliit/data:/app/data
     restart: unless-stopped
     networks:
-      - spliit-network
+      - spliit_network
     deploy:
       resources:
         limits:
@@ -65,43 +63,110 @@ services:
           cpus: '1.0'
 
 networks:
-  spliit-network:
+  spliit_network:
     driver: bridge
 
-# CasaOS 메타데이터 (CasaOS 사용시에만 필요)
 x-casaos:
   architectures:
     - amd64
     - arm64
   main: spliit
   webui_port: 3000
-  author: Spliit Team
+  author: CasaOS Team
   category: Finance
-  developer: Spliit Contributors
+  developer: Spliit Team
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Spliit/icon.png
   screenshot_link:
     - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Spliit/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Spliit/screenshot-2.png
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Spliit/thumbnail.png
   title:
     en_us: Spliit
-    ko_kr: 스플릿
   tagline:
     en_us: Share expenses with friends and family
     ko_kr: 친구 및 가족과 비용 공유
+    zh_cn: 与朋友和家人分摊费用
+    es_es: Comparte gastos con amigos y familia
+    fr_fr: Partagez les dépenses avec amis et famille
   description:
     en_us: |
-      Spliit is a free and open-source alternative to Splitwise.
-      Create groups to share expenses with your friends, family, or roommates.
+      Spliit is a free and open-source alternative to Splitwise. Create groups to share expenses with your friends, family, or roommates.
+      
+      **Features:**
+      - Create unlimited groups for different occasions
+      - Split expenses by percentage, shares, or exact amounts
+      - Track balances and optimize reimbursements
+      - No account required
+      - Privacy-focused design
+      - Mobile-responsive interface
     ko_kr: |
-      Spliit은 Splitwise의 무료 오픈소스 대안입니다.
-      친구, 가족 또는 룸메이트와 비용을 공유할 그룹을 만드세요.
+      Spliit은 Splitwise의 무료 오픈소스 대안입니다. 친구, 가족 또는 룸메이트와 비용을 공유할 그룹을 만드세요.
+      
+      **기능:**
+      - 다양한 상황을 위한 무제한 그룹 생성
+      - 비율, 몫 또는 정확한 금액으로 비용 분할
+      - 잔액 추적 및 상환 최적화
+      - 계정 불필요
+      - 개인정보 보호 중심 설계
+      - 모바일 반응형 인터페이스
+    zh_cn: |
+      Spliit 是 Splitwise 的免费开源替代品。创建群组与朋友、家人或室友分摊费用。
+      
+      **功能：**
+      - 为不同场合创建无限群组
+      - 按百分比、份额或确切金额分摊费用
+      - 跟踪余额并优化报销
+      - 无需账户
+      - 注重隐私的设计
+      - 移动响应式界面
+    es_es: |
+      Spliit es una alternativa gratuita y de código abierto a Splitwise. Crea grupos para compartir gastos con amigos, familia o compañeros de piso.
+      
+      **Características:**
+      - Crea grupos ilimitados para diferentes ocasiones
+      - Divide gastos por porcentaje, partes o cantidades exactas
+      - Rastrea balances y optimiza reembolsos
+      - No requiere cuenta
+      - Diseño centrado en la privacidad
+      - Interfaz móvil responsiva
+    fr_fr: |
+      Spliit est une alternative gratuite et open source à Splitwise. Créez des groupes pour partager les dépenses avec vos amis, votre famille ou vos colocataires.
+      
+      **Fonctionnalités:**
+      - Créez des groupes illimités pour différentes occasions
+      - Divisez les dépenses par pourcentage, parts ou montants exacts
+      - Suivez les soldes et optimisez les remboursements
+      - Aucun compte requis
+      - Conception axée sur la confidentialité
+      - Interface mobile responsive
   tips:
     before_install:
       en_us: |
-        Spliit will be ready immediately after installation.
-        Access at http://localhost:3333
+        ## Getting Started
+        
+        Spliit is ready to use immediately after installation.
+        
+        **Access:** http://your-server-ip:3333
+        
+        **Quick Start:**
+        1. Create a group
+        2. Add participants
+        3. Start adding expenses
+        4. View balances and settlements
       ko_kr: |
-        설치 후 즉시 사용 가능합니다.
-        http://localhost:3333 으로 접속하세요.
+        ## 시작하기
+        
+        Spliit은 설치 후 즉시 사용할 수 있습니다.
+        
+        **접속:** http://your-server-ip:3333
+        
+        **빠른 시작:**
+        1. 그룹 생성
+        2. 참가자 추가
+        3. 비용 추가 시작
+        4. 잔액 및 정산 보기
   index: /
   port_map: "3333"
+  pre_install_cmd: |
+    mkdir -p /DATA/AppData/spliit/postgres /DATA/AppData/spliit/data && 
+    chown -R $PUID:$PGID /DATA/AppData/spliit
