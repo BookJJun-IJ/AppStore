@@ -3,12 +3,15 @@ services:
   db:
     image: postgres:16-alpine
     container_name: spliit-db
+    user: 0:0
     environment:
       POSTGRES_DB: spliit
       POSTGRES_USER: spliit
-      POSTGRES_PASSWORD: spliitpass
+      POSTGRES_PASSWORD: $default_pwd
+      PUID: $PUID
+      PGID: $PGID
     volumes:
-      - spliit_postgres:/var/lib/postgresql/data
+      - /DATA/AppData/$AppID/postgres:/var/lib/postgresql/data
     restart: unless-stopped
     networks:
       - spliit_network
@@ -21,19 +24,24 @@ services:
   spliit:
     image: crazymax/spliit:1.14.1
     container_name: spliit
+    user: 0:0
     depends_on:
       - db
-    ports:
-      - "3333:3000"
+    expose:
+      - 3000
     environment:
+      PUID: $PUID
+      PGID: $PGID
       TZ: $TZ
       POSTGRES_HOST: db
       POSTGRES_PORT: 5432
       POSTGRES_DB: spliit
       POSTGRES_USER: spliit
-      POSTGRES_PASSWORD: spliitpass
+      POSTGRES_PASSWORD: $default_pwd
       POSTGRES_TIMEOUT: 60
       API_PORT: 3000
+    volumes:
+      - /DATA/AppData/$AppID/data:/data
     restart: unless-stopped
     networks:
       - spliit_network
@@ -42,9 +50,6 @@ services:
         limits:
           memory: 1G
           cpus: '1.0'
-
-volumes:
-  spliit_postgres:
 
 networks:
   spliit_network:
@@ -67,66 +72,74 @@ x-casaos:
   title:
     en_us: Spliit
   tagline:
-    en_us: Share expenses with friends and family
-    ko_kr: 친구 및 가족과 비용 공유
-    zh_cn: 与朋友和家人分摊费用
-    es_es: Comparte gastos con amigos y familia
-    fr_fr: Partagez les dépenses avec amis et famille
+    en_us: Free and Open Source Expense Sharing App
+    ko_kr: 무료 오픈소스 비용 분할 앱
+    zh_cn: 免费开源费用分摊应用
+    es_es: Aplicación Gratuita para Compartir Gastos
+    fr_fr: Application Gratuite de Partage de Dépenses
   description:
     en_us: |
       Spliit is a free and open-source alternative to Splitwise. Share expenses with friends and family.
       
       **Features:**
       - Create expense groups
-      - Split expenses equally or by custom amounts
-      - Track balances
-      - Settlement optimization
+      - Split expenses by percentage, shares or exact amounts
+      - Track balances and optimize settlements
       - No registration required
+      - Privacy-focused design
     ko_kr: |
       Spliit은 Splitwise의 무료 오픈소스 대안입니다. 친구와 가족과 비용을 공유하세요.
       
       **기능:**
       - 비용 그룹 생성
-      - 균등 또는 사용자 정의 금액으로 비용 분할
-      - 잔액 추적
-      - 정산 최적화
+      - 비율, 몫 또는 정확한 금액으로 비용 분할
+      - 잔액 추적 및 정산 최적화
       - 등록 불필요
+      - 개인정보 보호 중심 설계
     zh_cn: |
       Spliit 是 Splitwise 的免费开源替代品。与朋友和家人分摊费用。
       
       **功能：**
       - 创建费用群组
-      - 平均或自定义金额分摊费用
-      - 跟踪余额
-      - 结算优化
+      - 按百分比、份额或确切金额分摊费用
+      - 跟踪余额并优化结算
       - 无需注册
+      - 注重隐私的设计
     es_es: |
       Spliit es una alternativa gratuita y de código abierto a Splitwise. Comparte gastos con amigos y familia.
       
       **Características:**
       - Crear grupos de gastos
-      - Dividir gastos por igual o cantidades personalizadas
-      - Rastrear balances
-      - Optimización de liquidaciones
+      - Dividir gastos por porcentaje, partes o cantidades exactas
+      - Rastrear balances y optimizar liquidaciones
       - No requiere registro
+      - Diseño centrado en privacidad
     fr_fr: |
       Spliit est une alternative gratuite et open source à Splitwise. Partagez les dépenses avec amis et famille.
       
       **Fonctionnalités:**
       - Créer des groupes de dépenses
-      - Diviser les dépenses également ou par montants personnalisés
-      - Suivre les soldes
-      - Optimisation des règlements
+      - Diviser les dépenses par pourcentage, parts ou montants exacts
+      - Suivre les soldes et optimiser les règlements
       - Aucune inscription requise
+      - Conception axée sur la confidentialité
   tips:
     before_install:
       en_us: |
-        **Access:** http://YOUR_SERVER_IP:3333
+        ## Default Configuration
         
-        Wait 1-2 minutes for database initialization on first run.
+        The app will be accessible at your CasaOS domain after installation.
+        Database is automatically configured with secure password.
+        All data is stored in /DATA/AppData/spliit/
       ko_kr: |
-        **접속:** http://YOUR_SERVER_IP:3333
+        ## 기본 구성
         
-        첫 실행 시 데이터베이스 초기화를 위해 1-2분 기다리세요.
+        설치 후 CasaOS 도메인에서 앱에 접속할 수 있습니다.
+        데이터베이스는 보안 비밀번호로 자동 구성됩니다.
+        모든 데이터는 /DATA/AppData/spliit/에 저장됩니다.
   index: /
-  port_map: "3333"
+  port_map: "3000"
+  pre_install_cmd: |
+    mkdir -p /DATA/AppData/$AppID/postgres /DATA/AppData/$AppID/data && 
+    chown -R 999:999 /DATA/AppData/$AppID/postgres && 
+    chown -R 0:0 /DATA/AppData/$AppID/data
