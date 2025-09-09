@@ -1,55 +1,75 @@
 name: spliit
 services:
-  db:
+  spliit-db:
     image: postgres:16-alpine
+    container_name: spliit-db
+    user: $PUID:$PGID
     environment:
       POSTGRES_DB: spliit
       POSTGRES_USER: spliit
-      POSTGRES_PASSWORD: ${default_pwd:-changeme123}
-      # Removed POSTGRES_INITDB_ARGS for simpler authentication
+      POSTGRES_PASSWORD: $default_pwd
+      PUID: $PUID
+      PGID: $PGID
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - /DATA/AppData/spliit/postgres:/var/lib/postgresql/data
     restart: unless-stopped
     networks:
-      - spliit_network
+      - spliit-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U spliit -d spliit"]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 30s  # Added start_period to give PostgreSQL more time to initialize
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
 
   spliit:
-    image: crazymax/spliit:1.14.1
+    image: ghcr.io/spliit-app/spliit:1.14.0
+    container_name: spliit
+    user: $PUID:$PGID
     depends_on:
-      db:
+      spliit-db:
         condition: service_healthy
+    expose:
+      - 3000
+    environment:
+      # System variables
+      PUID: $PUID
+      PGID: $PGID
+      TZ: $TZ
+      
+      # Database configuration
+      DATABASE_URL: postgresql://spliit:$default_pwd@spliit-db:5432/spliit
+      
+      # Application configuration
+      NEXT_PUBLIC_BASE_URL: https://$domain
+      NEXTAUTH_URL: https://$domain
+      NEXTAUTH_SECRET: $default_pwd
+      
+      # Optional features (can be configured by user)
+      # NEXT_PUBLIC_ENABLE_RECEIPT_UPLOAD: true
+      # S3_ENDPOINT: 
+      # S3_ACCESS_KEY_ID: 
+      # S3_SECRET_ACCESS_KEY: 
+      # S3_BUCKET_NAME: 
+      # S3_REGION: 
+    volumes:
+      - /DATA/AppData/spliit/uploads:/app/uploads
+    restart: unless-stopped
+    networks:
+      - spliit-network
     deploy:
       resources:
         limits:
           memory: 1G
           cpus: '1.0'
-    expose:
-      - 80
-    environment:
-      TZ: ${TZ:-UTC}
-      POSTGRES_HOST: db
-      POSTGRES_PORT: 5432
-      POSTGRES_DB: spliit
-      POSTGRES_USER: spliit
-      POSTGRES_PASSWORD: ${default_pwd:-changeme123}
-      POSTGRES_TIMEOUT: 60
-      API_PORT: 80
-    restart: unless-stopped
-    networks:
-      - spliit_network
-
-volumes:
-  postgres_data:
-    driver: local
 
 networks:
-  spliit_network:
+  spliit-network:
     driver: bridge
 
 x-casaos:
@@ -57,145 +77,154 @@ x-casaos:
     - amd64
     - arm64
   main: spliit
-  webui_port: 80
-  pre-install-cmd: |
-    echo "Using Docker named volumes - no directory setup needed"
-  author: CasaOS Team
+  webui_port: 3000
+  author: Spliit Team
   category: Finance
-  description:
-    en_us: |
-      Spliit is a free and open source alternative to Splitwise. Share expenses with your friends and family easily and transparently.
-      
-      **Features:**
-      - Create groups for travel, events, gifts and more
-      - Add and categorize expenses within your groups
-      - Split expenses by percentage, shares or exact amounts
-      - Progressive Web App (PWA) - installable on devices
-      - Real-time balance tracking and visualization
-      - Optimized reimbursement calculations
-      - No account required, privacy-focused
-      - Attach receipt images to expenses (optional)
-      - Recurring expenses support
-      - Multi-language support
-      - Mobile-friendly responsive design
-      
-      Perfect for roommates, travel groups, families, and anyone who needs to split bills fairly and transparently.
-    ko_kr: |
-      Spliit은 Splitwise의 무료 오픈소스 대안입니다. 친구와 가족과 쉽고 투명하게 비용을 분할하세요.
-      
-      **기능:**
-      - 여행, 이벤트, 선물 등을 위한 그룹 생성
-      - 그룹 내에서 비용 추가 및 분류
-      - 비율, 몫 또는 정확한 금액으로 비용 분할
-      - 프로그레시브 웹 앱 (PWA) - 기기에 설치 가능
-      - 실시간 잔액 추적 및 시각화
-      - 최적화된 상환 계산
-      - 계정 불필요, 개인정보 보호 중심
-      - 비용에 영수증 이미지 첨부 (선택사항)
-      - 반복 비용 지원
-      - 다국어 지원
-      - 모바일 친화적 반응형 디자인
-      
-      룸메이트, 여행 그룹, 가족, 그리고 공정하고 투명하게 청구서를 분할해야 하는 모든 사람에게 완벽합니다.
-    fr_fr: |
-      Spliit est une alternative gratuite et open source à Splitwise. Partagez les dépenses avec vos amis et votre famille facilement et en toute transparence.
-      
-      **Fonctionnalités:**
-      - Créer des groupes pour les voyages, événements, cadeaux et plus
-      - Ajouter et catégoriser les dépenses dans vos groupes
-      - Diviser les dépenses par pourcentage, parts ou montants exacts
-      - Application Web Progressive (PWA) - installable sur les appareils
-      - Suivi et visualisation des soldes en temps réel
-      - Calculs de remboursement optimisés
-      - Aucun compte requis, axé sur la confidentialité
-      - Joindre des images de reçus aux dépenses (optionnel)
-      - Support des dépenses récurrentes
-      - Support multilingue
-      - Design réactif adapté aux mobiles
-      
-      Parfait pour les colocataires, groupes de voyage, familles, et tous ceux qui ont besoin de diviser les factures équitablement et en toute transparence.
-    es_es: |
-      Spliit es una alternativa gratuita y de código abierto a Splitwise. Comparte gastos con tus amigos y familia de manera fácil y transparente.
-      
-      **Características:**
-      - Crear grupos para viajes, eventos, regalos y más
-      - Agregar y categorizar gastos dentro de tus grupos
-      - Dividir gastos por porcentaje, partes o cantidades exactas
-      - Aplicación Web Progresiva (PWA) - instalable en dispositivos
-      - Seguimiento y visualización de balances en tiempo real
-      - Cálculos de reembolso optimizados
-      - No requiere cuenta, enfocado en la privacidad
-      - Adjuntar imágenes de recibos a gastos (opcional)
-      - Soporte para gastos recurrentes
-      - Soporte multiidioma
-      - Diseño responsivo adaptado para móviles
-      
-      Perfecto para compañeros de cuarto, grupos de viaje, familias, y cualquiera que necesite dividir facturas de manera justa y transparente.
-    zh_cn: |
-      Spliit 是 Splitwise 的免费开源替代品。与朋友和家人轻松透明地分摊费用。
-      
-      **功能特点:**
-      - 为旅行、活动、礼物等创建群组
-      - 在群组内添加和分类费用
-      - 按百分比、份额或确切金额分摊费用
-      - 渐进式网页应用 (PWA) - 可安装在设备上
-      - 实时余额跟踪和可视化
-      - 优化的报销计算
-      - 无需账户，注重隐私
-      - 为费用附加收据图片（可选）
-      - 定期费用支持
-      - 多语言支持
-      - 移动友好的响应式设计
-      
-      非常适合室友、旅行团体、家庭，以及任何需要公平透明地分摊账单的人。
-  developer: Spliit Team
+  developer: Spliit Contributors
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Spliit/icon.png
-  screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Spliit/screenshot-1.png
-  tagline:
-    en_us: Free and Open Source Expense Sharing App - Split bills with friends and family
-    ko_kr: 무료 오픈소스 비용 분할 앱 - 친구와 가족과 청구서 분할
-    fr_fr: Application Gratuite et Open Source de Partage de Dépenses - Divisez les factures avec amis et famille
-    es_es: Aplicación Gratuita y de Código Abierto para Compartir Gastos - Divide facturas con amigos y familia
-    zh_cn: 免费开源费用分摊应用 - 与朋友和家人分摊账单
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Spliit/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Spliit/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Spliit/screenshot-3.png
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Spliit/thumbnail.png
   title:
     en_us: Spliit
+  tagline:
+    en_us: Share expenses with friends and family
+    ko_kr: 친구 및 가족과 비용 공유
+    zh_cn: 与朋友和家人分摊费用
+    es_es: Comparte gastos con amigos y familia
+    fr_fr: Partagez les dépenses avec amis et famille
+  description:
+    en_us: |
+      Spliit is a free and open-source alternative to Splitwise. Create groups to share expenses with your friends, family, or roommates. Track who owes what with automatic balance calculations and optimized reimbursements.
+      
+      **Key Features:**
+      - No account required - privacy-focused design
+      - Create unlimited groups for different occasions
+      - Split expenses by percentage, shares, or exact amounts
+      - Automatic balance tracking and settlement suggestions
+      - Progressive Web App (PWA) - installable on any device
+      - Attach receipts to expenses (optional with S3 storage)
+      - Support for recurring expenses
+      - Export data to CSV for record keeping
+      - Real-time synchronization across devices
+      - Mobile-responsive design
+      
+      Perfect for travel groups, shared households, event planning, and any situation where you need to split costs fairly and transparently.
+    ko_kr: |
+      Spliit은 Splitwise의 무료 오픈소스 대안입니다. 친구, 가족 또는 룸메이트와 비용을 공유할 그룹을 만드세요. 자동 잔액 계산과 최적화된 상환으로 누가 얼마를 빚졌는지 추적하세요.
+      
+      **주요 기능:**
+      - 계정 불필요 - 개인정보 보호 중심 설계
+      - 다양한 상황을 위한 무제한 그룹 생성
+      - 비율, 몫 또는 정확한 금액으로 비용 분할
+      - 자동 잔액 추적 및 정산 제안
+      - 프로그레시브 웹 앱 (PWA) - 모든 기기에 설치 가능
+      - 비용에 영수증 첨부 (S3 스토리지로 선택 가능)
+      - 정기 비용 지원
+      - 기록 보관을 위한 CSV로 데이터 내보내기
+      - 기기 간 실시간 동기화
+      - 모바일 반응형 디자인
+      
+      여행 그룹, 공유 가구, 이벤트 계획 및 비용을 공정하고 투명하게 분할해야 하는 모든 상황에 완벽합니다.
+    zh_cn: |
+      Spliit 是 Splitwise 的免费开源替代品。创建群组与朋友、家人或室友分摊费用。通过自动余额计算和优化报销跟踪谁欠谁多少。
+      
+      **主要功能：**
+      - 无需账户 - 注重隐私的设计
+      - 为不同场合创建无限群组
+      - 按百分比、份额或确切金额分摊费用
+      - 自动余额跟踪和结算建议
+      - 渐进式网页应用 (PWA) - 可安装在任何设备上
+      - 为费用附加收据（可选配 S3 存储）
+      - 支持定期费用
+      - 导出数据到 CSV 以便记录保存
+      - 设备间实时同步
+      - 移动响应式设计
+      
+      非常适合旅行团体、共享家庭、活动策划以及任何需要公平透明地分摊成本的情况。
+    es_es: |
+      Spliit es una alternativa gratuita y de código abierto a Splitwise. Crea grupos para compartir gastos con amigos, familia o compañeros de piso. Rastrea quién debe qué con cálculos automáticos de balance y reembolsos optimizados.
+      
+      **Características principales:**
+      - No requiere cuenta - diseño centrado en la privacidad
+      - Crea grupos ilimitados para diferentes ocasiones
+      - Divide gastos por porcentaje, partes o cantidades exactas
+      - Seguimiento automático de balances y sugerencias de liquidación
+      - Aplicación Web Progresiva (PWA) - instalable en cualquier dispositivo
+      - Adjunta recibos a los gastos (opcional con almacenamiento S3)
+      - Soporte para gastos recurrentes
+      - Exporta datos a CSV para mantener registros
+      - Sincronización en tiempo real entre dispositivos
+      - Diseño responsivo móvil
+      
+      Perfecto para grupos de viaje, hogares compartidos, planificación de eventos y cualquier situación donde necesites dividir costos de manera justa y transparente.
+    fr_fr: |
+      Spliit est une alternative gratuite et open source à Splitwise. Créez des groupes pour partager les dépenses avec vos amis, votre famille ou vos colocataires. Suivez qui doit quoi avec des calculs automatiques de solde et des remboursements optimisés.
+      
+      **Fonctionnalités principales:**
+      - Aucun compte requis - conception axée sur la confidentialité
+      - Créez des groupes illimités pour différentes occasions
+      - Divisez les dépenses par pourcentage, parts ou montants exacts
+      - Suivi automatique des soldes et suggestions de règlement
+      - Application Web Progressive (PWA) - installable sur n'importe quel appareil
+      - Joignez des reçus aux dépenses (optionnel avec stockage S3)
+      - Support pour les dépenses récurrentes
+      - Exportez les données vers CSV pour la tenue de registres
+      - Synchronisation en temps réel entre appareils
+      - Design adaptatif mobile
+      
+      Parfait pour les groupes de voyage, les ménages partagés, la planification d'événements et toute situation où vous devez partager les coûts équitablement et en toute transparence.
   tips:
     before_install:
       en_us: |
-        ## Spliit - Expense Sharing Made Simple
+        ## Quick Start Guide
         
-        Spliit is ready to use immediately after installation with a PostgreSQL database for secure data storage.
-        
-        **Default Configuration:**
-        - Database: PostgreSQL with secure password
-        - Web Interface: Available via your CasaOS domain
-        - No account required - start creating groups right away
-        - All data stored securely in Docker volumes
+        Spliit will be ready to use immediately after installation. No account creation is required!
         
         **Getting Started:**
-        1. Create a group for your expenses (travel, household, etc.)
-        2. Add participants to your group
-        3. Start logging expenses and let Spliit calculate the splits
-        4. View balances and optimize reimbursements
+        1. Open Spliit in your browser
+        2. Create your first group (e.g., "Household", "Vacation", "Dinner Party")
+        3. Add participants by name
+        4. Start adding expenses
+        5. Spliit automatically calculates who owes what
         
-        Perfect for roommates, travel groups, families, and anyone who wants to split expenses fairly!
+        **Optional Features:**
+        - To enable receipt uploads, configure S3 storage in the environment variables
+        - Export your data anytime as CSV for your records
+        - Install as a PWA on your phone for quick access
+        
+        **Privacy First:**
+        - No user accounts required
+        - All data stays on your server
+        - Share group links only with participants
       ko_kr: |
-        ## Spliit - 간단한 비용 분할
+        ## 빠른 시작 가이드
         
-        Spliit은 설치 후 PostgreSQL 데이터베이스로 안전한 데이터 저장이 가능하며 즉시 사용할 수 있습니다.
-        
-        **기본 구성:**
-        - 데이터베이스: 보안 비밀번호를 가진 PostgreSQL
-        - 웹 인터페이스: CasaOS 도메인을 통해 사용 가능
-        - 계정 불필요 - 즉시 그룹 생성 시작
-        - 모든 데이터는 Docker 볼륨에 안전하게 저장
+        Spliit은 설치 후 즉시 사용할 준비가 됩니다. 계정 생성이 필요 없습니다!
         
         **시작하기:**
-        1. 비용 그룹 생성 (여행, 가정 등)
-        2. 그룹에 참가자 추가
-        3. 비용 기록 시작하고 Spliit이 분할 계산
-        4. 잔액 확인 및 상환 최적화
+        1. 브라우저에서 Spliit 열기
+        2. 첫 번째 그룹 만들기 (예: "가정", "휴가", "저녁 파티")
+        3. 이름으로 참가자 추가
+        4. 비용 추가 시작
+        5. Spliit이 자동으로 누가 얼마를 빚졌는지 계산
         
-        룸메이트, 여행 그룹, 가족, 그리고 공정하게 비용을 분할하려는 모든 사람에게 완벽합니다!
+        **선택적 기능:**
+        - 영수증 업로드를 활성화하려면 환경 변수에서 S3 스토리지 구성
+        - 언제든지 데이터를 CSV로 내보내기
+        - 빠른 액세스를 위해 휴대폰에 PWA로 설치
+        
+        **개인정보 보호 우선:**
+        - 사용자 계정 불필요
+        - 모든 데이터는 서버에 유지
+        - 참가자와만 그룹 링크 공유
   index: /
+  port_map: "3000"
+  scheme: http
+  store_app_id: spliit
+  pre_install_cmd: |
+    # Create necessary directories with proper permissions
+    mkdir -p /DATA/AppData/spliit/postgres /DATA/AppData/spliit/uploads
+    chown -R $PUID:$PGID /DATA/AppData/spliit
