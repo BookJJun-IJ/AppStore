@@ -56,7 +56,6 @@ x-casaos:
     - amd64
     - arm64
   main: spliit
-  webui_port: 80
   pre-install-cmd: |
     mkdir -p /DATA/AppData/$AppID/postgres &&
     chown -R $PUID:$PGID /DATA/AppData/$AppID
@@ -67,85 +66,85 @@ x-casaos:
       Spliit is a free and open source alternative to Splitwise. Share expenses with your friends and family easily and transparently.
       
       **Features:**
-      - 📊 Create groups for travel, events, gifts and more
-      - 💰 Add and categorize expenses within your groups
-      - 🔀 Split expenses by percentage, shares or exact amounts
-      - 📱 Progressive Web App (PWA) - installable on devices
-      - 🎯 Real-time balance tracking and visualization
-      - 💳 Optimized reimbursement calculations
-      - 🔒 No account required, privacy-focused
-      - 📷 Attach receipt images to expenses (optional)
-      - 📄 Recurring expenses support
-      - 🌍 Multi-language support
-      - 📱 Mobile-friendly responsive design
+      - Create groups for travel, events, gifts and more
+      - Add and categorize expenses within your groups
+      - Split expenses by percentage, shares or exact amounts
+      - Progressive Web App (PWA) - installable on devices
+      - Real-time balance tracking and visualization
+      - Optimized reimbursement calculations
+      - No account required, privacy-focused
+      - Attach receipt images to expenses (optional)
+      - Recurring expenses support
+      - Multi-language support
+      - Mobile-friendly responsive design
       
       Perfect for roommates, travel groups, families, and anyone who needs to split bills fairly and transparently.
     ko_kr: |
       Spliit은 Splitwise의 무료 오픈소스 대안입니다. 친구와 가족과 쉽고 투명하게 비용을 분할하세요.
       
       **기능:**
-      - 📊 여행, 이벤트, 선물 등을 위한 그룹 생성
-      - 💰 그룹 내에서 비용 추가 및 분류
-      - 🔀 비율, 몫 또는 정확한 금액으로 비용 분할
-      - 📱 프로그레시브 웹 앱 (PWA) - 기기에 설치 가능
-      - 🎯 실시간 잔액 추적 및 시각화
-      - 💳 최적화된 상환 계산
-      - 🔒 계정 불필요, 개인정보 보호 중심
-      - 📷 비용에 영수증 이미지 첨부 (선택사항)
-      - 📄 반복 비용 지원
-      - 🌍 다국어 지원
-      - 📱 모바일 친화적 반응형 디자인
+      - 여행, 이벤트, 선물 등을 위한 그룹 생성
+      - 그룹 내에서 비용 추가 및 분류
+      - 비율, 몫 또는 정확한 금액으로 비용 분할
+      - 프로그레시브 웹 앱 (PWA) - 기기에 설치 가능
+      - 실시간 잔액 추적 및 시각화
+      - 최적화된 상환 계산
+      - 계정 불필요, 개인정보 보호 중심
+      - 비용에 영수증 이미지 첨부 (선택사항)
+      - 반복 비용 지원
+      - 다국어 지원
+      - 모바일 친화적 반응형 디자인
       
       룸메이트, 여행 그룹, 가족, 그리고 공정하고 투명하게 청구서를 분할해야 하는 모든 사람에게 완벽합니다.
     fr_fr: |
       Spliit est une alternative gratuite et open source à Splitwise. Partagez les dépenses avec vos amis et votre famille facilement et en toute transparence.
       
       **Fonctionnalités:**
-      - 📊 Créer des groupes pour les voyages, événements, cadeaux et plus
-      - 💰 Ajouter et catégoriser les dépenses dans vos groupes
-      - 🔀 Diviser les dépenses par pourcentage, parts ou montants exacts
-      - 📱 Application Web Progressive (PWA) - installable sur les appareils
-      - 🎯 Suivi et visualisation des soldes en temps réel
-      - 💳 Calculs de remboursement optimisés
-      - 🔒 Aucun compte requis, axé sur la confidentialité
-      - 📷 Joindre des images de reçus aux dépenses (optionnel)
-      - 📄 Support des dépenses récurrentes
-      - 🌍 Support multilingue
-      - 📱 Design réactif adapté aux mobiles
+      - Créer des groupes pour les voyages, événements, cadeaux et plus
+      - Ajouter et catégoriser les dépenses dans vos groupes
+      - Diviser les dépenses par pourcentage, parts ou montants exacts
+      - Application Web Progressive (PWA) - installable sur les appareils
+      - Suivi et visualisation des soldes en temps réel
+      - Calculs de remboursement optimisés
+      - Aucun compte requis, axé sur la confidentialité
+      - Joindre des images de reçus aux dépenses (optionnel)
+      - Support des dépenses récurrentes
+      - Support multilingue
+      - Design réactif adapté aux mobiles
       
       Parfait pour les colocataires, groupes de voyage, familles, et tous ceux qui ont besoin de diviser les factures équitablement et en toute transparence.
     es_es: |
       Spliit es una alternativa gratuita y de código abierto a Splitwise. Comparte gastos con tus amigos y familia de manera fácil y transparente.
       
       **Características:**
-      - 📊 Crear grupos para viajes, eventos, regalos y más
-      - 💰 Agregar y categorizar gastos dentro de tus grupos
-      - 🔀 Dividir gastos por porcentaje, partes o cantidades exactas
-      - 📱 Aplicación Web Progresiva (PWA) - instalable en dispositivos
-      - 🎯 Seguimiento y visualización de balances en tiempo real
-      - 💳 Cálculos de reembolso optimizados
-      - 🔒 No requiere cuenta, enfocado en la privacidad
-      - 📷 Adjuntar imágenes de recibos a gastos (opcional)
-      - 📄 Soporte para gastos recurrentes
-      - 🌍 Soporte multiidioma
-      - 📱 Diseño responsivo adaptado para móviles
+      - Crear grupos para viajes, eventos, regalos y más
+      - Agregar y categorizar gastos dentro de tus grupos
+      - Dividir gastos por porcentaje, partes o cantidades exactas
+      - Aplicación Web Progresiva (PWA) - instalable en dispositivos
+      - Seguimiento y visualización de balances en tiempo real
+      - Cálculos de reembolso optimizados
+      - No requiere cuenta, enfocado en la privacidad
+      - Adjuntar imágenes de recibos a gastos (opcional)
+      - Soporte para gastos recurrentes
+      - Soporte multiidioma
+      - Diseño responsivo adaptado para móviles
       
       Perfecto para compañeros de cuarto, grupos de viaje, familias, y cualquiera que necesite dividir facturas de manera justa y transparente.
     zh_cn: |
       Spliit 是 Splitwise 的免费开源替代品。与朋友和家人轻松透明地分摊费用。
       
       **功能特点:**
-      - 📊 为旅行、活动、礼物等创建群组
-      - 💰 在群组内添加和分类费用
-      - 🔀 按百分比、份额或确切金额分摊费用
-      - 📱 渐进式网页应用 (PWA) - 可安装在设备上
-      - 🎯 实时余额跟踪和可视化
-      - 💳 优化的报销计算
-      - 🔒 无需账户，注重隐私
-      - 📷 为费用附加收据图片（可选）
-      - 📄 定期费用支持
-      - 🌍 多语言支持
-      - 📱 移动友好的响应式设计
+      - 为旅行、活动、礼物等创建群组
+      - 在群组内添加和分类费用
+      - 按百分比、份额或确切金额分摊费用
+      - 渐进式网页应用 (PWA) - 可安装在设备上
+      - 实时余额跟踪和可视化
+      - 优化的报销计算
+      - 无需账户，注重隐私
+      - 为费用附加收据图片（可选）
+      - 定期费用支持
+      - 多语言支持
+      - 移动友好的响应式设计
       
       非常适合室友、旅行团体、家庭，以及任何需要公平透明地分摊账单的人。
   developer: Spliit Team
