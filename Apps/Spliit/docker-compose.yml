@@ -3,7 +3,7 @@ services:
   db:
     image: postgres:16-alpine
     container_name: spliit-db
-    user: 0:0
+    user: $PUID:$PGID
     environment:
       POSTGRES_DB: spliit
       POSTGRES_USER: spliit
@@ -15,16 +15,11 @@ services:
     restart: unless-stopped
     networks:
       - spliit_network
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-          cpus: '0.5'
 
   spliit:
     image: crazymax/spliit:1.14.1
     container_name: spliit
-    user: 0:0
+    user: $PUID:$PGID
     depends_on:
       - db
     expose:
@@ -45,11 +40,6 @@ services:
     restart: unless-stopped
     networks:
       - spliit_network
-    deploy:
-      resources:
-        limits:
-          memory: 1G
-          cpus: '1.0'
 
 networks:
   spliit_network:
@@ -61,6 +51,11 @@ x-casaos:
     - arm64
   main: spliit
   webui_port: 3000
+  index: /
+  pre_install_cmd: |
+    mkdir -p /DATA/AppData/$AppID/postgres /DATA/AppData/$AppID/data && 
+    chown -R $PUID:$PGID /DATA/AppData/$AppID/postgres && 
+    chown -R $PUID:$PGID /DATA/AppData/$AppID/data
   author: CasaOS Team
   category: Finance
   developer: Spliit Team
@@ -137,8 +132,3 @@ x-casaos:
         설치 후 CasaOS 도메인에서 앱에 접속할 수 있습니다.
         데이터베이스는 보안 비밀번호로 자동 구성됩니다.
         모든 데이터는 /DATA/AppData/spliit/에 저장됩니다.
-  index: /
-  pre_install_cmd: |
-    mkdir -p /DATA/AppData/$AppID/postgres /DATA/AppData/$AppID/data && 
-    chown -R 999:999 /DATA/AppData/$AppID/postgres && 
-    chown -R 0:0 /DATA/AppData/$AppID/data
