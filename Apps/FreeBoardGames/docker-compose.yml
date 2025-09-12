@@ -2,7 +2,7 @@ name: freeboardgames
 
 services:
   freeboardgames:
-    image: node:18-alpine
+    image: node:18
     user: $PUID:$PGID
     working_dir: /app
     deploy:
@@ -11,26 +11,37 @@ services:
           memory: 1G
           cpus: '1.0'
     expose:
-      - 80
+      - 3000
     environment:
-      - PUID=$PUID
-      - PGID=$PGID
-      - TZ=$TZ
-      - NODE_ENV=production
-      - PORT=80
-      - DOMAIN=$domain
+      PUID: $PUID
+      PGID: $PGID
+      TZ: $TZ
+      NODE_ENV: production
+      PORT: 3000
+      DOMAIN: $domain
     volumes:
-      - /DATA/AppData/$AppID/app:/app
-      - /DATA/AppData/$AppID/config:/config
-      - /DATA/AppData/$AppID/logs:/app/logs
-    command: sh -c "if [ ! -f /app/package.json ]; then git clone https://github.com/freeboardgames/FreeBoardGames.org.git /tmp/fbg && cp -r /tmp/fbg/* /app/ && rm -rf /tmp/fbg; fi && cd /app && npm install && npm run build && npm run start -- --port 80 --host 0.0.0.0"
+      - /DATA/AppData/freeboardgames/app:/app
+      - /DATA/AppData/freeboardgames/config:/config
+    command: >
+      bash -c "
+      if [ ! -f /app/package.json ]; then
+        git clone https://github.com/freeboardgames/FreeBoardGames.org.git /tmp/fbg &&
+        cp -r /tmp/fbg/* /app/ &&
+        rm -rf /tmp/fbg &&
+        chown -R $PUID:$PGID /app
+      fi &&
+      cd /app &&
+      npm install &&
+      npm run build &&
+      npm run start:prod
+      "
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "sh", "-c", "nc -z localhost 80 || exit 1"]
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 180s
+      start_period: 300s
 
 x-casaos:
   architectures:
@@ -70,10 +81,10 @@ x-casaos:
         - 📱 Browser-based - no downloads required
         
         **Note:** First startup may take several minutes as the application downloads and builds the game platform.
-  port_map: "80"
+  port_map: "3000"
   scheme: https
-  webui_port: 80
+  webui_port: 3000
   index: /
   pre-install-cmd: |
-    mkdir -p /DATA/AppData/freeboardgames/{app,config,logs} &&
+    mkdir -p /DATA/AppData/freeboardgames/{app,config} &&
     chown -R $PUID:$PGID /DATA/AppData/freeboardgames
