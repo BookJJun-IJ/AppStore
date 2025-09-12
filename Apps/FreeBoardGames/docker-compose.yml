@@ -2,7 +2,7 @@ name: freeboardgames
 
 services:
   freeboardgames:
-    image: node:18
+    image: node:16
     user: $PUID:$PGID
     working_dir: /app
     deploy:
@@ -16,7 +16,7 @@ services:
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
-      NODE_ENV: production
+      NODE_ENV: development
       PORT: 80
       DOMAIN: $domain
     volumes:
@@ -31,13 +31,12 @@ services:
         chown -R $PUID:$PGID /app
       fi &&
       cd /app &&
-      npm install &&
-      npm run build &&
-      npm run start:prod
+      yarn install &&
+      PORT=80 yarn run dev
       "
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -81,9 +80,8 @@ x-casaos:
         - 📱 Browser-based - no downloads required
         
         **Note:** First startup may take several minutes as the application downloads and builds the game platform.
-  scheme: https
   webui_port: 80
   index: /
   pre-install-cmd: |
     mkdir -p /DATA/AppData/freeboardgames/{app,config} &&
-    chown -R $PUID:$PGID /DATA/AppData/freeboardgames
+    chown -R $PUID:$PGID /DATA/AppData/freeboardgam
