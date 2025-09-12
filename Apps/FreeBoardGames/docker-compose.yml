@@ -11,13 +11,13 @@ services:
           memory: 1G
           cpus: '1.0'
     expose:
-      - 3000
+      - 80
     environment:
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
       NODE_ENV: production
-      PORT: 3000
+      PORT: 80
       DOMAIN: $domain
     volumes:
       - /DATA/AppData/freeboardgames/app:/app
@@ -81,9 +81,8 @@ x-casaos:
         - 📱 Browser-based - no downloads required
         
         **Note:** First startup may take several minutes as the application downloads and builds the game platform.
-  port_map: "3000"
   scheme: https
-  webui_port: 3000
+  webui_port: 80
   index: /
   pre-install-cmd: |
     mkdir -p /DATA/AppData/freeboardgames/{app,config} &&
