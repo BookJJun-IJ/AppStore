@@ -1,0 +1,79 @@
+name: freeboardgames
+
+services:
+  freeboardgames:
+    image: node:18-alpine
+    user: $PUID:$PGID
+    working_dir: /app
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+    expose:
+      - 80
+    environment:
+      - PUID=$PUID
+      - PGID=$PGID
+      - TZ=$TZ
+      - NODE_ENV=production
+      - PORT=80
+      - DOMAIN=$domain
+    volumes:
+      - /DATA/AppData/$AppID/app:/app
+      - /DATA/AppData/$AppID/config:/config
+      - /DATA/AppData/$AppID/logs:/app/logs
+    command: sh -c "if [ ! -f /app/package.json ]; then git clone https://github.com/freeboardgames/FreeBoardGames.org.git /tmp/fbg && cp -r /tmp/fbg/* /app/ && rm -rf /tmp/fbg; fi && cd /app && npm install && npm run build && npm run start -- --port 80 --host 0.0.0.0"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  main: freeboardgames
+  author: FreeBoardGames Community
+  category: Games
+  description:
+    en_us: "FreeBoardGames.org is a free and open-source platform for playing board games online. Play classic games like Catan, Chess, Checkers, and many more directly in your browser. Perfect for multiplayer gaming with friends or solo play against AI opponents."
+    ko_kr: "FreeBoardGames.org는 온라인으로 보드게임을 즐길 수 있는 무료 오픈소스 플랫폼입니다. Catan, 체스, 체커 등 다양한 클래식 게임을 브라우저에서 바로 플레이할 수 있습니다. 친구들과의 멀티플레이어 게임이나 AI 상대와의 솔로 플레이에 완벽합니다."
+    fr_fr: "FreeBoardGames.org est une plateforme gratuite et open source pour jouer aux jeux de société en ligne. Jouez à des jeux classiques comme Catan, les Échecs, les Dames et bien d'autres directement dans votre navigateur. Parfait pour jouer en multijoueur avec des amis ou en solo contre des adversaires IA."
+    es_es: "FreeBoardGames.org es una plataforma gratuita y de código abierto para jugar juegos de mesa en línea. Juega juegos clásicos como Catan, Ajedrez, Damas y muchos más directamente en tu navegador. Perfecto para juegos multijugador con amigos o juego en solitario contra oponentes de IA."
+    zh_cn: "FreeBoardGames.org是一个免费开源的在线棋盘游戏平台。可以直接在浏览器中玩Catan、国际象棋、跳棋等经典游戏。非常适合与朋友进行多人游戏或与AI对手进行单人游戏。"
+  developer: FreeBoardGames Community
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/FreeBoardGames/icon.png
+  screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/FreeBoardGames/screenshot-1.png
+  tagline:
+    en_us: "Play board games online for free - Catan, Chess, and more!"
+    ko_kr: "무료 온라인 보드게임 - Catan, 체스 등을 플레이하세요!"
+    fr_fr: "Jouez aux jeux de société en ligne gratuitement - Catan, Échecs et plus!"
+    es_es: "¡Juega juegos de mesa en línea gratis - Catan, Ajedrez y más!"
+    zh_cn: "免费在线棋盘游戏 - Catan、国际象棋等！"
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/FreeBoardGames/thumbnail.png
+  title:
+    en_us: FreeBoardGames
+  tips:
+    before_install:
+      en_us: |
+        **🎮 FreeBoardGames.org - Online Board Gaming Platform**
+        
+        **Features:**
+        - 🎲 Play classic board games including Catan, Chess, Checkers
+        - 👥 Multiplayer support for playing with friends
+        - 🤖 Single-player mode against AI opponents
+        - 🆓 Completely free and open-source
+        - 📱 Browser-based - no downloads required
+        
+        **Note:** First startup may take several minutes as the application downloads and builds the game platform.
+  port_map: "80"
+  scheme: https
+  webui_port: 80
+  index: /
+  pre-install-cmd: |
+    mkdir -p /DATA/AppData/freeboardgames/{app,config,logs} &&
+    chown -R $PUID:$PGID /DATA/AppData/freeboardgames
