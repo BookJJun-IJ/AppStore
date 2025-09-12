@@ -26,11 +26,11 @@ services:
     command: sh -c "if [ ! -f /app/package.json ]; then git clone https://github.com/freeboardgames/FreeBoardGames.org.git /tmp/fbg && cp -r /tmp/fbg/* /app/ && rm -rf /tmp/fbg; fi && cd /app && npm install && npm run build && npm run start -- --port 80 --host 0.0.0.0"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80"]
+      test: ["CMD", "sh", "-c", "nc -z localhost 80 || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 120s
+      start_period: 180s
 
 x-casaos:
   architectures:
