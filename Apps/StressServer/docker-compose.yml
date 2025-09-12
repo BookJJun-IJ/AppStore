@@ -230,7 +230,7 @@ x-casaos:
     es_es: "Herramienta profesional de evaluación de rendimiento del sistema usando Phoronix Test Suite. Pruebas integrales de CPU, memoria, E/S de disco y rendimiento de compresión usando benchmarks estándar de la industria. Genera informes JSON detallados, datos CSV y resúmenes legibles. Sin interfaz web - diseñado para uso de desarrollo profesional."
     zh_cn: "使用Phoronix Test Suite的专业系统性能基准测试工具。使用行业标准基准对CPU、内存、磁盘I/O和压缩性能进行全面测试。生成详细的JSON报告、CSV数据和易读摘要。无Web界面 - 专为专业开发使用而设计。"
   developer: Yundera Team  
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/YunderaBenchmark/icon.png
+  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@Create/Apps/YunderaBenchmark/icon.png
   tagline:
     en_us: "Professional benchmark suite powered by Phoronix Test Suite"
     fr_fr: "Suite de benchmarks professionnelle alimentée par Phoronix Test Suite"

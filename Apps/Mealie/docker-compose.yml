@@ -197,12 +197,12 @@ x-casaos:
       
       **Piénsalo como:** Tu base de datos personal de recetas que reemplaza marcadores, capturas de pantalla y recetas en papel con un sistema organizado y buscable.
   developer: Mealie Recipes Team    
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mealie/icon.png
+  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@Create/Apps/Mealie/icon.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mealie/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mealie/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mealie/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mealie/thumbnail.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@Create/Apps/Mealie/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@Create/Apps/Mealie/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@Create/Apps/Mealie/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@Create/Apps/Mealie/thumbnail.png
   tagline:
     en_us: Smart recipe manager with meal planning and shopping lists
     fr_fr: Gestionnaire de recettes intelligent avec planification et listes de courses
