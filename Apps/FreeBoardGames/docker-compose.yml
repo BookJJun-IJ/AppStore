@@ -11,13 +11,12 @@ services:
           memory: 1G
           cpus: '1.0'
     expose:
-      - 80
+      - 3000
     environment:
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
       NODE_ENV: development
-      PORT: 80
       DOMAIN: $domain
     volumes:
       - /DATA/AppData/freeboardgames/app:/app
@@ -32,15 +31,15 @@ services:
       fi &&
       cd /app &&
       yarn install &&
-      PORT=80 yarn run dev
+      yarn run dev
       "
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 300s
+      start_period: 600s
 
 x-casaos:
   architectures:
@@ -70,18 +69,18 @@ x-casaos:
   tips:
     before_install:
       en_us: |
-        **🎮 FreeBoardGames.org - Online Board Gaming Platform**
+        **FreeBoardGames.org - Online Board Gaming Platform**
         
         **Features:**
-        - 🎲 Play classic board games including Catan, Chess, Checkers
-        - 👥 Multiplayer support for playing with friends
-        - 🤖 Single-player mode against AI opponents
-        - 🆓 Completely free and open-source
-        - 📱 Browser-based - no downloads required
+        - Play classic board games including Catan, Chess, Checkers
+        - Multiplayer support for playing with friends
+        - Single-player mode against AI opponents
+        - Completely free and open-source
+        - Browser-based - no downloads required
         
-        **Note:** First startup may take several minutes as the application downloads and builds the game platform.
-  webui_port: 80
+        **Note:** First startup may take 5-10 minutes as the application downloads and builds the game platform.
+  webui_port: 3000
   index: /
   pre-install-cmd: |
     mkdir -p /DATA/AppData/freeboardgames/{app,config} &&
-    chown -R $PUID:$PGID /DATA/AppData/freeboardgam
+    chown -R $PUID:$PGID /DATA/AppData/freeboardgames
