@@ -80,7 +80,7 @@ x-casaos:
   index: /
   pre_install_cmd: |
     mkdir -p /DATA/AppData/$AppID/postgres /DATA/AppData/$AppID/data && 
-    chown -R 999:999 /DATA/AppData/$AppID/postgres && 
+    chown -R $PUID:$PGID /DATA/AppData/$AppID/postgres && 
     chown -R $PUID:$PGID /DATA/AppData/$AppID/data
   description:
     en_us: |
