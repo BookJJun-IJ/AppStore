@@ -3,13 +3,14 @@ services:
   db:
     image: postgres:16-alpine
     container_name: spliit-db
-    user: 0:0
+    user: $PUID:$PGID
     environment:
       POSTGRES_DB: spliit
       POSTGRES_USER: spliit
       POSTGRES_PASSWORD: $default_pwd
       PUID: $PUID
       PGID: $PGID
+      TZ: $TZ
     volumes:
       - /DATA/AppData/$AppID/postgres:/var/lib/postgresql/data
     restart: unless-stopped
@@ -23,8 +24,8 @@ services:
 
   spliit:
     image: crazymax/spliit:1.14.1
-    container_name: spliit
-    user: 0:0
+    container_name: spliit-app
+    user: $PUID:$PGID
     depends_on:
       - db
     expose:
@@ -69,7 +70,7 @@ x-casaos:
     - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Spliit/screenshot-1.png
     - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Spliit/screenshot-2.png
     - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Spliit/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Spliit/Plex/thumbnail.png
+  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Spliit/thumbnail.png
   title:
     en_us: Spliit
   tagline:
@@ -81,8 +82,8 @@ x-casaos:
   index: /
   pre_install_cmd: |
     mkdir -p /DATA/AppData/$AppID/postgres /DATA/AppData/$AppID/data && 
-    chown -R 999:999 /DATA/AppData/$AppID/postgres && 
-    chown -R 0:0 /DATA/AppData/$AppID/data
+    chown -R $PUID:$PGID /DATA/AppData/$AppID/postgres && 
+    chown -R $PUID:$PGID /DATA/AppData/$AppID/data
   description:
     en_us: |
       **Split expenses with friends - no signup, no hassle**
@@ -162,9 +163,9 @@ x-casaos:
         2. Name it (e.g., "Beach Trip 2024")
         3. Add people (just their names)
         4. Start adding expenses:
-          • Who paid: John
-          • Amount: $120
-          • Split between: Everyone
+           • Who paid: John
+           • Amount: $120
+           • Split between: Everyone
         5. Check "Balances" to see who owes whom
         
         Share the group link with friends - no signup needed!
@@ -174,9 +175,9 @@ x-casaos:
         2. 이름 지정 (예: "제주도 여행 2024")
         3. 사람 추가 (이름만)
         4. 비용 추가 시작:
-          • 누가 지불: 철수
-          • 금액: 120,000원
-          • 분할: 모든 사람
+           • 누가 지불: 철수
+           • 금액: 120,000원
+           • 분할: 모든 사람
         5. "잔액"을 확인하여 누가 누구에게 빚졌는지 확인
         
         친구들과 그룹 링크 공유 - 가입 필요 없음!
@@ -186,9 +187,9 @@ x-casaos:
         2. 命名（例如："2024海滩之旅"）
         3. 添加人员（只需姓名）
         4. 开始添加费用：
-          • 谁支付：小明
-          • 金额：¥120
-          • 分摊给：所有人
+           • 谁支付：小明
+           • 金额：¥120
+           • 分摊给：所有人
         5. 查看"余额"了解谁欠谁
         
         与朋友分享群组链接 - 无需注册！
@@ -198,9 +199,9 @@ x-casaos:
         2. Nómbralo (ej: "Viaje Playa 2024")
         3. Añade personas (solo nombres)
         4. Empieza a añadir gastos:
-          • Quién pagó: Juan
-          • Cantidad: €120
-          • Dividir entre: Todos
+           • Quién pagó: Juan
+           • Cantidad: €120
+           • Dividir entre: Todos
         5. Revisa "Saldos" para ver quién debe a quién
         
         ¡Comparte el enlace del grupo - sin registro!
@@ -210,9 +211,9 @@ x-casaos:
         2. Nommez-le (ex: "Voyage Plage 2024")
         3. Ajoutez des personnes (juste les noms)
         4. Commencez à ajouter des dépenses:
-          • Qui a payé: Jean
-          • Montant: 120€
-          • Partager entre: Tout le monde
+           • Qui a payé: Jean
+           • Montant: 120€
+           • Partager entre: Tout le monde
         5. Vérifiez "Soldes" pour voir qui doit à qui
         
         Partagez le lien du groupe - aucune inscription!
