@@ -3,8 +3,7 @@ services:
   db:
     image: postgres:16-alpine
     container_name: spliit-db
-    user: 0:0  # root로 실행 - CasaOS 환경에서 권한 문제 해결
-    shm_size: 128mb
+    user: 0:0  
     environment:
       POSTGRES_DB: spliit
       POSTGRES_USER: spliit
@@ -13,11 +12,6 @@ services:
       TZ: UTC
     volumes:
       - /DATA/AppData/$AppID/pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: pg_isready --dbname='spliit' --username='spliit' || exit 1
-      interval: 5m
-      start_interval: 30s
-      start_period: 5m
     restart: unless-stopped
     networks:
       - spliit_network
