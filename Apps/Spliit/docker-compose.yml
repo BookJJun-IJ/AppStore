@@ -9,7 +9,7 @@ services:
       POSTGRES_USER: spliit
       POSTGRES_PASSWORD: $default_pwd
       POSTGRES_INITDB_ARGS: '--data-checksums'
-      TZ: $TZ
+      TZ: UTC
     volumes:
       - /DATA/AppData/$AppID/pgdata:/var/lib/postgresql/data
     restart: unless-stopped
