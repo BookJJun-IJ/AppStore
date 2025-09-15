@@ -3,14 +3,14 @@ services:
   db:
     image: postgres:16-alpine
     container_name: spliit-db
-    user: 0:0
+    user: $PUID:$PGID
     environment:
       POSTGRES_DB: spliit
       POSTGRES_USER: spliit
       POSTGRES_PASSWORD: $default_pwd
       PUID: $PUID
       PGID: $PGID
-      TZ: $TZ
+      TZ: UTC
     volumes:
       - /DATA/AppData/$AppID/postgres:/var/lib/postgresql/data
     restart: unless-stopped
