@@ -4,15 +4,22 @@ services:
     image: postgres:16-alpine
     container_name: spliit-db
     user: $PUID:$PGID
+    shm_size: 128mb
     environment:
       POSTGRES_DB: spliit
       POSTGRES_USER: spliit
       POSTGRES_PASSWORD: $default_pwd
+      POSTGRES_INITDB_ARGS: '--data-checksums'
       PUID: $PUID
       PGID: $PGID
       TZ: UTC
     volumes:
-      - /DATA/AppData/$AppID/postgres:/var/lib/postgresql/data
+      - /DATA/AppData/$AppID/pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: pg_isready --dbname='spliit' --username='spliit' || exit 1
+      interval: 5m
+      start_interval: 30s
+      start_period: 5m
     restart: unless-stopped
     networks:
       - spliit_network
@@ -22,7 +29,7 @@ services:
           memory: 512M
 
   spliit:
-    image: crazymax/spliit:1.14.1
+    image: ghcr.io/spliit-app/spliit:1.14.1
     container_name: spliit-app
     user: $PUID:$PGID
     depends_on:
@@ -39,7 +46,8 @@ services:
       POSTGRES_USER: spliit
       POSTGRES_PASSWORD: $default_pwd
       POSTGRES_TIMEOUT: 60
-      API_PORT: 3000
+      NEXT_PUBLIC_BASE_URL: https://$domain
+      SPLIIT_ADMIN_PASSWORD: $default_pwd
     volumes:
       - /DATA/AppData/$AppID/data:/data
     restart: unless-stopped
@@ -79,8 +87,8 @@ x-casaos:
     fr_fr: Application Gratuite de Partage de Dépenses  
   index: /
   pre_install_cmd: |
-    mkdir -p /DATA/AppData/$AppID/postgres /DATA/AppData/$AppID/data && 
-    chown -R $PUID:$PGID /DATA/AppData/$AppID/postgres && 
+    mkdir -p /DATA/AppData/$AppID/pgdata /DATA/AppData/$AppID/data && 
+    chown -R $PUID:$PGID /DATA/AppData/$AppID/pgdata && 
     chown -R $PUID:$PGID /DATA/AppData/$AppID/data
   description:
     en_us: |
