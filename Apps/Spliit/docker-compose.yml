@@ -3,15 +3,13 @@ services:
   db:
     image: postgres:16-alpine
     container_name: spliit-db
-    user: $PUID:$PGID
+    # PostgreSQL은 자체 사용자로 실행되어야 함 - user 지정 안함
     shm_size: 128mb
     environment:
       POSTGRES_DB: spliit
       POSTGRES_USER: spliit
       POSTGRES_PASSWORD: $default_pwd
       POSTGRES_INITDB_ARGS: '--data-checksums'
-      PUID: $PUID
-      PGID: $PGID
       TZ: UTC
     volumes:
       - /DATA/AppData/$AppID/pgdata:/var/lib/postgresql/data
@@ -29,7 +27,7 @@ services:
           memory: 512M
 
   spliit:
-    image: ghcr.io/spliit-app/spliit:1.14.1
+    image: crazymax/spliit:1.14.1
     container_name: spliit-app
     user: $PUID:$PGID
     depends_on:
@@ -47,7 +45,6 @@ services:
       POSTGRES_PASSWORD: $default_pwd
       POSTGRES_TIMEOUT: 60
       NEXT_PUBLIC_BASE_URL: https://$domain
-      SPLIIT_ADMIN_PASSWORD: $default_pwd
     volumes:
       - /DATA/AppData/$AppID/data:/data
     restart: unless-stopped
@@ -88,7 +85,6 @@ x-casaos:
   index: /
   pre_install_cmd: |
     mkdir -p /DATA/AppData/$AppID/pgdata /DATA/AppData/$AppID/data && 
-    chown -R $PUID:$PGID /DATA/AppData/$AppID/pgdata && 
     chown -R $PUID:$PGID /DATA/AppData/$AppID/data
   description:
     en_us: |
