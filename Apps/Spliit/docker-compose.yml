@@ -3,7 +3,7 @@ services:
   db:
     image: postgres:16-alpine
     container_name: spliit-db
-    # PostgreSQL은 자체 사용자로 실행되어야 함 - user 지정 안함
+    user: 0:0  # root로 실행 - CasaOS 환경에서 권한 문제 해결
     shm_size: 128mb
     environment:
       POSTGRES_DB: spliit
