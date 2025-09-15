@@ -3,7 +3,8 @@ services:
   db:
     image: postgres:16-alpine
     container_name: spliit-db
-    user: $PUID:$PGID
+    # PostgreSQL은 root로 실행 (데이터베이스 초기화에 필요)
+    user: 0:0
     environment:
       POSTGRES_DB: spliit
       POSTGRES_USER: spliit
@@ -16,6 +17,11 @@ services:
     restart: unless-stopped
     networks:
       - spliit_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U spliit -d spliit"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     deploy:
       resources:
         limits:
@@ -25,9 +31,11 @@ services:
   spliit:
     image: crazymax/spliit:1.14.1
     container_name: spliit-app
-    user: $PUID:$PGID
+    # Spliit 앱도 root로 실행 (timezone 설정 권한 필요)
+    user: 0:0
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     expose:
       - 3000
     environment:
@@ -65,12 +73,12 @@ x-casaos:
   author: CasaOS Team
   category: Finance
   developer: Spliit Team
-  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Spliit/icon.png
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Spliit/icon.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Spliit/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Spliit/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Spliit/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Spliit/thumbnail.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Spliit/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Spliit/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Spliit/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Spliit/thumbnail.png
   title:
     en_us: Spliit
   tagline:
@@ -82,8 +90,8 @@ x-casaos:
   index: /
   pre_install_cmd: |
     mkdir -p /DATA/AppData/$AppID/postgres /DATA/AppData/$AppID/data && 
-    chown -R $PUID:$PGID /DATA/AppData/$AppID/postgres && 
-    chown -R $PUID:$PGID /DATA/AppData/$AppID/data
+    chown -R 999:999 /DATA/AppData/$AppID/postgres && 
+    chown -R 0:0 /DATA/AppData/$AppID/data
   description:
     en_us: |
       **Split expenses with friends - no signup, no hassle**
@@ -169,6 +177,8 @@ x-casaos:
         5. Check "Balances" to see who owes whom
         
         Share the group link with friends - no signup needed!
+        
+        **Note:** Both containers run as root for proper database initialization and timezone configuration.
       ko_kr: |
         **사용 방법:**
         1. "그룹 만들기" 클릭
@@ -181,6 +191,8 @@ x-casaos:
         5. "잔액"을 확인하여 누가 누구에게 빚졌는지 확인
         
         친구들과 그룹 링크 공유 - 가입 필요 없음!
+        
+        **참고:** 데이터베이스 초기화 및 시간대 설정을 위해 두 컨테이너 모두 root로 실행됩니다.
       zh_cn: |
         **使用方法：**
         1. 点击"创建群组"
@@ -193,6 +205,8 @@ x-casaos:
         5. 查看"余额"了解谁欠谁
         
         与朋友分享群组链接 - 无需注册！
+        
+        **注意：** 两个容器都以root身份运行，以便正确初始化数据库和配置时区。
       es_es: |
         **Cómo usar:**
         1. Haz clic en "Crear un grupo"
@@ -205,6 +219,8 @@ x-casaos:
         5. Revisa "Saldos" para ver quién debe a quién
         
         ¡Comparte el enlace del grupo - sin registro!
+        
+        **Nota:** Ambos contenedores se ejecutan como root para la inicialización adecuada de la base de datos y configuración de zona horaria.
       fr_fr: |
         **Comment utiliser:**
         1. Cliquez sur "Créer un groupe"
@@ -217,3 +233,5 @@ x-casaos:
         5. Vérifiez "Soldes" pour voir qui doit à qui
         
         Partagez le lien du groupe - aucune inscription!
+        
+        **Note:** Les deux conteneurs s'exécutent en tant que root pour l'initialisation correcte de la base de données et la configuration du fuseau horaire.
