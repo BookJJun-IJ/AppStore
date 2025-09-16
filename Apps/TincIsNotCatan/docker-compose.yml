@@ -28,11 +28,15 @@ services:
           cpus: '1.0'
     command: >
       sh -c "
+      echo '[INFO] Starting TincIsNotCatan setup...' &&
+      echo '[INFO] Current user: '$(whoami) &&
+      echo '[INFO] PUID: ${PUID}, PGID: ${PGID}' &&
       echo '[INFO] Initializing apt lists directory...' &&
       mkdir -p /var/lib/apt/lists/partial &&
       chmod 755 /var/lib/apt/lists/partial &&
       echo '[INFO] Installing dependencies...' &&
-      apt-get update && apt-get install -y git wget curl procps gosu &&
+      apt-get update 2>&1 | tee /tmp/apt-update.log &&
+      apt-get install -y git wget curl procps gosu 2>&1 | tee /tmp/apt-install.log &&
       echo '[INFO] Installing Maven...' &&
       cd /tmp &&
       if [ ! -d /usr/share/maven ]; then
@@ -43,10 +47,15 @@ services:
         rm apache-maven-3.9.5-bin.tar.gz
       fi &&
       echo '[INFO] Setting up user and directories...' &&
-      groupadd -g ${PGID} appgroup 2>/dev/null || true &&
-      useradd -u ${PUID} -g ${PGID} -m -s /bin/bash appuser 2>/dev/null || true &&
+      echo '[DEBUG] Creating group with GID: '${PGID} &&
+      groupadd -g ${PGID} appgroup 2>&1 || echo '[WARN] Group already exists or error: '$? &&
+      echo '[DEBUG] Creating user with UID: '${PUID} &&
+      useradd -u ${PUID} -g ${PGID} -m -s /bin/bash appuser 2>&1 || echo '[WARN] User already exists or error: '$? &&
+      echo '[DEBUG] Creating application directories...' &&
       mkdir -p /app/config /app/logs /app/.m2/repository /app/source &&
-      chown -R ${PUID}:${PGID} /app &&
+      echo '[DEBUG] Setting ownership to '${PUID}':'${PGID} &&
+      chown -R ${PUID}:${PGID} /app 2>&1 || echo '[ERROR] Failed to change ownership: '$? &&
+      ls -la /app &&
       echo '[INFO] Checking source directory...' &&
       if [ ! -d /app/source/.git ]; then
         echo '[INFO] Cloning repository...' &&
@@ -59,15 +68,23 @@ services:
         cd /app/source &&
         gosu appuser git pull origin master || true
       fi &&
-      echo '[INFO] Starting application as user...' &&
+      echo '[INFO] Starting application build and run...' &&
       cd /app/source &&
+      echo '[DEBUG] Checking project structure...' &&
+      ls -la &&
       export MAVEN_OPTS='-Dmaven.repo.local=/app/.m2/repository -Xmx1g' &&
-      exec gosu appuser mvn clean compile exec:java \
-        -Dexec.mainClass='edu.brown.cs.catan.Main' \
+      echo '[INFO] Cleaning and installing dependencies...' &&
+      gosu appuser mvn clean dependency:go-offline -Dmaven.repo.local=/app/.m2/repository 2>&1 | tee /app/logs/tinc-deps.log &&
+      echo '[INFO] Building project with package...' &&
+      gosu appuser mvn clean package -DskipTests -Dmaven.repo.local=/app/.m2/repository 2>&1 | tee /app/logs/tinc-build.log &&
+      echo '[INFO] Checking for built JAR files...' &&
+      ls -la target/*.jar || echo '[WARN] No JAR files found' &&
+      echo '[INFO] Running application using exec plugin with properties...' &&
+      exec gosu appuser mvn exec:java \
+        -Dexec.mainClass=edu.brown.cs.catan.Main \
         -Dexec.args='--port=80' \
         -Dmaven.repo.local=/app/.m2/repository \
-        -Dmaven.test.skip=true \
-        -q
+        2>&1 | tee /app/logs/tinc-startup.log
       "
 
 x-casaos:
