@@ -2,6 +2,7 @@ name: tinc-is-not-catan
 services:
   tinc-server:
     image: openjdk:21-jdk-slim
+    user: 0:0  # Start as root for initial setup
     working_dir: /app
     expose:
       - 80
@@ -27,36 +28,46 @@ services:
           cpus: '1.0'
     command: >
       sh -c "
+      echo '[INFO] Initializing apt lists directory...' &&
+      mkdir -p /var/lib/apt/lists/partial &&
+      chmod 755 /var/lib/apt/lists/partial &&
       echo '[INFO] Installing dependencies...' &&
-      apt-get update && apt-get install -y git wget curl procps &&
+      apt-get update && apt-get install -y git wget curl procps gosu &&
       echo '[INFO] Installing Maven...' &&
       cd /tmp &&
-      wget https://archive.apache.org/dist/maven/maven-3/3.9.5/binaries/apache-maven-3.9.5-bin.tar.gz &&
-      tar xzf apache-maven-3.9.5-bin.tar.gz &&
-      mv apache-maven-3.9.5 /usr/share/maven &&
-      ln -s /usr/share/maven/bin/mvn /usr/bin/mvn &&
-      echo '[INFO] Creating user with PUID/PGID...' &&
-      groupadd -g $PGID appgroup || true &&
-      useradd -u $PUID -g $PGID -m -s /bin/bash appuser || true &&
-      echo '[INFO] Setting up directories...' &&
-      mkdir -p /app/config /app/logs /app/.m2 /app/source &&
-      chown -R $PUID:$PGID /app &&
-      echo '[INFO] Switching to app user...' &&
-      su appuser -c '
-        cd /app &&
-        echo \"[INFO] Checking source directory...\" &&
-        if [ ! -d /app/source/.git ]; then
-          echo \"[INFO] Cloning repository...\" &&
-          rm -rf /app/source/* &&
-          git clone https://github.com/seansegal/tincisnotcatan.git /app/source || (echo \"[ERROR] Git clone failed\" && exit 1)
-        fi &&
+      if [ ! -d /usr/share/maven ]; then
+        wget -q https://archive.apache.org/dist/maven/maven-3/3.9.5/binaries/apache-maven-3.9.5-bin.tar.gz &&
+        tar xzf apache-maven-3.9.5-bin.tar.gz &&
+        mv apache-maven-3.9.5 /usr/share/maven &&
+        ln -s /usr/share/maven/bin/mvn /usr/bin/mvn &&
+        rm apache-maven-3.9.5-bin.tar.gz
+      fi &&
+      echo '[INFO] Setting up user and directories...' &&
+      groupadd -g ${PGID} appgroup 2>/dev/null || true &&
+      useradd -u ${PUID} -g ${PGID} -m -s /bin/bash appuser 2>/dev/null || true &&
+      mkdir -p /app/config /app/logs /app/.m2/repository /app/source &&
+      chown -R ${PUID}:${PGID} /app &&
+      echo '[INFO] Checking source directory...' &&
+      if [ ! -d /app/source/.git ]; then
+        echo '[INFO] Cloning repository...' &&
+        rm -rf /app/source/* 2>/dev/null || true &&
+        gosu appuser git clone https://github.com/seansegal/tincisnotcatan.git /app/source || {
+          echo '[ERROR] Git clone failed' && exit 1
+        }
+      else
+        echo '[INFO] Updating existing repository...' &&
         cd /app/source &&
-        echo \"[INFO] Updating repository...\" &&
-        git pull origin master &&
-        echo \"[INFO] Starting Maven build...\" &&
-        export MAVEN_OPTS=\"-Dmaven.repo.local=/app/.m2/repository -Xmx1g\" &&
-        mvn clean compile exec:java -Dexec.mainClass=\"edu.brown.cs.catan.Main\" -Dexec.args=\"--port=80\" -Dmaven.repo.local=/app/.m2/repository
-      '
+        gosu appuser git pull origin master || true
+      fi &&
+      echo '[INFO] Starting application as user...' &&
+      cd /app/source &&
+      export MAVEN_OPTS='-Dmaven.repo.local=/app/.m2/repository -Xmx1g' &&
+      exec gosu appuser mvn clean compile exec:java \
+        -Dexec.mainClass='edu.brown.cs.catan.Main' \
+        -Dexec.args='--port=80' \
+        -Dmaven.repo.local=/app/.m2/repository \
+        -Dmaven.test.skip=true \
+        -q
       "
 
 x-casaos:
@@ -74,12 +85,14 @@ x-casaos:
     es_es: "TincIsNotCatan es una versión multijugador en línea de Los Colonos de Catán con características económicas avanzadas. Juega el juego de mesa clásico con amigos a través de Internet, con recursos decimales, tipos de cambio dinámicos y mecánicas de juego mejoradas."
   developer: Sean Segal
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/TincIsNotCatan/icon.png
-  screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/TincIsNotCatan/screenshot-1.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/TincIsNotCatan/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/TincIsNotCatan/screenshot-2.png
   tagline:
     en_us: "Online multiplayer Settlers of Catan with advanced economic features"
     fr_fr: "Colons de Catane multijoueur en ligne avec fonctionnalités économiques avancées"
     ko_kr: "고급 경제 기능을 갖춘 온라인 멀티플레이어 카탄의 개척자"
-    zh_cn: "具有高级经济功能的在线多人卡탄岛定居者"
+    zh_cn: "具有高级经济功能的在线多人卡坦岛定居者"
     es_es: "Los Colonos de Catán multijugador en línea con características económicas avanzadas"
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/TincIsNotCatan/thumbnail.png
   title:
@@ -90,7 +103,7 @@ x-casaos:
         **Game Information**
         
         - **Default Port**: The game runs on port 80 for clean URL access
-        - **Multiplayer**: Supports 2-4 players per game
+        - **Multiplayer**: Supports 2-4 players per game  
         - **Game Modes**: Standard Catan rules with optional advanced economic features
         - **Features**: Decimal resources, dynamic exchange rates, and enhanced trading
         
@@ -104,7 +117,7 @@ x-casaos:
         **Advanced Features**
         
         - **Decimal Resources**: Enable fractional resource amounts for precise trading
-        - **Dynamic Exchange Rates**: Bank trade rates vary based on resource availability
+        - **Dynamic Exchange Rates**: Bank trade rates vary based on resource availability  
         - **Enhanced UI**: Modern web interface with real-time game updates
         
         **Note**: First startup requires downloading Maven and dependencies, which may take several minutes.
@@ -114,5 +127,5 @@ x-casaos:
     docker run --rm -v /DATA/AppData/$AppID:/data ubuntu:22.04 sh -c "
     mkdir -p /data/config /data/logs /data/cache /data/source &&
     mkdir -p /data/cache/repository &&
-    chown -R $PUID:$PGID /data
+    chmod -R 777 /data
     "
