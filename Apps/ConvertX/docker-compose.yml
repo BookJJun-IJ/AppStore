@@ -46,12 +46,12 @@ x-casaos:
   author: CasaOS Team
   category: Utilities
   developer: C4illin
-  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@Create/Apps/ConvertX/icon.png
+  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/ConvertX/icon.png
   screenshot:
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@Create/Apps/ConvertX/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@Create/Apps/ConvertX/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@Create/Apps/ConvertX/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@Create/Apps/ConvertX/thumbnail.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/ConvertX/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/ConvertX/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/ConvertX/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/ConvertX/thumbnail.png
   title:
     en_us: ConvertX
   tagline:
