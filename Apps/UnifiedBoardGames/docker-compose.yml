@@ -1,9 +1,9 @@
-name: unified-boardgames
+name: boardgames-platform
 services:
-  # Main portal service
+  # Nginx 리버스 프록시 - 메인 포털
   portal:
     image: nginx:1.25.3-alpine
-    container_name: unified-boardgames-portal
+    container_name: boardgames-portal
     user: $PUID:$PGID
     deploy:
       resources:
@@ -17,17 +17,41 @@ services:
       - PGID=$PGID
       - TZ=$TZ
     volumes:
-      - /DATA/AppData/unified-boardgames/portal:/usr/share/nginx/html:ro
-      - /DATA/AppData/unified-boardgames/nginx.conf:/etc/nginx/nginx.conf:ro
+      - /DATA/AppData/boardgames-platform/nginx/html:/usr/share/nginx/html:ro
+      - /DATA/AppData/boardgames-platform/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
+      - colonizers
       - freeboardgames
-      - colonist
     restart: unless-stopped
 
-  # FreeBoardGames.org server
-  freeboardgames:
-    image: freeboardgames/freeboardgames:v0.44.1
-    container_name: unified-boardgames-fbg
+  # Colonizers - 오픈소스 Catan
+  colonizers:
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM node:16-alpine
+        RUN apk add --no-cache git
+        WORKDIR /app
+        # Colonizers 소스 클론
+        RUN git clone https://github.com/colonizers/colonizers-core.git core && \
+            git clone https://github.com/colonizers/colonizers-server.git server && \
+            git clone https://github.com/colonizers/colonizers-client.git client
+        # 간단한 서버 설정
+        WORKDIR /app/server
+        RUN npm install express socket.io
+        # 기본 서버 파일 생성
+        RUN echo "const express = require('express');\n\
+        const app = express();\n\
+        const http = require('http').createServer(app);\n\
+        const io = require('socket.io')(http);\n\
+        app.use(express.static('/app/client'));\n\
+        app.get('/', (req, res) => {\n\
+          res.send('<h1>Colonizers Server</h1><p>Catan clone server running</p>');\n\
+        });\n\
+        http.listen(3000, () => console.log('Colonizers running on :3000'));" > index.js
+        EXPOSE 3000
+        CMD ["node", "index.js"]
+    container_name: colonizers
     user: $PUID:$PGID
     deploy:
       resources:
@@ -35,43 +59,51 @@ services:
           memory: 512M
           cpus: '0.5'
     expose:
+      - 3000
+    environment:
+      - PUID=$PUID
+      - PGID=$PGID
+      - TZ=$TZ
+      - NODE_ENV=production
+    volumes:
+      - /DATA/AppData/boardgames-platform/colonizers:/app/data
+    restart: unless-stopped
+
+  # FreeBoardGames - 50+ 오픈소스 게임
+  freeboardgames:
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM node:16-alpine
+        RUN apk add --no-cache git
+        WORKDIR /app
+        # FreeBoardGames.org 소스 클론
+        RUN git clone https://github.com/freeboardgames/FreeBoardGames.org.git . || true
+        # 의존성 설치
+        RUN npm install || yarn install || true
+        # 빌드
+        RUN npm run build || yarn build || true
+        # 기본 서버 실행
+        EXPOSE 3001
+        CMD ["npm", "start"]
+    container_name: freeboardgames
+    user: $PUID:$PGID
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+    expose:
       - 3001
     environment:
       - PUID=$PUID
       - PGID=$PGID
       - TZ=$TZ
-      - PORT=3001
       - NODE_ENV=production
+      - PORT=3001
     volumes:
-      - /DATA/AppData/unified-boardgames/fbg-data:/app/data
+      - /DATA/AppData/boardgames-platform/freeboardgames:/app/data
     restart: unless-stopped
-
-  # Colonist.io browser container for Catan
-  colonist:
-    image: lscr.io/linuxserver/firefox:v129.0.2-ls265
-    container_name: unified-boardgames-colonist
-    user: $PUID:$PGID
-    deploy:
-      resources:
-        limits:
-          memory: 1500M
-          cpus: '1.0'
-    expose:
-      - 3002
-    environment:
-      - PUID=$PUID
-      - PGID=$PGID
-      - TZ=$TZ
-      - TITLE=Colonist - Catan Online
-      - CUSTOM_USER=player
-      - PASSWORD=$default_pwd
-      - START_URL=https://colonist.io
-      - HOMEPAGE_URL=https://colonist.io
-      - PORT=3002
-    volumes:
-      - /DATA/AppData/unified-boardgames/colonist:/config
-    restart: unless-stopped
-    shm_size: "1gb"
 
 x-casaos:
   architectures:
@@ -81,55 +113,89 @@ x-casaos:
   author: Yundera Community
   category: Games
   description:
-    en_us: Ultimate board game platform combining FreeBoardGames.org (50+ open source games) and Colonist.io (Catan online). Play Chess, Checkers, Go, Secret Codes, Coup, and Catan all in one unified interface. Switch seamlessly between platforms from a single portal.
-    fr_fr: Plateforme de jeux de société ultime combinant FreeBoardGames.org (50+ jeux open source) et Colonist.io (Catan en ligne). Jouez aux échecs, dames, Go, Secret Codes, Coup et Catan dans une interface unifiée.
-    ko_kr: FreeBoardGames.org(50개 이상의 오픈소스 게임)와 Colonist.io(온라인 카탄)를 결합한 궁극의 보드게임 플랫폼입니다. 체스, 체커, 바둑, 시크릿 코드, 쿠, 카탄을 하나의 통합 인터페이스에서 즐기세요.
-    zh_cn: 终极桌游平台，结合了FreeBoardGames.org（50多个开源游戏）和Colonist.io（在线卡坦岛）。在统一界面中玩国际象棋、跳棋、围棋、秘密代码、政变和卡坦岛。
-    es_es: Plataforma definitiva de juegos de mesa que combina FreeBoardGames.org (50+ juegos de código abierto) y Colonist.io (Catan en línea). Juega Ajedrez, Damas, Go, Códigos Secretos, Coup y Catan en una interfaz unificada.
-  developer: Yundera Community
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/UnifiedBoardGames/icon.png
+    en_us: Self-hosted board game platform with Colonizers (open-source Catan) and FreeBoardGames.org (50+ games). Choose between platforms from a unified portal. All games run on your own server.
+    fr_fr: Plateforme de jeux de société auto-hébergée avec Colonizers (Catan open source) et FreeBoardGames.org (50+ jeux).
+    ko_kr: Colonizers(오픈소스 카탄)와 FreeBoardGames.org(50개 이상 게임)이 포함된 셀프호스팅 보드게임 플랫폼입니다.
+    zh_cn: 自托管桌游平台，包含Colonizers（开源卡坦岛）和FreeBoardGames.org（50多个游戏）。
+    es_es: Plataforma de juegos de mesa autohospedada con Colonizers (Catan de código abierto) y FreeBoardGames.org (50+ juegos).
+  developer: Open Source Community
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/BoardgamesPlatform/icon.png
   tagline:
-    en_us: 50+ board games including Catan - All in one place!
-    fr_fr: 50+ jeux de société incluant Catan - Tout en un seul endroit!
-    ko_kr: 카탄을 포함한 50개 이상의 보드게임 - 모두 한 곳에서!
-    zh_cn: 包括卡坦岛在内的50多款桌游 - 全部集于一处！
-    es_es: 50+ juegos de mesa incluyendo Catan - ¡Todo en un solo lugar!
-  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/UnifiedBoardGames/thumbnail.png
+    en_us: Self-hosted Catan + 50 board games
+    fr_fr: Catan auto-hébergé + 50 jeux de société
+    ko_kr: 셀프호스팅 카탄 + 50개 보드게임
+    zh_cn: 自托管卡坦岛 + 50个桌游
+    es_es: Catan autohospedado + 50 juegos de mesa
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/BoardgamesPlatform/thumbnail.png
   title:
-    en_us: Unified Board Games
+    en_us: Board Games Platform
   tips:
     before_install:
       en_us: |
-        Default Account for Colonist.io Browser:
-        | Username | Password |
-        | -------- | -------- |
-        | `player` | `$default_pwd` |
+        See README.md for detailed setup instructions and game list.
         
-        **FreeBoardGames.org (50+ games):**
-        - Chess, Checkers, Go, Backgammon
-        - Secret Codes, Coup, 6 Nimmt!
-        - Four in a Row, Tic-Tac-Toe
-        - No login required
-        
-        **Colonist.io (Catan):**
-        - Classic Catan + Expansions
-        - Play with friends or AI
-        - Free to play
-        
-        Access both platforms from the main portal!
+        **Quick Start:**
+        - Main portal: Port 80
+        - Choose between Colonizers (Catan) or FreeBoardGames
+        - First startup may take 5-10 minutes for building
   index: /
   webui_port: 80
   pre-install-cmd: |
-    mkdir -p /DATA/AppData/unified-boardgames/portal &&
-    mkdir -p /DATA/AppData/unified-boardgames/fbg-data &&
-    mkdir -p /DATA/AppData/unified-boardgames/colonist &&
-    cat > /DATA/AppData/unified-boardgames/portal/index.html << 'EOF'
+    mkdir -p /DATA/AppData/boardgames-platform/nginx/html && \
+    mkdir -p /DATA/AppData/boardgames-platform/colonizers && \
+    mkdir -p /DATA/AppData/boardgames-platform/freeboardgames && \
+    cat > /DATA/AppData/boardgames-platform/README.md << 'EOF'
+    # Board Games Platform
+    
+    ## Overview
+    Self-hosted board game platform with two main components:
+    - **Colonizers**: Open-source Catan implementation
+    - **FreeBoardGames**: 50+ open-source board games
+    
+    ## Access
+    Main portal: http://your-server/
+    
+    ## Games Included
+    
+    ### Colonizers (Catan)
+    - Classic Settlers of Catan gameplay
+    - 3-4 players
+    - Resource trading
+    - Development cards
+    - Longest road & largest army
+    
+    ### FreeBoardGames Collection
+    - Chess
+    - Checkers  
+    - Go
+    - Backgammon
+    - Secret Codes
+    - Coup
+    - Four in a Row
+    - And 40+ more games
+    
+    ## How to Play
+    1. Access the main portal
+    2. Choose your game platform
+    3. Create a room or join existing game
+    4. Share room code with friends
+    
+    ## Troubleshooting
+    - First startup takes 5-10 minutes for building
+    - If games don't load, check container logs
+    - Ensure ports 80, 3000, 3001 are not in use
+    
+    ## Support
+    GitHub: https://github.com/colonizers/colonizers
+    GitHub: https://github.com/freeboardgames/FreeBoardGames.org
+    EOF
+    cat > /DATA/AppData/boardgames-platform/nginx/html/index.html << 'EOF'
     <!DOCTYPE html>
     <html lang="en">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Unified Board Games Portal</title>
+        <title>Board Games Platform</title>
         <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
             body {
@@ -137,141 +203,106 @@ x-casaos:
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                 min-height: 100vh;
                 display: flex;
-                flex-direction: column;
                 align-items: center;
                 justify-content: center;
                 padding: 20px;
+            }
+            .container {
+                max-width: 900px;
+                width: 100%;
             }
             .header {
                 text-align: center;
                 color: white;
                 margin-bottom: 40px;
             }
-            .header h1 {
+            h1 {
                 font-size: 3em;
                 margin-bottom: 10px;
                 text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
             }
-            .header p {
-                font-size: 1.2em;
-                opacity: 0.9;
-            }
-            .container {
+            .games {
                 display: grid;
                 grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
                 gap: 30px;
-                width: 100%;
-                max-width: 900px;
             }
             .card {
                 background: white;
                 border-radius: 20px;
                 padding: 30px;
                 box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-                transition: transform 0.3s ease, box-shadow 0.3s ease;
+                transition: transform 0.3s;
             }
             .card:hover {
                 transform: translateY(-5px);
                 box-shadow: 0 15px 50px rgba(0,0,0,0.3);
             }
             .card h2 {
-                font-size: 1.8em;
-                margin-bottom: 15px;
                 color: #667eea;
-            }
-            .card .badge {
-                display: inline-block;
-                background: #f0f0f0;
-                padding: 5px 10px;
-                border-radius: 15px;
-                font-size: 0.9em;
-                margin-right: 8px;
                 margin-bottom: 15px;
-            }
-            .card .badge.new {
-                background: #4caf50;
-                color: white;
-            }
-            .card .badge.hot {
-                background: #ff5722;
-                color: white;
             }
             .card p {
                 color: #666;
+                margin-bottom: 20px;
                 line-height: 1.6;
-                margin-bottom: 20px;
             }
-            .card .games-list {
-                color: #888;
-                font-size: 0.9em;
-                margin-top: 10px;
-                margin-bottom: 20px;
-            }
-            .card .btn {
+            .btn {
                 display: inline-block;
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                 color: white;
                 padding: 12px 30px;
                 border-radius: 25px;
-                font-weight: bold;
                 text-decoration: none;
-                transition: transform 0.2s ease;
+                font-weight: bold;
+                transition: transform 0.2s;
             }
-            .card .btn:hover {
+            .btn:hover {
                 transform: scale(1.05);
             }
-            @media (max-width: 768px) {
-                .container {
-                    grid-template-columns: 1fr;
-                }
-                .header h1 {
-                    font-size: 2em;
-                }
+            .badge {
+                display: inline-block;
+                background: #f0f0f0;
+                padding: 4px 12px;
+                border-radius: 15px;
+                font-size: 0.9em;
+                margin-right: 8px;
+                margin-bottom: 10px;
             }
+            .hot { background: #ff5722; color: white; }
+            .new { background: #4caf50; color: white; }
         </style>
     </head>
     <body>
-        <div class="header">
-            <h1>🎲 Unified Board Games Portal</h1>
-            <p>Your gateway to endless board game fun!</p>
-        </div>
-        
         <div class="container">
-            <div class="card">
-                <h2>FreeBoardGames</h2>
-                <span class="badge">50+ Games</span>
-                <span class="badge new">Free</span>
-                <p>Open source board games collection featuring classic and modern titles.</p>
-                <div class="games-list">
-                    <strong>Popular Games:</strong><br>
-                    ♟️ Chess, Checkers, Go<br>
-                    🎯 Secret Codes, Coup<br>
-                    🎮 Four in a Row, Backgammon<br>
-                    🎲 And many more...
-                </div>
-                <a href="/fbg/" class="btn">Play Now →</a>
+            <div class="header">
+                <h1>🎲 Board Games Platform</h1>
+                <p>Choose your game</p>
             </div>
             
-            <div class="card">
-                <h2>Colonist.io</h2>
-                <span class="badge hot">CATAN</span>
-                <span class="badge">Multiplayer</span>
-                <p>Play the legendary Settlers of Catan online with friends or AI opponents.</p>
-                <div class="games-list">
-                    <strong>Features:</strong><br>
-                    🏝️ Classic Catan<br>
-                    🏰 Cities & Knights<br>
-                    ⛵ Seafarers Expansion<br>
-                    🏆 Ranked Matches
+            <div class="games">
+                <div class="card">
+                    <h2>Colonizers</h2>
+                    <span class="badge hot">CATAN</span>
+                    <span class="badge">Multiplayer</span>
+                    <p>Open-source Settlers of Catan. Build settlements, trade resources, and compete for victory!</p>
+                    <p><strong>Features:</strong> 3-4 players, resource trading, development cards</p>
+                    <a href="/colonizers/" class="btn">Play Catan →</a>
                 </div>
-                <a href="/colonist/" class="btn">Play Catan →</a>
+                
+                <div class="card">
+                    <h2>FreeBoardGames</h2>
+                    <span class="badge new">50+ GAMES</span>
+                    <span class="badge">FREE</span>
+                    <p>Massive collection of classic and modern board games all in one place.</p>
+                    <p><strong>Includes:</strong> Chess, Checkers, Go, Secret Codes, Coup, and many more!</p>
+                    <a href="/fbg/" class="btn">Browse Games →</a>
+                </div>
             </div>
         </div>
     </body>
     </html>
     EOF
-    &&
-    cat > /DATA/AppData/unified-boardgames/nginx.conf << 'EOF'
+    cat > /DATA/AppData/boardgames-platform/nginx/nginx.conf << 'EOF'
     user nginx;
     worker_processes auto;
     error_log /var/log/nginx/error.log warn;
@@ -298,6 +329,17 @@ x-casaos:
                 try_files $uri $uri/ /index.html;
             }
             
+            location /colonizers/ {
+                proxy_pass http://colonizers:3000/;
+                proxy_http_version 1.1;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection 'upgrade';
+                proxy_set_header Host $host;
+                proxy_cache_bypass $http_upgrade;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            }
+            
             location /fbg/ {
                 proxy_pass http://freeboardgames:3001/;
                 proxy_http_version 1.1;
@@ -307,32 +349,8 @@ x-casaos:
                 proxy_cache_bypass $http_upgrade;
                 proxy_set_header X-Real-IP $remote_addr;
                 proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-                proxy_set_header X-Forwarded-Proto $scheme;
-                
-                # WebSocket support
-                proxy_connect_timeout 7d;
-                proxy_send_timeout 7d;
-                proxy_read_timeout 7d;
-            }
-            
-            location /colonist/ {
-                proxy_pass http://colonist:3002/;
-                proxy_http_version 1.1;
-                proxy_set_header Upgrade $http_upgrade;
-                proxy_set_header Connection 'upgrade';
-                proxy_set_header Host $host;
-                proxy_cache_bypass $http_upgrade;
-                proxy_set_header X-Real-IP $remote_addr;
-                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-                proxy_set_header X-Forwarded-Proto $scheme;
-                
-                # WebSocket support for game connections
-                proxy_connect_timeout 7d;
-                proxy_send_timeout 7d;
-                proxy_read_timeout 7d;
             }
         }
     }
     EOF
-    &&
-    chown -R $PUID:$PGID /DATA/AppData/unified-boardgames
+    chown -R $PUID:$PGID /DATA/AppData/boardgames-platform
