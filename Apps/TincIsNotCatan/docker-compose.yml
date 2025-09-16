@@ -1,7 +1,7 @@
 name: tinc-is-not-catan
 services:
   tinc-server:
-    image: maven:3.9.5-eclipse-temurin-21
+    image: openjdk:21-jdk-slim
     working_dir: /app
     expose:
       - 80
@@ -11,6 +11,9 @@ services:
       TZ: $TZ
       JAVA_OPTS: "-Xmx1g -XX:+UseG1GC"
       PORT: 80
+      MAVEN_VERSION: "3.9.5"
+      MAVEN_HOME: "/usr/share/maven"
+      PATH: "/usr/share/maven/bin:$PATH"
     volumes:
       - /DATA/AppData/$AppID/config:/app/config
       - /DATA/AppData/$AppID/logs:/app/logs
@@ -24,23 +27,36 @@ services:
           cpus: '1.0'
     command: >
       sh -c "
-      echo '[INFO] Starting TincIsNotCatan build process...' &&
-      echo '[INFO] Setting up permissions...' &&
+      echo '[INFO] Installing dependencies...' &&
+      apt-get update && apt-get install -y git wget curl procps &&
+      echo '[INFO] Installing Maven...' &&
+      cd /tmp &&
+      wget https://archive.apache.org/dist/maven/maven-3/3.9.5/binaries/apache-maven-3.9.5-bin.tar.gz &&
+      tar xzf apache-maven-3.9.5-bin.tar.gz &&
+      mv apache-maven-3.9.5 /usr/share/maven &&
+      ln -s /usr/share/maven/bin/mvn /usr/bin/mvn &&
+      echo '[INFO] Creating user with PUID/PGID...' &&
+      groupadd -g $PGID appgroup || true &&
+      useradd -u $PUID -g $PGID -m -s /bin/bash appuser || true &&
+      echo '[INFO] Setting up directories...' &&
+      mkdir -p /app/config /app/logs /app/.m2 /app/source &&
       chown -R $PUID:$PGID /app &&
-      echo '[INFO] Creating Maven settings...' &&
-      mkdir -p /app/.m2 &&
-      echo '[INFO] Checking source directory...' &&
-      if [ ! -d /app/source/.git ]; then
-        echo '[INFO] Cloning repository...' &&
-        rm -rf /app/source/* &&
-        git clone https://github.com/seansegal/tincisnotcatan.git /app/source || (echo '[ERROR] Git clone failed' && exit 1)
-      fi &&
-      cd /app/source &&
-      echo '[INFO] Updating repository...' &&
-      git pull origin master &&
-      echo '[INFO] Starting Maven build...' &&
-      export MAVEN_OPTS='-Dmaven.repo.local=/app/.m2/repository' &&
-      mvn clean compile exec:java -Dexec.mainClass=\"edu.brown.cs.catan.Main\" -Dexec.args=\"--port=80\" -Dmaven.repo.local=/app/.m2/repository
+      echo '[INFO] Switching to app user...' &&
+      su appuser -c '
+        cd /app &&
+        echo \"[INFO] Checking source directory...\" &&
+        if [ ! -d /app/source/.git ]; then
+          echo \"[INFO] Cloning repository...\" &&
+          rm -rf /app/source/* &&
+          git clone https://github.com/seansegal/tincisnotcatan.git /app/source || (echo \"[ERROR] Git clone failed\" && exit 1)
+        fi &&
+        cd /app/source &&
+        echo \"[INFO] Updating repository...\" &&
+        git pull origin master &&
+        echo \"[INFO] Starting Maven build...\" &&
+        export MAVEN_OPTS=\"-Dmaven.repo.local=/app/.m2/repository -Xmx1g\" &&
+        mvn clean compile exec:java -Dexec.mainClass=\"edu.brown.cs.catan.Main\" -Dexec.args=\"--port=80\" -Dmaven.repo.local=/app/.m2/repository
+      '
       "
 
 x-casaos:
@@ -80,7 +96,7 @@ x-casaos:
         
         **Getting Started**
         
-        1. Wait for the application to build and start (may take a few minutes on first launch)
+        1. Wait for the application to build and start (may take 5-10 minutes on first launch)
         2. Access the game through the provided URL
         3. Create a username to join or create games
         4. Invite friends using the game room codes
@@ -90,6 +106,8 @@ x-casaos:
         - **Decimal Resources**: Enable fractional resource amounts for precise trading
         - **Dynamic Exchange Rates**: Bank trade rates vary based on resource availability
         - **Enhanced UI**: Modern web interface with real-time game updates
+        
+        **Note**: First startup requires downloading Maven and dependencies, which may take several minutes.
   index: /
   webui_port: 80
   pre-install-cmd: |
