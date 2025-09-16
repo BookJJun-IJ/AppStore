@@ -1,361 +1,90 @@
-name: boardgames-platform
+name: tinc-is-not-catan
 services:
-  # Nginx 포털 - 메인 선택 화면
-  portal:
-    image: nginx:1.25.3-alpine
-    container_name: boardgames-portal
+  tinc-server:
+    image: maven:3.9.5-eclipse-temurin-21
     user: $PUID:$PGID
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-          cpus: '0.25'
+    working_dir: /app
     expose:
       - 80
     environment:
-      - PUID=$PUID
-      - PGID=$PGID
-      - TZ=$TZ
+      PUID: $PUID
+      PGID: $PGID
+      TZ: $TZ
+      JAVA_OPTS: "-Xmx1g -XX:+UseG1GC"
+      PORT: 80
     volumes:
-      - /DATA/AppData/boardgames-platform/nginx/html:/usr/share/nginx/html:ro
-      - /DATA/AppData/boardgames-platform/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-    depends_on:
-      - freeboardgames
-      - colonizers
+      - /DATA/AppData/$AppID/config:/app/config
+      - /DATA/AppData/$AppID/logs:/app/logs
+      - /DATA/AppData/$AppID/cache:/root/.m2
     restart: unless-stopped
-
-  # FreeBoardGames - 공식 docker-compose 기반
-  freeboardgames:
-    build:
-      context: https://github.com/freeboardgames/FreeBoardGames.org.git
-      dockerfile: Dockerfile
-    container_name: freeboardgames
-    user: $PUID:$PGID
     deploy:
       resources:
         limits:
-          memory: 1G
-          cpus: '0.5'
-    expose:
-      - 3000
-    environment:
-      - PUID=$PUID
-      - PGID=$PGID
-      - TZ=$TZ
-      - NODE_ENV=production
-      - PORT=3000
-      - BGIO_SERVER_URL=http://freeboardgames:3001
-    volumes:
-      - /DATA/AppData/boardgames-platform/fbg-data:/app/data
-    restart: unless-stopped
-
-  # Colonizers - Catan 클론
-  colonizers:
-    build:
-      context: .
-      dockerfile_inline: |
-        FROM node:16-alpine
-        
-        # Git과 빌드 도구 설치
-        RUN apk add --no-cache git python3 make g++
-        
-        WORKDIR /app
-        
-        # Colonizers 관련 저장소들 클론
-        RUN git clone https://github.com/sibartlett/colonizers.git colonizers-main || \
-            git clone https://github.com/colonizers/colonizers.git colonizers-alt
-        
-        # 메인 디렉토리 설정
-        WORKDIR /app/colonizers-main
-        
-        # package.json이 있으면 의존성 설치
-        RUN if [ -f "package.json" ]; then npm install; fi
-        
-        # 간단한 서버 생성 (실패 시 대체)
-        RUN if [ ! -f "server.js" ]; then \
-            echo "const express = require('express');" > server.js && \
-            echo "const app = express();" >> server.js && \
-            echo "const http = require('http').createServer(app);" >> server.js && \
-            echo "const io = require('socket.io')(http);" >> server.js && \
-            echo "app.get('/', (req, res) => {" >> server.js && \
-            echo "  res.send('<h1>Colonizers - Catan Clone</h1>');" >> server.js && \
-            echo "});" >> server.js && \
-            echo "http.listen(3002, () => {" >> server.js && \
-            echo "  console.log('Colonizers running on port 3002');" >> server.js && \
-            echo "});" >> server.js && \
-            npm init -y && \
-            npm install express socket.io; \
-        fi
-        
-        EXPOSE 3002
-        CMD ["node", "server.js"]
-    container_name: colonizers
-    user: $PUID:$PGID
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-          cpus: '0.5'
-    expose:
-      - 3002
-    environment:
-      - PUID=$PUID
-      - PGID=$PGID
-      - TZ=$TZ
-      - NODE_ENV=production
-      - PORT=3002
-    volumes:
-      - /DATA/AppData/boardgames-platform/colonizers:/app/data
-    restart: unless-stopped
+          memory: 1536M
+          cpus: '1.0'
+    command: >
+      sh -c "
+      if [ ! -d /app/source ]; then
+        mkdir -p /app/source && 
+        cd /app/source && 
+        git clone https://github.com/seansegal/tincisnotcatan.git . || exit 1
+      fi &&
+      cd /app/source &&
+      git pull origin master &&
+      mvn clean compile exec:java -Dexec.mainClass=\"edu.brown.cs.catan.Main\" -Dexec.args=\"--port=80\"
+      "
 
 x-casaos:
   architectures:
     - amd64
     - arm64
-  main: portal
-  author: Yundera Community
+  main: tinc-server
+  author: CasaOS Team
   category: Games
   description:
-    en_us: Self-hosted board game platform with FreeBoardGames.org (50+ games) and Colonizers (Catan clone). Choose between platforms from a unified portal. All games run on your own server without external dependencies.
-    fr_fr: Plateforme de jeux de société auto-hébergée avec FreeBoardGames.org (50+ jeux) et Colonizers (clone de Catan).
-    ko_kr: FreeBoardGames.org(50개 이상 게임)와 Colonizers(카탄 클론)가 포함된 셀프호스팅 보드게임 플랫폼입니다.
-    zh_cn: 自托管桌游平台，包含FreeBoardGames.org（50多个游戏）和Colonizers（卡坦岛克隆）。
-    es_es: Plataforma de juegos de mesa autohospedada con FreeBoardGames.org (50+ juegos) y Colonizers (clon de Catan).
-  developer: Open Source Community
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/BoardgamesPlatform/icon.png
+    en_us: "TincIsNotCatan is an online multiplayer version of Settlers of Catan with advanced economic features. Play the classic board game with friends over the internet, featuring decimal resources, dynamic exchange rates, and enhanced gameplay mechanics. Built with Java and Spark framework for seamless web-based gaming experience."
+    fr_fr: "TincIsNotCatan est une version multijoueur en ligne des Colons de Catane avec des fonctionnalités économiques avancées. Jouez au jeu de société classique avec des amis sur Internet, avec des ressources décimales, des taux de change dynamiques et des mécaniques de jeu améliorées."
+    ko_kr: "TincIsNotCatan은 고급 경제 기능을 갖춘 온라인 멀티플레이어 카탄의 개척자 게임입니다. 십진수 자원, 동적 환율, 향상된 게임플레이 메커니즘을 특징으로 하는 인터넷을 통해 친구들과 클래식 보드 게임을 플레이하세요."
+    zh_cn: "TincIsNotCatan 是具有高级经济功能的在线多人卡坦岛定居者游戏。通过互联网与朋友们玩经典棋盘游戏，具有小数资源、动态汇率和增强的游戏机制。"
+    es_es: "TincIsNotCatan es una versión multijugador en línea de Los Colonos de Catán con características económicas avanzadas. Juega el juego de mesa clásico con amigos a través de Internet, con recursos decimales, tipos de cambio dinámicos y mecánicas de juego mejoradas."
+  developer: Sean Segal
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/TincIsNotCatan/icon.png
+  screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/TincIsNotCatan/screenshot-1.png
   tagline:
-    en_us: 50+ games including Catan - Self-hosted
-    fr_fr: 50+ jeux incluant Catan - Auto-hébergé
-    ko_kr: 카탄을 포함한 50개 이상 게임 - 셀프호스팅
-    zh_cn: 包括卡坦岛在内的50多个游戏 - 自托管
-    es_es: 50+ juegos incluyendo Catan - Autohospedado
-  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/BoardgamesPlatform/thumbnail.png
+    en_us: "Online multiplayer Settlers of Catan with advanced economic features"
+    fr_fr: "Colons de Catane multijoueur en ligne avec fonctionnalités économiques avancées"
+    ko_kr: "고급 경제 기능을 갖춘 온라인 멀티플레이어 카탄의 개척자"
+    zh_cn: "具有高级经济功能的在线多人卡탄岛定居者"
+    es_es: "Los Colonos de Catán multijugador en línea con características económicas avanzadas"
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/TincIsNotCatan/thumbnail.png
   title:
-    en_us: Board Games Platform
+    en_us: "TincIsNotCatan"
   tips:
     before_install:
       en_us: |
-        **Important:** First build takes 10-15 minutes!
+        **Game Information**
         
-        See README.md for detailed instructions.
+        - **Default Port**: The game runs on port 80 for clean URL access
+        - **Multiplayer**: Supports 2-4 players per game
+        - **Game Modes**: Standard Catan rules with optional advanced economic features
+        - **Features**: Decimal resources, dynamic exchange rates, and enhanced trading
         
-        **Two platforms included:**
-        1. FreeBoardGames - 50+ games
-        2. Colonizers - Catan clone
+        **Getting Started**
         
-        Access main portal to choose between platforms.
+        1. Wait for the application to build and start (may take a few minutes on first launch)
+        2. Access the game through the provided URL
+        3. Create a username to join or create games
+        4. Invite friends using the game room codes
+        
+        **Advanced Features**
+        
+        - **Decimal Resources**: Enable fractional resource amounts for precise trading
+        - **Dynamic Exchange Rates**: Bank trade rates vary based on resource availability
+        - **Enhanced UI**: Modern web interface with real-time game updates
   index: /
   webui_port: 80
   pre-install-cmd: |
-    mkdir -p /DATA/AppData/boardgames-platform/nginx/html && \
-    mkdir -p /DATA/AppData/boardgames-platform/fbg-data && \
-    mkdir -p /DATA/AppData/boardgames-platform/colonizers && \
-    cat > /DATA/AppData/boardgames-platform/README.md << 'EOF'
-    # Board Games Platform
-    
-    ## Overview
-    Self-hosted board game platform with two main components:
-    - **FreeBoardGames.org**: 50+ open-source board games
-    - **Colonizers**: Open-source Catan clone
-    
-    ## Access
-    - Main portal: http://your-server/
-    - Choose between the two platforms
-    
-    ## FreeBoardGames (50+ games)
-    - Chess, Go, Checkers
-    - Secret Codes, Coup
-    - Four in a Row, Tic-Tac-Toe
-    - Backgammon
-    - And many more...
-    
-    ## Colonizers (Catan Clone)
-    - Classic Settlers of Catan gameplay
-    - Resource trading
-    - Development cards
-    - 3-4 players
-    
-    ## How to Play
-    1. Access the main portal
-    2. Choose your platform
-    3. Create or join a game
-    4. Share room code with friends
-    
-    ## Troubleshooting
-    - First startup: 10-15 minutes for building
-    - Clear browser cache if issues occur
-    - Check container logs for errors
-    EOF
-    cat > /DATA/AppData/boardgames-platform/nginx/html/index.html << 'EOF'
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Board Games Platform</title>
-        <style>
-            * { margin: 0; padding: 0; box-sizing: border-box; }
-            body {
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                min-height: 100vh;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                padding: 20px;
-            }
-            .container {
-                max-width: 900px;
-                width: 100%;
-            }
-            .header {
-                text-align: center;
-                color: white;
-                margin-bottom: 40px;
-            }
-            h1 {
-                font-size: 3em;
-                margin-bottom: 10px;
-                text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-            }
-            .games {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-                gap: 30px;
-            }
-            .card {
-                background: white;
-                border-radius: 20px;
-                padding: 30px;
-                box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-                transition: transform 0.3s;
-            }
-            .card:hover {
-                transform: translateY(-5px);
-                box-shadow: 0 15px 50px rgba(0,0,0,0.3);
-            }
-            .card h2 {
-                color: #667eea;
-                margin-bottom: 15px;
-            }
-            .card p {
-                color: #666;
-                margin-bottom: 20px;
-                line-height: 1.6;
-            }
-            .btn {
-                display: inline-block;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-                padding: 12px 30px;
-                border-radius: 25px;
-                text-decoration: none;
-                font-weight: bold;
-                transition: transform 0.2s;
-            }
-            .btn:hover {
-                transform: scale(1.05);
-            }
-            .badge {
-                display: inline-block;
-                background: #f0f0f0;
-                padding: 4px 12px;
-                border-radius: 15px;
-                font-size: 0.9em;
-                margin-right: 8px;
-                margin-bottom: 10px;
-            }
-            .hot { background: #ff5722; color: white; }
-            .new { background: #4caf50; color: white; }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <div class="header">
-                <h1>🎲 Board Games Platform</h1>
-                <p>Choose your game platform</p>
-            </div>
-            
-            <div class="games">
-                <div class="card">
-                    <h2>FreeBoardGames</h2>
-                    <span class="badge new">50+ GAMES</span>
-                    <span class="badge">MULTIPLAYER</span>
-                    <p>Massive collection of board games including Chess, Checkers, Go, Secret Codes, Coup, and many more!</p>
-                    <p><strong>Features:</strong> Online multiplayer, AI opponents, no account needed</p>
-                    <a href="/fbg/" class="btn">Play FreeBoardGames →</a>
-                </div>
-                
-                <div class="card">
-                    <h2>Colonizers</h2>
-                    <span class="badge hot">CATAN CLONE</span>
-                    <span class="badge">STRATEGY</span>
-                    <p>Open-source Settlers of Catan. Build settlements, trade resources, and compete for victory!</p>
-                    <p><strong>Features:</strong> 3-4 players, resource trading, development cards</p>
-                    <a href="/colonizers/" class="btn">Play Colonizers →</a>
-                </div>
-            </div>
-        </div>
-    </body>
-    </html>
-    EOF
-    cat > /DATA/AppData/boardgames-platform/nginx/nginx.conf << 'EOF'
-    user nginx;
-    worker_processes auto;
-    error_log /var/log/nginx/error.log warn;
-    pid /var/run/nginx.pid;
-    
-    events {
-        worker_connections 1024;
-    }
-    
-    http {
-        include /etc/nginx/mime.types;
-        default_type application/octet-stream;
-        
-        sendfile on;
-        keepalive_timeout 65;
-        
-        # WebSocket support
-        map $http_upgrade $connection_upgrade {
-            default upgrade;
-            '' close;
-        }
-        
-        server {
-            listen 80;
-            server_name _;
-            
-            location / {
-                root /usr/share/nginx/html;
-                index index.html;
-                try_files $uri $uri/ /index.html;
-            }
-            
-            location /fbg/ {
-                proxy_pass http://freeboardgames:3000/;
-                proxy_http_version 1.1;
-                proxy_set_header Upgrade $http_upgrade;
-                proxy_set_header Connection $connection_upgrade;
-                proxy_set_header Host $host;
-                proxy_cache_bypass $http_upgrade;
-                proxy_set_header X-Real-IP $remote_addr;
-                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-                proxy_buffering off;
-            }
-            
-            location /colonizers/ {
-                proxy_pass http://colonizers:3002/;
-                proxy_http_version 1.1;
-                proxy_set_header Upgrade $http_upgrade;
-                proxy_set_header Connection $connection_upgrade;
-                proxy_set_header Host $host;
-                proxy_cache_bypass $http_upgrade;
-                proxy_set_header X-Real-IP $remote_addr;
-                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-                proxy_buffering off;
-            }
-        }
-    }
-    EOF
-    chown -R $PUID:$PGID /DATA/AppData/boardgames-platform
+    docker run --rm -v /DATA/AppData/$AppID:/data ubuntu:22.04 sh -c "
+    mkdir -p /data/config /data/logs /data/cache && 
+    chown -R $PUID:$PGID /data
+    "
