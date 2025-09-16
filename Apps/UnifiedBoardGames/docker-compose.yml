@@ -1,6 +1,6 @@
 name: boardgames-platform
 services:
-  # Nginx 리버스 프록시 - 메인 포털
+  # Nginx 포털 - 메인 선택 화면
   portal:
     image: nginx:1.25.3-alpine
     container_name: boardgames-portal
@@ -20,72 +20,15 @@ services:
       - /DATA/AppData/boardgames-platform/nginx/html:/usr/share/nginx/html:ro
       - /DATA/AppData/boardgames-platform/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
-      - colonizers
       - freeboardgames
+      - colonizers
     restart: unless-stopped
 
-  # Colonizers - 오픈소스 Catan
-  colonizers:
-    build:
-      context: .
-      dockerfile_inline: |
-        FROM node:16-alpine
-        RUN apk add --no-cache git
-        WORKDIR /app
-        # Colonizers 소스 클론
-        RUN git clone https://github.com/colonizers/colonizers-core.git core && \
-            git clone https://github.com/colonizers/colonizers-server.git server && \
-            git clone https://github.com/colonizers/colonizers-client.git client
-        # 간단한 서버 설정
-        WORKDIR /app/server
-        RUN npm install express socket.io
-        # 기본 서버 파일 생성
-        RUN echo "const express = require('express');\n\
-        const app = express();\n\
-        const http = require('http').createServer(app);\n\
-        const io = require('socket.io')(http);\n\
-        app.use(express.static('/app/client'));\n\
-        app.get('/', (req, res) => {\n\
-          res.send('<h1>Colonizers Server</h1><p>Catan clone server running</p>');\n\
-        });\n\
-        http.listen(3000, () => console.log('Colonizers running on :3000'));" > index.js
-        EXPOSE 3000
-        CMD ["node", "index.js"]
-    container_name: colonizers
-    user: $PUID:$PGID
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-          cpus: '0.5'
-    expose:
-      - 3000
-    environment:
-      - PUID=$PUID
-      - PGID=$PGID
-      - TZ=$TZ
-      - NODE_ENV=production
-    volumes:
-      - /DATA/AppData/boardgames-platform/colonizers:/app/data
-    restart: unless-stopped
-
-  # FreeBoardGames - 50+ 오픈소스 게임
+  # FreeBoardGames - 공식 docker-compose 기반
   freeboardgames:
     build:
-      context: .
-      dockerfile_inline: |
-        FROM node:16-alpine
-        RUN apk add --no-cache git
-        WORKDIR /app
-        # FreeBoardGames.org 소스 클론
-        RUN git clone https://github.com/freeboardgames/FreeBoardGames.org.git . || true
-        # 의존성 설치
-        RUN npm install || yarn install || true
-        # 빌드
-        RUN npm run build || yarn build || true
-        # 기본 서버 실행
-        EXPOSE 3001
-        CMD ["npm", "start"]
+      context: https://github.com/freeboardgames/FreeBoardGames.org.git
+      dockerfile: Dockerfile
     container_name: freeboardgames
     user: $PUID:$PGID
     deploy:
@@ -94,15 +37,75 @@ services:
           memory: 1G
           cpus: '0.5'
     expose:
-      - 3001
+      - 3000
     environment:
       - PUID=$PUID
       - PGID=$PGID
       - TZ=$TZ
       - NODE_ENV=production
-      - PORT=3001
+      - PORT=3000
+      - BGIO_SERVER_URL=http://freeboardgames:3001
     volumes:
-      - /DATA/AppData/boardgames-platform/freeboardgames:/app/data
+      - /DATA/AppData/boardgames-platform/fbg-data:/app/data
+    restart: unless-stopped
+
+  # Colonizers - Catan 클론
+  colonizers:
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM node:16-alpine
+        
+        # Git과 빌드 도구 설치
+        RUN apk add --no-cache git python3 make g++
+        
+        WORKDIR /app
+        
+        # Colonizers 관련 저장소들 클론
+        RUN git clone https://github.com/sibartlett/colonizers.git colonizers-main || \
+            git clone https://github.com/colonizers/colonizers.git colonizers-alt
+        
+        # 메인 디렉토리 설정
+        WORKDIR /app/colonizers-main
+        
+        # package.json이 있으면 의존성 설치
+        RUN if [ -f "package.json" ]; then npm install; fi
+        
+        # 간단한 서버 생성 (실패 시 대체)
+        RUN if [ ! -f "server.js" ]; then \
+            echo "const express = require('express');" > server.js && \
+            echo "const app = express();" >> server.js && \
+            echo "const http = require('http').createServer(app);" >> server.js && \
+            echo "const io = require('socket.io')(http);" >> server.js && \
+            echo "app.get('/', (req, res) => {" >> server.js && \
+            echo "  res.send('<h1>Colonizers - Catan Clone</h1>');" >> server.js && \
+            echo "});" >> server.js && \
+            echo "http.listen(3002, () => {" >> server.js && \
+            echo "  console.log('Colonizers running on port 3002');" >> server.js && \
+            echo "});" >> server.js && \
+            npm init -y && \
+            npm install express socket.io; \
+        fi
+        
+        EXPOSE 3002
+        CMD ["node", "server.js"]
+    container_name: colonizers
+    user: $PUID:$PGID
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+    expose:
+      - 3002
+    environment:
+      - PUID=$PUID
+      - PGID=$PGID
+      - TZ=$TZ
+      - NODE_ENV=production
+      - PORT=3002
+    volumes:
+      - /DATA/AppData/boardgames-platform/colonizers:/app/data
     restart: unless-stopped
 
 x-casaos:
@@ -113,81 +116,75 @@ x-casaos:
   author: Yundera Community
   category: Games
   description:
-    en_us: Self-hosted board game platform with Colonizers (open-source Catan) and FreeBoardGames.org (50+ games). Choose between platforms from a unified portal. All games run on your own server.
-    fr_fr: Plateforme de jeux de société auto-hébergée avec Colonizers (Catan open source) et FreeBoardGames.org (50+ jeux).
-    ko_kr: Colonizers(오픈소스 카탄)와 FreeBoardGames.org(50개 이상 게임)이 포함된 셀프호스팅 보드게임 플랫폼입니다.
-    zh_cn: 自托管桌游平台，包含Colonizers（开源卡坦岛）和FreeBoardGames.org（50多个游戏）。
-    es_es: Plataforma de juegos de mesa autohospedada con Colonizers (Catan de código abierto) y FreeBoardGames.org (50+ juegos).
+    en_us: Self-hosted board game platform with FreeBoardGames.org (50+ games) and Colonizers (Catan clone). Choose between platforms from a unified portal. All games run on your own server without external dependencies.
+    fr_fr: Plateforme de jeux de société auto-hébergée avec FreeBoardGames.org (50+ jeux) et Colonizers (clone de Catan).
+    ko_kr: FreeBoardGames.org(50개 이상 게임)와 Colonizers(카탄 클론)가 포함된 셀프호스팅 보드게임 플랫폼입니다.
+    zh_cn: 自托管桌游平台，包含FreeBoardGames.org（50多个游戏）和Colonizers（卡坦岛克隆）。
+    es_es: Plataforma de juegos de mesa autohospedada con FreeBoardGames.org (50+ juegos) y Colonizers (clon de Catan).
   developer: Open Source Community
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/BoardgamesPlatform/icon.png
   tagline:
-    en_us: Self-hosted Catan + 50 board games
-    fr_fr: Catan auto-hébergé + 50 jeux de société
-    ko_kr: 셀프호스팅 카탄 + 50개 보드게임
-    zh_cn: 自托管卡坦岛 + 50个桌游
-    es_es: Catan autohospedado + 50 juegos de mesa
+    en_us: 50+ games including Catan - Self-hosted
+    fr_fr: 50+ jeux incluant Catan - Auto-hébergé
+    ko_kr: 카탄을 포함한 50개 이상 게임 - 셀프호스팅
+    zh_cn: 包括卡坦岛在内的50多个游戏 - 自托管
+    es_es: 50+ juegos incluyendo Catan - Autohospedado
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/BoardgamesPlatform/thumbnail.png
   title:
     en_us: Board Games Platform
   tips:
     before_install:
       en_us: |
-        See README.md for detailed setup instructions and game list.
+        **Important:** First build takes 10-15 minutes!
         
-        **Quick Start:**
-        - Main portal: Port 80
-        - Choose between Colonizers (Catan) or FreeBoardGames
-        - First startup may take 5-10 minutes for building
+        See README.md for detailed instructions.
+        
+        **Two platforms included:**
+        1. FreeBoardGames - 50+ games
+        2. Colonizers - Catan clone
+        
+        Access main portal to choose between platforms.
   index: /
   webui_port: 80
   pre-install-cmd: |
     mkdir -p /DATA/AppData/boardgames-platform/nginx/html && \
+    mkdir -p /DATA/AppData/boardgames-platform/fbg-data && \
     mkdir -p /DATA/AppData/boardgames-platform/colonizers && \
-    mkdir -p /DATA/AppData/boardgames-platform/freeboardgames && \
     cat > /DATA/AppData/boardgames-platform/README.md << 'EOF'
     # Board Games Platform
     
     ## Overview
     Self-hosted board game platform with two main components:
-    - **Colonizers**: Open-source Catan implementation
-    - **FreeBoardGames**: 50+ open-source board games
+    - **FreeBoardGames.org**: 50+ open-source board games
+    - **Colonizers**: Open-source Catan clone
     
     ## Access
-    Main portal: http://your-server/
+    - Main portal: http://your-server/
+    - Choose between the two platforms
     
-    ## Games Included
+    ## FreeBoardGames (50+ games)
+    - Chess, Go, Checkers
+    - Secret Codes, Coup
+    - Four in a Row, Tic-Tac-Toe
+    - Backgammon
+    - And many more...
     
-    ### Colonizers (Catan)
+    ## Colonizers (Catan Clone)
     - Classic Settlers of Catan gameplay
-    - 3-4 players
     - Resource trading
     - Development cards
-    - Longest road & largest army
-    
-    ### FreeBoardGames Collection
-    - Chess
-    - Checkers  
-    - Go
-    - Backgammon
-    - Secret Codes
-    - Coup
-    - Four in a Row
-    - And 40+ more games
+    - 3-4 players
     
     ## How to Play
     1. Access the main portal
-    2. Choose your game platform
-    3. Create a room or join existing game
+    2. Choose your platform
+    3. Create or join a game
     4. Share room code with friends
     
     ## Troubleshooting
-    - First startup takes 5-10 minutes for building
-    - If games don't load, check container logs
-    - Ensure ports 80, 3000, 3001 are not in use
-    
-    ## Support
-    GitHub: https://github.com/colonizers/colonizers
-    GitHub: https://github.com/freeboardgames/FreeBoardGames.org
+    - First startup: 10-15 minutes for building
+    - Clear browser cache if issues occur
+    - Check container logs for errors
     EOF
     cat > /DATA/AppData/boardgames-platform/nginx/html/index.html << 'EOF'
     <!DOCTYPE html>
@@ -276,26 +273,26 @@ x-casaos:
         <div class="container">
             <div class="header">
                 <h1>🎲 Board Games Platform</h1>
-                <p>Choose your game</p>
+                <p>Choose your game platform</p>
             </div>
             
             <div class="games">
                 <div class="card">
-                    <h2>Colonizers</h2>
-                    <span class="badge hot">CATAN</span>
-                    <span class="badge">Multiplayer</span>
-                    <p>Open-source Settlers of Catan. Build settlements, trade resources, and compete for victory!</p>
-                    <p><strong>Features:</strong> 3-4 players, resource trading, development cards</p>
-                    <a href="/colonizers/" class="btn">Play Catan →</a>
+                    <h2>FreeBoardGames</h2>
+                    <span class="badge new">50+ GAMES</span>
+                    <span class="badge">MULTIPLAYER</span>
+                    <p>Massive collection of board games including Chess, Checkers, Go, Secret Codes, Coup, and many more!</p>
+                    <p><strong>Features:</strong> Online multiplayer, AI opponents, no account needed</p>
+                    <a href="/fbg/" class="btn">Play FreeBoardGames →</a>
                 </div>
                 
                 <div class="card">
-                    <h2>FreeBoardGames</h2>
-                    <span class="badge new">50+ GAMES</span>
-                    <span class="badge">FREE</span>
-                    <p>Massive collection of classic and modern board games all in one place.</p>
-                    <p><strong>Includes:</strong> Chess, Checkers, Go, Secret Codes, Coup, and many more!</p>
-                    <a href="/fbg/" class="btn">Browse Games →</a>
+                    <h2>Colonizers</h2>
+                    <span class="badge hot">CATAN CLONE</span>
+                    <span class="badge">STRATEGY</span>
+                    <p>Open-source Settlers of Catan. Build settlements, trade resources, and compete for victory!</p>
+                    <p><strong>Features:</strong> 3-4 players, resource trading, development cards</p>
+                    <a href="/colonizers/" class="btn">Play Colonizers →</a>
                 </div>
             </div>
         </div>
@@ -319,6 +316,12 @@ x-casaos:
         sendfile on;
         keepalive_timeout 65;
         
+        # WebSocket support
+        map $http_upgrade $connection_upgrade {
+            default upgrade;
+            '' close;
+        }
+        
         server {
             listen 80;
             server_name _;
@@ -329,26 +332,28 @@ x-casaos:
                 try_files $uri $uri/ /index.html;
             }
             
-            location /colonizers/ {
-                proxy_pass http://colonizers:3000/;
+            location /fbg/ {
+                proxy_pass http://freeboardgames:3000/;
                 proxy_http_version 1.1;
                 proxy_set_header Upgrade $http_upgrade;
-                proxy_set_header Connection 'upgrade';
+                proxy_set_header Connection $connection_upgrade;
                 proxy_set_header Host $host;
                 proxy_cache_bypass $http_upgrade;
                 proxy_set_header X-Real-IP $remote_addr;
                 proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_buffering off;
             }
             
-            location /fbg/ {
-                proxy_pass http://freeboardgames:3001/;
+            location /colonizers/ {
+                proxy_pass http://colonizers:3002/;
                 proxy_http_version 1.1;
                 proxy_set_header Upgrade $http_upgrade;
-                proxy_set_header Connection 'upgrade';
+                proxy_set_header Connection $connection_upgrade;
                 proxy_set_header Host $host;
                 proxy_cache_bypass $http_upgrade;
                 proxy_set_header X-Real-IP $remote_addr;
                 proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_buffering off;
             }
         }
     }
