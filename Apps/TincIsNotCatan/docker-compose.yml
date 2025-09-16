@@ -1,4 +1,4 @@
-name: tinc-is-not-catan
+name: tincisnotcatan
 services:
   tinc-server:
     image: openjdk:21-jdk-slim
