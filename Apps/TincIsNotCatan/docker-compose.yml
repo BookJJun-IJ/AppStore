@@ -2,7 +2,6 @@ name: tinc-is-not-catan
 services:
   tinc-server:
     image: maven:3.9.5-eclipse-temurin-21
-    user: $PUID:$PGID
     working_dir: /app
     expose:
       - 80
@@ -15,7 +14,8 @@ services:
     volumes:
       - /DATA/AppData/$AppID/config:/app/config
       - /DATA/AppData/$AppID/logs:/app/logs
-      - /DATA/AppData/$AppID/cache:/root/.m2
+      - /DATA/AppData/$AppID/cache:/app/.m2
+      - /DATA/AppData/$AppID/source:/app/source
     restart: unless-stopped
     deploy:
       resources:
@@ -24,14 +24,23 @@ services:
           cpus: '1.0'
     command: >
       sh -c "
-      if [ ! -d /app/source ]; then
-        mkdir -p /app/source && 
-        cd /app/source && 
-        git clone https://github.com/seansegal/tincisnotcatan.git . || exit 1
+      echo '[INFO] Starting TincIsNotCatan build process...' &&
+      echo '[INFO] Setting up permissions...' &&
+      chown -R $PUID:$PGID /app &&
+      echo '[INFO] Creating Maven settings...' &&
+      mkdir -p /app/.m2 &&
+      echo '[INFO] Checking source directory...' &&
+      if [ ! -d /app/source/.git ]; then
+        echo '[INFO] Cloning repository...' &&
+        rm -rf /app/source/* &&
+        git clone https://github.com/seansegal/tincisnotcatan.git /app/source || (echo '[ERROR] Git clone failed' && exit 1)
       fi &&
       cd /app/source &&
+      echo '[INFO] Updating repository...' &&
       git pull origin master &&
-      mvn clean compile exec:java -Dexec.mainClass=\"edu.brown.cs.catan.Main\" -Dexec.args=\"--port=80\"
+      echo '[INFO] Starting Maven build...' &&
+      export MAVEN_OPTS='-Dmaven.repo.local=/app/.m2/repository' &&
+      mvn clean compile exec:java -Dexec.mainClass=\"edu.brown.cs.catan.Main\" -Dexec.args=\"--port=80\" -Dmaven.repo.local=/app/.m2/repository
       "
 
 x-casaos:
@@ -85,6 +94,7 @@ x-casaos:
   webui_port: 80
   pre-install-cmd: |
     docker run --rm -v /DATA/AppData/$AppID:/data ubuntu:22.04 sh -c "
-    mkdir -p /data/config /data/logs /data/cache && 
+    mkdir -p /data/config /data/logs /data/cache /data/source &&
+    mkdir -p /data/cache/repository &&
     chown -R $PUID:$PGID /data
     "
