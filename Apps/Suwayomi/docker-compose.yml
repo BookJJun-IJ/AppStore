@@ -107,12 +107,12 @@ x-casaos:
     "
   author: Yundera Team
   category: Media
-  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@Create/Apps/Suwayomi/icon.png
+  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Suwayomi/icon.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@Create/Apps/Suwayomi/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@Create/Apps/Suwayomi/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@Create/Apps/Suwayomi/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@Create/Apps/Suwayomi/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Suwayomi/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Suwayomi/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Suwayomi/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Suwayomi/screenshot-1.png
   description:
     en_us: |
       **Read manga like Netflix for comics**

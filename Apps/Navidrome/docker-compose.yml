@@ -113,12 +113,12 @@ x-casaos:
       **Piénsalo como:** Tener tu propio Spotify personal, pero con tu colección musical en lugar de pagar tarifas mensuales.
       
       **Perfecto si:** Tienes una colección musical en tu computadora, quieres escuchar en cualquier lugar, o quieres compartir tu música con la familia sin violar las reglas de servicios de streaming.
-  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@Create/Apps/Navidrome/icon.png
+  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Navidrome/icon.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@Create/Apps/Navidrome/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@Create/Apps/Navidrome/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@Create/Apps/Navidrome/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@Create/Apps/Navidrome/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Navidrome/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Navidrome/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Navidrome/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Navidrome/screenshot-1.png
   tagline:
     en_us: Your personal music streaming server with modern web interface
     ko_kr: 현대적인 웹 인터페이스를 갖춘 개인 음악 스트리밍 서버
