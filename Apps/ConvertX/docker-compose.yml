@@ -4,6 +4,7 @@ services:
   convertx:
     image: ghcr.io/c4illin/convertx:v0.14.1
     container_name: convertx
+    user: $PUID:$PGID
     restart: unless-stopped
     deploy:
       resources:
@@ -41,7 +42,7 @@ x-casaos:
   main: convertx
   pre-install-cmd: |
     mkdir -p /DATA/AppData/$AppID/data &&
-    chown -R 0:0 /DATA/AppData/$AppID/data &&
+    chown -R 0:0 /DATA/AppData/$AppID
   author: CasaOS Team
   category: Utilities
   developer: C4illin
