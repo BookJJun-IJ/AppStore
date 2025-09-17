@@ -42,7 +42,8 @@ x-casaos:
   main: convertx
   pre-install-cmd: |
     mkdir -p /DATA/AppData/$AppID/data &&
-    chown -R 0:0 /DATA/AppData/$AppID
+    chown -R $PUID:$PGID /DATA/AppData/$AppID &&
+    chmod 755 /DATA/AppData/$AppID/data
   author: CasaOS Team
   category: Utilities
   developer: C4illin
