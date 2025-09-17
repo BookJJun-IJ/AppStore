@@ -4,7 +4,8 @@ services:
   convertx:
     image: ghcr.io/c4illin/convertx:v0.14.1
     container_name: convertx
-    user: $PUID:$PGID
+    # ConvertX 내부 사용자 ID 사용 (node:node = 1000:1000)
+    user: "1000:1000"
     restart: unless-stopped
     deploy:
       resources:
@@ -33,7 +34,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      start_period: 60s
 
 x-casaos:
   architectures:
@@ -42,8 +43,9 @@ x-casaos:
   main: convertx
   pre-install-cmd: |
     mkdir -p /DATA/AppData/$AppID/data &&
-    chown -R $PUID:$PGID /DATA/AppData/$AppID &&
-    chmod 755 /DATA/AppData/$AppID/data
+    touch /DATA/AppData/$AppID/data/mydb.sqlite &&
+    chown -R 1000:1000 /DATA/AppData/$AppID &&
+    chmod -R 755 /DATA/AppData/$AppID/data
   author: CasaOS Team
   category: Utilities
   developer: C4illin
