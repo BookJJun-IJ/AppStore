@@ -5,6 +5,7 @@ services:
     image: ghcr.io/c4illin/convertx:v0.14.1
     container_name: convertx
     restart: unless-stopped
+    user: "0:0"  # Root user for SQLite access
     deploy:
       resources:
         limits:
@@ -13,6 +14,8 @@ services:
     expose:
       - 3000
     environment:
+      - PUID=0
+      - PGID=0
       - JWT_SECRET=$default_pwd
       - ACCOUNT_REGISTRATION=false
       - HTTP_ALLOWED=true
@@ -20,29 +23,33 @@ services:
       - AUTO_DELETE_EVERY_N_HOURS=24
     volumes:
       - /DATA/AppData/$AppID/data:/app/data
-      - /DATA/Downloads:/downloads
-      - /DATA/Documents:/documents
+      - /DATA/Downloads:/downloads:ro
+      - /DATA/Documents:/documents:ro
     healthcheck:
       test: ["CMD", "wget", "--spider", "--tries=1", "http://localhost:3000/"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 30s
+      start_period: 60s
 
 x-casaos:
   architectures:
     - amd64
     - arm64
   main: convertx
+  pre-install-cmd: |
+    mkdir -p /DATA/AppData/$AppID/data &&
+    chmod -R 777 /DATA/AppData/$AppID/data &&
+    echo "ConvertX data directory prepared with full permissions"
   author: CasaOS Team
   category: Utilities
   developer: C4illin
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ConvertX/icon.png
+  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/ConvertX/icon.png
   screenshot:
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ConvertX/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ConvertX/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ConvertX/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ConvertX/thumbnail.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/ConvertX/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/ConvertX/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/ConvertX/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/ConvertX/thumbnail.png
   title:
     en_us: ConvertX
   tagline:
@@ -65,7 +72,7 @@ x-casaos:
         - **First User is Admin**: The first registered account becomes administrator
         - **HTTP_ALLOWED**: Set to true for NSL router compatibility
         - **Auto Cleanup**: Files auto-delete after 24 hours (configurable)
-        - **Version**: v0.14.1 - Based on Debian (fixes Alpine issues)
+        - **Root User**: Running as root (0:0) due to SQLite permission requirements
         
         **Supported Formats**
         - Images: PNG, JPG, WebP, AVIF, SVG, GIF, TIFF, BMP via ImageMagick
@@ -76,5 +83,7 @@ x-casaos:
         - Archives: ZIP, RAR, 7Z, TAR
         
         Access via: `https://convertx-[username].nsl.sh`
+        
+        **Note**: This app requires root permissions to function properly with SQLite database.
   index: /
   webui_port: 3000
