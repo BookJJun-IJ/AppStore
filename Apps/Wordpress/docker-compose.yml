@@ -6,26 +6,26 @@ services:
     container_name: wordpress_app
     restart: unless-stopped
     # WordPress도 루트로 실행 (파일 복사 문제 해결)
-    user: $PUID:$PGID
+    user: 0:0
     expose:
-      - 80
+      - 80                              # Web UI port for NSL router / NSL 라우터용 웹 UI 포트
     volumes:
-      - /DATA/AppData/$AppID/html:/var/www/html
+      - /DATA/AppData/$AppID/html:/var/www/html  # WordPress files and uploads / WordPress 파일 및 업로드
     environment:
-      PUID: $PUID
-      PGID: $PGID
-      WORDPRESS_DB_HOST: db:3306
-      WORDPRESS_DB_USER: wordpress
-      WORDPRESS_DB_PASSWORD: $default_pwd
-      WORDPRESS_DB_NAME: wordpress      
-      WORDPRESS_SITE_URL: https://$domain
-      WORDPRESS_HOME: https://$domain
+      PUID: $PUID                        # Process User ID / 프로세스 사용자 ID
+      PGID: $PGID                        # Process Group ID / 프로세스 그룹 ID
+      WORDPRESS_DB_HOST: db:3306         # Database host and port / 데이터베이스 호스트 및 포트
+      WORDPRESS_DB_USER: wordpress       # Database username / 데이터베이스 사용자명
+      WORDPRESS_DB_PASSWORD: $default_pwd # Database password (auto-generated) / 데이터베이스 비밀번호 (자동 생성)
+      WORDPRESS_DB_NAME: wordpress       # Database name / 데이터베이스 이름
+      WORDPRESS_SITE_URL: https://$domain # Site URL for WordPress / WordPress 사이트 URL
+      WORDPRESS_HOME: https://$domain    # Home URL for WordPress / WordPress 홈 URL
     depends_on:
       - db
     deploy:
       resources:
         limits:
-          memory: 1G
+          memory: 1G                    # Memory limit for WordPress / WordPress 메모리 제한
 
   db:
     image: mariadb:10.11
@@ -34,18 +34,18 @@ services:
     # MariaDB는 루트로 실행 (AppData 전용이므로 허용됨)
     user: 0:0
     volumes:
-      - /DATA/AppData/$AppID/db:/var/lib/mysql
+      - /DATA/AppData/$AppID/db:/var/lib/mysql   # Database files storage / 데이터베이스 파일 저장소
     environment:
-      MYSQL_ROOT_PASSWORD: $default_pwd
-      MYSQL_DATABASE: wordpress
-      MYSQL_USER: wordpress
-      MYSQL_PASSWORD: $default_pwd
-      MARIADB_AUTO_UPGRADE: 1
-      MARIADB_DISABLE_UPGRADE_BACKUP: 1
+      MYSQL_ROOT_PASSWORD: $default_pwd  # MySQL root password (auto-generated) / MySQL 루트 비밀번호 (자동 생성)
+      MYSQL_DATABASE: wordpress          # Database to create on startup / 시작 시 생성할 데이터베이스
+      MYSQL_USER: wordpress              # MySQL user to create / 생성할 MySQL 사용자
+      MYSQL_PASSWORD: $default_pwd       # Password for MySQL user / MySQL 사용자 비밀번호
+      MARIADB_AUTO_UPGRADE: 1            # Enable automatic database upgrades / 자동 데이터베이스 업그레이드 활성화
+      MARIADB_DISABLE_UPGRADE_BACKUP: 1  # Disable backup during upgrades / 업그레이드 시 백업 비활성화
     deploy:
       resources:
         limits:
-          memory: 1G
+          memory: 1G                    # Memory limit for database / 데이터베이스 메모리 제한
 x-casaos:
   architectures:
     - amd64
