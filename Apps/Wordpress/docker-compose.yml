@@ -3,47 +3,39 @@ name: wordpress
 services:
   wordpress:
     image: wordpress:6.7-apache
+    container_name: wordpress_app
     restart: unless-stopped
+    # WordPress도 루트로 실행 (파일 복사 문제 해결)
     user: 0:0
     expose:
       - 80
     volumes:
       - /DATA/AppData/$AppID/html:/var/www/html
     environment:
-      PUID: 0
-      PGID: 0
-      TZ: $TZ
+      PUID: $PUID
+      PGID: $PGID
       WORDPRESS_DB_HOST: db:3306
       WORDPRESS_DB_USER: wordpress
       WORDPRESS_DB_PASSWORD: $default_pwd
-      WORDPRESS_DB_NAME: wordpress
-      WORDPRESS_CONFIG_EXTRA: |
-        $http_host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : 'localhost';
-        if (is_array($http_host)) {
-            $http_host = reset($http_host);
-        }
-        $http_host = (string)$http_host;
-        define('WP_HOME', 'https://' . $http_host);
-        define('WP_SITEURL', 'https://' . $http_host);
-        define('FORCE_SSL_ADMIN', true);
+      WORDPRESS_DB_NAME: wordpress      
+      WORDPRESS_SITE_URL: https://$domain
+      WORDPRESS_HOME: https://$domain
     depends_on:
       - db
     deploy:
       resources:
         limits:
           memory: 1G
-          cpus: '1.0'
 
   db:
     image: mariadb:10.11
+    container_name: wordpress_db
     restart: unless-stopped
+    # MariaDB는 루트로 실행 (AppData 전용이므로 허용됨)
     user: 0:0
     volumes:
       - /DATA/AppData/$AppID/db:/var/lib/mysql
     environment:
-      PUID: 0
-      PGID: 0
-      TZ: $TZ
       MYSQL_ROOT_PASSWORD: $default_pwd
       MYSQL_DATABASE: wordpress
       MYSQL_USER: wordpress
@@ -54,8 +46,6 @@ services:
       resources:
         limits:
           memory: 1G
-          cpus: '0.5'
-
 x-casaos:
   architectures:
     - amd64
@@ -63,12 +53,12 @@ x-casaos:
   author: CasaOS Team
   category: Web
   developer: WordPress Foundation
-  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Wordpress/icon.png
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Wordpress/icon.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Wordpress/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Wordpress/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Wordpress/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Wordpress/thumbnail.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Wordpress/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Wordpress/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Wordpress/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Wordpress/thumbnail.png
   index: /
   tagline:
     en_us: Create beautiful websites with ease
@@ -83,9 +73,9 @@ x-casaos:
   webui_port: 80
   pre-install-cmd: |
     mkdir -p /DATA/AppData/$AppID/html /DATA/AppData/$AppID/db &&
-    chown -R 1000:1000 /DATA/AppData/$AppID/html &&
+    chown -R $PUID:$PGID /DATA/AppData/$AppID/html &&
     chmod -R 755 /DATA/AppData/$AppID/html &&
-    chmod -R 755 /DATA/AppData/$AppID/db
+    chmod -R 777 /DATA/AppData/$AppID/db
   description:
     en_us: |
       **The world's #1 website builder - from blogs to online stores**
@@ -101,8 +91,6 @@ x-casaos:
       • Upload unlimited photos and videos
       
       **Perfect for:** Bloggers, small businesses, photographers, restaurants, online stores, portfolios, and anyone who wants a professional website without the complexity.
-      
-      **Default Login:** Admin account setup during first visit - use the secure password provided in installation.
     ko_kr: |
       **세계 1위 웹사이트 빌더 - 블로그부터 온라인 스토어까지**
       
@@ -117,8 +105,6 @@ x-casaos:
       • 무제한 사진과 비디오 업로드
       
       **이런 분께 완벽해요:** 블로거, 소상공인, 사진작가, 레스토랑, 온라인 스토어, 포트폴리오, 복잡함 없이 전문적인 웹사이트를 원하는 모든 분.
-      
-      **기본 로그인:** 첫 방문 시 관리자 계정 설정 - 설치 시 제공된 보안 비밀번호 사용.
     zh_cn: |
       **世界第一的网站构建器 - 从博客到在线商店**
       
@@ -133,8 +119,6 @@ x-casaos:
       • 上传无限照片和视频
       
       **完美适合:** 博主、小企业、摄影师、餐厅、在线商店、作品集，以及任何想要专业网站而不需要复杂性的人。
-      
-      **默认登录:** 首次访问时设置管理员账户 - 使用安装时提供的安全密码。
     es_es: |
       **El constructor de sitios web #1 del mundo - desde blogs hasta tiendas online**
       
@@ -149,8 +133,6 @@ x-casaos:
       • Subir fotos y videos ilimitados
       
       **Perfecto para:** Bloggers, pequeñas empresas, fotógrafos, restaurantes, tiendas online, portafolios y cualquiera que quiera un sitio web profesional sin complejidad.
-      
-      **Inicio de sesión predeterminado:** Configuración de cuenta de administrador durante la primera visita - usa la contraseña segura proporcionada en la instalación.
     fr_fr: |
       **Le constructeur de sites web n°1 mondial - des blogs aux boutiques en ligne**
       
@@ -165,8 +147,6 @@ x-casaos:
       • Télécharger photos et vidéos illimitées
       
       **Parfait pour:** Blogueurs, petites entreprises, photographes, restaurants, boutiques en ligne, portfolios et toute personne voulant un site professionnel sans complexité.
-      
-      **Connexion par défaut:** Configuration du compte administrateur lors de la première visite - utilisez le mot de passe sécurisé fourni lors de l'installation.
   tips:
     before_install:
       en_us: |
