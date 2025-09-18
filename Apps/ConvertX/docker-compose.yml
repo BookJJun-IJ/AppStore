@@ -4,8 +4,8 @@ services:
   convertx:
     image: ghcr.io/c4illin/convertx:v0.14.1
     container_name: convertx
-    # ConvertX 내부 사용자 ID 사용 (node:node = 1000:1000)
-    user: "1000:1000"
+    # Root로 실행하여 권한 문제 해결
+    user: "0:0"
     restart: unless-stopped
     deploy:
       resources:
@@ -15,8 +15,8 @@ services:
     expose:
       - 3000
     environment:
-      - PUID=$PUID
-      - PGID=$PGID
+      - PUID=0
+      - PGID=0
       - TZ=$TZ
       - JWT_SECRET=$default_pwd
       - ACCOUNT_REGISTRATION=false
@@ -26,14 +26,12 @@ services:
       - HIDE_HISTORY=false
       - FFMPEG_ARGS=-preset fast
     volumes:
-      - /DATA/AppData/$AppID/data:/app/data
-      - /DATA/Downloads:/downloads
-      - /DATA/Documents:/documents
+      - /DATA/AppData/$AppID:/app
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
       interval: 30s
       timeout: 10s
-      retries: 3
+      retries: 5
       start_period: 60s
 
 x-casaos:
@@ -43,9 +41,7 @@ x-casaos:
   main: convertx
   pre-install-cmd: |
     mkdir -p /DATA/AppData/$AppID/data &&
-    touch /DATA/AppData/$AppID/data/mydb.sqlite &&
-    chown -R 1000:1000 /DATA/AppData/$AppID &&
-    chmod -R 755 /DATA/AppData/$AppID/data
+    chmod -R 777 /DATA/AppData/$AppID
   author: CasaOS Team
   category: Utilities
   developer: C4illin
@@ -65,10 +61,10 @@ x-casaos:
     es_es: Convertidor de archivos universal que admite más de 1000 formatos
   description:
     en_us: ConvertX is a self-hosted universal file converter that supports over 1000 different file formats. Convert images, videos, audio files, documents, 3D models, and more directly from your browser. All processing happens locally on your server, ensuring complete privacy and security. Built with TypeScript and powered by FFmpeg, Pandoc, ImageMagick, and other proven libraries for reliable file conversion.
-    ko_kr: ConvertX는 1000개 이상의 다양한 파일 형식을 지원하는 자가 호스팅 범용 파일 변환기입니다. 브라우저에서 직접 이미지, 비디오, 오디오 파일, 문서, 3D 모델 등을 변환하세요. 모든 처리는 서버에서 로컬로 이루어져 완전한 개인정보 보호와 보안을 보장합니다.
-    zh_cn: ConvertX是一个支持1000多种不同文件格式的自托管通用文件转换器。直接从浏览器转换图像、视频、音频文件、文档、3D模型等。所有处理都在您的服务器上本地进行，确保完全的隐私和安全。
-    fr_fr: ConvertX est un convertisseur de fichiers universel auto-hébergé qui prend en charge plus de 1000 formats de fichiers différents. Convertissez images, vidéos, fichiers audio, documents, modèles 3D et plus directement depuis votre navigateur. Tout le traitement se fait localement sur votre serveur, garantissant une confidentialité et une sécurité complètes.
-    es_es: ConvertX es un convertidor de archivos universal auto-hospedado que admite más de 1000 formatos de archivo diferentes. Convierte imágenes, videos, archivos de audio, documentos, modelos 3D y más directamente desde tu navegador. Todo el procesamiento ocurre localmente en tu servidor, garantizando privacidad y seguridad completas.
+    ko_kr: ConvertX는 1000개 이상의 다양한 파일 형식을 지원하는 자가 호스팅 범용 파일 변환기입니다. 브라우저에서 직접 이미지, 비디오, 오디오 파일, 문서, 3D 모델 등을 변환하세요. 모든 처리는 서버에서 로컬로 이루어져 완전한 개인정보 보호와 보안을 보장합니다. TypeScript로 구축되었으며 FFmpeg, Pandoc, ImageMagick 등 검증된 라이브러리로 구동되어 신뢰할 수 있는 파일 변환을 제공합니다.
+    zh_cn: ConvertX是一个支持1000多种不同文件格式的自托管通用文件转换器。直接从浏览器转换图像、视频、音频文件、文档、3D模型等。所有处理都在您的服务器上本地进行，确保完全的隐私和安全。使用TypeScript构建，并由FFmpeg、Pandoc、ImageMagick等经过验证的库提供支持，实现可靠的文件转换。
+    fr_fr: ConvertX est un convertisseur de fichiers universel auto-hébergé qui prend en charge plus de 1000 formats de fichiers différents. Convertissez images, vidéos, fichiers audio, documents, modèles 3D et plus directement depuis votre navigateur. Tout le traitement se fait localement sur votre serveur, garantissant une confidentialité et une sécurité complètes. Construit avec TypeScript et alimenté par FFmpeg, Pandoc, ImageMagick et d'autres bibliothèques éprouvées pour une conversion de fichiers fiable.
+    es_es: ConvertX es un convertidor de archivos universal auto-hospedado que admite más de 1000 formatos de archivo diferentes. Convierte imágenes, videos, archivos de audio, documentos, modelos 3D y más directamente desde tu navegador. Todo el procesamiento ocurre localmente en tu servidor, garantizando privacidad y seguridad completas. Construido con TypeScript y potenciado por FFmpeg, Pandoc, ImageMagick y otras bibliotecas probadas para una conversión de archivos confiable.
   tips:
     before_install:
       en_us: |
@@ -92,6 +88,8 @@ x-casaos:
         - Use FFmpeg presets for faster video conversion
         - Batch convert multiple files simultaneously
         - Access via clean HTTPS URL through NSL router
+        
+        **Note**: This app runs as root for SQLite database compatibility
       ko_kr: |
         **시작하기**
         
@@ -106,5 +104,14 @@ x-casaos:
         - **오디오**: MP3, WAV, FLAC, OGG, AAC, M4A 등
         - **문서**: Pandoc을 통한 PDF, DOCX, HTML, Markdown, TXT
         - **3D 모델**: STL, OBJ, PLY, DAE 및 기타 형식
+        - **아카이브**: ZIP, RAR, 7Z, TAR 등
+        
+        **사용 팁**
+        - 웹 인터페이스에 파일을 직접 드래그 앤 드롭
+        - 빠른 비디오 변환을 위해 FFmpeg 프리셋 사용
+        - 여러 파일을 동시에 일괄 변환
+        - NSL 라우터를 통한 깔끔한 HTTPS URL로 접속
+        
+        **참고**: SQLite 데이터베이스 호환성을 위해 root 권한으로 실행됩니다
   index: /
   webui_port: 3000
