@@ -25,7 +25,7 @@ services:
       - /DATA/Downloads:/downloads:ro
       - /DATA/Documents:/documents:ro
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
+      test: ["CMD", "sh", "-c", "wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -38,17 +38,18 @@ x-casaos:
   main: convertx
   pre-install-cmd: |
     mkdir -p /DATA/AppData/$AppID/data &&
-    chown -R 1000:1000 /DATA/AppData/$AppID/data &&
-    chmod -R 755 /DATA/AppData/$AppID/data
+    touch /DATA/AppData/$AppID/data/mydb.sqlite &&
+    chmod -R 777 /DATA/AppData/$AppID &&
+    echo "ConvertX data directory prepared with full permissions"
   author: CasaOS Team
   category: Utilities
   developer: C4illin
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ConvertX/icon.png
+  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/ConvertX/icon.png
   screenshot:
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ConvertX/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ConvertX/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ConvertX/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ConvertX/thumbnail.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/ConvertX/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/ConvertX/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/ConvertX/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/ConvertX/thumbnail.png
   title:
     en_us: ConvertX
   tagline:
@@ -86,6 +87,8 @@ x-casaos:
         - Use FFmpeg presets for faster video conversion
         - Batch convert multiple files simultaneously
         - Access via clean HTTPS URL through NSL router
+        
+        **Note**: Full permissions (777) are set on data directory due to SQLite requirements
       ko_kr: |
         **시작하기**
         
@@ -107,5 +110,7 @@ x-casaos:
         - 빠른 비디오 변환을 위해 FFmpeg 프리셋 사용
         - 여러 파일을 동시에 일괄 변환
         - NSL 라우터를 통한 깔끔한 HTTPS URL로 접속
+        
+        **참고**: SQLite 요구사항으로 인해 데이터 디렉터리에 전체 권한(777) 설정됨
   index: /
   webui_port: 3000
