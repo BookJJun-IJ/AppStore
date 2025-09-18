@@ -15,41 +15,34 @@ services:
     environment:
       - JWT_SECRET=$default_pwd
       - ACCOUNT_REGISTRATION=false
-      - HTTP_ALLOWED=false
+      - HTTP_ALLOWED=true
       - ALLOW_UNAUTHENTICATED=false
       - AUTO_DELETE_EVERY_N_HOURS=24
-      - HIDE_HISTORY=false
-      - FFMPEG_ARGS=-preset fast
     volumes:
       - /DATA/AppData/$AppID/data:/app/data
-      - /DATA/Downloads:/downloads:ro
-      - /DATA/Documents:/documents:ro
+      - /DATA/Downloads:/downloads
+      - /DATA/Documents:/documents
     healthcheck:
-      test: ["CMD", "sh", "-c", "wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1"]
+      test: ["CMD", "wget", "--spider", "--tries=1", "http://localhost:3000/"]
       interval: 30s
       timeout: 10s
-      retries: 5
-      start_period: 90s
+      retries: 3
+      start_period: 30s
 
 x-casaos:
   architectures:
     - amd64
     - arm64
   main: convertx
-  pre-install-cmd: |
-    mkdir -p /DATA/AppData/$AppID/data &&
-    touch /DATA/AppData/$AppID/data/mydb.sqlite &&
-    chmod -R 777 /DATA/AppData/$AppID &&
-    echo "ConvertX data directory prepared with full permissions"
   author: CasaOS Team
   category: Utilities
   developer: C4illin
-  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/ConvertX/icon.png
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ConvertX/icon.png
   screenshot:
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/ConvertX/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/ConvertX/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/ConvertX/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/ConvertX/thumbnail.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ConvertX/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ConvertX/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ConvertX/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ConvertX/thumbnail.png
   title:
     en_us: ConvertX
   tagline:
@@ -67,50 +60,21 @@ x-casaos:
   tips:
     before_install:
       en_us: |
-        **Getting Started**
+        **Important Setup Instructions**
         
-        - **First User**: The first account registered becomes the admin
-        - **File Cleanup**: Converted files auto-delete after 24 hours to save space
-        - **Privacy**: All conversions happen locally - no data leaves your server
-        - **Performance**: 2GB RAM allocated for handling large file conversions
+        - **First User is Admin**: The first registered account becomes administrator
+        - **HTTP_ALLOWED**: Set to true for NSL router compatibility
+        - **Auto Cleanup**: Files auto-delete after 24 hours (configurable)
+        - **Version**: v0.14.1 - Based on Debian (fixes Alpine issues)
         
         **Supported Formats**
-        - **Images**: PNG, JPG, WebP, AVIF, SVG, GIF, TIFF, BMP, and more
-        - **Videos**: MP4, WebM, AVI, MOV, MKV, FLV using FFmpeg
-        - **Audio**: MP3, WAV, FLAC, OGG, AAC, M4A, and more
-        - **Documents**: PDF, DOCX, HTML, Markdown, TXT via Pandoc
-        - **3D Models**: STL, OBJ, PLY, DAE, and other formats
-        - **Archives**: ZIP, RAR, 7Z, TAR, and more
+        - Images: PNG, JPG, WebP, AVIF, SVG, GIF, TIFF, BMP via ImageMagick
+        - Videos: MP4, WebM, AVI, MOV, MKV via FFmpeg
+        - Audio: MP3, WAV, FLAC, OGG, AAC, M4A
+        - Documents: PDF, DOCX, HTML, Markdown via Pandoc
+        - 3D Models: STL, OBJ, PLY, DAE
+        - Archives: ZIP, RAR, 7Z, TAR
         
-        **Usage Tips**
-        - Drag & drop files directly into the web interface
-        - Use FFmpeg presets for faster video conversion
-        - Batch convert multiple files simultaneously
-        - Access via clean HTTPS URL through NSL router
-        
-        **Note**: Full permissions (777) are set on data directory due to SQLite requirements
-      ko_kr: |
-        **시작하기**
-        
-        - **첫 번째 사용자**: 등록한 첫 번째 계정이 관리자가 됩니다
-        - **파일 정리**: 변환된 파일은 공간 절약을 위해 24시간 후 자동 삭제됩니다
-        - **개인정보 보호**: 모든 변환은 로컬에서 이루어짐 - 데이터가 서버를 떠나지 않습니다
-        - **성능**: 대용량 파일 변환 처리를 위해 2GB RAM 할당
-        
-        **지원 형식**
-        - **이미지**: PNG, JPG, WebP, AVIF, SVG, GIF, TIFF, BMP 등
-        - **비디오**: FFmpeg를 사용한 MP4, WebM, AVI, MOV, MKV, FLV
-        - **오디오**: MP3, WAV, FLAC, OGG, AAC, M4A 등
-        - **문서**: Pandoc을 통한 PDF, DOCX, HTML, Markdown, TXT
-        - **3D 모델**: STL, OBJ, PLY, DAE 및 기타 형식
-        - **아카이브**: ZIP, RAR, 7Z, TAR 등
-        
-        **사용 팁**
-        - 웹 인터페이스에 파일을 직접 드래그 앤 드롭
-        - 빠른 비디오 변환을 위해 FFmpeg 프리셋 사용
-        - 여러 파일을 동시에 일괄 변환
-        - NSL 라우터를 통한 깔끔한 HTTPS URL로 접속
-        
-        **참고**: SQLite 요구사항으로 인해 데이터 디렉터리에 전체 권한(777) 설정됨
+        Access via: `https://convertx-[username].nsl.sh`
   index: /
   webui_port: 3000
