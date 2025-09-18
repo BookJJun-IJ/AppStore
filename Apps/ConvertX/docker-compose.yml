@@ -4,8 +4,6 @@ services:
   convertx:
     image: ghcr.io/c4illin/convertx:v0.14.1
     container_name: convertx
-    # Root로 실행하여 권한 문제 해결
-    user: "0:0"
     restart: unless-stopped
     deploy:
       resources:
@@ -15,9 +13,6 @@ services:
     expose:
       - 3000
     environment:
-      - PUID=0
-      - PGID=0
-      - TZ=$TZ
       - JWT_SECRET=$default_pwd
       - ACCOUNT_REGISTRATION=false
       - HTTP_ALLOWED=false
@@ -26,13 +21,15 @@ services:
       - HIDE_HISTORY=false
       - FFMPEG_ARGS=-preset fast
     volumes:
-      - /DATA/AppData/$AppID:/app
+      - /DATA/AppData/$AppID/data:/app/data
+      - /DATA/Downloads:/downloads:ro
+      - /DATA/Documents:/documents:ro
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 60s
+      start_period: 90s
 
 x-casaos:
   architectures:
@@ -41,16 +38,17 @@ x-casaos:
   main: convertx
   pre-install-cmd: |
     mkdir -p /DATA/AppData/$AppID/data &&
-    chmod -R 777 /DATA/AppData/$AppID
+    chown -R 1000:1000 /DATA/AppData/$AppID/data &&
+    chmod -R 755 /DATA/AppData/$AppID/data
   author: CasaOS Team
   category: Utilities
   developer: C4illin
-  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/ConvertX/icon.png
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ConvertX/icon.png
   screenshot:
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/ConvertX/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/ConvertX/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/ConvertX/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/ConvertX/thumbnail.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ConvertX/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ConvertX/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ConvertX/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ConvertX/thumbnail.png
   title:
     en_us: ConvertX
   tagline:
@@ -88,8 +86,6 @@ x-casaos:
         - Use FFmpeg presets for faster video conversion
         - Batch convert multiple files simultaneously
         - Access via clean HTTPS URL through NSL router
-        
-        **Note**: This app runs as root for SQLite database compatibility
       ko_kr: |
         **시작하기**
         
@@ -111,7 +107,5 @@ x-casaos:
         - 빠른 비디오 변환을 위해 FFmpeg 프리셋 사용
         - 여러 파일을 동시에 일괄 변환
         - NSL 라우터를 통한 깔끔한 HTTPS URL로 접속
-        
-        **참고**: SQLite 데이터베이스 호환성을 위해 root 권한으로 실행됩니다
   index: /
   webui_port: 3000
