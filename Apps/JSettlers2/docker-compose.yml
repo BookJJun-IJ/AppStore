@@ -1,7 +1,7 @@
 name: jsettlers
 services:
   jsettlers:
-    image: openjdk:11-jre-slim
+    image: openjdk:11-jre
     user: $PUID:$PGID
     deploy:
       resources:
@@ -20,16 +20,19 @@ services:
       JSETTLERS_ADMIN_USER: admin
       JSETTLERS_ADMIN_PASS: $default_pwd
     volumes:
-      - /DATA/AppData/jsettlers/config:/app/config
-      - /DATA/AppData/jsettlers/data:/app/data
-      - /DATA/AppData/jsettlers/jsserver.properties:/app/jsserver.properties
+      - /DATA/AppData/jsettlers/app:/app
+      - /DATA/AppData/jsettlers/config:/config
+      - /DATA/AppData/jsettlers/data:/data
     working_dir: /app
     command: >
       sh -c "
       if [ ! -f /app/JSettlers.jar ]; then
         echo 'Downloading JSettlers...' &&
-        wget -O /app/JSettlers.jar https://github.com/jdmonin/JSettlers2/releases/download/release-2.7.00/JSettlers-2.7.00-full.jar
+        cd /app &&
+        curl -L -o JSettlers.jar https://github.com/jdmonin/JSettlers2/releases/download/release-2.7.00/JSettlers-2.7.00-full.jar &&
+        echo 'Download complete!'
       fi &&
+      echo 'Starting JSettlers server...' &&
       java -jar /app/JSettlers.jar 
       -Djsettlers.admin.user=$$JSETTLERS_ADMIN_USER
       -Djsettlers.admin.pass=$$JSETTLERS_ADMIN_PASS
@@ -111,11 +114,5 @@ x-casaos:
   index: /
   port_map: "8880"
   pre_install_cmd: |
-    mkdir -p /DATA/AppData/jsettlers/config /DATA/AppData/jsettlers/data &&
-    chown -R $PUID:$PGID /DATA/AppData/jsettlers &&
-    echo "# JSettlers Server Configuration" > /DATA/AppData/jsettlers/jsserver.properties &&
-    echo "jsettlers.startrobots=7" >> /DATA/AppData/jsettlers/jsserver.properties &&
-    echo "jsettlers.port=8880" >> /DATA/AppData/jsettlers/jsserver.properties &&
-    echo "jsettlers.connections=50" >> /DATA/AppData/jsettlers/jsserver.properties &&
-    echo "jsettlers.admin.user=admin" >> /DATA/AppData/jsettlers/jsserver.properties &&
-    echo "jsettlers.admin.pass=$default_pwd" >> /DATA/AppData/jsettlers/jsserver.properties
+    mkdir -p /DATA/AppData/jsettlers/app /DATA/AppData/jsettlers/config /DATA/AppData/jsettlers/data &&
+    chown -R $PUID:$PGID /DATA/AppData/jsettlers
