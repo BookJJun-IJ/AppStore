@@ -417,4 +417,3 @@ x-casaos:
       es_es: |
         Accede a `https://catan-[username].nsl.sh/` en tu navegador.
   index: /
-  port_map: "80"
