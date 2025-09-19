@@ -1,7 +1,7 @@
 name: pioneers
 services:
   pioneers:
-    image: antoniotorresm/pioneers:latest
+    image: fedora:38
     user: $PUID:$PGID
     deploy:
       resources:
@@ -14,17 +14,14 @@ services:
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
-      # 게임 설정
-      TITLE: "Pioneers Catan Server"
-      RANDOM_TERRAIN: "true"      # 랜덤 맵 생성
-      STRICT_TRADE: "false"        # 엄격한 거래 규칙
-      DOMESTIC_TRADE: "true"       # 플레이어 간 거래 허용
-      NUM_PLAYERS: 4               # 최대 플레이어 수
-      SEVENS_RULE: 0              # 7 규칙 (0=일반, 1=엄격, 2=친화적)
-      VICTORY_POINTS: 10          # 승리 포인트
     volumes:
-      - /DATA/AppData/pioneers/games:/usr/share/games/pioneers
+      - /DATA/AppData/pioneers/games:/var/games/pioneers
       - /DATA/AppData/pioneers/config:/etc/pioneers
+    command: >
+      bash -c "
+      dnf install -y pioneers pioneers-server-data pioneers-server-console &&
+      pioneers-server-console -g /usr/share/games/pioneers/default.game --port-range 5556
+      "
     restart: unless-stopped
 
 x-casaos:
@@ -145,6 +142,11 @@ x-casaos:
         - Development cards
         - Longest road and largest army bonuses
         - Stable multiplayer gameplay
+        
+        ## First Run
+        
+        The server will install required packages on first run (about 1-2 minutes).
+        After installation, the server will start automatically.
         
         ## Troubleshooting
         
