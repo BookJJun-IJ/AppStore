@@ -1,8 +1,8 @@
 name: jsettlers
 services:
   jsettlers:
-    image: openjdk:11-jre
-    # user 설정을 제거하여 root로 실행
+    image: mikakatua/jsettlers-server:2.6.10
+    user: $PUID:$PGID
     deploy:
       resources:
         limits:
@@ -10,6 +10,8 @@ services:
           cpus: '0.5'
     expose:
       - 8880
+    ports:
+      - 8880:8880
     environment:
       PUID: $PUID
       PGID: $PGID
@@ -17,30 +19,9 @@ services:
       JSETTLERS_PORT: 8880
       JSETTLERS_CONNECTIONS: 50
       JSETTLERS_STARTROBOTS: 7
-      JSETTLERS_ADMIN_USER: admin
-      JSETTLERS_ADMIN_PASS: $default_pwd
     volumes:
-      - /DATA/AppData/jsettlers/app:/app
       - /DATA/AppData/jsettlers/config:/config
       - /DATA/AppData/jsettlers/data:/data
-    working_dir: /app
-    command: >
-      sh -c "
-      if [ ! -f /app/JSettlers.jar ]; then
-        echo 'Downloading JSettlers...' &&
-        curl -L -o /app/JSettlers.jar https://github.com/jdmonin/JSettlers2/releases/download/release-2.7.00/JSettlers-2.7.00-full.jar &&
-        chown $$PUID:$$PGID /app/JSettlers.jar &&
-        echo 'Download complete!'
-      fi &&
-      echo 'Starting JSettlers server as user $$PUID:$$PGID...' &&
-      exec su-exec $$PUID:$$PGID java -jar /app/JSettlers.jar 
-      -Djsettlers.admin.user=$$JSETTLERS_ADMIN_USER
-      -Djsettlers.admin.pass=$$JSETTLERS_ADMIN_PASS
-      -Djsettlers.port=$$JSETTLERS_PORT
-      -Djsettlers.connections=$$JSETTLERS_CONNECTIONS
-      -Djsettlers.startrobots=$$JSETTLERS_STARTROBOTS
-      -Djsettlers.allow.debug=N
-      "
     restart: unless-stopped
 
 x-casaos:
@@ -97,22 +78,20 @@ x-casaos:
   tips:
     before_install:
       en_us: |
-        Default Admin Account:
-        | Username   | Password       |
-        | --------   | ------------   |
-        | `admin`    | `$default_pwd` |
+        JSettlers Server Information:
+        - The server will start automatically on port 8880
+        - Players can connect using the JSettlers client
+        - Download client from: https://github.com/jdmonin/JSettlers2/releases
         
         Game Features:
         - Classic 4-player and 6-player boards
         - Sea board variants and scenarios
-        - Practice mode against AI bots
+        - Practice mode against AI bots (7 bots available by default)
         - Multiple simultaneous games support
         - Customizable game rules and options
         
-        The server will be accessible via web browser after installation.
-        Players can connect using any modern web browser.
+        How to Play:
+        1. Download the JSettlers client JAR file
+        2. Run: java -jar JSettlers.jar [server-ip] 8880
+        3. Or use the web interface if available
   index: /
-  port_map: "8880"
-  pre_install_cmd: |
-    mkdir -p /DATA/AppData/jsettlers/app /DATA/AppData/jsettlers/config /DATA/AppData/jsettlers/data &&
-    chown -R $PUID:$PGID /DATA/AppData/jsettlers
