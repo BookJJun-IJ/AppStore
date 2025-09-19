@@ -2,7 +2,7 @@ name: jsettlers
 services:
   jsettlers:
     image: openjdk:11-jre
-    user: $PUID:$PGID
+    # user 설정을 제거하여 root로 실행
     deploy:
       resources:
         limits:
@@ -28,12 +28,12 @@ services:
       sh -c "
       if [ ! -f /app/JSettlers.jar ]; then
         echo 'Downloading JSettlers...' &&
-        cd /app &&
-        curl -L -o JSettlers.jar https://github.com/jdmonin/JSettlers2/releases/download/release-2.7.00/JSettlers-2.7.00-full.jar &&
+        curl -L -o /app/JSettlers.jar https://github.com/jdmonin/JSettlers2/releases/download/release-2.7.00/JSettlers-2.7.00-full.jar &&
+        chown $$PUID:$$PGID /app/JSettlers.jar &&
         echo 'Download complete!'
       fi &&
-      echo 'Starting JSettlers server...' &&
-      java -jar /app/JSettlers.jar 
+      echo 'Starting JSettlers server as user $$PUID:$$PGID...' &&
+      exec su-exec $$PUID:$$PGID java -jar /app/JSettlers.jar 
       -Djsettlers.admin.user=$$JSETTLERS_ADMIN_USER
       -Djsettlers.admin.pass=$$JSETTLERS_ADMIN_PASS
       -Djsettlers.port=$$JSETTLERS_PORT
