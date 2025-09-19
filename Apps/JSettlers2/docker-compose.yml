@@ -1,0 +1,121 @@
+name: jsettlers
+services:
+  jsettlers:
+    image: openjdk:11-jre-slim
+    user: $PUID:$PGID
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+    expose:
+      - 8880
+    environment:
+      PUID: $PUID
+      PGID: $PGID
+      TZ: $TZ
+      JSETTLERS_PORT: 8880
+      JSETTLERS_CONNECTIONS: 50
+      JSETTLERS_STARTROBOTS: 7
+      JSETTLERS_ADMIN_USER: admin
+      JSETTLERS_ADMIN_PASS: $default_pwd
+    volumes:
+      - /DATA/AppData/jsettlers/config:/app/config
+      - /DATA/AppData/jsettlers/data:/app/data
+      - /DATA/AppData/jsettlers/jsserver.properties:/app/jsserver.properties
+    working_dir: /app
+    command: >
+      sh -c "
+      if [ ! -f /app/JSettlers.jar ]; then
+        echo 'Downloading JSettlers...' &&
+        wget -O /app/JSettlers.jar https://github.com/jdmonin/JSettlers2/releases/download/release-2.7.00/JSettlers-2.7.00-full.jar
+      fi &&
+      java -jar /app/JSettlers.jar 
+      -Djsettlers.admin.user=$$JSETTLERS_ADMIN_USER
+      -Djsettlers.admin.pass=$$JSETTLERS_ADMIN_PASS
+      -Djsettlers.port=$$JSETTLERS_PORT
+      -Djsettlers.connections=$$JSETTLERS_CONNECTIONS
+      -Djsettlers.startrobots=$$JSETTLERS_STARTROBOTS
+      -Djsettlers.allow.debug=N
+      "
+    restart: unless-stopped
+
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+    - arm
+  main: jsettlers
+  webui_port: 8880
+  category: Games
+  title:
+    en_us: JSettlers
+    fr_fr: JSettlers
+    ko_kr: 제이세틀러스
+    zh_cn: JSettlers
+    es_es: JSettlers
+  tagline:
+    en_us: Open-source web-based Settlers of Catan game
+    fr_fr: Jeu open-source de Colons de Catane basé sur le web
+    ko_kr: 오픈소스 웹 기반 카탄의 정착민 게임
+    zh_cn: 开源的基于网络的卡坦岛定居者游戏
+    es_es: Juego de Colonos de Catán de código abierto basado en web
+  description:
+    en_us: |
+      JSettlers is a web-based version of the board game Settlers of Catan written in Java. 
+      This client-server system supports multiple simultaneous games between people and/or AI bots. 
+      Features include classic 4-player and 6-player games, sea board variants, scenarios, 
+      and customizable game options. Perfect for playing with friends or practicing against AI.
+    fr_fr: |
+      JSettlers est une version web du jeu de plateau Les Colons de Catane écrite en Java. 
+      Ce système client-serveur prend en charge plusieurs jeux simultanés entre personnes et/ou 
+      bots IA. Comprend des jeux classiques à 4 et 6 joueurs, des variantes maritimes, des 
+      scénarios et des options de jeu personnalisables.
+    ko_kr: |
+      JSettlers는 Java로 작성된 보드 게임 카탄의 정착민의 웹 기반 버전입니다. 이 클라이언트-서버 시스템은 
+      사람과/또는 AI 봇 간의 여러 동시 게임을 지원합니다. 클래식 4인 및 6인 게임, 바다 보드 변형, 시나리오 
+      및 사용자 정의 가능한 게임 옵션이 포함되어 있습니다.
+    zh_cn: |
+      JSettlers是用Java编写的卡坦岛定居者棋盘游戏的网络版本。这个客户端-服务器系统支持人与人之间和/或
+      AI机器人之间的多个同时进行的游戏。功能包括经典的4人和6人游戏、海洋板变体、场景和可自定义的游戏选项。
+      非常适合与朋友一起玩或与AI练习。
+    es_es: |
+      JSettlers es una versión web del juego de mesa Colonos de Catán escrito en Java. 
+      Este sistema cliente-servidor admite múltiples juegos simultáneos entre personas y/o 
+      bots de IA. Incluye juegos clásicos para 4 y 6 jugadores, variantes marítimas, 
+      escenarios y opciones de juego personalizables.
+  developer: JSettlers Development Team
+  author: CasaOS Team
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/JSettlers/icon.png
+  screenshot_1: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/JSettlers/screenshot-1.png
+  screenshot_2: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/JSettlers/screenshot-2.png
+  screenshot_3: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/JSettlers/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/JSettlers/thumbnail.png
+  tips:
+    before_install:
+      en_us: |
+        Default Admin Account:
+        | Username   | Password       |
+        | --------   | ------------   |
+        | `admin`    | `$default_pwd` |
+        
+        Game Features:
+        - Classic 4-player and 6-player boards
+        - Sea board variants and scenarios
+        - Practice mode against AI bots
+        - Multiple simultaneous games support
+        - Customizable game rules and options
+        
+        The server will be accessible via web browser after installation.
+        Players can connect using any modern web browser.
+  index: /
+  port_map: "8880"
+  pre_install_cmd: |
+    mkdir -p /DATA/AppData/jsettlers/config /DATA/AppData/jsettlers/data &&
+    chown -R $PUID:$PGID /DATA/AppData/jsettlers &&
+    echo "# JSettlers Server Configuration" > /DATA/AppData/jsettlers/jsserver.properties &&
+    echo "jsettlers.startrobots=7" >> /DATA/AppData/jsettlers/jsserver.properties &&
+    echo "jsettlers.port=8880" >> /DATA/AppData/jsettlers/jsserver.properties &&
+    echo "jsettlers.connections=50" >> /DATA/AppData/jsettlers/jsserver.properties &&
+    echo "jsettlers.admin.user=admin" >> /DATA/AppData/jsettlers/jsserver.properties &&
+    echo "jsettlers.admin.pass=$default_pwd" >> /DATA/AppData/jsettlers/jsserver.properties
