@@ -1,7 +1,7 @@
 name: jsettlers
 services:
   jsettlers:
-    image: mikakatua/jsettlers-server:2.6.10
+    image: jdmonin/jsettlers:2.5.00
     user: $PUID:$PGID
     deploy:
       resources:
@@ -14,12 +14,22 @@ services:
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
+      # JSettlers 서버 설정
       JSETTLERS_PORT: 8880
       JSETTLERS_CONNECTIONS: 50
       JSETTLERS_STARTROBOTS: 7
+      # 데이터베이스 비활성화
+      JSETTLERS_DB_SAVE_GAMES: "false"
     volumes:
-      - /DATA/AppData/jsettlers/config:/config
-      - /DATA/AppData/jsettlers/data:/data
+      - /DATA/AppData/jsettlers/saves:/jsettlers/saves
+      - /DATA/AppData/jsettlers/config:/jsettlers/config
+    command: >
+      java -jar /app/JSettlersServer.jar 
+      -Djsettlers.port=8880 
+      -Djsettlers.connections=50 
+      -Djsettlers.startrobots=7
+      -Djsettlers.db.save.games=false
+      -Djsettlers.savedir=/jsettlers/saves
     restart: unless-stopped
 
 x-casaos:
@@ -30,12 +40,15 @@ x-casaos:
   main: jsettlers
   webui_port: 8880
   category: Games
+  author: CasaOS Team
+  developer: JSettlers Development Team
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/JSettlers/icon.png
+  screenshot_1: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/JSettlers/screenshot-1.png
+  screenshot_2: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/JSettlers/screenshot-2.png
+  screenshot_3: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/JSettlers/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/JSettlers/thumbnail.png
   title:
     en_us: JSettlers
-    fr_fr: JSettlers
-    ko_kr: 제이세틀러스
-    zh_cn: JSettlers
-    es_es: JSettlers
   tagline:
     en_us: Open-source web-based Settlers of Catan game
     fr_fr: Jeu open-source de Colons de Catane basé sur le web
@@ -56,7 +69,7 @@ x-casaos:
     ko_kr: |
       JSettlers는 Java로 작성된 보드 게임 카탄의 정착민의 웹 기반 버전입니다. 이 클라이언트-서버 시스템은 
       사람과/또는 AI 봇 간의 여러 동시 게임을 지원합니다. 클래식 4인 및 6인 게임, 바다 보드 변형, 시나리오 
-      및 사용자 정의 가능한 게임 옵션이 포함되어 있습니다.
+      및 사용자 정의 가능한 게임 옵션이 포함되어 있습니다. 친구들과 플레이하거나 AI와 연습하기에 완벽합니다.
     zh_cn: |
       JSettlers是用Java编写的卡坦岛定居者棋盘游戏的网络版本。这个客户端-服务器系统支持人与人之间和/或
       AI机器人之间的多个同时进行的游戏。功能包括经典的4人和6人游戏、海洋板变体、场景和可自定义的游戏选项。
@@ -65,31 +78,44 @@ x-casaos:
       JSettlers es una versión web del juego de mesa Colonos de Catán escrito en Java. 
       Este sistema cliente-servidor admite múltiples juegos simultáneos entre personas y/o 
       bots de IA. Incluye juegos clásicos para 4 y 6 jugadores, variantes marítimas, 
-      escenarios y opciones de juego personalizables.
-  developer: JSettlers Development Team
-  author: CasaOS Team
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/JSettlers/icon.png
-  screenshot_1: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/JSettlers/screenshot-1.png
-  screenshot_2: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/JSettlers/screenshot-2.png
-  screenshot_3: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/JSettlers/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/JSettlers/thumbnail.png
+      escenarios y opciones de juego personalizables. Perfecto para jugar con amigos o practicar contra IA.
   tips:
     before_install:
       en_us: |
-        JSettlers Server Information:
-        - The server will start automatically on port 8880
-        - Players can connect using the JSettlers client
-        - Download client from: https://github.com/jdmonin/JSettlers2/releases
+        ## JSettlers Server Information
         
-        Game Features:
+        The server will automatically start on port 8880 with 7 AI bots available for practice games.
+        
+        ## How to Connect
+        
+        ### Option 1: Java Client (Recommended)
+        1. Download the JSettlers client from: https://github.com/jdmonin/JSettlers2/releases
+        2. Run the client: `java -jar JSettlers.jar [server-ip] 8880`
+        3. Create or join a game
+        
+        ### Option 2: Web Browser
+        Connect directly via: `https://8880-jsettlers-[username].nsl.sh/`
+        
+        ## Game Features
         - Classic 4-player and 6-player boards
         - Sea board variants and scenarios
-        - Practice mode against AI bots (7 bots available by default)
+        - Practice mode with AI bots (7 bots pre-configured)
         - Multiple simultaneous games support
-        - Customizable game rules and options
+        - Save and resume games
         
-        How to Play:
-        1. Download the JSettlers client JAR file
-        2. Run: java -jar JSettlers.jar [server-ip] 8880
-        3. Or use the web interface if available
+        ## First Time Setup
+        No configuration needed - the server starts with sensible defaults.
+        You can immediately create a practice game with robots or wait for other players to join.
+      fr_fr: |
+        Le serveur démarrera automatiquement sur le port 8880 avec 7 bots IA disponibles.
+        Téléchargez le client depuis: https://github.com/jdmonin/JSettlers2/releases
+      ko_kr: |
+        서버는 포트 8880에서 자동으로 시작되며 7개의 AI 봇을 사용할 수 있습니다.
+        클라이언트 다운로드: https://github.com/jdmonin/JSettlers2/releases
+      zh_cn: |
+        服务器将自动在端口8880上启动，有7个AI机器人可用。
+        从以下位置下载客户端：https://github.com/jdmonin/JSettlers2/releases
+      es_es: |
+        El servidor se iniciará automáticamente en el puerto 8880 con 7 bots de IA disponibles.
+        Descargue el cliente desde: https://github.com/jdmonin/JSettlers2/releases
   index: /
