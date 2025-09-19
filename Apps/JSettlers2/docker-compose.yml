@@ -1,31 +1,30 @@
-name: jsettlers
+name: pioneers
 services:
-  jsettlers:
-    image: mikakatua/jsettlers-server:2.6.10
+  pioneers:
+    image: antoniotorresm/pioneers:latest
     user: $PUID:$PGID
     deploy:
       resources:
         limits:
-          memory: 512M
-          cpus: '0.5'
+          memory: 256M
+          cpus: '0.25'
     expose:
-      - 8880
+      - 5556
     environment:
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
-      # JSettlers 서버 설정
-      JSETTLERS_PORT: 8880
-      JSETTLERS_CONNECTIONS: 50
-      JSETTLERS_STARTROBOTS: 7
-      # 데이터베이스 명시적 비활성화
-      JSETTLERS_DB_URL: ""
-      JSETTLERS_DB_DRIVER: ""
-      JSETTLERS_DB_USER: ""
-      JSETTLERS_DB_PASS: ""
+      # 게임 설정
+      TITLE: "Pioneers Catan Server"
+      RANDOM_TERRAIN: "true"      # 랜덤 맵 생성
+      STRICT_TRADE: "false"        # 엄격한 거래 규칙
+      DOMESTIC_TRADE: "true"       # 플레이어 간 거래 허용
+      NUM_PLAYERS: 4               # 최대 플레이어 수
+      SEVENS_RULE: 0              # 7 규칙 (0=일반, 1=엄격, 2=친화적)
+      VICTORY_POINTS: 10          # 승리 포인트
     volumes:
-      - /DATA/AppData/jsettlers/config:/config
-      - /DATA/AppData/jsettlers/data:/data
+      - /DATA/AppData/pioneers/games:/usr/share/games/pioneers
+      - /DATA/AppData/pioneers/config:/etc/pioneers
     restart: unless-stopped
 
 x-casaos:
@@ -33,123 +32,136 @@ x-casaos:
     - amd64
     - arm64
     - arm
-  main: jsettlers
-  webui_port: 8880
+  main: pioneers
+  webui_port: 5556
   category: Games
   author: CasaOS Team
-  developer: JSettlers Development Team
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/JSettlers/icon.png
-  screenshot_1: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/JSettlers/screenshot-1.png
-  screenshot_2: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/JSettlers/screenshot-2.png
-  screenshot_3: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/JSettlers/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/JSettlers/thumbnail.png
+  developer: Pioneers Development Team
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Pioneers/icon.png
+  screenshot_1: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Pioneers/screenshot-1.png
+  screenshot_2: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Pioneers/screenshot-2.png
+  screenshot_3: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Pioneers/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Pioneers/thumbnail.png
   pre-install-cmd: |
-    mkdir -p /DATA/AppData/jsettlers/config &&
-    mkdir -p /DATA/AppData/jsettlers/data &&
-    echo "# JSettlers Server Configuration" > /DATA/AppData/jsettlers/config/jsserver.properties &&
-    echo "jsettlers.port=8880" >> /DATA/AppData/jsettlers/config/jsserver.properties &&
-    echo "jsettlers.connections=50" >> /DATA/AppData/jsettlers/config/jsserver.properties &&
-    echo "jsettlers.startrobots=7" >> /DATA/AppData/jsettlers/config/jsserver.properties &&
-    echo "# Database disabled" >> /DATA/AppData/jsettlers/config/jsserver.properties &&
-    echo "jsettlers.db.url=" >> /DATA/AppData/jsettlers/config/jsserver.properties &&
-    echo "jsettlers.db.driver=" >> /DATA/AppData/jsettlers/config/jsserver.properties &&
-    chown -R $PUID:$PGID /DATA/AppData/jsettlers
+    mkdir -p /DATA/AppData/pioneers/games &&
+    mkdir -p /DATA/AppData/pioneers/config &&
+    chown -R $PUID:$PGID /DATA/AppData/pioneers
   title:
-    en_us: JSettlers
+    en_us: Pioneers - Settlers of Catan
   tagline:
-    en_us: Open-source Settlers of Catan game server
-    fr_fr: Serveur de jeu Colons de Catane open-source
-    ko_kr: 오픈소스 카탄의 정착민 게임 서버
-    zh_cn: 开源卡坦岛定居者游戏服务器
-    es_es: Servidor de Colonos de Catán de código abierto
+    en_us: Open-source implementation of Settlers of Catan board game
+    fr_fr: Implémentation open-source du jeu de plateau Les Colons de Catane
+    ko_kr: 카탄의 정착민 보드게임의 오픈소스 구현
+    zh_cn: 卡坦岛定居者桌游的开源实现
+    es_es: Implementación de código abierto del juego de mesa Colonos de Catán
   description:
     en_us: |
-      JSettlers is a web-based version of the board game Settlers of Catan written in Java. 
-      This server supports multiple simultaneous games between people and/or AI bots. 
-      Features include classic 4-player and 6-player games, sea board variants, scenarios, 
-      and customizable game options. Perfect for playing with friends or practicing against AI.
+      Pioneers is a computer implementation of the Settlers of Catan board game. 
+      It can be played over the internet with multiple players. The game includes 
+      a server, a client, computer players, and an editor. This Docker container 
+      runs the Pioneers server, allowing you to host your own Catan games.
       
-      Server runs on port 8880 with 7 AI bots available for practice games.
+      Features:
+      - Classic Settlers of Catan gameplay
+      - Support for 2-4 players
+      - Computer AI opponents available
+      - Customizable game rules
+      - Random or standard board layouts
+      - Trading between players
+      - Stable and actively maintained
     fr_fr: |
-      JSettlers est une version web du jeu de plateau Les Colons de Catane écrite en Java. 
-      Ce serveur prend en charge plusieurs jeux simultanés entre personnes et/ou bots IA. 
-      Comprend des jeux classiques à 4 et 6 joueurs, des variantes maritimes, des scénarios 
-      et des options de jeu personnalisables. Le serveur fonctionne sur le port 8880 avec 
-      7 bots IA disponibles pour les jeux d'entraînement.
+      Pioneers est une implémentation informatique du jeu de plateau Les Colons de Catane. 
+      Il peut être joué sur Internet avec plusieurs joueurs. Le jeu comprend un serveur, 
+      un client, des joueurs informatiques et un éditeur. Ce conteneur Docker exécute 
+      le serveur Pioneers, vous permettant d'héberger vos propres parties de Catane.
     ko_kr: |
-      JSettlers는 Java로 작성된 보드 게임 카탄의 정착민의 웹 기반 버전입니다. 
-      이 서버는 사람과/또는 AI 봇 간의 여러 동시 게임을 지원합니다. 
-      클래식 4인 및 6인 게임, 바다 보드 변형, 시나리오 및 사용자 정의 가능한 게임 옵션이 포함되어 있습니다. 
-      친구들과 플레이하거나 AI와 연습하기에 완벽합니다. 
-      서버는 포트 8880에서 실행되며 연습 게임용 AI 봇 7개를 사용할 수 있습니다.
+      Pioneers는 카탄의 정착민 보드 게임의 컴퓨터 구현입니다. 
+      인터넷을 통해 여러 플레이어와 함께 플레이할 수 있습니다. 
+      이 게임에는 서버, 클라이언트, 컴퓨터 플레이어 및 편집기가 포함되어 있습니다. 
+      이 Docker 컨테이너는 Pioneers 서버를 실행하여 자신만의 카탄 게임을 호스팅할 수 있습니다.
     zh_cn: |
-      JSettlers是用Java编写的卡坦岛定居者棋盘游戏的网络版本。
-      该服务器支持人与人之间和/或AI机器人之间的多个同时进行的游戏。
-      功能包括经典的4人和6人游戏、海洋板变体、场景和可自定义的游戏选项。
-      非常适合与朋友一起玩或与AI练习。
-      服务器在端口8880上运行，有7个AI机器人可用于练习游戏。
+      Pioneers是卡坦岛定居者棋盘游戏的计算机实现。
+      它可以通过互联网与多个玩家一起玩。
+      游戏包括服务器、客户端、电脑玩家和编辑器。
+      这个Docker容器运行Pioneers服务器，让您可以托管自己的卡坦游戏。
     es_es: |
-      JSettlers es una versión web del juego de mesa Colonos de Catán escrito en Java. 
-      Este servidor admite múltiples juegos simultáneos entre personas y/o bots de IA. 
-      Incluye juegos clásicos para 4 y 6 jugadores, variantes marítimas, escenarios 
-      y opciones de juego personalizables. Perfecto para jugar con amigos o practicar contra IA. 
-      El servidor se ejecuta en el puerto 8880 con 7 bots de IA disponibles para juegos de práctica.
+      Pioneers es una implementación informática del juego de mesa Colonos de Catán. 
+      Se puede jugar por Internet con varios jugadores. El juego incluye un servidor, 
+      un cliente, jugadores de computadora y un editor. Este contenedor Docker ejecuta 
+      el servidor Pioneers, permitiéndole alojar sus propios juegos de Catán.
   tips:
     before_install:
       en_us: |
-        ## JSettlers Server Setup
+        ## How to Connect to Pioneers Server
         
-        This server will start automatically on port 8880 with 7 AI bots available for practice.
+        ### Download the Client
         
-        ## How to Connect and Play
+        **For Windows:**
+        Download from: https://sourceforge.net/projects/pio/files/Pioneers/
         
-        ### Download the Java Client
-        1. Download from: https://github.com/jdmonin/JSettlers2/releases
-        2. Choose the latest JSettlers-X.X.XX.jar file (not JSettlersServer)
-        
-        ### Connect to Server
-        Run the client with:
+        **For Linux:**
+        Install via package manager:
         ```bash
-        java -jar JSettlers.jar [your-server-ip] 8880
+        # Ubuntu/Debian
+        sudo apt-get install pioneers
+        
+        # Fedora
+        sudo dnf install pioneers
+        
+        # Arch
+        sudo pacman -S pioneers
         ```
         
-        Or if using NSL router:
+        **For macOS:**
+        Use Homebrew:
         ```bash
-        java -jar JSettlers.jar 8880-jsettlers-[username].nsl.sh 443
+        brew install pioneers
         ```
         
-        ### Create Your First Game
-        1. Enter any nickname when connecting
-        2. Click "Practice" to play with AI bots
-        3. Or click "New Game" to create a game for other players
+        ### Connect to Your Server
         
-        ## Game Features
-        - Classic 4-player Settlers of Catan
-        - 6-player expansion games
-        - Sea board scenarios
-        - Various house rules and options
-        - Save and resume games
-        - 7 AI bots with different skill levels
+        1. Open the Pioneers client
+        2. Click "Join Private Game"
+        3. Enter your server address:
+           - Local: `[server-ip]:5556`
+           - NSL Router: `5556-pioneers-[username].nsl.sh`
+        4. Create your player name and join
+        
+        ## Game Settings
+        
+        The server is configured with these default settings:
+        - **Map**: Random terrain generation
+        - **Players**: Up to 4 players
+        - **Victory Points**: 10 points to win
+        - **Trading**: Allowed between players
+        - **Sevens Rule**: Normal (robber moves on 7)
+        
+        ## Features
+        
+        - Classic Settlers of Catan rules
+        - AI computer players available
+        - Random or standard board layouts
+        - Full trading system
+        - Development cards
+        - Longest road and largest army bonuses
+        - Stable multiplayer gameplay
         
         ## Troubleshooting
-        If the server doesn't start, check logs with:
-        ```bash
-        docker logs jsettlers-jsettlers-1
-        ```
+        
+        If you can't connect:
+        1. Check if server is running: `docker logs pioneers-pioneers-1`
+        2. Verify port 5556 is accessible
+        3. Try connecting locally first before remote connections
       fr_fr: |
-        Le serveur démarre automatiquement sur le port 8880.
-        Téléchargez le client Java depuis: https://github.com/jdmonin/JSettlers2/releases
-        Connectez-vous avec: java -jar JSettlers.jar [ip-serveur] 8880
+        Téléchargez le client Pioneers depuis SourceForge ou installez via votre gestionnaire de paquets.
+        Connectez-vous à votre serveur sur le port 5556.
       ko_kr: |
-        서버는 포트 8880에서 자동으로 시작됩니다.
-        Java 클라이언트 다운로드: https://github.com/jdmonin/JSettlers2/releases
-        연결: java -jar JSettlers.jar [서버-IP] 8880
+        Pioneers 클라이언트를 SourceForge에서 다운로드하거나 패키지 관리자를 통해 설치하세요.
+        포트 5556에서 서버에 연결하세요.
       zh_cn: |
-        服务器自动在端口8880启动。
-        从以下位置下载Java客户端：https://github.com/jdmonin/JSettlers2/releases
-        连接：java -jar JSettlers.jar [服务器IP] 8880
+        从SourceForge下载Pioneers客户端或通过包管理器安装。
+        连接到端口5556上的服务器。
       es_es: |
-        El servidor se inicia automáticamente en el puerto 8880.
-        Descarga el cliente Java desde: https://github.com/jdmonin/JSettlers2/releases
-        Conectar: java -jar JSettlers.jar [ip-servidor] 8880
+        Descarga el cliente Pioneers desde SourceForge o instala a través de tu gestor de paquetes.
+        Conéctate a tu servidor en el puerto 5556.
   index: /
