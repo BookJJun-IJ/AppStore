@@ -10,8 +10,6 @@ services:
           cpus: '0.5'
     expose:
       - 8880
-    ports:
-      - 8880:8880
     environment:
       PUID: $PUID
       PGID: $PGID
