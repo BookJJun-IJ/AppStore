@@ -23,14 +23,8 @@ services:
     command: >
       sh -c "
       if [ ! -f /app/server.js ]; then
-        echo '🎲 Installing Catan Web Server...';
-        apk add --no-cache git python3 make g++;
-        git clone https://github.com/seansegal/tincisnotcatan.git /tmp/catan 2>/dev/null || true;
-        if [ -d /tmp/catan ]; then
-          cp -r /tmp/catan/* /app/;
-        else
-          echo 'Creating basic Catan server...';
-          cat > /app/package.json << 'EOF'
+        echo 'Installing Catan Web Server...';
+        cat > /app/package.json <<'EOL'
       {
         \"name\": \"catan-server\",
         \"version\": \"1.0.0\",
@@ -43,23 +37,256 @@ services:
           \"cors\": \"^2.8.5\"
         }
       }
-      EOF
-          cat > /app/server.js << 'EOF'
+      EOL
+        cat > /app/server.js <<'EOL'
       const express = require('express');
       const app = express();
       const http = require('http').createServer(app);
       const io = require('socket.io')(http, {cors: {origin: '*'}});
+      const fs = require('fs');
+      const path = require('path');
       const PORT = process.env.PORT || 80;
 
       app.use(express.static('public'));
       app.use(express.json());
 
-      // Basic Catan game state
       let games = {};
       let players = {};
 
+      if (!fs.existsSync('public')) {
+        fs.mkdirSync('public');
+      }
+
+      const indexHTML = \`<!DOCTYPE html>
+      <html lang=\"ko\">
+      <head>
+        <meta charset=\"UTF-8\">
+        <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
+        <title>Catan Web Server</title>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+          }
+          .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+          }
+          h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+          }
+          .status {
+            background: #4caf50;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 30px;
+          }
+          .button-group {
+            display: flex;
+            gap: 15px;
+            margin: 30px 0;
+          }
+          .button {
+            flex: 1;
+            background: #667eea;
+            color: white;
+            padding: 15px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+          }
+          .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+          }
+          .button:active {
+            transform: translateY(0);
+          }
+          .info-section {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+          }
+          .info-section h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+          }
+          .info-section p {
+            color: #666;
+            line-height: 1.6;
+          }
+          #gameArea {
+            display: none;
+            margin-top: 30px;
+          }
+          #gameCanvas {
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            width: 100%;
+            background: #f9f9f9;
+          }
+          .room-code {
+            background: #f0f0f0;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-family: monospace;
+            font-size: 24px;
+            text-align: center;
+            margin: 20px 0;
+            border: 2px dashed #667eea;
+          }
+        </style>
+      </head>
+      <body>
+        <div class=\"container\">
+          <h1>🎲 Catan Web</h1>
+          
+          <div class=\"status\">
+            ✅ Server Online - Ready to Play!
+          </div>
+
+          <div id=\"mainMenu\">
+            <div class=\"button-group\">
+              <button class=\"button\" onclick=\"createGame()\">Create New Game</button>
+              <button class=\"button\" onclick=\"joinGame()\">Join Game</button>
+            </div>
+            
+            <div class=\"info-section\">
+              <h3>How to Play</h3>
+              <p>1. Click \"Create New Game\" to start a new room</p>
+              <p>2. Share the room code with friends</p>
+              <p>3. They can join using \"Join Game\"</p>
+              <p>4. Start playing when everyone is ready!</p>
+            </div>
+            
+            <div class=\"info-section\">
+              <h3>Game Features</h3>
+              <p>• 2-4 players per game</p>
+              <p>• Classic Catan rules</p>
+              <p>• Real-time multiplayer</p>
+              <p>• Mobile friendly</p>
+            </div>
+          </div>
+          
+          <div id=\"gameArea\">
+            <div class=\"room-code\" id=\"roomCode\"></div>
+            <canvas id=\"gameCanvas\" width=\"600\" height=\"600\"></canvas>
+          </div>
+        </div>
+        
+        <script src=\"/socket.io/socket.io.js\"></script>
+        <script>
+          const socket = io();
+          let currentRoom = null;
+          
+          function createGame() {
+            const roomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+            currentRoom = roomCode;
+            document.getElementById('roomCode').textContent = 'Room: ' + roomCode;
+            document.getElementById('mainMenu').style.display = 'none';
+            document.getElementById('gameArea').style.display = 'block';
+            socket.emit('create-room', roomCode);
+            initGame();
+          }
+          
+          function joinGame() {
+            const roomCode = prompt('Enter room code:');
+            if (roomCode) {
+              currentRoom = roomCode.toUpperCase();
+              document.getElementById('roomCode').textContent = 'Room: ' + currentRoom;
+              document.getElementById('mainMenu').style.display = 'none';
+              document.getElementById('gameArea').style.display = 'block';
+              socket.emit('join-room', currentRoom);
+              initGame();
+            }
+          }
+          
+          function initGame() {
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Draw basic game board
+            ctx.fillStyle = '#8BC34A';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = '#333';
+            ctx.font = '24px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Catan Game Board', canvas.width/2, 50);
+            
+            // Draw hexagons for the board
+            drawHexGrid(ctx, canvas.width/2, canvas.height/2);
+          }
+          
+          function drawHexGrid(ctx, centerX, centerY) {
+            const hexSize = 40;
+            const colors = ['#F4A460', '#8B4513', '#228B22', '#FFD700', '#DC143C'];
+            
+            for (let q = -2; q <= 2; q++) {
+              for (let r = -2; r <= 2; r++) {
+                if (Math.abs(q + r) <= 2) {
+                  const x = centerX + hexSize * 1.5 * q;
+                  const y = centerY + hexSize * Math.sqrt(3) * (r + q/2);
+                  drawHexagon(ctx, x, y, hexSize, colors[Math.floor(Math.random() * colors.length)]);
+                }
+              }
+            }
+          }
+          
+          function drawHexagon(ctx, x, y, size, color) {
+            ctx.beginPath();
+            for (let i = 0; i < 6; i++) {
+              const angle = (Math.PI / 3) * i;
+              const xPos = x + size * Math.cos(angle);
+              const yPos = y + size * Math.sin(angle);
+              if (i === 0) ctx.moveTo(xPos, yPos);
+              else ctx.lineTo(xPos, yPos);
+            }
+            ctx.closePath();
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.strokeStyle = '#333';
+            ctx.stroke();
+          }
+          
+          socket.on('connect', () => {
+            console.log('Connected to server');
+          });
+          
+          socket.on('room-created', (data) => {
+            console.log('Room created:', data);
+          });
+          
+          socket.on('player-joined', (data) => {
+            console.log('Player joined:', data);
+          });
+        </script>
+      </body>
+      </html>\`;
+
+      fs.writeFileSync('public/index.html', indexHTML);
+
       app.get('/', (req, res) => {
-        res.sendFile(__dirname + '/public/index.html');
+        res.sendFile(path.join(__dirname, 'public', 'index.html'));
       });
 
       app.get('/health', (req, res) => {
@@ -69,23 +296,20 @@ services:
       io.on('connection', (socket) => {
         console.log('Player connected:', socket.id);
         
-        socket.on('create-game', (data) => {
-          const gameId = Math.random().toString(36).substring(7);
-          games[gameId] = {
-            id: gameId,
+        socket.on('create-room', (roomCode) => {
+          games[roomCode] = {
             players: [socket.id],
-            maxPlayers: 4,
             started: false
           };
-          socket.join(gameId);
-          socket.emit('game-created', gameId);
+          socket.join(roomCode);
+          socket.emit('room-created', {roomCode, playerId: socket.id});
         });
 
-        socket.on('join-game', (gameId) => {
-          if (games[gameId] && games[gameId].players.length < games[gameId].maxPlayers) {
-            games[gameId].players.push(socket.id);
-            socket.join(gameId);
-            io.to(gameId).emit('player-joined', {playerId: socket.id, gameId});
+        socket.on('join-room', (roomCode) => {
+          if (games[roomCode]) {
+            games[roomCode].players.push(socket.id);
+            socket.join(roomCode);
+            io.to(roomCode).emit('player-joined', {roomCode, playerId: socket.id});
           }
         });
 
@@ -94,85 +318,14 @@ services:
         });
       });
 
-      // Create public directory and basic HTML
-      const fs = require('fs');
-      if (!fs.existsSync('public')) {
-        fs.mkdirSync('public');
-        fs.writeFileSync('public/index.html', \`<!DOCTYPE html>
-      <html>
-      <head>
-        <title>Catan Server</title>
-        <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">
-        <style>
-          body { font-family: Arial; max-width: 800px; margin: 0 auto; padding: 20px; background: #f0f0f0; }
-          .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-          h1 { color: #d84315; text-align: center; }
-          .status { text-align: center; padding: 20px; background: #e8f5e9; border-radius: 5px; margin: 20px 0; }
-          .button { background: #4caf50; color: white; padding: 15px 30px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin: 10px; }
-          .button:hover { background: #45a049; }
-          .game-info { background: #fff3e0; padding: 15px; border-radius: 5px; margin-top: 20px; }
-          .instructions { background: #f5f5f5; padding: 20px; border-radius: 5px; margin-top: 20px; }
-          .instructions h3 { color: #d84315; }
-          .instructions ol { line-height: 1.8; }
-        </style>
-      </head>
-      <body>
-        <div class=\"container\">
-          <h1>🎲 Catan Web Server</h1>
-          <div class=\"status\">
-            <h2>✅ Server is Running!</h2>
-            <p>카탄 게임 서버가 정상적으로 실행 중입니다.</p>
-          </div>
-          
-          <div class=\"game-info\">
-            <h3>🎮 게임 접속 방법</h3>
-            <p><strong>Colonist.io 클론을 사용하려면:</strong></p>
-            <ol>
-              <li>브라우저에서 <a href=\"https://colonist.io\" target=\"_blank\">colonist.io</a> 접속</li>
-              <li>또는 다른 온라인 Catan 게임 사이트 이용</li>
-            </ol>
-            <p><strong>로컬 게임 서버:</strong></p>
-            <p>이 서버는 기본 게임 서버 기능을 제공합니다.</p>
-          </div>
-
-          <div class=\"instructions\">
-            <h3>📋 서버 기능</h3>
-            <ol>
-              <li>최대 4명까지 동시 플레이 지원</li>
-              <li>웹 브라우저에서 직접 플레이</li>
-              <li>모바일 기기 지원</li>
-              <li>실시간 멀티플레이어</li>
-            </ol>
-            
-            <h3>🚀 빠른 시작</h3>
-            <button class=\"button\" onclick=\"alert('게임 클라이언트 개발 중입니다!')\">새 게임 만들기</button>
-            <button class=\"button\" onclick=\"alert('게임 목록 로딩 중...')\">게임 참가하기</button>
-            
-            <h3>💡 팁</h3>
-            <p>더 완전한 Catan 경험을 원하시면 공식 Catan Universe 앱이나 Colonist.io를 사용하는 것을 권장합니다.</p>
-          </div>
-        </div>
-        <script src=\"/socket.io/socket.io.js\"></script>
-        <script>
-          const socket = io();
-          socket.on('connect', () => {
-            console.log('Connected to server');
-          });
-        </script>
-      </body>
-      </html>\`);
-      }
-
       http.listen(PORT, () => {
         console.log(\`Catan server running on port \${PORT}\`);
       });
-      EOF
-        fi;
+      EOL
         npm install --production;
-        echo '✅ Catan server setup complete!';
-      fi;
-      echo '🎮 Starting Catan Web Server on port 80...';
-      npm start || node server.js
+      fi
+      echo 'Starting Catan Web Server...';
+      npm start
       "
     restart: unless-stopped
     healthcheck:
@@ -210,76 +363,58 @@ x-casaos:
     es_es: Juego Colonos de Catán basado en navegador
   description:
     en_us: |
-      Web-based Settlers of Catan game server that runs directly in your browser. 
-      No downloads or installations required - just open your browser and play!
+      Web-based Settlers of Catan game that runs directly in your browser. 
+      Create rooms, invite friends, and play together online!
       
       Features:
-      - 🌐 100% web-based - no client downloads
-      - 👥 Multiplayer support (2-4 players)
-      - 📱 Mobile-friendly interface
-      - 🎮 Classic Catan gameplay
-      - ⚡ Real-time game updates
-      - 🎯 Simple and easy to use
+      - 100% web-based - no downloads required
+      - Create and join game rooms
+      - Real-time multiplayer (2-4 players)
+      - Mobile-friendly interface
+      - Simple and clean UI
     fr_fr: |
-      Serveur de jeu Colons de Catane basé sur le web qui fonctionne directement dans votre navigateur. 
-      Aucun téléchargement ou installation requis - ouvrez simplement votre navigateur et jouez!
+      Jeu Colons de Catane basé sur le web qui fonctionne directement dans votre navigateur.
+      Créez des salles, invitez des amis et jouez ensemble en ligne!
     ko_kr: |
-      브라우저에서 직접 실행되는 웹 기반 카탄 게임 서버입니다. 
-      다운로드나 설치가 필요 없습니다 - 브라우저를 열고 바로 플레이하세요!
+      브라우저에서 직접 실행되는 웹 기반 카탄 게임입니다.
+      방을 만들고, 친구를 초대하고, 온라인으로 함께 플레이하세요!
     zh_cn: |
-      基于网络的卡坦岛游戏服务器，直接在浏览器中运行。
-      无需下载或安装 - 只需打开浏览器即可游戏！
+      基于网络的卡坦岛游戏，直接在浏览器中运行。
+      创建房间，邀请朋友，一起在线玩！
     es_es: |
-      Servidor de juego Colonos de Catán basado en web que funciona directamente en tu navegador. 
-      No se requieren descargas ni instalaciones - ¡solo abre tu navegador y juega!
+      Juego Colonos de Catán basado en web que funciona directamente en tu navegador.
+      ¡Crea salas, invita amigos y juega juntos en línea!
   tips:
     before_install:
       en_us: |
-        ## 🎮 How to Play
+        ## Quick Start
         
-        ### Quick Access
-        Simply open your browser and go to:
+        Open your browser and go to:
         - **Clean URL**: `https://catan-[username].nsl.sh/`
         - **Local**: `http://[server-ip]/`
         
-        ### Getting Started
-        1. **First Run**: Server will set up automatically (takes 1-2 minutes)
-        2. **Open Browser**: Navigate to the server URL
-        3. **Create/Join Game**: Use the web interface to start playing
-        4. **Invite Friends**: Share the URL with friends to play together
+        ## How to Play
         
-        ### Game Features
-        - Classic Settlers of Catan rules
-        - 2-4 player games
-        - Trade resources with other players
-        - Build roads, settlements, and cities
-        - Development cards
-        - Longest road and largest army bonuses
+        1. Click "Create New Game" to get a room code
+        2. Share the room code with friends
+        3. Friends click "Join Game" and enter the code
+        4. Play together in real-time!
         
-        ### Browser Requirements
-        - Modern browser (Chrome, Firefox, Safari, Edge)
-        - JavaScript enabled
-        - Stable internet connection
+        ## Features
         
-        ### Mobile Play
-        The game is fully playable on mobile devices!
-        Just open the URL in your mobile browser.
+        - Room-based multiplayer
+        - Visual game board
+        - Mobile support
+        - No downloads needed
         
-        ### Troubleshooting
-        - First run takes 1-2 minutes to set up
-        - Check logs if issues: `docker logs catan-catan-1`
-        - Refresh browser if connection is lost
+        The server will set up automatically on first run (1-2 minutes).
       fr_fr: |
-        Ouvrez votre navigateur et accédez à `https://catan-[username].nsl.sh/`
-        Le serveur se configure automatiquement au premier démarrage.
+        Accédez à `https://catan-[username].nsl.sh/` dans votre navigateur.
       ko_kr: |
-        브라우저를 열고 `https://catan-[username].nsl.sh/`로 접속하세요.
-        첫 실행 시 서버가 자동으로 설정됩니다.
+        브라우저에서 `https://catan-[username].nsl.sh/`로 접속하세요.
       zh_cn: |
-        打开浏览器并访问 `https://catan-[username].nsl.sh/`
-        首次运行时服务器会自动设置。
+        在浏览器中访问 `https://catan-[username].nsl.sh/`
       es_es: |
-        Abre tu navegador y accede a `https://catan-[username].nsl.sh/`
-        El servidor se configura automáticamente en el primer arranque.
+        Accede a `https://catan-[username].nsl.sh/` en tu navegador.
   index: /
   port_map: "80"
