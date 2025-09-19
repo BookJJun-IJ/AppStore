@@ -1,7 +1,7 @@
 name: tincatan
 services:
   tincatan:
-    image: bios/docker-tincisnotcatan:latest
+    image: maven:3.8-openjdk-8
     user: $PUID:$PGID
     deploy:
       resources:
@@ -14,8 +14,26 @@ services:
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
+      MAVEN_OPTS: "-Xmx1024m"
     volumes:
-      - /DATA/AppData/tincatan/data:/app/data
+      - /DATA/AppData/tincatan/app:/app
+      - /DATA/AppData/tincatan/m2:/root/.m2
+    working_dir: /app
+    command: >
+      sh -c "
+      if [ ! -f /app/pom.xml ]; then
+        echo 'Cloning TINC repository...';
+        apt-get update && apt-get install -y git;
+        git clone https://github.com/seansegal/tincisnotcatan.git /tmp/tinc;
+        cp -r /tmp/tinc/* /app/;
+      fi;
+      echo 'Building with Maven...';
+      mvn clean compile;
+      echo 'Generating classpath...';
+      mvn dependency:build-classpath -Dmdep.outputFile=.mvn-classpath;
+      echo 'Starting TINC server...';
+      java -cp \"target/classes:\$(cat .mvn-classpath)\" edu.brown.cs.catan.Main 4567
+      "
     restart: unless-stopped
 
 x-casaos:
@@ -27,12 +45,16 @@ x-casaos:
   webui_port: 4567
   category: Games
   author: CasaOS Team
-  developer: Sean Segal & BIOS
+  developer: Sean Segal & Contributors
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/TincCatan/icon.png
   screenshot_1: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/TincCatan/screenshot-1.png
   screenshot_2: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/TincCatan/screenshot-2.png
   screenshot_3: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/TincCatan/screenshot-3.png
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/TincCatan/thumbnail.png
+  pre-install-cmd: |
+    mkdir -p /DATA/AppData/tincatan/app &&
+    mkdir -p /DATA/AppData/tincatan/m2 &&
+    chown -R $PUID:$PGID /DATA/AppData/tincatan
   title:
     en_us: TINC - Settlers of Catan
   tagline:
@@ -106,6 +128,16 @@ x-casaos:
         - **Clean URL**: `https://4567-tincatan-[username].nsl.sh/`
         - **Local Access**: `http://[server-ip]:4567/`
         
+        ## ⚠️ First Run Setup
+        
+        **IMPORTANT**: The first run will take 5-10 minutes to:
+        1. Download the source code
+        2. Download Maven dependencies
+        3. Compile the Java project
+        4. Start the server
+        
+        Subsequent starts will be much faster (under 1 minute).
+        
         ## 🚀 Quick Start Guide
         
         1. **Enter Username**: Type your name on the home screen
@@ -142,29 +174,28 @@ x-casaos:
         
         ## 🔧 Troubleshooting
         
-        If you experience issues:
-        1. Refresh the browser page
-        2. Clear browser cache and cookies
-        3. Check server logs: `docker logs tincatan-tincatan-1`
-        4. Ensure JavaScript is enabled
-        5. Try a different browser
+        If you see Maven errors:
+        1. Wait for the full build to complete (5-10 minutes first time)
+        2. Check logs: `docker logs tincatan-tincatan-1`
+        3. If build fails, try restarting: `docker-compose restart`
+        4. Maven dependencies are cached in `/DATA/AppData/tincatan/m2`
         
         ## 💡 Pro Tips
         
+        - First run is slow due to Maven downloads - be patient!
+        - Dependencies are cached, so restarts are fast
         - Use Chrome for best performance
-        - Create private rooms with room codes
-        - Practice against AI before playing with friends
-        - The chat feature helps coordinate trades
+        - The game saves state between sessions
       fr_fr: |
         Accédez au jeu: `https://4567-tincatan-[username].nsl.sh/`
-        Entrez votre nom d'utilisateur et créez ou rejoignez une partie.
+        Premier démarrage: 5-10 minutes pour compiler avec Maven.
       ko_kr: |
         게임 접속: `https://4567-tincatan-[username].nsl.sh/`
-        사용자 이름을 입력하고 게임을 생성하거나 참가하세요.
+        첫 실행: Maven 컴파일에 5-10분 소요.
       zh_cn: |
         访问游戏：`https://4567-tincatan-[username].nsl.sh/`
-        输入用户名并创建或加入游戏。
+        首次运行：Maven编译需要5-10分钟。
       es_es: |
         Accede al juego: `https://4567-tincatan-[username].nsl.sh/`
-        Ingresa tu nombre de usuario y crea o únete a un juego.
+        Primera ejecución: 5-10 minutos para compilar con Maven.
   index: /home
