@@ -1,25 +1,21 @@
-name: tinc
+name: tincatan
 services:
-  tinc:
-    build:
-      context: /DATA/AppData/tinc/build
-      dockerfile: Dockerfile
-    image: tinc-catan:latest
+  tincatan:
+    image: bios/docker-tincisnotcatan:latest
     user: $PUID:$PGID
     deploy:
       resources:
         limits:
-          memory: 512M
-          cpus: '0.5'
+          memory: 1024M
+          cpus: '1.0'
     expose:
       - 4567
     environment:
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
-      PORT: 4567
     volumes:
-      - /DATA/AppData/tinc/data:/app/data
+      - /DATA/AppData/tincatan/data:/app/data
     restart: unless-stopped
 
 x-casaos:
@@ -27,117 +23,148 @@ x-casaos:
     - amd64
     - arm64
     - arm
-  main: tinc
+  main: tincatan
   webui_port: 4567
   category: Games
   author: CasaOS Team
-  developer: Sean Segal & Contributors
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/TINC/icon.png
-  screenshot_1: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/TINC/screenshot-1.png
-  screenshot_2: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/TINC/screenshot-2.png
-  screenshot_3: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/TINC/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/TINC/thumbnail.png
-  pre-install-cmd: |
-    mkdir -p /DATA/AppData/tinc/build &&
-    mkdir -p /DATA/AppData/tinc/data &&
-    cd /DATA/AppData/tinc/build &&
-    if [ ! -f Dockerfile ]; then
-      wget -q https://raw.githubusercontent.com/seansegal/tincisnotcatan/master/Dockerfile -O Dockerfile;
-      git clone https://github.com/seansegal/tincisnotcatan.git . 2>/dev/null || true;
-    fi &&
-    chown -R $PUID:$PGID /DATA/AppData/tinc
+  developer: Sean Segal & BIOS
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/TincCatan/icon.png
+  screenshot_1: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/TincCatan/screenshot-1.png
+  screenshot_2: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/TincCatan/screenshot-2.png
+  screenshot_3: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/TincCatan/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/TincCatan/thumbnail.png
   title:
-    en_us: TINC - Web Catan
+    en_us: TINC - Settlers of Catan
   tagline:
-    en_us: Browser-based Settlers of Catan with advanced features
-    fr_fr: Colons de Catane en ligne avec fonctionnalités avancées
-    ko_kr: 고급 기능이 있는 브라우저 기반 카탄
-    zh_cn: 具有高级功能的基于浏览器的卡坦岛
-    es_es: Colonos de Catán basado en navegador con características avanzadas
+    en_us: Web-based Settlers of Catan game with advanced features
+    fr_fr: Jeu Colons de Catane en ligne avec fonctionnalités avancées
+    ko_kr: 고급 기능이 포함된 웹 기반 카탄 게임
+    zh_cn: 具有高级功能的基于网络的卡坦岛游戏
+    es_es: Juego Colonos de Catán basado en web con características avanzadas
   description:
     en_us: |
-      TINC (This Is Not Catan) is a fully featured web-based implementation 
-      of Settlers of Catan. Play directly in your browser with friends!
+      TINC (This Is Not Catan) is a full-featured web implementation of Settlers of Catan.
+      Play directly in your browser with no downloads required!
       
       Features:
-      - 100% browser-based - no downloads
-      - Complete Catan gameplay
-      - Advanced economic options
-      - 2-4 player support
-      - Real-time multiplayer
-      - Mobile friendly
+      - 🌐 100% browser-based gameplay
+      - 👥 2-4 player multiplayer support
+      - 🎮 Complete Catan game mechanics
+      - 💰 Advanced economic features (optional)
+      - 📱 Mobile-friendly interface
+      - 🎯 AI bots for practice games
+      - ⚡ Real-time gameplay with WebSockets
       
-      The game includes all standard Catan features plus optional 
-      advanced economic mechanics for experienced players.
+      Game Modes:
+      - Standard Catan (10 victory points)
+      - Custom victory point goals
+      - Advanced economy with decimal resources
+      - Dynamic exchange rates
     fr_fr: |
-      TINC est une implémentation web complète de Colons de Catane.
-      Jouez directement dans votre navigateur avec des amis!
+      TINC (This Is Not Catan) est une implémentation web complète de Colons de Catane.
+      Jouez directement dans votre navigateur sans téléchargement!
+      
+      Caractéristiques:
+      - Gameplay 100% basé sur navigateur
+      - Support multijoueur 2-4 joueurs
+      - Mécaniques de jeu Catan complètes
+      - Fonctionnalités économiques avancées (optionnel)
     ko_kr: |
-      TINC는 카탄의 완전한 웹 기반 구현입니다.
-      브라우저에서 친구들과 직접 플레이하세요!
+      TINC (This Is Not Catan)는 카탄의 완전한 웹 구현입니다.
+      다운로드 없이 브라우저에서 바로 플레이하세요!
+      
+      특징:
+      - 100% 브라우저 기반 게임플레이
+      - 2-4명 멀티플레이어 지원
+      - 완전한 카탄 게임 메커니즘
+      - 고급 경제 기능 (선택 사항)
+      - 모바일 친화적 인터페이스
     zh_cn: |
-      TINC是卡坦岛的完整网络实现。
-      直接在浏览器中与朋友一起玩！
+      TINC（This Is Not Catan）是卡坦岛的完整网络实现。
+      无需下载，直接在浏览器中游戏！
+      
+      特点：
+      - 100%基于浏览器的游戏
+      - 2-4人多人游戏支持
+      - 完整的卡坦游戏机制
+      - 高级经济功能（可选）
     es_es: |
-      TINC es una implementación web completa de Colonos de Catán.
-      ¡Juega directamente en tu navegador con amigos!
+      TINC (This Is Not Catan) es una implementación web completa de Colonos de Catán.
+      ¡Juega directamente en tu navegador sin descargas!
+      
+      Características:
+      - Juego 100% basado en navegador
+      - Soporte multijugador para 2-4 jugadores
+      - Mecánicas completas del juego Catán
+      - Características económicas avanzadas (opcional)
   tips:
     before_install:
       en_us: |
-        ## Quick Start
+        ## 🎮 How to Access
         
-        After installation, access the game at:
-        - **NSL URL**: `https://4567-tinc-[username].nsl.sh/`
-        - **Local**: `http://[server-ip]:4567/`
+        Open your browser and navigate to:
+        - **Clean URL**: `https://4567-tincatan-[username].nsl.sh/`
+        - **Local Access**: `http://[server-ip]:4567/`
         
-        ## How to Play
+        ## 🚀 Quick Start Guide
         
-        1. Enter your username on the home screen
-        2. Create a new game or join existing
-        3. Wait for other players (2-4 total)
-        4. Game starts automatically when ready
+        1. **Enter Username**: Type your name on the home screen
+        2. **Create or Join**: 
+           - Click "Create Game" for a new room
+           - Click "Join Game" to enter an existing room
+        3. **Game Setup**:
+           - Choose number of players (2-4)
+           - Select victory points (default: 10)
+           - Optional: Enable advanced economic features
+        4. **Start Playing**: Game begins when all players are ready
         
-        ## Game Features
+        ## 🎯 Game Features
         
-        **Standard Mode:**
-        - Classic Catan rules
-        - 10 victory points to win
-        - Standard resource trading
+        ### Standard Game
+        - Classic Settlers of Catan rules
+        - Build settlements, cities, and roads
+        - Trade resources with players and bank
+        - Development cards (Knight, Victory Point, etc.)
+        - Longest Road and Largest Army bonuses
+        - Robber mechanics on rolling 7
         
-        **Advanced Economic Mode (Optional):**
+        ### Advanced Economic Mode
         - Decimal resource values
         - Dynamic exchange rates
-        - Enhanced trading mechanics
+        - Market-based trading
+        - Enhanced strategic depth
         
-        ## First Run
+        ## 📱 Device Support
         
-        The server will build the Docker image on first run.
-        This takes about 2-3 minutes. Subsequent starts are instant.
+        - **Desktop**: Chrome, Firefox, Safari, Edge
+        - **Mobile**: iOS Safari, Chrome Mobile
+        - **Tablet**: Full touch support
         
-        ## Browser Support
+        ## 🔧 Troubleshooting
         
-        Works best with:
-        - Chrome/Edge 90+
-        - Firefox 88+
-        - Safari 14+
-        - Mobile browsers supported
+        If you experience issues:
+        1. Refresh the browser page
+        2. Clear browser cache and cookies
+        3. Check server logs: `docker logs tincatan-tincatan-1`
+        4. Ensure JavaScript is enabled
+        5. Try a different browser
         
-        ## Troubleshooting
+        ## 💡 Pro Tips
         
-        If the game doesn't load:
-        1. Wait for Docker build to complete (first run only)
-        2. Check logs: `docker logs tinc-tinc-1`
-        3. Ensure port 4567 is not blocked
+        - Use Chrome for best performance
+        - Create private rooms with room codes
+        - Practice against AI before playing with friends
+        - The chat feature helps coordinate trades
       fr_fr: |
-        Accédez au jeu à `https://4567-tinc-[username].nsl.sh/`
-        Premier démarrage : 2-3 minutes pour construire l'image.
+        Accédez au jeu: `https://4567-tincatan-[username].nsl.sh/`
+        Entrez votre nom d'utilisateur et créez ou rejoignez une partie.
       ko_kr: |
-        게임 접속: `https://4567-tinc-[username].nsl.sh/`
-        첫 실행: 이미지 빌드에 2-3분 소요
+        게임 접속: `https://4567-tincatan-[username].nsl.sh/`
+        사용자 이름을 입력하고 게임을 생성하거나 참가하세요.
       zh_cn: |
-        访问游戏：`https://4567-tinc-[username].nsl.sh/`
-        首次运行：构建镜像需要2-3分钟
+        访问游戏：`https://4567-tincatan-[username].nsl.sh/`
+        输入用户名并创建或加入游戏。
       es_es: |
-        Accede al juego en `https://4567-tinc-[username].nsl.sh/`
-        Primera ejecución: 2-3 minutos para construir la imagen.
+        Accede al juego: `https://4567-tincatan-[username].nsl.sh/`
+        Ingresa tu nombre de usuario y crea o únete a un juego.
   index: /home
