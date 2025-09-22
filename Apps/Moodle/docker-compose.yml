@@ -4,7 +4,6 @@ services:
   moodle:
     image: bitnami/moodle:4.4
     container_name: moodle
-    user: $PUID:$PGID
     environment:
       - PUID=$PUID
       - PGID=$PGID
@@ -50,8 +49,6 @@ services:
       - MARIADB_ROOT_PASSWORD=$default_pwd
       - MARIADB_CHARACTER_SET=utf8mb4
       - MARIADB_COLLATE=utf8mb4_unicode_ci
-      - PUID=$PUID
-      - PGID=$PGID
     volumes:
       - /DATA/AppData/$AppID/mariadb:/bitnami/mariadb
     ports:
@@ -272,5 +269,6 @@ x-casaos:
   pre-install-cmd: |
     docker run --rm -v /DATA/AppData/$AppID:/data alpine:latest sh -c "
     mkdir -p /data/moodle /data/moodledata /data/mariadb &&
-    chown -R $PUID:$PGID /data
+    chmod 755 /data/moodle /data/moodledata /data/mariadb &&
+    chown -R 1001:1001 /data
     "
