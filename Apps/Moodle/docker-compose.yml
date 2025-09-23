@@ -5,8 +5,6 @@ services:
     image: bitnami/moodle:4.4
     container_name: moodle
     environment:
-      - PUID=$PUID
-      - PGID=$PGID
       - TZ=$TZ
       - MOODLE_DATABASE_HOST=mariadb
       - MOODLE_DATABASE_PORT_NUMBER=3306
@@ -51,8 +49,6 @@ services:
       - MARIADB_COLLATE=utf8mb4_unicode_ci
     volumes:
       - /DATA/AppData/$AppID/mariadb:/bitnami/mariadb
-    ports:
-      - "3306:3306"
     restart: unless-stopped
     deploy:
       resources:
