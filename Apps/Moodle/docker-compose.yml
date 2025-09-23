@@ -1,42 +1,6 @@
 name: moodle
 
 services:
-  moodle:
-    image: bitnami/moodle:4.4
-    container_name: moodle
-    environment:
-      - TZ=$TZ
-      - MOODLE_DATABASE_HOST=mariadb
-      - MOODLE_DATABASE_PORT_NUMBER=3306
-      - MOODLE_DATABASE_USER=bn_moodle
-      - MOODLE_DATABASE_NAME=bitnami_moodle
-      - MOODLE_DATABASE_PASSWORD=$default_pwd
-      - MOODLE_USERNAME=admin
-      - MOODLE_PASSWORD=$default_pwd
-      - MOODLE_EMAIL=admin@$domain
-      - MOODLE_SITE_NAME=CasaOS Moodle LMS
-      - MOODLE_HOST=https://moodle-$domain
-      - MOODLE_REVERSEPROXY=yes
-      - MOODLE_SSLPROXY=yes
-    volumes:
-      - /DATA/AppData/$AppID/moodle:/bitnami/moodle
-      - /DATA/AppData/$AppID/moodledata:/bitnami/moodledata
-      - /DATA/Documents:/bitnami/moodle/shared/documents
-      - /DATA/Gallery:/bitnami/moodle/shared/gallery
-    expose:
-      - 8080
-    depends_on:
-      - mariadb
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 1.5G
-          cpus: '1.0'
-        reservations:
-          memory: 768M
-          cpus: '0.3'
-
   mariadb:
     image: bitnami/mariadb:11.4
     container_name: moodle-mariadb
@@ -45,19 +9,39 @@ services:
       - MARIADB_PASSWORD=$default_pwd
       - MARIADB_DATABASE=bitnami_moodle
       - MARIADB_ROOT_PASSWORD=$default_pwd
-      - MARIADB_CHARACTER_SET=utf8mb4
-      - MARIADB_COLLATE=utf8mb4_unicode_ci
     volumes:
       - /DATA/AppData/$AppID/mariadb:/bitnami/mariadb
     restart: unless-stopped
     deploy:
       resources:
         limits:
+          memory: 512M
+          cpus: '0.5'
+
+  moodle:
+    image: bitnami/moodle:4.4
+    container_name: moodle
+    environment:
+      - TZ=$TZ
+      - MOODLE_DATABASE_HOST=mariadb
+      - MOODLE_DATABASE_USER=bn_moodle
+      - MOODLE_DATABASE_NAME=bitnami_moodle
+      - MOODLE_DATABASE_PASSWORD=$default_pwd
+      - MOODLE_USERNAME=admin
+      - MOODLE_PASSWORD=$default_pwd
+      - MOODLE_EMAIL=admin@example.com
+    volumes:
+      - /DATA/AppData/$AppID/moodledata:/bitnami/moodledata
+    expose:
+      - 8080
+    depends_on:
+      - mariadb
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
           memory: 1G
           cpus: '0.8'
-        reservations:
-          memory: 512M
-          cpus: '0.2'
 
 x-casaos:
   architectures:
@@ -70,201 +54,19 @@ x-casaos:
   developer: Moodle HQ
   title:
     en_us: Moodle
-    ko_kr: 무들
-    fr_fr: Moodle
-    es_es: Moodle
-    zh_cn: Moodle
   tagline:
     en_us: Open Source Learning Management System
-    ko_kr: 오픈소스 학습 관리 시스템
-    fr_fr: Système de gestion de l'apprentissage open source
-    es_es: Sistema de gestión de aprendizaje de código abierto
-    zh_cn: 开源学习管理系统
   description:
     en_us: |
-      Moodle is the world's most popular open source Learning Management System (LMS). It provides educators with powerful tools to create personalized learning experiences and is used by universities, schools, and corporations worldwide.
-
-      **Key Features:**
-      - **Course Management**: Create and organize courses with rich content
-      - **User Management**: Student enrollment, groups, and role-based permissions  
-      - **Assessment Tools**: Quizzes, assignments, grading, and feedback
-      - **Communication**: Forums, messaging, announcements, and wikis
-      - **Mobile Learning**: Responsive design and dedicated mobile app
-      - **Analytics**: Progress tracking and detailed reporting
-      - **Extensible**: 1000+ plugins and themes available
-      - **Standards Compliant**: SCORM, LTI, and accessibility standards
-
-      **Perfect for:**
-      - Educational institutions (K-12, universities)
-      - Corporate training and development
-      - Professional certification programs  
-      - Community learning platforms
-    ko_kr: |
-      무들은 세계에서 가장 인기있는 오픈소스 학습 관리 시스템(LMS)입니다. 교육자들에게 개인화된 학습 경험을 만들 수 있는 강력한 도구를 제공하며, 전 세계 대학, 학교, 기업에서 사용되고 있습니다.
-
-      **주요 기능:**
-      - **강좌 관리**: 풍부한 콘텐츠로 강좌 생성 및 구성
-      - **사용자 관리**: 학생 등록, 그룹, 역할 기반 권한
-      - **평가 도구**: 퀴즈, 과제, 채점, 피드백
-      - **소통 도구**: 포럼, 메시징, 공지사항, 위키
-      - **모바일 학습**: 반응형 디자인 및 전용 모바일 앱
-      - **분석**: 진도 추적 및 상세한 보고서
-      - **확장 가능**: 1000개 이상의 플러그인과 테마
-      - **표준 준수**: SCORM, LTI, 접근성 표준
-
-      **적합한 용도:**
-      - 교육 기관 (초중고, 대학)
-      - 기업 교육 및 개발
-      - 전문 자격증 프로그램
-      - 커뮤니티 학습 플랫폼
-    fr_fr: |
-      Moodle est le système de gestion de l'apprentissage (LMS) open source le plus populaire au monde. Il fournit aux éducateurs des outils puissants pour créer des expériences d'apprentissage personnalisées et est utilisé par les universités, les écoles et les entreprises du monde entier.
-
-      **Fonctionnalités clés:**
-      - **Gestion des cours**: Créer et organiser des cours avec du contenu riche
-      - **Gestion des utilisateurs**: Inscription des étudiants, groupes et permissions basées sur les rôles
-      - **Outils d'évaluation**: Quiz, devoirs, notation et commentaires
-      - **Communication**: Forums, messagerie, annonces et wikis
-      - **Apprentissage mobile**: Design responsive et application mobile dédiée
-      - **Analyse**: Suivi des progrès et rapports détaillés
-      - **Extensible**: Plus de 1000 plugins et thèmes disponibles
-      - **Conforme aux normes**: SCORM, LTI et normes d'accessibilité
-    es_es: |
-      Moodle es el Sistema de Gestión de Aprendizaje (LMS) de código abierto más popular del mundo. Proporciona a los educadores herramientas poderosas para crear experiencias de aprendizaje personalizadas y es utilizado por universidades, escuelas y corporaciones en todo el mundo.
-
-      **Características principales:**
-      - **Gestión de cursos**: Crear y organizar cursos con contenido rico
-      - **Gestión de usuarios**: Inscripción de estudiantes, grupos y permisos basados en roles
-      - **Herramientas de evaluación**: Cuestionarios, tareas, calificación y retroalimentación
-      - **Comunicación**: Foros, mensajería, anuncios y wikis
-      - **Aprendizaje móvil**: Diseño responsivo y aplicación móvil dedicada
-      - **Análisis**: Seguimiento del progreso e informes detallados
-      - **Extensible**: Más de 1000 plugins y temas disponibles
-      - **Cumplimiento de estándares**: SCORM, LTI y estándares de accesibilidad
-    zh_cn: |
-      Moodle是世界上最受欢迎的开源学习管理系统(LMS)。它为教育工作者提供强大的工具来创建个性化的学习体验，被全世界的大学、学校和企业广泛使用。
-
-      **主要功能：**
-      - **课程管理**：创建和组织丰富内容的课程
-      - **用户管理**：学生注册、分组和基于角色的权限
-      - **评估工具**：测验、作业、评分和反馈
-      - **交流工具**：论坛、消息、公告和Wiki
-      - **移动学习**：响应式设计和专用移动应用
-      - **分析功能**：进度跟踪和详细报告
-      - **可扩展性**：1000多个插件和主题可用
-      - **标准合规**：SCORM、LTI和可访问性标准
+      Moodle is the world's most popular open source Learning Management System (LMS). 
+      Perfect for schools, universities, and corporate training.
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Moodle/icon.png
   screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Moodle/screenshot-1.png
-  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Moodle/thumbnail.png
   tips:
     before_install:
       en_us: |
-        **Default Administrator Account**
+        Default Account
         | Username | Password |
         | -------- | -------- |
         | `admin`  | `$default_pwd` |
-
-        **Features:**
-        - Complete Learning Management System
-        - Course creation and content management
-        - Student enrollment and progress tracking
-        - Quizzes, assignments, and grading tools
-        - Forums, messaging, and collaboration
-        - Mobile-responsive design
-        - Extensive plugin ecosystem
-        - Multi-language support
-
-        **Getting Started:**
-        1. Log in with admin credentials
-        2. Configure site settings and appearance  
-        3. Create courses and enroll students
-        4. Set up user roles and permissions
-        5. Add content, activities, and assessments
-        6. Explore plugins for extended functionality
-
-        **System Requirements:**
-        - 1.5GB RAM minimum for production use
-        - MariaDB database included
-        - Supports file uploads and media content
-        - HTTPS enabled by default via NSL router
-      ko_kr: |
-        **기본 관리자 계정**
-        | 사용자명 | 비밀번호 |
-        | ------- | ------- |
-        | `admin` | `$default_pwd` |
-
-        **기능:**
-        - 완전한 학습 관리 시스템
-        - 강좌 생성 및 콘텐츠 관리
-        - 학생 등록 및 진도 추적
-        - 퀴즈, 과제, 채점 도구
-        - 포럼, 메시징, 협업 도구
-        - 모바일 반응형 디자인
-        - 광범위한 플러그인 생태계
-        - 다국어 지원
-
-        **시작하기:**
-        1. 관리자 자격증명으로 로그인
-        2. 사이트 설정 및 모양 구성
-        3. 강좌 생성 및 학생 등록
-        4. 사용자 역할 및 권한 설정
-        5. 콘텐츠, 활동, 평가 추가
-        6. 확장 기능을 위한 플러그인 탐색
-
-        **시스템 요구사항:**
-        - 프로덕션 사용을 위한 최소 1.5GB RAM
-        - MariaDB 데이터베이스 포함
-        - 파일 업로드 및 미디어 콘텐츠 지원
-        - NSL 라우터를 통한 기본 HTTPS 활성화
-      fr_fr: |
-        **Compte Administrateur par Défaut**
-        | Nom d'utilisateur | Mot de passe |
-        | ----------------- | ------------ |
-        | `admin`           | `$default_pwd` |
-
-        **Fonctionnalités:**
-        - Système complet de gestion de l'apprentissage
-        - Création de cours et gestion de contenu
-        - Inscription d'étudiants et suivi des progrès
-        - Quiz, devoirs et outils de notation
-        - Forums, messagerie et outils de collaboration
-        - Design responsive pour mobiles
-        - Écosystème étendu de plugins
-        - Support multilingue
-      es_es: |
-        **Cuenta de Administrador por Defecto**
-        | Nombre de usuario | Contraseña |
-        | ----------------- | ---------- |
-        | `admin`           | `$default_pwd` |
-
-        **Características:**
-        - Sistema completo de gestión de aprendizaje
-        - Creación de cursos y gestión de contenido
-        - Inscripción de estudiantes y seguimiento del progreso
-        - Cuestionarios, tareas y herramientas de calificación
-        - Foros, mensajería y herramientas de colaboración
-        - Diseño responsivo para móviles
-        - Amplio ecosistema de plugins
-        - Soporte multiidioma
-      zh_cn: |
-        **默认管理员账户**
-        | 用户名 | 密码 |
-        | ------ | ---- |
-        | `admin` | `$default_pwd` |
-
-        **功能特性:**
-        - 完整的学习管理系统
-        - 课程创建和内容管理
-        - 学生注册和进度跟踪
-        - 测验、作业和评分工具
-        - 论坛、消息和协作工具
-        - 移动响应式设计
-        - 丰富的插件生态系统
-        - 多语言支持
   index: /
-  pre-install-cmd: |
-    docker run --rm -v /DATA/AppData/$AppID:/data alpine:latest sh -c "
-    mkdir -p /data/moodle /data/moodledata /data/mariadb &&
-    chmod 755 /data/moodle /data/moodledata /data/mariadb &&
-    chown -R 1001:1001 /data
-    "
