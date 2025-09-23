@@ -62,28 +62,12 @@ x-casaos:
       **개인 미디어 설정 필요:** Plex를 계정에 연결하고 개인 파일을 스트리밍하려면 설치 중에 **Plex 클레임 토큰**을 입력해야 합니다. 단계별 가이드를 따르세요: 👉Yundera에서 Plex 설정하는 방법 (https://www.yundera.com/blog/tutorial-1/how-to-setup-plex-17)
       💡 계정이나 구독이 필요 없는 완전히 무료인 오픈소스 대안으로는 **Jellyfin**을 사용해보세요.
       ℹ️ Yundera는 Plex와 관련이 없으며 해당 서비스나 가격을 통제하지 않습니다.
-    fr_fr: |
-      **Diffusez films, séries et médias personnels partout.**
-      Plex est un serveur multimédia raffiné qui vous permet d'organiser et diffuser vos films, séries TV, musiques et photos sur tous vos appareils — smart TV, téléphones et tablettes inclus. Il propose également un catalogue de contenu gratuit financé par la publicité comme la TV en direct et films à la demande.
-      ⚠️ **Note :** Plex n'est pas entièrement gratuit. La diffusion de vos médias personnels nécessite désormais un abonnement Plex Pass ou un déblocage unique de l'application. L'usage gratuit est limité au contenu publicitaire de Plex.
-      **Fonctionnalités clés :** • Regarder TV en direct et films gratuits (avec pub) • Héberger et diffuser votre collection personnelle (Plex Pass requis) • Accès depuis n'importe quel appareil, partout • Métadonnées et sous-titres automatiques • Partager votre bibliothèque avec amis et famille
-      **Configuration requise pour médias personnels :** Pour connecter Plex à votre compte et diffuser vos fichiers, vous devez saisir un **token de réclamation Plex** durant l'installation. Suivez notre guide étape par étape : 👉Comment configurer Plex sur Yundera (https://www.yundera.com/blog/tutorial-1/how-to-setup-plex-17)
-      💡 Pour une alternative totalement gratuite et open-source sans compte ni abonnement, essayez **Jellyfin**.
-      ℹ️ Yundera n'est pas affilié à Plex et ne contrôle pas leurs services ou tarifs.
-    es_es: |
-      **Reproduce películas, series y medios personales desde cualquier lugar.**
-      Plex es un servidor multimedia elegante que te permite organizar y reproducir tus películas, series de TV, música y fotos en todos los dispositivos — incluyendo smart TVs, teléfonos y tablets. También ofrece un catálogo de contenido gratuito con anuncios como TV en vivo y películas bajo demanda.
-      ⚠️ **Nota:** Plex no es completamente gratis. La reproducción de medios personales ahora requiere una suscripción Plex Pass o desbloqueo único de la app. El uso gratuito está limitado al contenido con anuncios de Plex.
-      **Características principales:** • Ver TV en vivo y películas gratis (con anuncios) • Alojar y reproducir tu colección personal (requiere Plex Pass) • Acceso desde cualquier dispositivo, en cualquier lugar • Metadatos y subtítulos automáticos • Compartir tu biblioteca con amigos y familia
-      **Configuración requerida para medios personales:** Para conectar Plex a tu cuenta y reproducir tus archivos, debes ingresar un **token de reclamación Plex** durante la instalación. Sigue nuestra guía paso a paso: 👉Cómo configurar Plex en Yundera (https://www.yundera.com/blog/tutorial-1/how-to-setup-plex-17)
-      💡 Para una alternativa completamente gratuita y de código abierto sin cuenta o suscripción, prueba **Jellyfin**.
-      ℹ️ Yundera no está afiliado con Plex y no controla sus servicios o precios.
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Plex/icon.png
+  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Plex/icon.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Plex/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Plex/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Plex/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Plex/thumbnail.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Plex/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Plex/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Plex/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Plex/thumbnail.png
   index: /web
   tagline:
     en_us: Your personal streaming service for all your media
@@ -102,8 +86,16 @@ x-casaos:
   is_uncontrolled: false
   webui_port: 32400
   pre_install_cmd: |
-    mkdir -p /DATA/AppData/$AppID/config /DATA/AppData/$AppID/transcode &&
-    chown -R $PUID:$PGID /DATA/AppData/$AppID/
+    mkdir -p "/DATA/AppData/$AppID/config/Library/Application Support/Plex Media Server" &&
+    mkdir -p "/DATA/AppData/$AppID/config/Library/Application Support/Plex Media Server/Cache" &&
+    mkdir -p "/DATA/AppData/$AppID/config/Library/Application Support/Plex Media Server/Logs" &&
+    mkdir -p "/DATA/AppData/$AppID/config/Library/Application Support/Plex Media Server/Media" &&
+    mkdir -p "/DATA/AppData/$AppID/config/Library/Application Support/Plex Media Server/Metadata" &&
+    mkdir -p "/DATA/AppData/$AppID/config/Library/Application Support/Plex Media Server/Plug-ins" &&
+    mkdir -p "/DATA/AppData/$AppID/config/Library/Application Support/Plex Media Server/Plug-in Support" &&
+    mkdir -p /DATA/AppData/$AppID/transcode &&
+    chown -R $PUID:$PGID /DATA/AppData/$AppID/ &&
+    chmod -R 755 /DATA/AppData/$AppID/
   tips:
     before_install:
       en_us: |
