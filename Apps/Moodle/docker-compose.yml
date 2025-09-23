@@ -70,3 +70,8 @@ x-casaos:
         | -------- | -------- |
         | `admin`  | `$default_pwd` |
   index: /
+  pre-install-cmd: |
+    docker run --rm -v /DATA/AppData/$AppID:/data alpine:latest sh -c "
+    mkdir -p /data/mariadb/data /data/moodledata &&
+    chown -R 1001:0 /data
+    "
