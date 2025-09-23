@@ -8,16 +8,6 @@ services:
     network_mode: host
     expose:
       - 32400
-    #ports:
-    # Additional ports can be uncommented if needed for specific Plex features
-    #  - "3005:3005/tcp"      # Plex Home Theater via Plex Companion
-    #  - "8324:8324/tcp"      # Plex for Roku via Plex Companion  
-    #  - "32469:32469/tcp"    # Plex DLNA Server
-    #  - "1900:1900/udp"      # Plex DLNA Server
-    #  - "32410:32410/udp"    # GDM network discovery
-    #  - "32412:32412/udp"    # GDM network discovery
-    #  - "32413:32413/udp"    # GDM network discovery
-    #  - "32414:32414/udp"    # GDM network discovery
     volumes:
       - /DATA/AppData/$AppID/config:/config
       - /DATA/AppData/$AppID/transcode:/transcode
@@ -27,17 +17,18 @@ services:
       - /DATA/Downloads:/data/downloads
     user: $PUID:$PGID
     environment:
-      PGID: $PGID                    # Group ID for file permissions
-      PUID: $PUID                    # User ID for file permissions
-      TZ: $TZ                        # Timezone setting
-      PLEX_CLAIM: ""                   # Plex claim token for automatic setup (optional)
+      PGID: $PGID
+      PUID: $PUID
+      TZ: $TZ
+      PLEX_CLAIM: ""
+      VERSION: docker
     devices:
-      - /dev/dri:/dev/dri            # Hardware acceleration for transcoding
-    cpu_shares: 100
+      - /dev/dri:/dev/dri
     deploy:
       resources:
         limits:
           memory: 1G
+          cpus: '0.5'
 
 x-casaos:
   architectures:
@@ -71,56 +62,97 @@ x-casaos:
       **개인 미디어 설정 필요:** Plex를 계정에 연결하고 개인 파일을 스트리밍하려면 설치 중에 **Plex 클레임 토큰**을 입력해야 합니다. 단계별 가이드를 따르세요: 👉Yundera에서 Plex 설정하는 방법 (https://www.yundera.com/blog/tutorial-1/how-to-setup-plex-17)
       💡 계정이나 구독이 필요 없는 완전히 무료인 오픈소스 대안으로는 **Jellyfin**을 사용해보세요.
       ℹ️ Yundera는 Plex와 관련이 없으며 해당 서비스나 가격을 통제하지 않습니다.
-  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Plex/icon.png
+    fr_fr: |
+      **Diffusez films, séries et médias personnels partout.**
+      Plex est un serveur multimédia raffiné qui vous permet d'organiser et diffuser vos films, séries TV, musiques et photos sur tous vos appareils — smart TV, téléphones et tablettes inclus. Il propose également un catalogue de contenu gratuit financé par la publicité comme la TV en direct et films à la demande.
+      ⚠️ **Note :** Plex n'est pas entièrement gratuit. La diffusion de vos médias personnels nécessite désormais un abonnement Plex Pass ou un déblocage unique de l'application. L'usage gratuit est limité au contenu publicitaire de Plex.
+      **Fonctionnalités clés :** • Regarder TV en direct et films gratuits (avec pub) • Héberger et diffuser votre collection personnelle (Plex Pass requis) • Accès depuis n'importe quel appareil, partout • Métadonnées et sous-titres automatiques • Partager votre bibliothèque avec amis et famille
+      **Configuration requise pour médias personnels :** Pour connecter Plex à votre compte et diffuser vos fichiers, vous devez saisir un **token de réclamation Plex** durant l'installation. Suivez notre guide étape par étape : 👉Comment configurer Plex sur Yundera (https://www.yundera.com/blog/tutorial-1/how-to-setup-plex-17)
+      💡 Pour une alternative totalement gratuite et open-source sans compte ni abonnement, essayez **Jellyfin**.
+      ℹ️ Yundera n'est pas affilié à Plex et ne contrôle pas leurs services ou tarifs.
+    es_es: |
+      **Reproduce películas, series y medios personales desde cualquier lugar.**
+      Plex es un servidor multimedia elegante que te permite organizar y reproducir tus películas, series de TV, música y fotos en todos los dispositivos — incluyendo smart TVs, teléfonos y tablets. También ofrece un catálogo de contenido gratuito con anuncios como TV en vivo y películas bajo demanda.
+      ⚠️ **Nota:** Plex no es completamente gratis. La reproducción de medios personales ahora requiere una suscripción Plex Pass o desbloqueo único de la app. El uso gratuito está limitado al contenido con anuncios de Plex.
+      **Características principales:** • Ver TV en vivo y películas gratis (con anuncios) • Alojar y reproducir tu colección personal (requiere Plex Pass) • Acceso desde cualquier dispositivo, en cualquier lugar • Metadatos y subtítulos automáticos • Compartir tu biblioteca con amigos y familia
+      **Configuración requerida para medios personales:** Para conectar Plex a tu cuenta y reproducir tus archivos, debes ingresar un **token de reclamación Plex** durante la instalación. Sigue nuestra guía paso a paso: 👉Cómo configurar Plex en Yundera (https://www.yundera.com/blog/tutorial-1/how-to-setup-plex-17)
+      💡 Para una alternativa completamente gratuita y de código abierto sin cuenta o suscripción, prueba **Jellyfin**.
+      ℹ️ Yundera no está afiliado con Plex y no controla sus servicios o precios.
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Plex/icon.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Plex/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Plex/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Plex/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Plex/thumbnail.png
-  index: /
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Plex/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Plex/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Plex/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Plex/thumbnail.png
+  index: /web
   tagline:
     en_us: Your personal streaming service for all your media
     zh_cn: 您的个人媒体流媒体服务
     ko_kr: 모든 미디어를 위한 개인 스트리밍 서비스
+    fr_fr: Votre service de streaming personnel pour tous vos médias
+    es_es: Tu servicio de streaming personal para todos tus medios
   title:
     en_us: Plex
     zh_cn: Plex
     ko_kr: Plex
+    fr_fr: Plex
+    es_es: Plex
   store_app_id: plex
   main: plex
   is_uncontrolled: false
   webui_port: 32400
+  pre_install_cmd: |
+    mkdir -p /DATA/AppData/$AppID/config /DATA/AppData/$AppID/transcode &&
+    chown -R $PUID:$PGID /DATA/AppData/$AppID/
   tips:
     before_install:
       en_us: |
-        Plex tutorial : 
+        **Plex Setup Tutorial:**
         https://www.yundera.com/blog/tutorial-1/how-to-setup-plex-17
          
-        Tips :
+        **Important Tips:**
         🎬 Plex lets you watch free movies and live TV with ads.
         ⚠️ To stream your own videos, Plex now charges a fee.
         ✅ For free personal streaming, try Jellyfin instead.
-        🔑 If you subscribe to Plex and want to stream your own files, follow our tutorial to set it up and get your key. : https://www.yundera.com/blog/tutorial-1/how-to-setup-plex-17
+        🔑 If you subscribe to Plex and want to stream your own files, follow our tutorial to set it up and get your key.
         ℹ️ Yundera is not affiliated with Plex and does not control their services.
-
       zh_cn: |
-        Plex 教程 : 
+        **Plex 设置教程:**
         https://www.yundera.com/blog/tutorial-1/how-to-setup-plex-17
          
-        提示 :
+        **重要提示:**
         🎬 Plex 让您可以观看免费电影和带广告的直播电视。
         ⚠️ 要流式传输您自己的视频，Plex 现在收费。
         ✅ 如需免费个人流媒体，请尝试 Jellyfin。
-        🔑 如果您订阅了 Plex 并想要流式传输您自己的文件，请按照我们的教程进行设置并获取您的密钥。: https://www.yundera.com/blog/tutorial-1/how-to-setup-plex-17
+        🔑 如果您订阅了 Plex 并想要流式传输您自己的文件，请按照我们的教程进行设置并获取您的密钥。
         ℹ️ Yundera 与 Plex 无关联，不控制其服务。
-
       ko_kr: |
-        Plex 튜토리얼 : 
+        **Plex 설정 튜토리얼:**
         https://www.yundera.com/blog/tutorial-1/how-to-setup-plex-17
          
-        팁 :
+        **중요 팁:**
         🎬 Plex를 사용하면 광고와 함께 무료 영화와 라이브 TV를 시청할 수 있습니다.
         ⚠️ 자신의 동영상을 스트리밍하려면 Plex에 요금을 지불해야 합니다.
         ✅ 무료 개인 스트리밍의 경우 Jellyfin을 사용해보세요.
-        🔑 Plex를 구독하고 자신의 파일을 스트리밍하려면 저희 튜토리얼을 따라 설정하고 키를 받으세요. : https://www.yundera.com/blog/tutorial-1/how-to-setup-plex-17
+        🔑 Plex를 구독하고 자신의 파일을 스트리밍하려면 저희 튜토리얼을 따라 설정하고 키를 받으세요.
         ℹ️ Yundera는 Plex와 관련이 없으며 해당 서비스를 통제하지 않습니다.
+      fr_fr: |
+        **Tutoriel de configuration Plex:**
+        https://www.yundera.com/blog/tutorial-1/how-to-setup-plex-17
+         
+        **Conseils importants:**
+        🎬 Plex vous permet de regarder des films gratuits et la TV en direct avec des publicités.
+        ⚠️ Pour diffuser vos propres vidéos, Plex facture désormais des frais.
+        ✅ Pour un streaming personnel gratuit, essayez plutôt Jellyfin.
+        🔑 Si vous vous abonnez à Plex et voulez diffuser vos propres fichiers, suivez notre tutoriel pour le configurer et obtenir votre clé.
+        ℹ️ Yundera n'est pas affilié à Plex et ne contrôle pas leurs services.
+      es_es: |
+        **Tutorial de configuración de Plex:**
+        https://www.yundera.com/blog/tutorial-1/how-to-setup-plex-17
+         
+        **Consejos importantes:**
+        🎬 Plex te permite ver películas gratis y TV en vivo con anuncios.
+        ⚠️ Para transmitir tus propios videos, Plex ahora cobra una tarifa.
+        ✅ Para streaming personal gratuito, prueba Jellyfin en su lugar.
+        🔑 Si te suscribes a Plex y quieres transmitir tus propios archivos, sigue nuestro tutorial para configurarlo y obtener tu clave.
+        ℹ️ Yundera no está afiliado con Plex y no controla sus servicios.
