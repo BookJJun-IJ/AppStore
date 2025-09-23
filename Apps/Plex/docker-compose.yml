@@ -2,7 +2,7 @@ name: plex
 
 services:
   plex:
-    image: lscr.io/linuxserver/plex:1.41.8.9834-071366D65-ls269
+    image: plexinc/pms-docker:1.41.8.9834-071366d65
     container_name: plex
     restart: unless-stopped
     network_mode: host
@@ -16,11 +16,11 @@ services:
       - /DATA/Media/Music:/data/music
       - /DATA/Downloads:/data/downloads
     environment:
-      PGID: $PGID
-      PUID: $PUID
       TZ: $TZ
       PLEX_CLAIM: ""
-      VERSION: docker
+      PLEX_UID: $PUID
+      PLEX_GID: $PGID
+      CHANGE_CONFIG_DIR_OWNERSHIP: "false"
     devices:
       - /dev/dri:/dev/dri
     deploy:
@@ -80,19 +80,6 @@ x-casaos:
   main: plex
   is_uncontrolled: false
   webui_port: 32400
-  pre_install_cmd: |
-    docker run --rm -v /DATA/AppData/$AppID:/app alpine:3.19 sh -c "
-    mkdir -p '/app/config/Library/Application Support/Plex Media Server/Cache' &&
-    mkdir -p '/app/config/Library/Application Support/Plex Media Server/Logs' &&
-    mkdir -p '/app/config/Library/Application Support/Plex Media Server/Media' &&
-    mkdir -p '/app/config/Library/Application Support/Plex Media Server/Metadata' &&
-    mkdir -p '/app/config/Library/Application Support/Plex Media Server/Plug-ins' &&
-    mkdir -p '/app/config/Library/Application Support/Plex Media Server/Plug-in Support' &&
-    mkdir -p /app/transcode &&
-    chown -R $PUID:$PGID /app &&
-    chmod -R 755 /app &&
-    echo 'Plex directories created successfully'
-    "
   tips:
     before_install:
       en_us: |
