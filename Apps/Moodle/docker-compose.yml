@@ -1,18 +1,14 @@
 name: moodle
-
 services:
-  moodle-db:
-    image: mysql:8.0
+  db:
+    image: postgres:15
     container_name: moodle-db
     environment:
-      - MYSQL_ROOT_PASSWORD=$default_pwd
-      - MYSQL_DATABASE=moodle
-      - MYSQL_USER=moodle
-      - MYSQL_PASSWORD=$default_pwd
-      - MYSQL_CHARACTER_SET=utf8mb4
-      - MYSQL_COLLATE=utf8mb4_unicode_ci
+      POSTGRES_DB: moodle
+      POSTGRES_USER: moodle
+      POSTGRES_PASSWORD: $default_pwd
     volumes:
-      - /DATA/AppData/$AppID/mysql:/var/lib/mysql
+      - /DATA/AppData/$AppID/postgres:/var/lib/postgresql/data
     restart: unless-stopped
     deploy:
       resources:
@@ -20,36 +16,26 @@ services:
           memory: 512M
           cpus: '0.5'
 
-  moodle:
+  app:
     image: bitnami/moodle:4.4.1
     container_name: moodle
     environment:
-      - BITNAMI_DEBUG=false
-      - MOODLE_DATABASE_TYPE=mysqli
-      - MOODLE_DATABASE_HOST=moodle-db
-      - MOODLE_DATABASE_PORT_NUMBER=3306
-      - MOODLE_DATABASE_USER=moodle
-      - MOODLE_DATABASE_NAME=moodle
-      - MOODLE_DATABASE_PASSWORD=$default_pwd
-      - MOODLE_USERNAME=admin
-      - MOODLE_PASSWORD=$default_pwd
-      - MOODLE_EMAIL=admin@example.com
-      - MOODLE_SITE_NAME=Moodle
-      - MOODLE_SKIP_BOOTSTRAP=no
-      - MOODLE_SKIP_INSTALL=no
-      - ALLOW_EMPTY_PASSWORD=no
-      - PHP_MEMORY_LIMIT=256M
-      - PHP_MAX_EXECUTION_TIME=300
-      - PHP_MAX_INPUT_TIME=300
-      - PHP_POST_MAX_SIZE=100M
-      - PHP_UPLOAD_MAX_FILESIZE=100M
+      MOODLE_DATABASE_TYPE: pgsql
+      MOODLE_DATABASE_HOST: db
+      MOODLE_DATABASE_PORT_NUMBER: 5432
+      MOODLE_DATABASE_USER: moodle
+      MOODLE_DATABASE_NAME: moodle
+      MOODLE_DATABASE_PASSWORD: $default_pwd
+      MOODLE_USERNAME: admin
+      MOODLE_PASSWORD: $default_pwd
+      MOODLE_EMAIL: admin@example.com
     volumes:
       - /DATA/AppData/$AppID/moodle:/bitnami/moodle
       - /DATA/AppData/$AppID/moodledata:/bitnami/moodledata
-    expose:
-      - 8080
+    ports:
+      - 8080:8080
     depends_on:
-      - moodle-db
+      - db
     restart: unless-stopped
     deploy:
       resources:
@@ -61,7 +47,7 @@ x-casaos:
   architectures:
     - amd64
     - arm64
-  main: moodle
+  main: app
   webui_port: 8080
   category: Education
   author: CasaOS Team
@@ -75,33 +61,16 @@ x-casaos:
     zh_cn: 开源学习管理系统
     es_es: Sistema de gestión de aprendizaje de código abierto
   description:
-    en_us: |
-      Moodle is the world's most popular open source Learning Management System (LMS). 
-      Perfect for schools, universities, and corporate training. Features include course management,
-      assignment submission, grading, forums, quizzes, and comprehensive reporting.
-    fr_fr: |
-      Moodle est le système de gestion de l'apprentissage (LMS) open source le plus populaire au monde.
-      Parfait pour les écoles, universités et la formation en entreprise.
-    ko_kr: |
-      Moodle은 세계에서 가장 인기 있는 오픈소스 학습 관리 시스템(LMS)입니다.
-      학교, 대학, 기업 교육에 완벽합니다. 코스 관리, 과제 제출, 채점, 포럼, 퀴즈 및 포괄적인 보고 기능을 제공합니다.
-    zh_cn: |
-      Moodle是世界上最受欢迎的开源学习管理系统（LMS）。
-      非常适合学校、大学和企业培训。功能包括课程管理、作业提交、评分、论坛、测验和综合报告。
-    es_es: |
-      Moodle es el sistema de gestión de aprendizaje (LMS) de código abierto más popular del mundo.
-      Perfecto para escuelas, universidades y formación corporativa.
+    en_us: Moodle is the world's most popular open source Learning Management System (LMS). Perfect for schools, universities, and corporate training.
+    fr_fr: Moodle est le système de gestion de l'apprentissage (LMS) open source le plus populaire au monde.
+    ko_kr: Moodle은 세계에서 가장 인기 있는 오픈소스 학습 관리 시스템(LMS)입니다.
+    zh_cn: Moodle是世界上最受欢迎的开源学习管理系统（LMS）。
+    es_es: Moodle es el sistema de gestión de aprendizaje (LMS) de código abierto más popular del mundo.
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Moodle/icon.png
   screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Moodle/screenshot-1.png
-  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Moodle/thumbnail.png
   tips:
     before_install:
       en_us: |
-        Default Admin Account
-        | Username | Password |
-        | -------- | -------- |
-        | `admin`  | `$default_pwd` |
-        
-        Initial setup may take 3-5 minutes while Moodle initializes the database.
-        The application will be accessible at port 8080 after installation completes.
+        Default admin account is admin / $default_pwd
+        Initial setup takes 3-5 minutes
   index: /
