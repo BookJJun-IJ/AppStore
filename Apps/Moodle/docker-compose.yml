@@ -64,7 +64,7 @@ services:
       resources:
         limits:
           memory: 2048M
-          cpus: '2.0'
+          cpus: '1.0'
     depends_on:
       - moodle-db
     restart: unless-stopped
@@ -95,7 +95,6 @@ x-casaos:
     en_us: Moodle LMS
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Moodle/thumbnail.png
   index: /
-  port_map: "80"
   scheme: http
   store_app_id: moodle
   tips:
@@ -134,3 +133,7 @@ x-casaos:
         - Increasing PHP memory limit via environment variables
         - Enabling Redis caching (requires additional configuration)
         - Setting up a CDN for static content
+  pre-install-cmd: |
+    mkdir -p /DATA/AppData/$AppID/moodle /DATA/AppData/$AppID/moodledata /DATA/AppData/$AppID/mariadb &&
+    chown -R $PUID:$PGID /DATA/AppData/$AppID/moodle /DATA/AppData/$AppID/moodledata &&
+    chmod 775 /DATA/AppData/$AppID/moodle /DATA/AppData/$AppID/moodledata
