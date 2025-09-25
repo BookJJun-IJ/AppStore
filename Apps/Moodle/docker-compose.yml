@@ -4,7 +4,6 @@ services:
   mariadb:
     image: bitnami/mariadb:11.4
     container_name: moodle-mariadb
-    user: 1001:0
     environment:
       - MARIADB_USER=bn_moodle
       - MARIADB_PASSWORD=$default_pwd
@@ -12,6 +11,7 @@ services:
       - MARIADB_ROOT_PASSWORD=$default_pwd
       - MARIADB_CHARACTER_SET=utf8mb4
       - MARIADB_COLLATE=utf8mb4_unicode_ci
+      - ALLOW_EMPTY_PASSWORD=no
     volumes:
       - /DATA/AppData/$AppID/mariadb:/bitnami/mariadb
     restart: unless-stopped
@@ -24,11 +24,8 @@ services:
   moodle:
     image: bitnami/moodle:4.4
     container_name: moodle
-    user: 1001:0
     environment:
       - TZ=$TZ
-      - PUID=$PUID
-      - PGID=$PGID
       - MOODLE_DATABASE_HOST=mariadb
       - MOODLE_DATABASE_PORT_NUMBER=3306
       - MOODLE_DATABASE_USER=bn_moodle
@@ -39,7 +36,8 @@ services:
       - MOODLE_EMAIL=admin@example.com
       - MOODLE_SITE_NAME=Moodle
       - MOODLE_SKIP_BOOTSTRAP=no
-      - BITNAMI_DEBUG=true
+      - ALLOW_EMPTY_PASSWORD=no
+      - BITNAMI_DEBUG=false
     volumes:
       - /DATA/AppData/$AppID/moodle:/bitnami/moodle
       - /DATA/AppData/$AppID/moodledata:/bitnami/moodledata
@@ -90,6 +88,7 @@ x-casaos:
       Perfecto para escuelas, universidades y formación corporativa.
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Moodle/icon.png
   screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Moodle/screenshot-1.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Moodle/thumbnail.png
   tips:
     before_install:
       en_us: |
@@ -98,11 +97,15 @@ x-casaos:
         | -------- | -------- |
         | `admin`  | `$default_pwd` |
         
-        First login may take 2-3 minutes while Moodle initializes the database.
+        Initial setup may take 3-5 minutes while Moodle configures the database.
   index: /
   pre-install-cmd: |
-    docker run --rm -v /DATA/AppData/$AppID:/data alpine:latest sh -c "
-    mkdir -p /data/mariadb /data/moodle /data/moodledata &&
-    chown -R 1001:0 /data &&
-    chmod -R 775 /data
+    docker run --rm -v /DATA/AppData/$AppID:/data busybox:latest sh -c "
+    mkdir -p /data/mariadb/data /data/moodle /data/moodledata &&
+    chown -R 1001:1001 /data/mariadb &&
+    chown -R 1001:1001 /data/moodle &&
+    chown -R 1001:1001 /data/moodledata &&
+    chmod -R 775 /data/mariadb &&
+    chmod -R 775 /data/moodle &&
+    chmod -R 775 /data/moodledata
     "
