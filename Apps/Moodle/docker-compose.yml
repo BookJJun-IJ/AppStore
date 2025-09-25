@@ -1,9 +1,9 @@
 name: moodle
 
 services:
-  mariadb:
-    image: mariadb:10.11
-    container_name: moodle-mariadb
+  moodle-db:
+    image: mysql:8.0
+    container_name: moodle-db
     environment:
       - MYSQL_ROOT_PASSWORD=$default_pwd
       - MYSQL_DATABASE=moodle
@@ -12,7 +12,7 @@ services:
       - MYSQL_CHARACTER_SET=utf8mb4
       - MYSQL_COLLATE=utf8mb4_unicode_ci
     volumes:
-      - /DATA/AppData/$AppID/mariadb:/var/lib/mysql
+      - /DATA/AppData/$AppID/mysql:/var/lib/mysql
     restart: unless-stopped
     deploy:
       resources:
@@ -21,24 +21,35 @@ services:
           cpus: '0.5'
 
   moodle:
-    image: aesr/moodle:latest
+    image: bitnami/moodle:4.4.1
     container_name: moodle
     environment:
-      - TZ=$TZ
-      - MOODLE_DB_HOST=mariadb
-      - MOODLE_DB_PORT=3306
-      - MOODLE_DB_USER=moodle
-      - MOODLE_DB_NAME=moodle
-      - MOODLE_DB_PASSWORD=$default_pwd
-      - MOODLE_WWW_ROOT=https://$domain
-      - MOODLE_DATA_ROOT=/var/www/moodledata
+      - BITNAMI_DEBUG=false
+      - MOODLE_DATABASE_TYPE=mysqli
+      - MOODLE_DATABASE_HOST=moodle-db
+      - MOODLE_DATABASE_PORT_NUMBER=3306
+      - MOODLE_DATABASE_USER=moodle
+      - MOODLE_DATABASE_NAME=moodle
+      - MOODLE_DATABASE_PASSWORD=$default_pwd
+      - MOODLE_USERNAME=admin
+      - MOODLE_PASSWORD=$default_pwd
+      - MOODLE_EMAIL=admin@example.com
+      - MOODLE_SITE_NAME=Moodle
+      - MOODLE_SKIP_BOOTSTRAP=no
+      - MOODLE_SKIP_INSTALL=no
+      - ALLOW_EMPTY_PASSWORD=no
+      - PHP_MEMORY_LIMIT=256M
+      - PHP_MAX_EXECUTION_TIME=300
+      - PHP_MAX_INPUT_TIME=300
+      - PHP_POST_MAX_SIZE=100M
+      - PHP_UPLOAD_MAX_FILESIZE=100M
     volumes:
-      - /DATA/AppData/$AppID/moodle:/var/www/html
-      - /DATA/AppData/$AppID/moodledata:/var/www/moodledata
+      - /DATA/AppData/$AppID/moodle:/bitnami/moodle
+      - /DATA/AppData/$AppID/moodledata:/bitnami/moodledata
     expose:
-      - 80
+      - 8080
     depends_on:
-      - mariadb
+      - moodle-db
     restart: unless-stopped
     deploy:
       resources:
@@ -46,36 +57,12 @@ services:
           memory: 1G
           cpus: '0.8'
 
-  cron:
-    image: aesr/moodle:latest
-    container_name: moodle-cron
-    entrypoint: /bin/bash
-    command: -c "while true; do php /var/www/html/admin/cli/cron.php; sleep 60; done"
-    environment:
-      - TZ=$TZ
-      - MOODLE_DB_HOST=mariadb
-      - MOODLE_DB_PORT=3306
-      - MOODLE_DB_USER=moodle
-      - MOODLE_DB_NAME=moodle
-      - MOODLE_DB_PASSWORD=$default_pwd
-    volumes:
-      - /DATA/AppData/$AppID/moodle:/var/www/html
-      - /DATA/AppData/$AppID/moodledata:/var/www/moodledata
-    depends_on:
-      - moodle
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-          cpus: '0.2'
-
 x-casaos:
   architectures:
     - amd64
     - arm64
   main: moodle
-  webui_port: 80
+  webui_port: 8080
   category: Education
   author: CasaOS Team
   developer: Moodle HQ
@@ -110,23 +97,11 @@ x-casaos:
   tips:
     before_install:
       en_us: |
-        First Installation Steps:
-        1. Access https://$domain
-        2. Follow the installation wizard
-        3. Use database settings provided during installation
-        4. Create admin account with your own password
+        Default Admin Account
+        | Username | Password |
+        | -------- | -------- |
+        | `admin`  | `$default_pwd` |
         
-        Database Settings:
-        | Setting | Value |
-        | ------- | ----- |
-        | Host | mariadb |
-        | Name | moodle |
-        | User | moodle |
-        | Password | (system generated) |
+        Initial setup may take 3-5 minutes while Moodle initializes the database.
+        The application will be accessible at port 8080 after installation completes.
   index: /
-  pre-install-cmd: |
-    docker run --rm -v /DATA/AppData/$AppID:/data alpine:latest sh -c "
-    mkdir -p /data/mariadb /data/moodle /data/moodledata &&
-    chmod -R 755 /data/mariadb /data/moodle &&
-    chmod -R 777 /data/moodledata
-    "
