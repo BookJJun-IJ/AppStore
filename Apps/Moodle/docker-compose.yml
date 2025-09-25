@@ -1,17 +1,15 @@
 name: moodle
 services:
-  db:
+  database:
     image: mariadb:11
-    container_name: moodle-db
+    container_name: moodle-database
     environment:
       MARIADB_ROOT_PASSWORD: $default_pwd
       MARIADB_DATABASE: moodle
       MARIADB_USER: moodle
       MARIADB_PASSWORD: $default_pwd
-      MARIADB_CHARACTER_SET: utf8mb4
-      MARIADB_COLLATE: utf8mb4_unicode_ci
     volumes:
-      - /DATA/AppData/$AppID/mariadb:/var/lib/mysql
+      - /DATA/AppData/moodle/mariadb:/var/lib/mysql
     restart: unless-stopped
     deploy:
       resources:
@@ -19,13 +17,11 @@ services:
           memory: 512M
           cpus: '0.5'
 
-  app:
+  moodle:
     image: bitnami/moodle:4.4.1
     container_name: moodle
-    user: 1001:1001
     environment:
-      MOODLE_DATABASE_TYPE: mariadb
-      MOODLE_DATABASE_HOST: db
+      MOODLE_DATABASE_HOST: database
       MOODLE_DATABASE_PORT_NUMBER: 3306
       MOODLE_DATABASE_USER: moodle
       MOODLE_DATABASE_NAME: moodle
@@ -33,16 +29,13 @@ services:
       MOODLE_USERNAME: admin
       MOODLE_PASSWORD: $default_pwd
       MOODLE_EMAIL: admin@example.com
-      MOODLE_SITE_NAME: Moodle
-      BITNAMI_DEBUG: false
-      ALLOW_EMPTY_PASSWORD: no
     volumes:
-      - /DATA/AppData/$AppID/moodle:/bitnami/moodle
-      - /DATA/AppData/$AppID/moodledata:/bitnami/moodledata
+      - /DATA/AppData/moodle/moodle:/bitnami/moodle
+      - /DATA/AppData/moodle/moodledata:/bitnami/moodledata
     expose:
       - 8080
     depends_on:
-      - db
+      - database
     restart: unless-stopped
     deploy:
       resources:
@@ -54,7 +47,7 @@ x-casaos:
   architectures:
     - amd64
     - arm64
-  main: app
+  main: moodle
   webui_port: 8080
   category: Education
   author: CasaOS Team
@@ -68,15 +61,14 @@ x-casaos:
     zh_cn: 开源学习管理系统
     es_es: Sistema de gestión de aprendizaje de código abierto
   description:
-    en_us: Moodle is the world's most popular open source Learning Management System (LMS). Perfect for schools, universities, and corporate training.
-    fr_fr: Moodle est le système de gestion de l'apprentissage (LMS) open source le plus populaire au monde.
-    ko_kr: Moodle은 세계에서 가장 인기 있는 오픈소스 학습 관리 시스템(LMS)입니다.
-    zh_cn: Moodle是世界上最受欢迎的开源学习管理系统（LMS）。
-    es_es: Moodle es el sistema de gestión de aprendizaje (LMS) de código abierto más popular del mundo.
+    en_us: Moodle is the world's most popular open source Learning Management System (LMS).
+    fr_fr: Moodle est le système de gestion de l'apprentissage open source le plus populaire.
+    ko_kr: Moodle은 세계에서 가장 인기 있는 오픈소스 학습 관리 시스템입니다.
+    zh_cn: Moodle是世界上最受欢迎的开源学习管理系统。
+    es_es: Moodle es el sistema de gestión de aprendizaje de código abierto más popular.
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Moodle/icon.png
   screenshot: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Moodle/screenshot-1.png
   tips:
     before_install:
-      en_us: |
-        Default admin account is admin / $default_pwd
+      en_us: Default admin is admin with system password
   index: /
