@@ -133,7 +133,3 @@ x-casaos:
         - Increasing PHP memory limit via environment variables
         - Enabling Redis caching (requires additional configuration)
         - Setting up a CDN for static content
-  pre-install-cmd: |
-    mkdir -p /DATA/AppData/$AppID/moodle /DATA/AppData/$AppID/moodledata /DATA/AppData/$AppID/mariadb &&
-    chown -R $PUID:$PGID /DATA/AppData/$AppID/moodle /DATA/AppData/$AppID/moodledata &&
-    chmod 775 /DATA/AppData/$AppID/moodle /DATA/AppData/$AppID/moodledata
