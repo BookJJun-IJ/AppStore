@@ -9,6 +9,8 @@ services:
       - MYSQL_DATABASE=moodle
       - MYSQL_USER=moodle
       - MYSQL_PASSWORD=$default_pwd
+      - MYSQL_CHARACTER_SET=utf8mb4
+      - MYSQL_COLLATE=utf8mb4_unicode_ci
     volumes:
       - /DATA/AppData/$AppID/mariadb:/var/lib/mysql
     restart: unless-stopped
@@ -19,7 +21,7 @@ services:
           cpus: '0.5'
 
   moodle:
-    image: moodlehq/moodle:4.4
+    image: aesr/moodle:latest
     container_name: moodle
     environment:
       - TZ=$TZ
@@ -28,14 +30,8 @@ services:
       - MOODLE_DB_USER=moodle
       - MOODLE_DB_NAME=moodle
       - MOODLE_DB_PASSWORD=$default_pwd
-      - MOODLE_DB_TYPE=mysqli
       - MOODLE_WWW_ROOT=https://$domain
       - MOODLE_DATA_ROOT=/var/www/moodledata
-      - MOODLE_ADMIN_USER=admin
-      - MOODLE_ADMIN_PASS=$default_pwd
-      - MOODLE_ADMIN_EMAIL=admin@example.com
-      - MOODLE_SITE_NAME=Moodle
-      - MOODLE_LANG=en
     volumes:
       - /DATA/AppData/$AppID/moodle:/var/www/html
       - /DATA/AppData/$AppID/moodledata:/var/www/moodledata
@@ -50,6 +46,30 @@ services:
           memory: 1G
           cpus: '0.8'
 
+  cron:
+    image: aesr/moodle:latest
+    container_name: moodle-cron
+    entrypoint: /bin/bash
+    command: -c "while true; do php /var/www/html/admin/cli/cron.php; sleep 60; done"
+    environment:
+      - TZ=$TZ
+      - MOODLE_DB_HOST=mariadb
+      - MOODLE_DB_PORT=3306
+      - MOODLE_DB_USER=moodle
+      - MOODLE_DB_NAME=moodle
+      - MOODLE_DB_PASSWORD=$default_pwd
+    volumes:
+      - /DATA/AppData/$AppID/moodle:/var/www/html
+      - /DATA/AppData/$AppID/moodledata:/var/www/moodledata
+    depends_on:
+      - moodle
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.2'
+
 x-casaos:
   architectures:
     - amd64
@@ -57,7 +77,7 @@ x-casaos:
   main: moodle
   webui_port: 80
   category: Education
-  author: Moodle HQ
+  author: CasaOS Team
   developer: Moodle HQ
   title:
     en_us: Moodle
@@ -90,17 +110,23 @@ x-casaos:
   tips:
     before_install:
       en_us: |
-        Default Admin Account
-        | Username | Password |
-        | -------- | -------- |
-        | `admin`  | `$default_pwd` |
+        First Installation Steps:
+        1. Access https://$domain
+        2. Follow the installation wizard
+        3. Use database settings provided during installation
+        4. Create admin account with your own password
         
-        Initial setup may take 3-5 minutes while Moodle configures the database.
-        The site will be accessible at https://$domain after installation.
+        Database Settings:
+        | Setting | Value |
+        | ------- | ----- |
+        | Host | mariadb |
+        | Name | moodle |
+        | User | moodle |
+        | Password | (system generated) |
   index: /
   pre-install-cmd: |
     docker run --rm -v /DATA/AppData/$AppID:/data alpine:latest sh -c "
     mkdir -p /data/mariadb /data/moodle /data/moodledata &&
-    chmod -R 777 /data/moodledata &&
-    chmod -R 755 /data/mariadb /data/moodle
+    chmod -R 755 /data/mariadb /data/moodle &&
+    chmod -R 777 /data/moodledata
     "
