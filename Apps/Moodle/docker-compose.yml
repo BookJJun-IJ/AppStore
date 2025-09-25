@@ -1,7 +1,7 @@
 name: moodle
 services:
   db:
-    image: postgres:15
+    image: postgres:15-alpine
     container_name: moodle-db
     environment:
       POSTGRES_DB: moodle
@@ -17,23 +17,24 @@ services:
           cpus: '0.5'
 
   app:
-    image: bitnami/moodle:4.4.1
+    image: erseco/moodle:4.4
     container_name: moodle
     environment:
-      MOODLE_DATABASE_TYPE: pgsql
-      MOODLE_DATABASE_HOST: db
-      MOODLE_DATABASE_PORT_NUMBER: 5432
-      MOODLE_DATABASE_USER: moodle
-      MOODLE_DATABASE_NAME: moodle
-      MOODLE_DATABASE_PASSWORD: $default_pwd
-      MOODLE_USERNAME: admin
-      MOODLE_PASSWORD: $default_pwd
-      MOODLE_EMAIL: admin@example.com
+      MOODLE_DB_HOST: db
+      MOODLE_DB_NAME: moodle
+      MOODLE_DB_USER: moodle
+      MOODLE_DB_PASS: $default_pwd
+      MOODLE_DB_TYPE: pgsql
+      MOODLE_ADMIN_USER: admin
+      MOODLE_ADMIN_PASS: $default_pwd
+      MOODLE_ADMIN_EMAIL: admin@example.com
+      MOODLE_SITE_NAME: Moodle
+      MOODLE_SITE_FULLNAME: Moodle Learning Platform
+      MOODLE_LANG: en
     volumes:
-      - /DATA/AppData/$AppID/moodle:/bitnami/moodle
-      - /DATA/AppData/$AppID/moodledata:/bitnami/moodledata
+      - /DATA/AppData/$AppID/moodledata:/var/moodledata
     expose:
-      - 8080
+      - 80
     depends_on:
       - db
     restart: unless-stopped
@@ -48,7 +49,7 @@ x-casaos:
     - amd64
     - arm64
   main: app
-  webui_port: 8080
+  webui_port: 80
   category: Education
   author: CasaOS Team
   developer: Moodle HQ
@@ -72,5 +73,4 @@ x-casaos:
     before_install:
       en_us: |
         Default admin account is admin / $default_pwd
-        Initial setup takes 3-5 minutes
   index: /
