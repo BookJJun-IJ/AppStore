@@ -32,8 +32,8 @@ services:
     volumes:
       - /DATA/AppData/$AppID/moodle:/bitnami/moodle
       - /DATA/AppData/$AppID/moodledata:/bitnami/moodledata
-    ports:
-      - 8080:8080
+    expose:
+      - 8080
     depends_on:
       - db
     restart: unless-stopped
