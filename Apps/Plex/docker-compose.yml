@@ -124,7 +124,3 @@ x-casaos:
         ✅ 무료 개인 스트리밍의 경우 Jellyfin을 사용해보세요.
         🔑 Plex를 구독하고 자신의 파일을 스트리밍하려면 저희 튜토리얼을 따라 설정하고 키를 받으세요. : https://www.yundera.com/blog/tutorial-1/how-to-setup-plex-17
         ℹ️ Yundera는 Plex와 관련이 없으며 해당 서비스를 통제하지 않습니다.
-  pre-install-cmd: |
-    mkdir -p /DATA/AppData/$AppID/config &&
-    mkdir -p /DATA/AppData/$AppID/transcode &&
-    chown -R $PUID:$PGID /DATA/AppData/$AppID
