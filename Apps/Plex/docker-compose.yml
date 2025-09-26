@@ -23,7 +23,7 @@ services:
       - /DATA/Media/TV Shows:/data/tvshows
       - /DATA/Media/Music:/data/music
       - /DATA/Downloads:/data/downloads
-    user: $PUID:$PGID
+    user: 0:0
     environment:
       PGID: $PGID                    # Group ID for file permissions
       PUID: $PUID                    # User ID for file permissions
