@@ -5,23 +5,34 @@ services:
     image: lscr.io/linuxserver/plex:1.41.8.9834-071366D65-ls269
     container_name: plex
     restart: unless-stopped
+    network_mode: host
     expose:
       - 32400
+    #ports:
+    # Additional ports can be uncommented if needed for specific Plex features
+    #  - "3005:3005/tcp"      # Plex Home Theater via Plex Companion
+    #  - "8324:8324/tcp"      # Plex for Roku via Plex Companion  
+    #  - "32469:32469/tcp"    # Plex DLNA Server
+    #  - "1900:1900/udp"      # Plex DLNA Server
+    #  - "32410:32410/udp"    # GDM network discovery
+    #  - "32412:32412/udp"    # GDM network discovery
+    #  - "32413:32413/udp"    # GDM network discovery
+    #  - "32414:32414/udp"    # GDM network discovery
     volumes:
-      - /DATA/AppData/$AppID:/config
+      - /DATA/AppData/$AppID/config:/config
       - /DATA/AppData/$AppID/transcode:/transcode
       - /DATA/Media/Movies:/data/movies
       - /DATA/Media/TV Shows:/data/tvshows
       - /DATA/Media/Music:/data/music
       - /DATA/Downloads:/data/downloads
+    user: $PUID:$PGID
     environment:
-      PGID: $PGID
-      PUID: $PUID
-      TZ: $TZ
-      PLEX_CLAIM: ""
-      VERSION: docker
+      PGID: $PGID                    # Group ID for file permissions
+      PUID: $PUID                    # User ID for file permissions
+      TZ: $TZ                        # Timezone setting
+      PLEX_CLAIM: ""                 # Plex claim token for automatic setup (optional)
     devices:
-      - /dev/dri:/dev/dri
+      - /dev/dri:/dev/dri            # Hardware acceleration for transcoding
     deploy:
       resources:
         limits:
@@ -66,7 +77,7 @@ x-casaos:
     - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Plex/screenshot-2.png
     - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Plex/screenshot-3.png
   thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Plex/thumbnail.png
-  index: /web
+  index: /
   tagline:
     en_us: Your personal streaming service for all your media
     zh_cn: 您的个人媒体流媒体服务
