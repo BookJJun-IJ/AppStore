@@ -37,8 +37,6 @@ services:
   moodle:
     image: bitnami/moodle:4.5.1
     user: 0:0  # Root required for Bitnami container - changing causes permission issues
-    ports:
-      - "8080:8080"  # Direct port mapping for debugging
     expose:
       - 8080  # Also expose for NSL router
     environment:
