@@ -31,8 +31,8 @@ services:
   moodle:
     image: bitnami/moodle:4.5.1
     # user 지정 제거 - Bitnami 이미지가 자체적으로 권한 관리
-    ports:
-      - "8080:8080"  # expose 대신 ports 사용
+    expose:
+      - 8080 
     environment:
       # Database configuration
       MOODLE_DATABASE_TYPE: mariadb
