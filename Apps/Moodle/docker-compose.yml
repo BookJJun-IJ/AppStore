@@ -59,7 +59,7 @@ services:
       MOODLE_SSLPROXY: 'true'
       MOODLE_SKIP_BOOTSTRAP: 'no'
       # Bitnami specific
-      BITNAMI_DEBUG: 'false'  # Disable debug for production
+      BITNAMI_DEBUG: 'true'  # Enable debug for troubleshooting
       ALLOW_EMPTY_PASSWORD: 'no'
       # Apache configuration
       APACHE_HTTP_PORT_NUMBER: 8080
@@ -96,7 +96,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 300s  # 5 minutes for initial setup
+      start_period: 600s  # 10 minutes for initial setup
 
 # Named volumes 정의 (권한 문제 자동 해결)
 volumes:
