@@ -13,7 +13,7 @@ services:
       MARIADB_AUTO_UPGRADE: "1"
       MARIADB_DISABLE_UPGRADE_BACKUP: "1"
     volumes:
-      - /DATA/AppData/${AppID}/mariadb:/var/lib/mysql
+      - mariadb_data:/var/lib/mysql  # Named volume 사용 (권한 문제 회피)
     command: >
       --character-set-server=utf8mb4
       --collation-server=utf8mb4_unicode_ci
@@ -30,14 +30,15 @@ services:
       interval: 30s
       timeout: 10s
       retries: 10
-      start_period: 90s
+      start_period: 90s  # 초기화 시간 늘림
     networks:
       - moodle-network
 
   moodle:
     image: bitnami/moodle:4.5.1
+    user: 0:0 # Bitnami 사용자 명시적 지정
     expose:
-      - 8080
+      - 8080  # NSL router requires expose, not ports
     environment:
       # Database configuration
       MOODLE_DATABASE_TYPE: mariadb
@@ -70,11 +71,13 @@ services:
       PHP_POST_MAX_SIZE: 100M
       # System
       TZ: ${TZ}
+      PUID: ${PUID}
+      PGID: ${PGID}
       # 추가 대기 시간
       MOODLE_SKIP_BOOTSTRAP: 'no'
     volumes:
-      - /DATA/AppData/${AppID}/moodle:/bitnami/moodle
-      - /DATA/AppData/${AppID}/moodledata:/bitnami/moodledata
+      - moodle_data:/bitnami/moodle
+      - moodledata_data:/bitnami/moodledata
     depends_on:
       mariadb:
         condition: service_healthy
@@ -87,6 +90,15 @@ services:
     networks:
       - moodle-network
 
+# Named volumes 정의 (권한 문제 자동 해결)
+volumes:
+  mariadb_data:
+    driver: local
+  moodle_data:
+    driver: local
+  moodledata_data:
+    driver: local
+
 # 네트워크 정의
 networks:
   moodle-network:
@@ -97,7 +109,7 @@ x-casaos:
     - amd64
     - arm64
   main: moodle
-  webui_port: 8080
+  webui_port: 8080  # Must match exposed port
   category: Education
   description:
     en_us: Moodle is the world's most popular open source learning management system (LMS). Used by universities, schools, and corporations worldwide, Moodle provides a robust platform for creating personalized e-learning environments with courses, assignments, quizzes, forums, wikis, and collaborative tools. Features drag-and-drop interfaces, role-based permissions, comprehensive reporting, multi-language support, and extensive plugin ecosystem.
@@ -124,22 +136,6 @@ x-casaos:
   index: /
   scheme: http
   store_app_id: moodle
-  pre-install-cmd: |
-    # Prepare directories with correct permissions
-    docker run --rm -v /DATA/AppData/${AppID}/:/data alpine:latest sh -c "
-      # Create directories
-      mkdir -p /data/mariadb /data/moodle /data/moodledata
-      
-      # Set MariaDB permissions (UID 999)
-      chown -R 999:999 /data/mariadb
-      chmod -R 755 /data/mariadb
-      
-      # Set Moodle permissions (UID 1001 for Bitnami)
-      chown -R 1001:1001 /data/moodle /data/moodledata
-      chmod -R 775 /data/moodle /data/moodledata
-      
-      echo 'Directories prepared with correct permissions'
-    "
   tips:
     before_install:
       en_us: |
@@ -149,9 +145,9 @@ x-casaos:
         | `admin` | `$default_pwd` |
         
         ## Important Notes
-        - First installation may take 10-15 minutes to complete
+        - First installation may take 5-10 minutes to complete
         - The database will be initialized automatically on first run
-        - Directories will be created with correct permissions via pre-install script
+        - Using named volumes for automatic permission management
         - Moodle will be accessible via NSL router at: https://8080-moodle-[username].nsl.sh
         
         ## Resource Requirements
@@ -160,13 +156,13 @@ x-casaos:
         - Additional storage based on course content
         
         ## Post-Installation
-        1. Wait for both containers to be healthy (check logs)
+        1. Wait for both containers to be healthy
         2. Access the web interface via the NSL URL
         3. Configure email settings in Site administration
         4. Install additional plugins from Moodle directory
         5. Create courses and enroll users
         
         ## Troubleshooting
-        - If installation hangs, check Moodle logs: `docker logs moodle-moodle-1`
-        - Pre-install script automatically sets correct permissions
-        - Both MariaDB and Moodle containers must be running
+        - Check container logs if installation takes too long
+        - Named volumes automatically handle permissions
+        - Both MariaDB and Moodle containers should be running
