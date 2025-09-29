@@ -1,72 +1,66 @@
 name: moodle
 services:
-  moodle-db:
-    image: mariadb:11.4
+  mariadb:
+    image: mariadb:11.3
     environment:
       MYSQL_ROOT_PASSWORD: $default_pwd
-      MYSQL_DATABASE: moodle
-      MYSQL_USER: moodle
+      MYSQL_DATABASE: bitnami_moodle
+      MYSQL_USER: bn_moodle
       MYSQL_PASSWORD: $default_pwd
-      MYSQL_CHARACTER_SET_SERVER: utf8mb4
-      MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
+      MYSQL_CHARACTER_SET: utf8mb4
+      MYSQL_COLLATE: utf8mb4_unicode_ci
       TZ: $TZ
     volumes:
       - /DATA/AppData/$AppID/mariadb:/var/lib/mysql
     deploy:
       resources:
         limits:
-          memory: 1024M
-          cpus: '1.0'
+          memory: 512M
+          cpus: '0.5'
     restart: unless-stopped
 
   moodle:
     image: bitnami/moodle:4.5.1
     user: $PUID:$PGID
+    expose:
+      - 80
     environment:
-      # Database Configuration
       MOODLE_DATABASE_TYPE: mariadb
-      MOODLE_DATABASE_HOST: moodle-db
+      MOODLE_DATABASE_HOST: mariadb
       MOODLE_DATABASE_PORT_NUMBER: 3306
-      MOODLE_DATABASE_NAME: moodle
-      MOODLE_DATABASE_USER: moodle
+      MOODLE_DATABASE_NAME: bitnami_moodle
+      MOODLE_DATABASE_USER: bn_moodle
       MOODLE_DATABASE_PASSWORD: $default_pwd
-      # Moodle Configuration
       MOODLE_USERNAME: admin
       MOODLE_PASSWORD: $default_pwd
-      MOODLE_EMAIL: admin@$domain
-      MOODLE_SITE_NAME: "Moodle LMS"
+      MOODLE_EMAIL: admin@example.com
+      MOODLE_SITE_NAME: CasaOS Learning Platform
       MOODLE_HOST: $domain
       MOODLE_REVERSEPROXY: 'yes'
       MOODLE_SSLPROXY: 'yes'
       MOODLE_SKIP_BOOTSTRAP: 'no'
-      MOODLE_LANG: en
-      # PHP Configuration
-      PHP_MEMORY_LIMIT: 512M
-      PHP_POST_MAX_SIZE: 256M
-      PHP_UPLOAD_MAX_FILESIZE: 256M
+      BITNAMI_DEBUG: 'false'
+      PHP_ENABLE_OPCACHE: 'yes'
+      PHP_MEMORY_LIMIT: 256M
       PHP_MAX_EXECUTION_TIME: 300
       PHP_MAX_INPUT_VARS: 5000
-      PHP_MAX_INPUT_TIME: 300
-      # Apache Configuration
-      APACHE_HTTP_PORT_NUMBER: 80
-      APACHE_HTTPS_PORT_NUMBER: 443
-      # System Configuration
-      BITNAMI_DEBUG: 'false'
+      PHP_MAX_FILE_UPLOADS: 20
+      PHP_UPLOAD_MAX_FILESIZE: 100M
+      PHP_POST_MAX_SIZE: 100M
+      MOODLE_LANG: en
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
     volumes:
       - /DATA/AppData/$AppID/moodle:/bitnami/moodle
       - /DATA/AppData/$AppID/moodledata:/bitnami/moodledata
-    expose:
-      - 80
+    depends_on:
+      - mariadb
     deploy:
       resources:
         limits:
-          memory: 2048M
+          memory: 1024M
           cpus: '1.0'
-    depends_on:
-      - moodle-db
     restart: unless-stopped
 
 x-casaos:
@@ -76,60 +70,60 @@ x-casaos:
   main: moodle
   webui_port: 80
   category: Education
-  author: CasaOS Team
-  developer: Moodle HQ
   description:
-    en_us: Moodle is the world's most popular learning management system. Start creating your online learning site in minutes! Moodle is a learning platform designed to provide educators, administrators and learners with a single robust, secure and integrated system to create personalized learning environments. With over 400 million users worldwide, Moodle powers learning at every level.
-    zh_cn: Moodle是世界上最受欢迎的学习管理系统。只需几分钟即可开始创建您的在线学习网站！Moodle是一个学习平台，旨在为教育工作者、管理员和学习者提供一个强大、安全和集成的系统，以创建个性化的学习环境。全球超过4亿用户，Moodle为各个层次的学习提供动力。
-    es_es: Moodle es el sistema de gestión de aprendizaje más popular del mundo. ¡Comience a crear su sitio de aprendizaje en línea en minutos! Moodle es una plataforma de aprendizaje diseñada para proporcionar a educadores, administradores y estudiantes un sistema único, robusto, seguro e integrado para crear entornos de aprendizaje personalizados. Con más de 400 millones de usuarios en todo el mundo.
-    fr_fr: Moodle est le système de gestion de l'apprentissage le plus populaire au monde. Commencez à créer votre site d'apprentissage en ligne en quelques minutes ! Moodle est une plateforme d'apprentissage conçue pour fournir aux éducateurs, aux administrateurs et aux apprenants un système unique, robuste, sécurisé et intégré pour créer des environnements d'apprentissage personnalisés.
-    ko_kr: Moodle은 세계에서 가장 인기 있는 학습 관리 시스템입니다. 몇 분 만에 온라인 학습 사이트를 만들기 시작하세요! Moodle은 교육자, 관리자 및 학습자에게 개인화된 학습 환경을 만들 수 있는 강력하고 안전하며 통합된 단일 시스템을 제공하도록 설계된 학습 플랫폼입니다. 전 세계 4억 명 이상의 사용자와 함께, Moodle은 모든 수준에서 학습을 지원합니다.
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Moodle/icon.png
+    en_us: Moodle is the world's most popular open source learning management system (LMS). Used by universities, schools, and corporations worldwide, Moodle provides a robust platform for creating personalized e-learning environments with courses, assignments, quizzes, forums, wikis, and collaborative tools. Features drag-and-drop interfaces, role-based permissions, comprehensive reporting, multi-language support, and extensive plugin ecosystem.
+    zh_cn: Moodle 是世界上最受欢迎的开源学习管理系统(LMS)。被全球的大学、学校和企业广泛使用，Moodle 提供了一个强大的平台，用于创建包含课程、作业、测验、论坛、维基和协作工具的个性化电子学习环境。具有拖放界面、基于角色的权限、全面的报告、多语言支持和丰富的插件生态系统。
+    es_es: Moodle es el sistema de gestión de aprendizaje (LMS) de código abierto más popular del mundo. Utilizado por universidades, escuelas y corporaciones en todo el mundo, Moodle proporciona una plataforma robusta para crear entornos de aprendizaje electrónico personalizados con cursos, tareas, cuestionarios, foros, wikis y herramientas colaborativas.
+    fr_fr: Moodle est le système de gestion de l'apprentissage (LMS) open source le plus populaire au monde. Utilisé par les universités, les écoles et les entreprises du monde entier, Moodle fournit une plateforme robuste pour créer des environnements d'apprentissage en ligne personnalisés avec des cours, des devoirs, des quiz, des forums, des wikis et des outils collaboratifs.
+    ko_kr: Moodle은 세계에서 가장 인기 있는 오픈소스 학습 관리 시스템(LMS)입니다. 전 세계 대학, 학교, 기업에서 사용되며, Moodle은 코스, 과제, 퀴즈, 포럼, 위키 및 협업 도구를 포함한 개인화된 e-러닝 환경을 만들기 위한 강력한 플랫폼을 제공합니다.
   tagline:
-    en_us: World's most popular learning management system
-    zh_cn: 世界上最受欢迎的学习管理系统
-    es_es: El sistema de gestión de aprendizaje más popular del mundo
-    fr_fr: Le système de gestion de l'apprentissage le plus populaire au monde
-    ko_kr: 세계에서 가장 인기 있는 학습 관리 시스템
+    en_us: Powerful open source learning platform for online education
+    zh_cn: 用于在线教育的强大开源学习平台
+    es_es: Poderosa plataforma de aprendizaje de código abierto para educación en línea
+    fr_fr: Plateforme d'apprentissage open source puissante pour l'éducation en ligne
+    ko_kr: 온라인 교육을 위한 강력한 오픈소스 학습 플랫폼
   title:
-    en_us: Moodle LMS
+    en_us: Moodle™ LMS
+  developer: Moodle HQ
+  author: CasaOS Team
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Moodle/icon.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Moodle/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Moodle/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Moodle/screenshot-3.png
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Moodle/thumbnail.png
+  pre-install-cmd: |
+    docker run --rm -v /DATA/AppData/$AppID/:/data ubuntu:22.04 bash -c "
+      mkdir -p /data/moodle /data/moodledata /data/mariadb &&
+      chown -R $PUID:$PGID /data/moodle /data/moodledata &&
+      chmod 755 /data/moodle /data/moodledata &&
+      chmod 700 /data/mariadb
+    "
   index: /
   scheme: http
   store_app_id: moodle
   tips:
     before_install:
       en_us: |
-        ## Default Credentials
-        
-        | Field | Value |
-        |-------|-------|
-        | Username | `admin` |
-        | Password | `$default_pwd` |
+        ## Default Administrator Credentials
+        | Username | Password |
+        |----------|----------|
+        | `admin` | `$default_pwd` |
         
         ## Important Notes
+        - First installation may take several minutes to complete
+        - The database initialization happens automatically on first run
+        - All course materials and user uploads are stored in `/DATA/AppData/moodle/moodledata`
+        - Regular backups of database and moodledata folders are recommended
         
-        - **Initial setup may take 5-10 minutes** to complete database initialization
-        - Moodle requires at least **2GB RAM** for optimal performance
-        - PHP max_input_vars is set to **5000** as required by Moodle 4.5
-        - File upload limit is set to **256MB** (adjustable via environment variables)
-        - Cron jobs run automatically every minute for course maintenance
-        - The system is configured for reverse proxy with SSL support via NSL router
+        ## Resource Requirements
+        - Minimum 1GB RAM recommended
+        - 2GB+ storage for initial installation
+        - Additional storage based on course content and users
         
-        ## Post-Installation Steps
-        
-        After installation:
-        1. Access Moodle at your domain URL: `https://$domain`
-        2. Log in with the default credentials above
-        3. **Change the admin password immediately** for security
-        4. Configure email settings for notifications (Site administration → Server → Email)
-        5. Set up authentication methods if needed (LDAP, OAuth2, etc.)
-        6. Install additional plugins from the [Moodle plugins directory](https://moodle.org/plugins/)
-        7. Create courses and enroll users
-        
-        ## Performance Tuning
-        
-        For large installations (>1000 users), consider:
-        - Increasing PHP memory limit via environment variables
-        - Enabling Redis caching (requires additional configuration)
-        - Setting up a CDN for static content
+        ## Post-Installation
+        1. Complete the web-based setup wizard
+        2. Configure email settings for notifications
+        3. Install additional plugins as needed
+        4. Set up authentication methods
+        5. Configure site policies and security settings
