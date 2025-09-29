@@ -2,6 +2,7 @@ name: moodle
 services:
   mariadb:
     image: mariadb:11.3
+    # MariaDB는 데이터베이스 초기화를 위해 루트로 실행되어야 함
     environment:
       MYSQL_ROOT_PASSWORD: $default_pwd
       MYSQL_DATABASE: bitnami_moodle
@@ -21,9 +22,9 @@ services:
 
   moodle:
     image: bitnami/moodle:4.5.1
-    user: $PUID:$PGID
+    # Bitnami Moodle는 초기 설정 시 특정 권한이 필요하므로 user 지정 제거
     expose:
-      - 80
+      - 8080
     environment:
       MOODLE_DATABASE_TYPE: mariadb
       MOODLE_DATABASE_HOST: mariadb
@@ -48,8 +49,9 @@ services:
       PHP_UPLOAD_MAX_FILESIZE: 100M
       PHP_POST_MAX_SIZE: 100M
       MOODLE_LANG: en
-      PUID: $PUID
-      PGID: $PGID
+      ALLOW_EMPTY_PASSWORD: 'no'
+      APACHE_HTTP_PORT_NUMBER: 8080
+      APACHE_HTTPS_PORT_NUMBER: 8443
       TZ: $TZ
     volumes:
       - /DATA/AppData/$AppID/moodle:/bitnami/moodle
@@ -68,7 +70,7 @@ x-casaos:
     - amd64
     - arm64
   main: moodle
-  webui_port: 80
+  webui_port: 8080
   category: Education
   description:
     en_us: Moodle is the world's most popular open source learning management system (LMS). Used by universities, schools, and corporations worldwide, Moodle provides a robust platform for creating personalized e-learning environments with courses, assignments, quizzes, forums, wikis, and collaborative tools. Features drag-and-drop interfaces, role-based permissions, comprehensive reporting, multi-language support, and extensive plugin ecosystem.
@@ -95,9 +97,9 @@ x-casaos:
   pre-install-cmd: |
     docker run --rm -v /DATA/AppData/$AppID/:/data ubuntu:22.04 bash -c "
       mkdir -p /data/moodle /data/moodledata /data/mariadb &&
-      chown -R $PUID:$PGID /data/moodle /data/moodledata &&
+      chmod 777 /data/mariadb &&
       chmod 755 /data/moodle /data/moodledata &&
-      chmod 700 /data/mariadb
+      echo 'Directories created and permissions set'
     "
   index: /
   scheme: http
@@ -115,6 +117,7 @@ x-casaos:
         - The database initialization happens automatically on first run
         - All course materials and user uploads are stored in `/DATA/AppData/moodle/moodledata`
         - Regular backups of database and moodledata folders are recommended
+        - Bitnami Moodle uses port 8080 for HTTP and 8443 for HTTPS
         
         ## Resource Requirements
         - Minimum 1GB RAM recommended
@@ -127,3 +130,8 @@ x-casaos:
         3. Install additional plugins as needed
         4. Set up authentication methods
         5. Configure site policies and security settings
+        
+        ## Rationale for Root Permissions
+        - MariaDB requires root to initialize database properly
+        - Bitnami Moodle needs specific permissions for Apache configuration
+        - Data directories are properly secured after initialization
