@@ -2,16 +2,12 @@ name: moodle
 services:
   mariadb:
     image: mariadb:11.3
-    user: $PUID:$PGID
     environment:
       MYSQL_ROOT_PASSWORD: ${default_pwd}
       MYSQL_DATABASE: moodle
       MYSQL_USER: moodle
       MYSQL_PASSWORD: ${default_pwd}
-      MYSQL_INITDB_SKIP_TZINFO: 1
       TZ: ${TZ}
-      PUID: ${PUID}
-      PGID: ${PGID}
     volumes:
       - /DATA/AppData/${AppID}/mariadb:/var/lib/mysql
     command: >
@@ -35,7 +31,7 @@ services:
   moodle:
     image: bitnami/moodle:4.5.1
     expose:
-      - 80  # NSL router requires expose, not ports
+      - 8080  # NSL router requires expose, not ports
     environment:
       # Database configuration
       MOODLE_DATABASE_TYPE: mariadb
@@ -56,9 +52,9 @@ services:
       # Bitnami specific
       BITNAMI_DEBUG: 'false'
       ALLOW_EMPTY_PASSWORD: 'no'
-      # Apache configuration - Port 80 for clean URLs
-      APACHE_HTTP_PORT_NUMBER: 80
-      APACHE_HTTPS_PORT_NUMBER: 443
+      # Apache configuration
+      APACHE_HTTP_PORT_NUMBER: 8080
+      APACHE_HTTPS_PORT_NUMBER: 8443
       # PHP configuration
       PHP_ENABLE_OPCACHE: 'yes'
       PHP_MEMORY_LIMIT: 256M
@@ -91,7 +87,7 @@ x-casaos:
     - amd64
     - arm64
   main: moodle
-  webui_port: 80  # Must match exposed port for clean NSL URL
+  webui_port: 8080  # Must match exposed port
   category: Education
   description:
     en_us: Moodle is the world's most popular open source learning management system (LMS). Used by universities, schools, and corporations worldwide, Moodle provides a robust platform for creating personalized e-learning environments with courses, assignments, quizzes, forums, wikis, and collaborative tools. Features drag-and-drop interfaces, role-based permissions, comprehensive reporting, multi-language support, and extensive plugin ecosystem.
@@ -116,6 +112,7 @@ x-casaos:
     - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Moodle/screenshot-3.png
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Moodle/thumbnail.png
   pre-install-cmd: |
+    # Clean and prepare directories with correct permissions
     docker run --rm -v /DATA/AppData/${AppID}/:/data alpine:latest sh -c "
       # Clean existing data if needed
       if [ -d /data/mariadb ] && [ \"\$(ls -A /data/mariadb 2>/dev/null)\" ]; then
@@ -124,11 +121,14 @@ x-casaos:
         rm -rf /data/mariadb/*
       fi
       
+      # Create directories
       mkdir -p /data/mariadb /data/moodle /data/moodledata
       
+      # Set permissions for MariaDB (using PUID:PGID)
       chown -R ${PUID}:${PGID} /data/mariadb
       chmod -R 755 /data/mariadb
       
+      # Set permissions for Moodle (Bitnami uses 1001:1001)
       chown -R 1001:1001 /data/moodle /data/moodledata
       chmod -R 775 /data/moodle /data/moodledata
       
