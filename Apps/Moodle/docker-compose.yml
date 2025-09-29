@@ -2,20 +2,14 @@ name: moodle
 services:
   mariadb:
     image: mariadb:11.3
-    user: "999:999"  # MariaDB 사용자 명시적 지정
     environment:
-      MYSQL_ROOT_PASSWORD: ${default_pwd:-changeme123}
+      MYSQL_ROOT_PASSWORD: ${default_pwd}
       MYSQL_DATABASE: moodle
       MYSQL_USER: moodle
-      MYSQL_PASSWORD: ${default_pwd:-changeme123}
-      TZ: ${TZ:-Asia/Seoul}
-      # MariaDB 추가 설정
-      MARIADB_AUTO_UPGRADE: "1"
-      MARIADB_DISABLE_UPGRADE_BACKUP: "1"
+      MYSQL_PASSWORD: ${default_pwd}
+      TZ: ${TZ}
     volumes:
-      - mariadb_data:/var/lib/mysql  # Named volume 사용 (권한 문제 회피)
-      # 또는 bind mount를 계속 사용하려면:
-      # - /DATA/AppData/${AppID}/mariadb:/var/lib/mysql:Z  # SELinux 레이블 추가
+      - /DATA/AppData/${AppID}/mariadb:/var/lib/mysql
     command: >
       --character-set-server=utf8mb4
       --collation-server=utf8mb4_unicode_ci
@@ -32,15 +26,13 @@ services:
       interval: 30s
       timeout: 10s
       retries: 10
-      start_period: 90s  # 초기화 시간 늘림
-    networks:
-      - moodle-network
+      start_period: 60s
 
   moodle:
     image: bitnami/moodle:4.5.1
-    user: "1001:1001"  # Bitnami 사용자 명시적 지정
-    expose:
-      - 8080
+    # user 지정 제거 - Bitnami 이미지가 자체적으로 권한 관리
+    ports:
+      - "8080:8080"  # expose 대신 ports 사용
     environment:
       # Database configuration
       MOODLE_DATABASE_TYPE: mariadb
@@ -48,18 +40,18 @@ services:
       MOODLE_DATABASE_PORT_NUMBER: 3306
       MOODLE_DATABASE_NAME: moodle
       MOODLE_DATABASE_USER: moodle
-      MOODLE_DATABASE_PASSWORD: ${default_pwd:-changeme123}
+      MOODLE_DATABASE_PASSWORD: ${default_pwd}
       # Admin configuration
       MOODLE_USERNAME: admin
-      MOODLE_PASSWORD: ${default_pwd:-changeme123}
-      MOODLE_EMAIL: admin@${domain:-example.com}
+      MOODLE_PASSWORD: ${default_pwd}
+      MOODLE_EMAIL: admin@${domain}
       # Site configuration
       MOODLE_SITE_NAME: CasaOS Learning Platform
-      MOODLE_HOST: ${domain:-localhost}
+      MOODLE_HOST: ${domain}
       MOODLE_REVERSEPROXY: 'yes'
       MOODLE_SSLPROXY: 'yes'
       # Bitnami specific
-      BITNAMI_DEBUG: 'true'  # 디버그 모드 활성화
+      BITNAMI_DEBUG: 'false'
       ALLOW_EMPTY_PASSWORD: 'no'
       # Apache configuration
       APACHE_HTTP_PORT_NUMBER: 8080
@@ -72,15 +64,13 @@ services:
       PHP_UPLOAD_MAX_FILESIZE: 100M
       PHP_POST_MAX_SIZE: 100M
       # System
-      TZ: ${TZ:-Asia/Seoul}
-      # 추가 대기 시간
+      TZ: ${TZ}
+      # 추가 설정
       MOODLE_SKIP_BOOTSTRAP: 'no'
+      MOODLE_SKIP_INSTALL: 'no'
     volumes:
-      - moodle_data:/bitnami/moodle
-      - moodledata_data:/bitnami/moodledata
-      # 또는 bind mount 사용시:
-      # - /DATA/AppData/${AppID}/moodle:/bitnami/moodle:Z
-      # - /DATA/AppData/${AppID}/moodledata:/bitnami/moodledata:Z
+      - /DATA/AppData/${AppID}/moodle:/bitnami/moodle
+      - /DATA/AppData/${AppID}/moodledata:/bitnami/moodledata
     depends_on:
       mariadb:
         condition: service_healthy
@@ -90,22 +80,6 @@ services:
           memory: 1024M
           cpus: '1.0'
     restart: unless-stopped
-    networks:
-      - moodle-network
-
-# Named volumes 정의 (권한 문제 자동 해결)
-volumes:
-  mariadb_data:
-    driver: local
-  moodle_data:
-    driver: local
-  moodledata_data:
-    driver: local
-
-# 네트워크 정의
-networks:
-  moodle-network:
-    driver: bridge
 
 x-casaos:
   architectures:
@@ -126,6 +100,33 @@ x-casaos:
   screenshot_link:
     - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Moodle/screenshot-1.png
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Moodle/thumbnail.png
+  pre-install-cmd: |
+    docker run --rm -v /DATA/AppData/${AppID}/:/data alpine:latest sh -c "
+      # MariaDB 디렉토리 준비 (UID 999)
+      mkdir -p /data/mariadb
+      chown -R 999:999 /data/mariadb
+      chmod -R 755 /data/mariadb
+      
+      # Moodle 디렉토리 준비 (UID 1001 - Bitnami)
+      mkdir -p /data/moodle /data/moodledata
+      chown -R 1001:1001 /data/moodle /data/moodledata
+      chmod -R 775 /data/moodle /data/moodledata
+      
+      echo 'Directories prepared with correct permissions'
+    "
   index: /
+  port_map: "8080"
   scheme: http
   store_app_id: moodle
+  tips:
+    before_install:
+      en_us: |
+        ## Default Administrator Credentials
+        | Username | Password |
+        |----------|----------|
+        | `admin` | `${default_pwd}` |
+        
+        ## Important Notes
+        - First installation may take 5-10 minutes
+        - MariaDB is working correctly
+        - Moodle will initialize on first successful startup
