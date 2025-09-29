@@ -30,15 +30,17 @@ services:
       interval: 30s
       timeout: 10s
       retries: 10
-      start_period: 90s  # 초기화 시간 늘림
+      start_period: 90s
     networks:
       - moodle-network
 
   moodle:
     image: bitnami/moodle:4.5.1
-    user: 0:0 # Bitnami 사용자 명시적 지정
+    user: 0:0  # Root required for Bitnami container - changing causes permission issues
+    ports:
+      - "8080:8080"  # Direct port mapping for debugging
     expose:
-      - 8080  # NSL router requires expose, not ports
+      - 8080  # Also expose for NSL router
     environment:
       # Database configuration
       MOODLE_DATABASE_TYPE: mariadb
@@ -49,19 +51,23 @@ services:
       MOODLE_DATABASE_PASSWORD: ${default_pwd}
       # Admin configuration
       MOODLE_USERNAME: admin
-      MOODLE_PASSWORD: 0.0.0.0
-      MOODLE_EMAIL: admin@${domain}
-      # Site configuration
+      MOODLE_PASSWORD: ${default_pwd}
+      MOODLE_EMAIL: admin@example.com  # Use static email initially
+      # Site configuration  
       MOODLE_SITE_NAME: Yundera Learning Platform
-      MOODLE_HOST: ${domain}
+      # MOODLE_HOST is intentionally not set - auto-detect on first access
+      MOODLE_SCHEME: https
       MOODLE_REVERSEPROXY: 'true'
       MOODLE_SSLPROXY: 'true'
+      MOODLE_SKIP_BOOTSTRAP: 'no'
       # Bitnami specific
-      BITNAMI_DEBUG: 'true'
+      BITNAMI_DEBUG: 'false'  # Disable debug for production
       ALLOW_EMPTY_PASSWORD: 'no'
       # Apache configuration
       APACHE_HTTP_PORT_NUMBER: 8080
       APACHE_HTTPS_PORT_NUMBER: 8443
+      # Disable HTTPS redirect
+      MOODLE_SKIP_INSTALL: 'no'
       # PHP configuration
       PHP_ENABLE_OPCACHE: 'yes'
       PHP_MEMORY_LIMIT: 256M
@@ -73,8 +79,6 @@ services:
       TZ: ${TZ}
       PUID: ${PUID}
       PGID: ${PGID}
-      # 추가 대기 시간
-      MOODLE_SKIP_BOOTSTRAP: 'no'
     volumes:
       - moodle_data:/bitnami/moodle
       - moodledata_data:/bitnami/moodledata
@@ -89,6 +93,12 @@ services:
     restart: unless-stopped
     networks:
       - moodle-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/login/index.php"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 300s  # 5 minutes for initial setup
 
 # Named volumes 정의 (권한 문제 자동 해결)
 volumes:
@@ -111,6 +121,16 @@ x-casaos:
   main: moodle
   webui_port: 8080  # Must match exposed port
   category: Education
+  pre-install-cmd: |
+    mkdir -p /DATA/AppData/moodle/scripts &&
+    echo '#!/bin/bash
+    # Wait for Moodle to be installed
+    sleep 10
+    # Update wwwroot dynamically after installation
+    if [ -f /bitnami/moodle/config.php ]; then
+      php /bitnami/moodle/admin/cli/cfg.php --name=wwwroot --set=https://${DOMAIN:-localhost}
+    fi' > /DATA/AppData/moodle/scripts/update_domain.sh &&
+    chmod +x /DATA/AppData/moodle/scripts/update_domain.sh
   description:
     en_us: Moodle is the world's most popular open source learning management system (LMS). Used by universities, schools, and corporations worldwide, Moodle provides a robust platform for creating personalized e-learning environments with courses, assignments, quizzes, forums, wikis, and collaborative tools. Features drag-and-drop interfaces, role-based permissions, comprehensive reporting, multi-language support, and extensive plugin ecosystem.
     zh_cn: Moodle 是世界上最受欢迎的开源学习管理系统(LMS)。被全球的大学、学校和企业广泛使用，Moodle 提供了一个强大的平台，用于创建包含课程、作业、测验、论坛、维基和协作工具的个性化电子学习环境。
@@ -134,7 +154,6 @@ x-casaos:
     - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Moodle/screenshot-3.png
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Moodle/thumbnail.png
   index: /
-  scheme: http
   store_app_id: moodle
   tips:
     before_install:
@@ -148,7 +167,7 @@ x-casaos:
         - First installation may take 5-10 minutes to complete
         - The database will be initialized automatically on first run
         - Using named volumes for automatic permission management
-        - Moodle will be accessible via NSL router at: https://8080-moodle-[username].nsl.sh
+        - Access directly via port 8080 or through NSL router
         
         ## Resource Requirements
         - Minimum 1GB RAM recommended
@@ -157,7 +176,7 @@ x-casaos:
         
         ## Post-Installation
         1. Wait for both containers to be healthy
-        2. Access the web interface via the NSL URL
+        2. Access the web interface via port 8080
         3. Configure email settings in Site administration
         4. Install additional plugins from Moodle directory
         5. Create courses and enroll users
