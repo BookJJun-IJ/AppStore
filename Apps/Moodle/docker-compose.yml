@@ -53,12 +53,13 @@ services:
       MOODLE_EMAIL: admin@example.com  # Use static email initially
       # Site configuration  
       MOODLE_SITE_NAME: Yundera Learning Platform
-      # MOODLE_HOST is intentionally not set - auto-detect on first access
+      # Accept connections from any host
+      MOODLE_HOST: ""  # Empty = accept any host
       MOODLE_SCHEME: https
       MOODLE_REVERSEPROXY: 'true'
       MOODLE_SSLPROXY: 'true'
-      MOODLE_SKIP_BOOTSTRAP: 'no'
-      # Bitnami specific
+      # Allow proxy from any IP
+      MOODLE_PROXY_HOST: "*"
       BITNAMI_DEBUG: 'true'  # Enable debug for troubleshooting
       ALLOW_EMPTY_PASSWORD: 'no'
       # Apache configuration
@@ -152,6 +153,7 @@ x-casaos:
     - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Moodle/screenshot-3.png
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Moodle/thumbnail.png
   index: /
+  scheme: http
   store_app_id: moodle
   tips:
     before_install:
