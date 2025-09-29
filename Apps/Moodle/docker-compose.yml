@@ -115,7 +115,6 @@ x-casaos:
       echo 'Directories prepared with correct permissions'
     "
   index: /
-  port_map: "8080"
   scheme: http
   store_app_id: moodle
   tips:
