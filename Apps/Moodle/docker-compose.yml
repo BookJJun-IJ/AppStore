@@ -13,7 +13,7 @@ services:
       MARIADB_AUTO_UPGRADE: "1"
       MARIADB_DISABLE_UPGRADE_BACKUP: "1"
     volumes:
-      - /DATA/AppData/${AppID}/mariadb:/var/lib/mysql
+      - mariadb_data:/var/lib/mysql  # Named volume 사용 (권한 문제 회피)
     command: >
       --character-set-server=utf8mb4
       --collation-server=utf8mb4_unicode_ci
@@ -36,7 +36,7 @@ services:
 
   moodle:
     image: bitnami/moodle:4.5.1
-    # user 제거 - named volume 사용 시 자동 권한 관리
+    user: $PUID:$PGID  # Bitnami 사용자 명시적 지정
     expose:
       - 8080  # NSL router requires expose, not ports
     environment:
@@ -76,8 +76,8 @@ services:
       # 추가 대기 시간
       MOODLE_SKIP_BOOTSTRAP: 'no'
     volumes:
-      - /DATA/AppData/${AppID}/moodle:/bitnami/moodle
-      - /DATA/AppData/${AppID}/moodledata:/bitnami/moodledata
+      - moodle_data:/bitnami/moodle
+      - moodledata_data:/bitnami/moodledata
     depends_on:
       mariadb:
         condition: service_healthy
@@ -89,6 +89,15 @@ services:
     restart: unless-stopped
     networks:
       - moodle-network
+
+# Named volumes 정의 (권한 문제 자동 해결)
+volumes:
+  mariadb_data:
+    driver: local
+  moodle_data:
+    driver: local
+  moodledata_data:
+    driver: local
 
 # 네트워크 정의
 networks:
@@ -127,23 +136,6 @@ x-casaos:
   index: /
   scheme: http
   store_app_id: moodle
-  pre-install-cmd: |
-    # Prepare directories with correct permissions
-    docker run --rm -v /DATA/AppData/${AppID}/:/data alpine:latest sh -c "
-      # Clean and create directories
-      rm -rf /data/moodle/* /data/moodledata/* 2>/dev/null || true
-      mkdir -p /data/mariadb /data/moodle /data/moodledata
-      
-      # MariaDB permissions (UID 999)
-      chown -R 999:999 /data/mariadb
-      chmod -R 755 /data/mariadb
-      
-      # Moodle permissions (UID 1001 for Bitnami)
-      chown -R 1001:1001 /data/moodle /data/moodledata
-      chmod -R 775 /data/moodle /data/moodledata
-      
-      echo 'Directories prepared with correct permissions'
-    "
   tips:
     before_install:
       en_us: |
