@@ -49,15 +49,15 @@ services:
       MOODLE_DATABASE_PASSWORD: ${default_pwd}
       # Admin configuration
       MOODLE_USERNAME: admin
-      MOODLE_PASSWORD: ${default_pwd}
+      MOODLE_PASSWORD: 0.0.0.0
       MOODLE_EMAIL: admin@${domain}
       # Site configuration
       MOODLE_SITE_NAME: Yundera Learning Platform
       MOODLE_HOST: ${domain}
-      MOODLE_REVERSEPROXY: 'yes'
-      MOODLE_SSLPROXY: 'yes'
+      MOODLE_REVERSEPROXY: 'true'
+      MOODLE_SSLPROXY: 'true'
       # Bitnami specific
-      BITNAMI_DEBUG: 'false'
+      BITNAMI_DEBUG: 'true'
       ALLOW_EMPTY_PASSWORD: 'no'
       # Apache configuration
       APACHE_HTTP_PORT_NUMBER: 8080
