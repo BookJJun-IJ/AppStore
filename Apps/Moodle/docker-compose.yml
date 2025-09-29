@@ -2,14 +2,11 @@ name: moodle
 services:
   mariadb:
     image: mariadb:11.3
-    # MariaDB는 데이터베이스 초기화를 위해 루트로 실행되어야 함
     environment:
       MYSQL_ROOT_PASSWORD: $default_pwd
-      MYSQL_DATABASE: bitnami_moodle
-      MYSQL_USER: bn_moodle
+      MYSQL_DATABASE: moodle
+      MYSQL_USER: moodle
       MYSQL_PASSWORD: $default_pwd
-      MYSQL_CHARACTER_SET: utf8mb4
-      MYSQL_COLLATE: utf8mb4_unicode_ci
       TZ: $TZ
     volumes:
       - /DATA/AppData/$AppID/mariadb:/var/lib/mysql
@@ -19,45 +16,55 @@ services:
           memory: 512M
           cpus: '0.5'
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mariadb", "--user=moodle", "--password=$default_pwd", "--execute", "SELECT 1;"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
 
   moodle:
     image: bitnami/moodle:4.5.1
-    # Bitnami Moodle는 초기 설정 시 특정 권한이 필요하므로 user 지정 제거
     expose:
       - 8080
     environment:
+      # Database configuration
       MOODLE_DATABASE_TYPE: mariadb
       MOODLE_DATABASE_HOST: mariadb
       MOODLE_DATABASE_PORT_NUMBER: 3306
-      MOODLE_DATABASE_NAME: bitnami_moodle
-      MOODLE_DATABASE_USER: bn_moodle
+      MOODLE_DATABASE_NAME: moodle
+      MOODLE_DATABASE_USER: moodle
       MOODLE_DATABASE_PASSWORD: $default_pwd
+      # Admin configuration
       MOODLE_USERNAME: admin
       MOODLE_PASSWORD: $default_pwd
-      MOODLE_EMAIL: admin@example.com
+      MOODLE_EMAIL: admin@$domain
+      # Site configuration
       MOODLE_SITE_NAME: CasaOS Learning Platform
       MOODLE_HOST: $domain
       MOODLE_REVERSEPROXY: 'yes'
       MOODLE_SSLPROXY: 'yes'
-      MOODLE_SKIP_BOOTSTRAP: 'no'
+      # Bitnami specific
       BITNAMI_DEBUG: 'false'
+      ALLOW_EMPTY_PASSWORD: 'no'
+      # Apache configuration
+      APACHE_HTTP_PORT_NUMBER: 8080
+      APACHE_HTTPS_PORT_NUMBER: 8443
+      # PHP configuration
       PHP_ENABLE_OPCACHE: 'yes'
       PHP_MEMORY_LIMIT: 256M
       PHP_MAX_EXECUTION_TIME: 300
       PHP_MAX_INPUT_VARS: 5000
-      PHP_MAX_FILE_UPLOADS: 20
       PHP_UPLOAD_MAX_FILESIZE: 100M
       PHP_POST_MAX_SIZE: 100M
-      MOODLE_LANG: en
-      ALLOW_EMPTY_PASSWORD: 'no'
-      APACHE_HTTP_PORT_NUMBER: 8080
-      APACHE_HTTPS_PORT_NUMBER: 8443
+      # System
       TZ: $TZ
     volumes:
       - /DATA/AppData/$AppID/moodle:/bitnami/moodle
       - /DATA/AppData/$AppID/moodledata:/bitnami/moodledata
     depends_on:
-      - mariadb
+      mariadb:
+        condition: service_healthy
     deploy:
       resources:
         limits:
@@ -95,13 +102,16 @@ x-casaos:
     - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Moodle/screenshot-3.png
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Moodle/thumbnail.png
   pre-install-cmd: |
-    docker run --rm -v /DATA/AppData/$AppID/:/data ubuntu:22.04 bash -c "
-      mkdir -p /data/moodle /data/moodledata /data/mariadb &&
-      chmod 777 /data/mariadb &&
-      chmod 755 /data/moodle /data/moodledata &&
-      echo 'Directories created and permissions set'
+    docker run --rm -v /DATA/AppData/$AppID/:/data alpine:latest sh -c "
+      rm -rf /data/mariadb/* /data/moodle/* /data/moodledata/* 2>/dev/null || true &&
+      mkdir -p /data/mariadb /data/moodle /data/moodledata &&
+      chmod -R 777 /data/mariadb &&
+      chmod -R 777 /data/moodle &&
+      chmod -R 777 /data/moodledata &&
+      echo 'Cleaned and prepared directories with full permissions'
     "
   index: /
+  port_map: "8080"
   scheme: http
   store_app_id: moodle
   tips:
@@ -113,25 +123,23 @@ x-casaos:
         | `admin` | `$default_pwd` |
         
         ## Important Notes
-        - First installation may take several minutes to complete
-        - The database initialization happens automatically on first run
-        - All course materials and user uploads are stored in `/DATA/AppData/moodle/moodledata`
-        - Regular backups of database and moodledata folders are recommended
-        - Bitnami Moodle uses port 8080 for HTTP and 8443 for HTTPS
+        - First installation may take 5-10 minutes to complete
+        - The database will be initialized automatically on first run
+        - If you see permission errors, the pre-install command will clean the directories
+        - Bitnami Moodle uses port 8080 by default
         
         ## Resource Requirements
         - Minimum 1GB RAM recommended
         - 2GB+ storage for initial installation
-        - Additional storage based on course content and users
+        - Additional storage based on course content
+        
+        ## Troubleshooting
+        - If installation fails, stop the container and remove `/DATA/AppData/moodle` directory
+        - Then reinstall the app to start fresh
         
         ## Post-Installation
-        1. Complete the web-based setup wizard
-        2. Configure email settings for notifications
-        3. Install additional plugins as needed
-        4. Set up authentication methods
-        5. Configure site policies and security settings
-        
-        ## Rationale for Root Permissions
-        - MariaDB requires root to initialize database properly
-        - Bitnami Moodle needs specific permissions for Apache configuration
-        - Data directories are properly secured after initialization
+        1. Wait for the installation to complete
+        2. Access the web interface
+        3. Configure email settings
+        4. Install additional plugins as needed
+        5. Set up courses and us
