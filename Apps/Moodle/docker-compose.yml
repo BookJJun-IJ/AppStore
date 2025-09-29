@@ -26,12 +26,13 @@ services:
       interval: 30s
       timeout: 10s
       retries: 10
-      start_period: 90s
+      start_period: 60s
 
   moodle:
     image: bitnami/moodle:4.5.1
+    # user 지정 제거 - Bitnami 이미지가 자체적으로 권한 관리
     expose:
-      - 8080  # NSL router requires expose, not ports
+      - 8080  # expose 대신 ports 사용
     environment:
       # Database configuration
       MOODLE_DATABASE_TYPE: mariadb
@@ -45,7 +46,7 @@ services:
       MOODLE_PASSWORD: ${default_pwd}
       MOODLE_EMAIL: admin@${domain}
       # Site configuration
-      MOODLE_SITE_NAME: Yundera Learning Platform
+      MOODLE_SITE_NAME: CasaOS Learning Platform
       MOODLE_HOST: ${domain}
       MOODLE_REVERSEPROXY: 'yes'
       MOODLE_SSLPROXY: 'yes'
@@ -62,11 +63,9 @@ services:
       PHP_MAX_INPUT_VARS: 5000
       PHP_UPLOAD_MAX_FILESIZE: 100M
       PHP_POST_MAX_SIZE: 100M
-      # System variables
+      # System
       TZ: ${TZ}
-      PUID: ${PUID}
-      PGID: ${PGID}
-      # Additional settings
+      # 추가 설정
       MOODLE_SKIP_BOOTSTRAP: 'no'
       MOODLE_SKIP_INSTALL: 'no'
     volumes:
@@ -87,48 +86,29 @@ x-casaos:
     - amd64
     - arm64
   main: moodle
-  webui_port: 8080  # Must match exposed port
+  webui_port: 8080
   category: Education
   description:
-    en_us: Moodle is the world's most popular open source learning management system (LMS). Used by universities, schools, and corporations worldwide, Moodle provides a robust platform for creating personalized e-learning environments with courses, assignments, quizzes, forums, wikis, and collaborative tools. Features drag-and-drop interfaces, role-based permissions, comprehensive reporting, multi-language support, and extensive plugin ecosystem.
-    zh_cn: Moodle 是世界上最受欢迎的开源学习管理系统(LMS)。被全球的大学、学校和企业广泛使用，Moodle 提供了一个强大的平台，用于创建包含课程、作业、测验、论坛、维基和协作工具的个性化电子学习环境。
-    es_es: Moodle es el sistema de gestión de aprendizaje (LMS) de código abierto más popular del mundo. Utilizado por universidades, escuelas y corporaciones en todo el mundo.
-    fr_fr: Moodle est le système de gestion de l'apprentissage (LMS) open source le plus populaire au monde. Utilisé par les universités, les écoles et les entreprises du monde entier.
-    ko_kr: Moodle은 세계에서 가장 인기 있는 오픈소스 학습 관리 시스템(LMS)입니다. 전 세계 대학, 학교, 기업에서 사용되며, 코스, 과제, 퀴즈, 포럼, 위키 및 협업 도구를 포함한 개인화된 e-러닝 환경을 만들기 위한 강력한 플랫폼을 제공합니다.
+    en_us: Moodle is the world's most popular open source learning management system (LMS).
   tagline:
     en_us: Powerful open source learning platform for online education
-    zh_cn: 用于在线教育的强大开源学习平台
-    es_es: Poderosa plataforma de aprendizaje de código abierto para educación en línea
-    fr_fr: Plateforme d'apprentissage open source puissante pour l'éducation en ligne
-    ko_kr: 온라인 교육을 위한 강력한 오픈소스 학습 플랫폼
   title:
     en_us: Moodle™ LMS
   developer: Moodle HQ
-  author: Yundera Team
+  author: CasaOS Team
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Moodle/icon.png
   screenshot_link:
     - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Moodle/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Moodle/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Moodle/screenshot-3.png
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Moodle/thumbnail.png
   pre-install-cmd: |
-    # Clean and prepare directories with correct permissions
     docker run --rm -v /DATA/AppData/${AppID}/:/data alpine:latest sh -c "
-      # Clean existing data if needed
-      if [ -d /data/mariadb ] && [ \"\$(ls -A /data/mariadb 2>/dev/null)\" ]; then
-        echo 'Backing up existing MariaDB data...'
-        tar -czf /data/mariadb_backup_\$(date +%Y%m%d_%H%M%S).tar.gz /data/mariadb 2>/dev/null || true
-        rm -rf /data/mariadb/*
-      fi
-      
-      # Create directories
-      mkdir -p /data/mariadb /data/moodle /data/moodledata
-      
-      # Set permissions for MariaDB (using PUID:PGID)
-      chown -R ${PUID}:${PGID} /data/mariadb
+      # MariaDB 디렉토리 준비 (UID 999)
+      mkdir -p /data/mariadb
+      chown -R 999:999 /data/mariadb
       chmod -R 755 /data/mariadb
       
-      # Set permissions for Moodle (Bitnami uses 1001:1001)
+      # Moodle 디렉토리 준비 (UID 1001 - Bitnami)
+      mkdir -p /data/moodle /data/moodledata
       chown -R 1001:1001 /data/moodle /data/moodledata
       chmod -R 775 /data/moodle /data/moodledata
       
@@ -143,27 +123,9 @@ x-casaos:
         ## Default Administrator Credentials
         | Username | Password |
         |----------|----------|
-        | `admin` | `$default_pwd` |
+        | `admin` | `${default_pwd}` |
         
         ## Important Notes
-        - First installation may take 5-10 minutes to complete
-        - The database will be initialized automatically on first run
-        - Moodle will be accessible via NSL router at: https://moodle-[username].nsl.sh
-        - Apache is configured to run on port 80 for clean URL access
-        
-        ## Resource Requirements
-        - Minimum 1GB RAM recommended
-        - 2GB+ storage for initial installation
-        - Additional storage based on course content
-        
-        ## Post-Installation
-        1. Wait for both containers to be healthy
-        2. Access the web interface via the NSL URL
-        3. Configure email settings in Site administration
-        4. Install additional plugins from Moodle directory
-        5. Create courses and enroll users
-        
-        ## Troubleshooting
-        - Check container logs if installation takes too long
-        - Ensure both MariaDB and Moodle containers are running
-        - The pre-install script will handle permission setup automatically
+        - First installation may take 5-10 minutes
+        - MariaDB is working correctly
+        - Moodle will initialize on first successful startup
