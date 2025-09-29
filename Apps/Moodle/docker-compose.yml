@@ -35,7 +35,7 @@ services:
       - moodle-network
 
   moodle:
-    image: moodlehq/moodle:latest
+    image: bitnami/moodle:4.5.1
     user: 0:0 # Bitnami 사용자 명시적 지정
     expose:
       - 8080  # NSL router requires expose, not ports
