@@ -58,7 +58,8 @@ services:
       MOODLE_SITE_NAME: Yundera Learning Platform
       
       # CRITICAL: Properly configure the domain for reverse proxy
-      MOODLE_HOST: ${domain}  # Use domain variable from CasaOS
+      # NSL router pattern: {port}-{appname}-{username}.nsl.sh for non-80 ports
+      MOODLE_HOST: 8080-moodle-${domain}  # Prepend port and appname
       MOODLE_SCHEME: https    # NSL router provides HTTPS
       
       # Reverse proxy settings - NEW VARIABLE NAMES
@@ -184,4 +185,4 @@ x-casaos:
         - If CSS doesn't load, check that the domain is properly set
         - Check container logs if installation takes longer than expected
         - Both MariaDB and Moodle containers must be running and healthy
-        - Named volumes automatically handle permissio
+        - Named volumes automatically handle permissions
