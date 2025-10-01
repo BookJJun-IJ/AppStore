@@ -39,7 +39,7 @@ services:
     image: bitnami/moodle:4.5.1
     user: 0:0  # Root required for Bitnami initialization
     expose:
-      - 8080
+      - 80  # Use port 80 for clean NSL router URLs
     environment:
       # Database configuration - must match MariaDB settings
       MOODLE_DATABASE_TYPE: mariadb
@@ -58,8 +58,8 @@ services:
       MOODLE_SITE_NAME: Yundera Learning Platform
       
       # CRITICAL: Properly configure the domain for reverse proxy
-      # NSL router pattern: {port}-{appname}-{username}.nsl.sh for non-80 ports
-      MOODLE_HOST: 8080-moodle-${domain}  # Prepend port and appname
+      # Port 80 = clean URL: https://moodle-{username}.nsl.sh
+      MOODLE_HOST: moodle-${domain}  # NSL router pattern for port 80
       MOODLE_SCHEME: https    # NSL router provides HTTPS
       
       # Reverse proxy settings - NEW VARIABLE NAMES
@@ -71,8 +71,8 @@ services:
       ALLOW_EMPTY_PASSWORD: 'no'
       
       # Apache configuration
-      APACHE_HTTP_PORT_NUMBER: 8080
-      APACHE_HTTPS_PORT_NUMBER: 8443
+      APACHE_HTTP_PORT_NUMBER: 80  # Use port 80 for clean URLs
+      APACHE_HTTPS_PORT_NUMBER: 443
       
       # Installation
       MOODLE_SKIP_BOOTSTRAP: 'no'
@@ -104,7 +104,7 @@ services:
     networks:
       - moodle-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      test: ["CMD-SHELL", "curl -f http://localhost:80/ || curl -f http://localhost:8080/ || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -127,7 +127,7 @@ x-casaos:
     - amd64
     - arm64
   main: moodle
-  webui_port: 8080
+  webui_port: 80  # Changed to 80 for clean NSL router URLs
   category: Education
   description:
     en_us: Moodle is the world's most popular open source learning management system (LMS). Used by universities, schools, and corporations worldwide, Moodle provides a robust platform for creating personalized e-learning environments with courses, assignments, quizzes, forums, wikis, and collaborative tools. Features drag-and-drop interfaces, role-based permissions, comprehensive reporting, multi-language support, and extensive plugin ecosystem.
@@ -164,7 +164,7 @@ x-casaos:
         
         ## Important Notes
         - First installation may take 5-10 minutes
-        - The application will be accessible via NSL router at `https://moodle-{username}.nsl.sh/`
+        - The application will be accessible via NSL router at `https://moodle-yunderalabs.nsl.sh/`
         - Database is automatically configured and initialized
         - Using named volumes for automatic permission management
         
