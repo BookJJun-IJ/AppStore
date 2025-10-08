@@ -47,7 +47,6 @@ services:
       POSTGRES_TIMEOUT: 60
       NEXT_PUBLIC_BASE_URL: https://$domain
       DATABASE_URL: postgresql://spliit:$default_pwd@db:5432/spliit
-      NEXT_PUBLIC_DEFAULT_LOCALE: en
       NODE_ENV: production
     volumes:
       - /DATA/AppData/$AppID/data:/data
