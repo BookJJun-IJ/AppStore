@@ -4,7 +4,6 @@ services:
   pingvin-share:
     image: stonith404/pingvin-share:v1.13.0
     container_name: pingvin-share
-    user: $PUID:$PGID
     deploy:
       resources:
         limits:
@@ -41,7 +40,7 @@ x-casaos:
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/PingvinShare/thumbnail.png
   title:
     en_us: Pingvin Share
-    ko_kr: Pingvin Share
+    ko_kr: 핑빈 공유
     es_es: Pingvin Share
     fr_fr: Pingvin Share
     zh_cn: Pingvin Share
@@ -68,7 +67,7 @@ x-casaos:
 
       **Note:** This project was archived in June 2025 but remains stable and functional. The first user account you create will automatically become the administrator account.
 
-      **Security:** The application runs with proper user permissions and includes built-in security features like password protection and visitor limits.
+      **Security:** The application stores data exclusively in AppData directories and includes built-in security features like password protection and visitor limits.
     ko_kr: |
       Pingvin Share는 가볍고 아름다운 셀프 호스팅 파일 공유 플랫폼으로, 원활하고 효율적인 파일 공유에 완벽합니다. WeTransfer의 훌륭한 대안입니다.
 
@@ -85,7 +84,7 @@ x-casaos:
 
       **참고:** 이 프로젝트는 2025년 6월에 아카이브되었지만 안정적이고 기능적입니다. 생성하는 첫 번째 사용자 계정이 자동으로 관리자 계정이 됩니다.
 
-      **보안:** 애플리케이션은 적절한 사용자 권한으로 실행되며 비밀번호 보호 및 방문자 제한과 같은 보안 기능이 내장되어 있습니다.
+      **보안:** 애플리케이션은 AppData 디렉토리에만 데이터를 저장하며 비밀번호 보호 및 방문자 제한과 같은 보안 기능이 내장되어 있습니다.
     es_es: |
       Pingvin Share es una plataforma de intercambio de archivos autoalojada que combina ligereza y belleza, perfecta para compartir archivos de manera fluida y eficiente. Es una excelente alternativa a WeTransfer.
 
@@ -102,7 +101,7 @@ x-casaos:
 
       **Nota:** Este proyecto fue archivado en junio de 2025, pero sigue siendo estable y funcional. La primera cuenta de usuario que cree se convertirá automáticamente en la cuenta de administrador.
 
-      **Seguridad:** La aplicación se ejecuta con permisos de usuario adecuados e incluye funciones de seguridad integradas como protección con contraseña y límites de visitantes.
+      **Seguridad:** La aplicación almacena datos exclusivamente en directorios AppData e incluye funciones de seguridad integradas como protección con contraseña y límites de visitantes.
     fr_fr: |
       Pingvin Share est une plateforme de partage de fichiers auto-hébergée qui combine légèreté et beauté, parfaite pour un partage de fichiers fluide et efficace. C'est une excellente alternative à WeTransfer.
 
@@ -119,7 +118,7 @@ x-casaos:
 
       **Remarque:** Ce projet a été archivé en juin 2025 mais reste stable et fonctionnel. Le premier compte utilisateur que vous créez deviendra automatiquement le compte administrateur.
 
-      **Sécurité:** L'application s'exécute avec des autorisations utilisateur appropriées et inclut des fonctionnalités de sécurité intégrées telles que la protection par mot de passe et les limites de visiteurs.
+      **Sécurité:** L'application stocke les données exclusivement dans les répertoires AppData et inclut des fonctionnalités de sécurité intégrées telles que la protection par mot de passe et les limites de visiteurs.
     zh_cn: |
       Pingvin Share 是一个自托管文件共享平台,结合了轻量级和美观性,非常适合无缝高效的文件共享。它是 WeTransfer 的绝佳替代方案。
 
@@ -136,7 +135,7 @@ x-casaos:
 
       **注意:** 该项目于 2025 年 6 月被归档,但仍然稳定且功能正常。您创建的第一个用户帐户将自动成为管理员帐户。
 
-      **安全性:** 应用程序以适当的用户权限运行,并包含内置安全功能,如密码保护和访问者限制。
+      **安全性:** 应用程序仅将数据存储在 AppData 目录中,并包含内置安全功能,如密码保护和访问者限制。
   tips:
     before_install:
       en_us: |
@@ -149,7 +148,7 @@ x-casaos:
         - Set your preferred default share expiration time
         - Customize the application name and logo in the configuration
         
-        **Note:** This project was archived in June 2025 but remains fully functional. The container runs with user permissions for security.
+        **Technical Note:** This container runs without explicit user specification as it's designed to work with its internal user. All data is stored in AppData directories.
       ko_kr: |
         **초기 설정:**
         
@@ -160,7 +159,7 @@ x-casaos:
         - 선호하는 기본 공유 만료 시간 설정
         - 구성에서 애플리케이션 이름 및 로고 사용자 지정
         
-        **참고:** 이 프로젝트는 2025년 6월에 아카이브되었지만 완벽하게 작동합니다. 컨테이너는 보안을 위해 사용자 권한으로 실행됩니다.
+        **기술 참고사항:** 이 컨테이너는 내부 사용자로 작동하도록 설계되어 명시적 사용자 지정 없이 실행됩니다. 모든 데이터는 AppData 디렉토리에 저장됩니다.
       es_es: |
         **Configuración inicial:**
         
@@ -171,7 +170,7 @@ x-casaos:
         - Establezca su tiempo de vencimiento de compartir predeterminado preferido
         - Personalice el nombre y el logotipo de la aplicación en la configuración
         
-        **Nota:** Este proyecto fue archivado en junio de 2025 pero sigue siendo completamente funcional. El contenedor se ejecuta con permisos de usuario por seguridad.
+        **Nota técnica:** Este contenedor se ejecuta sin especificación explícita de usuario ya que está diseñado para funcionar con su usuario interno. Todos los datos se almacenan en directorios AppData.
       fr_fr: |
         **Configuration initiale:**
         
@@ -182,7 +181,7 @@ x-casaos:
         - Définissez votre délai d'expiration de partage par défaut préféré
         - Personnalisez le nom et le logo de l'application dans la configuration
         
-        **Remarque:** Ce projet a été archivé en juin 2025 mais reste entièrement fonctionnel. Le conteneur s'exécute avec des autorisations utilisateur pour la sécurité.
+        **Note technique:** Ce conteneur s'exécute sans spécification explicite d'utilisateur car il est conçu pour fonctionner avec son utilisateur interne. Toutes les données sont stockées dans les répertoires AppData.
       zh_cn: |
         **首次设置:**
         
@@ -193,7 +192,7 @@ x-casaos:
         - 设置您首选的默认共享过期时间
         - 在配置中自定义应用程序名称和徽标
         
-        **注意:** 该项目于 2025 年 6 月被归档,但仍完全正常运行。出于安全考虑,容器以用户权限运行。
+        **技术说明:** 此容器在没有显式用户规范的情况下运行,因为它被设计为使用其内部用户工作。所有数据都存储在 AppData 目录中。
   index: /
   scheme: https
   store_app_id: pingvin-share
