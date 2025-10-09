@@ -85,8 +85,7 @@ x-casaos:
     ko_kr: 무료 오픈소스 비용 분할 앱
     zh_cn: 免费开源费用分摊应用
     es_es: Aplicación Gratuita para Compartir Gastos
-    fr_fr: Application Gratuite de Partage de Dépenses  
-  index: /api/health/liveness
+    fr_fr: Application Gratuite de Partage de Dépenses
   pre_install_cmd: |
     mkdir -p /DATA/AppData/$AppID/pgdata /DATA/AppData/$AppID/data /DATA/AppData/$AppID/cache && 
     chown -R 999:999 /DATA/AppData/$AppID/pgdata
