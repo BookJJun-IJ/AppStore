@@ -30,6 +30,13 @@ services:
     volumes:
       - /DATA/AppData/$AppID/data:/data
       - /DATA/AppData/$AppID/config:/app/config
+    
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
 x-casaos:
   architectures:
@@ -85,6 +92,9 @@ x-casaos:
   webui_port: 3000
   scheme: http
   store_app_id: psitransfer
+  pre_install_cmd: |
+    mkdir -p /DATA/AppData/$AppID/data /DATA/AppData/$AppID/config &&
+    chown -R 1000:1000 /DATA/AppData/$AppID/data /DATA/AppData/$AppID/config
   tips:
     before_install:
       en_us: |
