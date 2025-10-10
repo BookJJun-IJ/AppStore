@@ -4,7 +4,7 @@ services:
   pingvinshare:
     image: stonith404/pingvin-share:v1.13.0
     container_name: pingvinshare
-    user: "0:0"
+    user: $PUID:$PGID
     deploy:
       resources:
         limits:
@@ -16,15 +16,13 @@ services:
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
-      DOMAIN: $domain
-      PORT: "3000"
       TRUST_PROXY: "true"
     volumes:
       - /DATA/AppData/$AppID/data:/opt/app/backend/data
       - /DATA/AppData/$AppID/images:/opt/app/frontend/public/img
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80/api/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -74,7 +72,7 @@ x-casaos:
 
       **Note:** This project was archived in June 2025 but remains stable and functional. The first user account you create will automatically become the administrator account.
 
-      **Technical:** Runs as root for proper file permissions (AppData-only). Internal Caddy reverse proxy handles frontend/backend routing on port 80.
+      **Technical:** Internal Caddy reverse proxy handles frontend/backend routing on port 3000.
     ko_kr: |
       Pingvin Share는 가볍고 아름다운 셀프 호스팅 파일 공유 플랫폼으로, 원활하고 효율적인 파일 공유에 완벽합니다. WeTransfer의 훌륭한 대안입니다.
 
@@ -91,7 +89,7 @@ x-casaos:
 
       **참고:** 이 프로젝트는 2025년 6월에 아카이브되었지만 안정적이고 기능적입니다. 생성하는 첫 번째 사용자 계정이 자동으로 관리자 계정이 됩니다.
 
-      **기술사항:** 적절한 파일 권한을 위해 root로 실행됩니다 (AppData 전용). 내부 Caddy 리버스 프록시가 포트 80에서 프론트엔드/백엔드 라우팅을 처리합니다.
+      **기술사항:** 내부 Caddy 리버스 프록시가 포트 3000에서 프론트엔드/백엔드 라우팅을 처리합니다.
     es_es: |
       Pingvin Share es una plataforma de intercambio de archivos autoalojada que combina ligereza y belleza, perfecta para compartir archivos de manera fluida y eficiente. Es una excelente alternativa a WeTransfer.
 
@@ -108,7 +106,7 @@ x-casaos:
 
       **Nota:** Este proyecto fue archivado en junio de 2025, pero sigue siendo estable y funcional. La primera cuenta de usuario que cree se convertirá automáticamente en la cuenta de administrador.
 
-      **Técnico:** Se ejecuta como root para los permisos de archivo adecuados (solo AppData). El proxy inverso Caddy interno maneja el enrutamiento frontend/backend en el puerto 80.
+      **Técnico:** El proxy inverso Caddy interno maneja el enrutamiento frontend/backend en el puerto 3000.
     fr_fr: |
       Pingvin Share est une plateforme de partage de fichiers auto-hébergée qui combine légèreté et beauté, parfaite pour un partage de fichiers fluide et efficace. C'est une excellente alternative à WeTransfer.
 
@@ -125,7 +123,7 @@ x-casaos:
 
       **Remarque:** Ce projet a été archivé en juin 2025 mais reste stable et fonctionnel. Le premier compte utilisateur que vous créez deviendra automatiquement le compte administrateur.
 
-      **Technique:** S'exécute en tant que root pour les autorisations de fichiers appropriées (AppData uniquement). Le proxy inverse Caddy interne gère le routage frontend/backend sur le port 80.
+      **Technique:** Le proxy inverse Caddy interne gère le routage frontend/backend sur le port 3000.
     zh_cn: |
       Pingvin Share 是一个自托管文件共享平台,结合了轻量级和美观性,非常适合无缝高效的文件共享。它是 WeTransfer 的绝佳替代方案。
 
@@ -142,7 +140,7 @@ x-casaos:
 
       **注意:** 该项目于 2025 年 6 月被归档,但仍然稳定且功能正常。您创建的第一个用户帐户将自动成为管理员帐户。
 
-      **技术说明:** 以 root 身份运行以获得适当的文件权限(仅限 AppData)。内部 Caddy 反向代理在端口 80 上处理前端/后端路由。
+      **技术说明:** 内部 Caddy 反向代理在端口 3000 上处理前端/后端路由。
   tips:
     before_install:
       en_us: |
@@ -155,7 +153,7 @@ x-casaos:
         - Set your preferred default share expiration time
         - Customize the application name and logo in the configuration
         
-        **Technical Note:** Container runs as root for proper file permissions. Internal Caddy serves as reverse proxy on port 80.
+        **Technical Note:** Container uses PUID/PGID for file permissions. Internal Caddy serves as reverse proxy on port 3000.
       ko_kr: |
         **초기 설정:**
         
@@ -166,7 +164,7 @@ x-casaos:
         - 선호하는 기본 공유 만료 시간 설정
         - 구성에서 애플리케이션 이름 및 로고 사용자 지정
         
-        **기술 참고사항:** 적절한 파일 권한을 위해 컨테이너는 root로 실행됩니다. 내부 Caddy가 포트 80에서 리버스 프록시 역할을 합니다.
+        **기술 참고사항:** 컨테이너는 파일 권한을 위해 PUID/PGID를 사용합니다. 내부 Caddy가 포트 3000에서 리버스 프록시 역할을 합니다.
       es_es: |
         **Configuración inicial:**
         
@@ -177,7 +175,7 @@ x-casaos:
         - Establezca su tiempo de vencimiento de compartir predeterminado preferido
         - Personalice el nombre y el logotipo de la aplicación en la configuración
         
-        **Nota técnica:** El contenedor se ejecuta como root para los permisos de archivo adecuados. Caddy interno sirve como proxy inverso en el puerto 80.
+        **Nota técnica:** El contenedor usa PUID/PGID para permisos de archivo. Caddy interno sirve como proxy inverso en el puerto 3000.
       fr_fr: |
         **Configuration initiale:**
         
@@ -188,7 +186,7 @@ x-casaos:
         - Définissez votre délai d'expiration de partage par défaut préféré
         - Personnalisez le nom et le logo de l'application dans la configuration
         
-        **Note technique:** Le conteneur s'exécute en tant que root pour les autorisations de fichiers appropriées. Caddy interne sert de proxy inverse sur le port 80.
+        **Note technique:** Le conteneur utilise PUID/PGID pour les autorisations de fichiers. Caddy interne sert de proxy inverse sur le port 3000.
       zh_cn: |
         **首次设置:**
         
@@ -199,7 +197,7 @@ x-casaos:
         - 设置您首选的默认共享过期时间
         - 在配置中自定义应用程序名称和徽标
         
-        **技术说明:** 容器以 root 身份运行以获得适当的文件权限。内部 Caddy 在端口 80 上充当反向代理。
+        **技术说明:** 容器使用 PUID/PGID 进行文件权限管理。内部 Caddy 在端口 3000 上充当反向代理。
   index: /
   scheme: https
   store_app_id: pingvinshare
