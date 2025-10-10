@@ -4,7 +4,7 @@ services:
   psitransfer:
     image: psitrax/psitransfer:v2.3.0
     container_name: psitransfer
-    user: $PUID:$PGID
+    user: 0:0
     restart: unless-stopped
     
     deploy:
@@ -17,8 +17,8 @@ services:
       - 3000
     
     environment:
-      - PUID=$PUID
-      - PGID=$PGID
+      - PUID=0
+      - PGID=0
       - TZ=$TZ
       - PSITRANSFER_ADMIN_PASS=$default_pwd
       - PSITRANSFER_UPLOAD_PASS=$default_pwd
@@ -92,9 +92,6 @@ x-casaos:
   webui_port: 3000
   scheme: http
   store_app_id: psitransfer
-  pre_install_cmd: |
-    mkdir -p /DATA/AppData/$AppID/data /DATA/AppData/$AppID/config &&
-    chown -R 1000:1000 /DATA/AppData/$AppID/data /DATA/AppData/$AppID/config
   tips:
     before_install:
       en_us: |
