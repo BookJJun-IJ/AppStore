@@ -17,7 +17,6 @@ services:
       PGID: $PGID
       TZ: $TZ
       DOMAIN: $domain
-      CADDY_DISABLED: "true"
       PORT: "80"
       TRUST_PROXY: "true"
     volumes:
