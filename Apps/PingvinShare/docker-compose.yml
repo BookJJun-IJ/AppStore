@@ -1,7 +1,7 @@
-name: pingvin-share
+name: pingvinshare
 
 services:
-  pingvin-share:
+  pingvinshare:
     image: stonith404/pingvin-share:v1.13.0
     container_name: pingvin-share
     user: "0:0"
@@ -32,7 +32,7 @@ services:
       start_period: 60s
 
 x-casaos:
-  main: pingvin-share
+  main: pingvinshare
   webui_port: 80
   category: Backup
   architectures:
@@ -203,6 +203,6 @@ x-casaos:
         **技术说明:** 容器以 root 身份运行以获得适当的文件权限。内部 Caddy 已禁用以兼容 NSL 路由器。
   index: /
   scheme: https
-  store_app_id: pingvin-share
+  store_app_id: pingvinshare
   project_url: https://github.com/stonith404/pingvin-share
   support_url: https://github.com/stonith404/pingvin-share/issues
