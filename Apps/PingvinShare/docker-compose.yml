@@ -32,6 +32,9 @@ x-casaos:
     - arm64
   author: CasaOS Team
   developer: Elias Schneider (stonith404)
+  pre-install-cmd: |
+    mkdir -p /DATA/AppData/$AppID/data /DATA/AppData/$AppID/images &&
+    chmod -R 777 /DATA/AppData/$AppID
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/PingvinShare/icon.png
   screenshot_link:
     - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/PingvinShare/screenshot-1.png
