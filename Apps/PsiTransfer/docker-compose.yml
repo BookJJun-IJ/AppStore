@@ -32,7 +32,7 @@ services:
       - /DATA/AppData/$AppID/config:/app/config
     
     healthcheck:
-      test: ["/bin/sh", "-c", "exit 0"]
+      test: ["CMD-SHELL", "exit 0"]
       interval: 10s
       timeout: 5s
       retries: 10
