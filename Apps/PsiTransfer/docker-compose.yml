@@ -3,6 +3,7 @@ name: psitransfer
 services:
   psitransfer:
     image: psitrax/psitransfer:v2.3.0
+    container_name: psitransfer
     user: 0:0
     restart: unless-stopped
     
@@ -35,7 +36,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 60s
+      start_period: 60s  # 앱 시작 대기 시간 증가
 
 x-casaos:
   architectures:
@@ -44,6 +45,9 @@ x-casaos:
   main: psitransfer
   author: CasaOS Team
   category: Utilities
+  pre-install-cmd: |
+    mkdir -p /DATA/AppData/$AppID/data /DATA/AppData/$AppID/config &&
+    chmod -R 777 /DATA/AppData/$AppID/data
   description:
     en_us: |
       PsiTransfer is a simple, open-source, self-hosted file sharing solution. It's designed as a lightweight alternative to WeTransfer with powerful features:
@@ -60,36 +64,6 @@ x-casaos:
       - **Lightweight** - Less than 100KB gzipped frontend
       
       Perfect for sharing large files with colleagues, clients, or friends without relying on cloud services.
-    fr_fr: |
-      PsiTransfer est une solution simple, open-source et auto-hébergée de partage de fichiers. Conçue comme une alternative légère à WeTransfer avec des fonctionnalités puissantes :
-      
-      - **Aucun compte requis** - Partagez des fichiers instantanément sans inscription
-      - **Téléchargements reprenables** - Utilisant le protocole tus.io pour des transferts fiables
-      - **Compatible mobile** - Interface responsive qui fonctionne sur tous les appareils
-      - **Protection par mot de passe** - Sécurisez vos partages avec des mots de passe
-      - **Rétention flexible** - Définissez des délais d'expiration personnalisés
-      - **Téléchargements uniques** - Les fichiers peuvent être supprimés après le premier téléchargement
-      - **Tableau de bord admin** - Surveillez et gérez tous les téléchargements
-      - **Export ZIP/TAR.GZ** - Téléchargez plusieurs fichiers sous forme d'archives
-      - **Support de gros fichiers** - Aucune limite de taille, seulement l'espace disque
-      - **Léger** - Frontend de moins de 100KB compressé
-      
-      Parfait pour partager de gros fichiers avec des collègues, clients ou amis sans dépendre des services cloud.
-    zh_cn: |
-      PsiTransfer 是一个简单的开源自托管文件共享解决方案。作为 WeTransfer 的轻量级替代品，具有强大的功能：
-      
-      - **无需账户** - 无需注册即可立即共享文件
-      - **可恢复的上传/下载** - 使用 tus.io 协议实现可靠传输
-      - **移动友好** - 响应式界面适用于所有设备
-      - **密码保护** - 使用密码保护您的文件共享
-      - **灵活的保留期** - 为上传设置自定义过期时间
-      - **一次性下载** - 文件可在首次下载后删除
-      - **管理员仪表板** - 监控和管理所有上传
-      - **ZIP/TAR.GZ 导出** - 将多个文件下载为压缩包
-      - **大文件支持** - 无文件大小限制，仅受磁盘空间限制
-      - **轻量级** - 前端 Gzip 压缩后小于 100KB
-      
-      非常适合与同事、客户或朋友共享大文件，无需依赖云服务。
     ko_kr: |
       PsiTransfer는 간단하고 오픈소스인 자체 호스팅 파일 공유 솔루션입니다. WeTransfer의 가벼운 대안으로 강력한 기능을 제공합니다:
       
@@ -105,43 +79,21 @@ x-casaos:
       - **가벼움** - 100KB 미만의 Gzip 압축 프론트엔드
       
       클라우드 서비스에 의존하지 않고 동료, 고객 또는 친구와 대용량 파일을 공유하는 데 완벽합니다.
-    es_es: |
-      PsiTransfer es una solución simple, de código abierto y autohospedada para compartir archivos. Diseñada como una alternativa ligera a WeTransfer con potentes características:
-      
-      - **No se requieren cuentas** - Comparte archivos instantáneamente sin registro
-      - **Subidas/descargas reanudables** - Usando el protocolo tus.io para transferencias confiables
-      - **Compatible con móviles** - Interfaz responsive que funciona en todos los dispositivos
-      - **Protección por contraseña** - Asegura tus archivos compartidos con contraseñas
-      - **Retención flexible** - Establece tiempos de expiración personalizados para las subidas
-      - **Descargas de una sola vez** - Los archivos pueden eliminarse después de la primera descarga
-      - **Panel de administración** - Monitorea y gestiona todas las subidas
-      - **Exportación ZIP/TAR.GZ** - Descarga múltiples archivos como archivos comprimidos
-      - **Soporte para archivos grandes** - Sin límites de tamaño de archivo, solo espacio en disco
-      - **Ligero** - Frontend comprimido de menos de 100KB
-      
-      Perfecto para compartir archivos grandes con colegas, clientes o amigos sin depender de servicios en la nube.
   developer: psi-4ward
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/PsiTransfer/icon.png
+  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/PsiTransfer/icon.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/PsiTransfer/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/PsiTransfer/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/PsiTransfer/screenshot-3.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/PsiTransfer/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/PsiTransfer/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/PsiTransfer/screenshot-3.png
   tagline:
     en_us: Simple, lightweight file sharing - WeTransfer alternative
-    fr_fr: Partage de fichiers simple et léger - Alternative à WeTransfer
-    zh_cn: 简单轻量的文件共享 - WeTransfer 替代品
     ko_kr: 간단하고 가벼운 파일 공유 - WeTransfer 대안
-    es_es: Compartir archivos simple y ligero - Alternativa a WeTransfer
-  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/PsiTransfer/thumbnail.png
+  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/PsiTransfer/thumbnail.png
   title:
     en_us: PsiTransfer
   index: /
   webui_port: 3000
   store_app_id: psitransfer
-  pre-install-cmd: |
-    mkdir -p /DATA/AppData/$AppID/data /DATA/AppData/$AppID/config &&
-    chmod -R 777 /DATA/AppData/$AppID/data &&
-    chmod -R 755 /DATA/AppData/$AppID/config
   tips:
     before_install:
       en_us: |
@@ -157,7 +109,6 @@ x-casaos:
         **Important Notes:**
         - Files are stored in `/DATA/AppData/psitransfer/data/`
         - Default file retention is 24 hours (86400 seconds)
-        - Application runs with elevated permissions for upload handling
       ko_kr: |
         ## 기본 인증 정보
         
@@ -171,4 +122,3 @@ x-casaos:
         **중요 사항:**
         - 파일은 `/DATA/AppData/psitransfer/data/`에 저장됩니다
         - 기본 파일 보관 기간은 24시간(86400초)입니다
-        - 업로드 처리를 위해 애플리케이션이 상승된 권한으로 실행됩니다
