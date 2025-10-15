@@ -40,6 +40,22 @@ services:
     user: 0:0  # Root required for Bitnami initialization
     expose:
       - 8080  # Bitnami default port
+    command: >
+      bash -c "
+        (/opt/bitnami/scripts/moodle/entrypoint.sh /opt/bitnami/scripts/moodle/run.sh) &
+        MOODLE_PID=\$!;
+        echo 'Waiting for Moodle config.php to be generated...';
+        for i in {1..300}; do
+          if [ -f /bitnami/moodle/config.php ]; then
+            echo 'Config file found! Applying HTTPS fix...';
+            sed -i \"s/if (isset(\\\$_SERVER\['HTTPS'\]) && \\\$_SERVER\['HTTPS'\] == 'on')/\\\$CFG->sslproxy = true; if (true)/\" /bitnami/moodle/config.php;
+            echo 'HTTPS fix applied successfully!';
+            break;
+          fi;
+          sleep 2;
+        done;
+        wait \$MOODLE_PID
+      "
     environment:
       # Database configuration - must match MariaDB settings
       MOODLE_DATABASE_TYPE: mariadb
@@ -62,9 +78,9 @@ services:
       MOODLE_HOST: 8080-moodle-${domain}  # NSL router pattern for port 8080
       MOODLE_SCHEME: https    # NSL router provides HTTPS
       
-      # Reverse proxy settings
-      MOODLE_REVERSE_PROXY: 'true'
-      MOODLE_SSL_PROXY: 'true'
+      # Reverse proxy settings (underscore format for Moodle 3.9+)
+      MOODLE_REVERSE_PROXY: 'yes'
+      MOODLE_SSL_PROXY: 'yes'
       
       # Debug and security
       BITNAMI_DEBUG: 'false'
@@ -173,16 +189,21 @@ x-casaos:
         - 2GB+ storage for initial installation
         - Additional storage based on course content
         
-        ## Post-Installation
-        1. Wait for both containers to show as healthy
-        2. Access via the NSL router URL
-        3. Login with admin credentials above
-        4. Configure email settings in Site administration
-        5. Install additional plugins from Moodle directory
-        6. Create courses and enroll users
+        ## Post-Installation Steps
+        1. Wait for both containers to show as healthy (5-10 minutes)
+        2. **IMPORTANT**: Fix CSS loading by running this command via SSH:
+        ```bash
+        docker exec moodle-moodle-1 bash -c "sed -i 's/if (isset(\$_SERVER\[.HTTPS.\]) && \$_SERVER\[.HTTPS.\] == .on.)/\$CFG->sslproxy = true;\nif (true)/' /bitnami/moodle/config.php && echo 'Fixed config.php for HTTPS'"
+        docker restart moodle-moodle-1
+        ```
+        3. Access via the NSL router URL (CSS should now load properly)
+        4. Login with admin credentials above
+        5. Configure email settings in Site administration
+        6. Install additional plugins from Moodle directory
+        7. Create courses and enroll users
         
         ## Troubleshooting
-        - If CSS doesn't load, check that the domain is properly set
+        - **If CSS doesn't load**: Run the fix command above via SSH
         - Check container logs if installation takes longer than expected
         - Both MariaDB and Moodle containers must be running and healthy
         - Named volumes automatically handle permissions
