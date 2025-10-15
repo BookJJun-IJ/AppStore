@@ -181,6 +181,7 @@ x-casaos:
         - First installation may take 5-10 minutes
         - The application will be accessible via NSL router at `https://8080-moodle-{username}.nsl.sh/`
         - Database is automatically configured and initialized
+        - HTTPS configuration is automatically applied during startup
         - Using named volumes for automatic permission management
         - Using Bitnami's default port 8080 for maximum stability
         
@@ -189,21 +190,16 @@ x-casaos:
         - 2GB+ storage for initial installation
         - Additional storage based on course content
         
-        ## Post-Installation Steps
+        ## Post-Installation
         1. Wait for both containers to show as healthy (5-10 minutes)
-        2. **IMPORTANT**: Fix CSS loading by running this command via SSH:
-        ```bash
-        docker exec moodle-moodle-1 bash -c "sed -i 's/if (isset(\$_SERVER\[.HTTPS.\]) && \$_SERVER\[.HTTPS.\] == .on.)/\$CFG->sslproxy = true;\nif (true)/' /bitnami/moodle/config.php && echo 'Fixed config.php for HTTPS'"
-        docker restart moodle-moodle-1
-        ```
-        3. Access via the NSL router URL (CSS should now load properly)
-        4. Login with admin credentials above
-        5. Configure email settings in Site administration
-        6. Install additional plugins from Moodle directory
-        7. Create courses and enroll users
+        2. Access via the NSL router URL
+        3. Login with admin credentials above
+        4. Configure email settings in Site administration
+        5. Install additional plugins from Moodle directory
+        6. Create courses and enroll users
         
         ## Troubleshooting
-        - **If CSS doesn't load**: Run the fix command above via SSH
-        - Check container logs if installation takes longer than expected
+        - Check container logs if installation takes longer than expected: `docker logs moodle-moodle-1`
         - Both MariaDB and Moodle containers must be running and healthy
+        - CSS and styling load automatically with HTTPS support
         - Named volumes automatically handle permissions
