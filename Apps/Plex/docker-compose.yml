@@ -4,9 +4,8 @@ services:
   plex:
     image: lscr.io/linuxserver/plex:1.42.2.10156-f737b826c-ls280
     container_name: plex
-    expose:
-      - 32400
-    #ports:
+    ports:
+      - "32400:32400/tcp"
     # Additional ports can be uncommented if needed for specific Plex features
     #  - "3005:3005/tcp"      # Plex Home Theater via Plex Companion
     #  - "8324:8324/tcp"      # Plex for Roku via Plex Companion  
@@ -30,7 +29,7 @@ services:
       TZ: $TZ                        # Timezone setting
       VERSION: docker
       PLEX_CLAIM: ""                   # Plex claim token for automatic setup (optional)
-      ADVERTISE_IP: "https://$domain/"
+      ADVERTISE_IP: "http://$public_ip:32400/"
     restart: unless-stopped
     devices:
       - /dev/dri:/dev/dri            # Hardware acceleration for transcoding
@@ -89,7 +88,7 @@ x-casaos:
   store_app_id: plex
   main: plex
   is_uncontrolled: false
-  webui_port: 32400
+  port_map: "32400"
   tips:
     before_install:
       en_us: |
