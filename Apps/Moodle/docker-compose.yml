@@ -39,7 +39,7 @@ services:
     image: bitnami/moodle:4.5.1
     user: 0:0  # Root required for Bitnami initialization
     expose:
-      - 80  # Use port 80 for clean NSL router URLs
+      - 8080  # Bitnami default port
     environment:
       # Database configuration - must match MariaDB settings
       MOODLE_DATABASE_TYPE: mariadb
@@ -57,22 +57,21 @@ services:
       # Site configuration
       MOODLE_SITE_NAME: Yundera Learning Platform
       
-      # CRITICAL: Properly configure the domain for reverse proxy
-      # Port 80 = clean URL: https://moodle-{username}.nsl.sh
-      MOODLE_HOST: moodle-${domain}  # NSL router pattern for port 80
+      # CRITICAL: Domain configuration for NSL router with port 8080
+      # Port 8080 = URL with port: https://8080-moodle-{username}.nsl.sh
+      MOODLE_HOST: 8080-moodle-${domain}  # NSL router pattern for port 8080
       MOODLE_SCHEME: https    # NSL router provides HTTPS
       
-      # Reverse proxy settings - NEW VARIABLE NAMES
-      MOODLE_REVERSE_PROXY: 'true'  # Note: REVERSE_PROXY not REVERSEPROXY
-      MOODLE_SSL_PROXY: 'true'      # Note: SSL_PROXY not SSLPROXY
+      # Reverse proxy settings
+      MOODLE_REVERSE_PROXY: 'true'
+      MOODLE_SSL_PROXY: 'true'
       
       # Debug and security
-      BITNAMI_DEBUG: 'false'  # Disable in production
+      BITNAMI_DEBUG: 'false'
       ALLOW_EMPTY_PASSWORD: 'no'
       
-      # Apache configuration
-      APACHE_HTTP_PORT_NUMBER: 80  # Use port 80 for clean URLs
-      APACHE_HTTPS_PORT_NUMBER: 443
+      # Apache uses default port 8080 (APACHE_HTTP_PORT_NUMBER not needed)
+      APACHE_HTTPS_PORT_NUMBER: 8443
       
       # Installation
       MOODLE_SKIP_BOOTSTRAP: 'no'
@@ -104,7 +103,7 @@ services:
     networks:
       - moodle-network
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:80/ || curl -f http://localhost:8080/ || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/ || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -127,7 +126,7 @@ x-casaos:
     - amd64
     - arm64
   main: moodle
-  webui_port: 80  # Changed to 80 for clean NSL router URLs
+  webui_port: 8080  # Changed to 8080 (Bitnami default)
   category: Education
   description:
     en_us: Moodle is the world's most popular open source learning management system (LMS). Used by universities, schools, and corporations worldwide, Moodle provides a robust platform for creating personalized e-learning environments with courses, assignments, quizzes, forums, wikis, and collaborative tools. Features drag-and-drop interfaces, role-based permissions, comprehensive reporting, multi-language support, and extensive plugin ecosystem.
@@ -152,7 +151,7 @@ x-casaos:
     - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Moodle/screenshot-3.png
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Moodle/thumbnail.png
   index: /
-  scheme: http
+  scheme: https
   store_app_id: moodle
   tips:
     before_install:
@@ -164,9 +163,10 @@ x-casaos:
         
         ## Important Notes
         - First installation may take 5-10 minutes
-        - The application will be accessible via NSL router at `https://moodle-yunderalabs.nsl.sh/`
+        - The application will be accessible via NSL router at `https://8080-moodle-{username}.nsl.sh/`
         - Database is automatically configured and initialized
         - Using named volumes for automatic permission management
+        - Using Bitnami's default port 8080 for maximum stability
         
         ## Resource Requirements
         - Minimum 1GB RAM recommended
