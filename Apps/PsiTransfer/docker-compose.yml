@@ -104,7 +104,7 @@ x-casaos:
         | Admin Password     | `$default_pwd` |
         | Upload Password    | `$default_pwd` |
         
-        **Access Admin Panel:** Navigate to `/admin` and enter the admin password.
+        **Access Admin Panel:** Navigate to `$domain/admin` and enter the admin password.
         
         **Important Notes:**
         - Files are stored in `/DATA/AppData/psitransfer/data/`
@@ -117,7 +117,7 @@ x-casaos:
         | 관리자 비밀번호    | `$default_pwd` |
         | 업로드 비밀번호    | `$default_pwd` |
         
-        **관리자 패널 접근:** `/admin`으로 이동하여 관리자 비밀번호를 입력하세요.
+        **관리자 패널 접근:** `$domain/admin`으로 이동하여 관리자 비밀번호를 입력하세요.
         
         **중요 사항:**
         - 파일은 `/DATA/AppData/psitransfer/data/`에 저장됩니다
