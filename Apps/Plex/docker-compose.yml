@@ -5,7 +5,7 @@ services:
     image: lscr.io/linuxserver/plex:1.42.2.10156-f737b826c-ls280
     container_name: plex
     expose:
-      - 32400
+      - 80
     ports:
       - "32400:32400/tcp"
     # Additional ports can be uncommented if needed for specific Plex features
@@ -90,7 +90,7 @@ x-casaos:
   store_app_id: plex
   main: plex
   is_uncontrolled: false
-  webui_port: 32400
+  webui_port: 80
   tips:
     before_install:
       en_us: |
