@@ -91,7 +91,6 @@ x-casaos:
   main: plex
   is_uncontrolled: false
   webui_port: 32400
-  port_map: "32400"
   tips:
     before_install:
       en_us: |
