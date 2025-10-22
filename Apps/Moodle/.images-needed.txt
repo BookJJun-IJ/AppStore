@@ -1,0 +1,24 @@
+TODO: Add the following image files to this directory
+
+Required files:
+1. icon.png (512x512) - Moodle logo
+2. thumbnail.png (preferably 800x600) - Moodle dashboard preview
+3. screenshot-1.png - Moodle dashboard/homepage
+4. screenshot-2.png - Course view or lesson page
+5. screenshot-3.png - Quiz or assignment interface
+
+Sources for images:
+- Official Moodle: https://moodle.org/
+- Moodle Screenshots: https://docs.moodle.org/
+- Bitnami Moodle: https://bitnami.com/stack/moodle
+
+For icon.png, you can use the official Moodle logo from:
+https://moodle.com/news/a-new-look-for-moodle/
+
+Note: Once you add these images, update the URLs in docker-compose.yml:
+  icon: https://cdn.jsdelivr.net/gh/worph/AppStore@main/Apps/Moodle/icon.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/worph/AppStore@main/Apps/Moodle/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/worph/AppStore@main/Apps/Moodle/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/worph/AppStore@main/Apps/Moodle/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/worph/AppStore@main/Apps/Moodle/thumbnail.png

@@ -1,0 +1,262 @@
+name: moodle
+services:
+  mariadb:
+    image: mariadb:11.3
+    user: "999:999"  # MariaDB standard user
+    environment:
+      MYSQL_ROOT_PASSWORD: ${default_pwd}
+      MYSQL_DATABASE: bitnami_moodle
+      MYSQL_USER: bn_moodle
+      MYSQL_PASSWORD: ${default_pwd}
+      TZ: ${TZ}
+      MARIADB_AUTO_UPGRADE: "1"
+      MARIADB_DISABLE_UPGRADE_BACKUP: "1"
+      MARIADB_CHARACTER_SET: utf8mb4
+      MARIADB_COLLATE: utf8mb4_unicode_ci
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --max_connections=200
+      --innodb_buffer_pool_size=256M
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 90s
+    networks:
+      - moodle-network
+
+  moodle:
+    image: bitnami/moodle:4.5.1
+    user: 0:0  # Root required for Bitnami initialization
+    expose:
+      - 8080  # Bitnami default port
+    volumes:
+      - moodle_data:/bitnami/moodle
+      - moodledata_data:/bitnami/moodledata
+    command: >
+      bash -c '
+        # Background script to fix HTTPS/CSS loading
+        (
+          CONFIG_FILE="/bitnami/moodle/config.php"
+          echo "Waiting for Moodle config.php..."
+
+          # Wait up to 5 minutes for config.php
+          for i in {1..150}; do
+            if [ -f "$CONFIG_FILE" ]; then
+              echo "Config found! Applying HTTPS fix..."
+
+              # Backup
+              cp "$CONFIG_FILE" "${CONFIG_FILE}.backup"
+
+              # Remove closing PHP tag
+              sed -i "/^?>$/d" "$CONFIG_FILE" 2>/dev/null || true
+
+              # Append HTTPS configuration
+              cat >> "$CONFIG_FILE" << "EOF"
+
+// ===== YUNDERA HTTPS FIX =====
+$$CFG->sslproxy = true;
+
+// Auto-detect HTTPS domain
+if (isset($$_SERVER["HTTP_HOST"])) {
+    $$CFG->wwwroot = "https://" . $$_SERVER["HTTP_HOST"];
+} else {
+    $$CFG->wwwroot = str_replace("http://", "https://", $$CFG->wwwroot);
+}
+
+// Reverse proxy support
+if (!isset($$CFG->reverseproxy)) {
+    $$CFG->reverseproxy = true;
+}
+
+// Trust X-Forwarded headers
+if (isset($$_SERVER["HTTP_X_FORWARDED_PROTO"]) && $$_SERVER["HTTP_X_FORWARDED_PROTO"] === "https") {
+    $$_SERVER["HTTPS"] = "on";
+}
+// ===== END FIX =====
+EOF
+
+              echo "✓ HTTPS fix applied! CSS will load correctly."
+              break
+            fi
+            sleep 2
+          done
+        ) &
+
+        # Run Moodle normally
+        /opt/bitnami/scripts/moodle/entrypoint.sh /opt/bitnami/scripts/moodle/run.sh
+      '
+    environment:
+      # Database configuration - must match MariaDB settings
+      MOODLE_DATABASE_TYPE: mariadb
+      MOODLE_DATABASE_HOST: mariadb
+      MOODLE_DATABASE_PORT_NUMBER: 3306
+      MOODLE_DATABASE_NAME: bitnami_moodle
+      MOODLE_DATABASE_USER: bn_moodle
+      MOODLE_DATABASE_PASSWORD: ${default_pwd}
+
+      # Admin configuration
+      MOODLE_USERNAME: admin
+      MOODLE_PASSWORD: ${default_pwd}
+      MOODLE_EMAIL: admin@example.com
+
+      # Site configuration
+      MOODLE_SITE_NAME: Yundera Learning Platform
+
+      # CRITICAL: This will be overridden by fix-https.sh script
+      # Initial setup uses HTTP, then script converts to HTTPS
+      MOODLE_SKIP_BOOTSTRAP: 'no'
+
+      # Debug and security
+      BITNAMI_DEBUG: 'false'
+      ALLOW_EMPTY_PASSWORD: 'no'
+
+      # PHP configuration
+      PHP_ENABLE_OPCACHE: 'yes'
+      PHP_MEMORY_LIMIT: 256M
+      PHP_MAX_EXECUTION_TIME: 300
+      PHP_MAX_INPUT_VARS: 5000
+      PHP_UPLOAD_MAX_FILESIZE: 100M
+      PHP_POST_MAX_SIZE: 100M
+
+      # System
+      TZ: ${TZ}
+      PUID: ${PUID}
+      PGID: ${PGID}
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+          cpus: '1.0'
+    restart: unless-stopped
+    networks:
+      - moodle-network
+      - pcs
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 300s  # 5 minutes for initial setup
+
+volumes:
+  mariadb_data:
+    driver: local
+  moodle_data:
+    driver: local
+  moodledata_data:
+    driver: local
+
+networks:
+  moodle-network:
+    driver: bridge
+  pcs:
+    name: pcs
+    external: true
+
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  main: moodle
+  author: Yundera Team
+  category: Education
+  description:
+    en_us: Moodle is the world's most popular open source learning management system (LMS). Used by universities, schools, and corporations worldwide, Moodle provides a robust platform for creating personalized e-learning environments with courses, assignments, quizzes, forums, wikis, and collaborative tools. Features drag-and-drop interfaces, role-based permissions, comprehensive reporting, multi-language support, and extensive plugin ecosystem. This version is optimized for Yundera with automatic HTTPS support.
+    zh_cn: Moodle 是世界上最受欢迎的开源学习管理系统(LMS)。被全球的大学、学校和企业广泛使用,Moodle 提供了一个强大的平台,用于创建包含课程、作业、测验、论坛、维基和协作工具的个性化电子学习环境。此版本已针对 Yundera 优化,自动支持 HTTPS。
+    es_es: Moodle es el sistema de gestión de aprendizaje (LMS) de código abierto más popular del mundo. Utilizado por universidades, escuelas y corporaciones en todo el mundo. Esta versión está optimizada para Yundera con soporte HTTPS automático.
+    fr_fr: Moodle est le système de gestion de l'apprentissage (LMS) open source le plus populaire au monde. Utilisé par les universités, les écoles et les entreprises du monde entier. Cette version est optimisée pour Yundera avec support HTTPS automatique.
+    ko_kr: Moodle은 세계에서 가장 인기 있는 오픈소스 학습 관리 시스템(LMS)입니다. 전 세계 대학, 학교, 기업에서 사용되며, Yundera용으로 최적화되어 자동 HTTPS를 지원합니다.
+  tagline:
+    en_us: Powerful open source learning platform with HTTPS support
+    zh_cn: 支持 HTTPS 的强大开源学习平台
+    es_es: Plataforma de aprendizaje de código abierto con soporte HTTPS
+    fr_fr: Plateforme d'apprentissage open source avec support HTTPS
+    ko_kr: HTTPS를 지원하는 강력한 오픈소스 학습 플랫폼
+  title:
+    en_us: Moodle™ LMS
+  developer: Moodle HQ
+  icon: https://cdn.jsdelivr.net/gh/worph/AppStore@main/Apps/Moodle/icon.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/worph/AppStore@main/Apps/Moodle/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/worph/AppStore@main/Apps/Moodle/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/worph/AppStore@main/Apps/Moodle/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/worph/AppStore@main/Apps/Moodle/thumbnail.png
+  index: /
+  port_map: "8080"
+  scheme: https
+  store_app_id: moodle
+  tips:
+    before_install:
+      en_us: |
+        ## Default Administrator Credentials
+        | Username | Password |
+        |----------|----------|
+        | `admin` | `$default_pwd` |
+
+        ## Important Notes
+        - **First installation takes 5-10 minutes** - Please be patient!
+        - **HTTPS and CSS loading are automatically configured** via the fix-https.sh script
+        - Access via NSL router at `https://8080-moodle-{username}.nsl.sh/`
+        - Database is automatically configured and initialized
+        - Named volumes handle permissions automatically
+
+        ## How HTTPS Fix Works
+        1. Moodle installs normally with default settings
+        2. Background script waits for config.php to be created
+        3. Script automatically injects HTTPS settings:
+           - Forces `$CFG->sslproxy = true`
+           - Auto-detects correct HTTPS domain
+           - Enables reverse proxy support
+        4. All CSS, JS, and images load correctly over HTTPS
+
+        ## Resource Requirements
+        - Minimum 1GB RAM recommended
+        - 2GB+ storage for initial installation
+        - Additional storage based on course content
+
+        ## Post-Installation
+        1. Wait for containers to show as healthy (5-10 minutes)
+        2. Access via the NSL router URL
+        3. **Verify CSS loads correctly** - you should see full styling
+        4. Login with admin credentials above
+        5. Configure email settings in Site administration
+        6. Install additional plugins from Moodle directory
+        7. Create courses and enroll users
+
+        ## Troubleshooting CSS Issues
+        If CSS still doesn't load after 10 minutes:
+        1. Check logs: `docker logs moodle-moodle-1`
+        2. Look for "HTTPS configuration applied successfully!"
+        3. Verify config.php: `docker exec moodle-moodle-1 tail -30 /bitnami/moodle/config.php`
+        4. Restart container: `docker restart moodle-moodle-1`
+
+        ## Why This Fixes CSS Loading
+        - Yundera uses HTTPS (nsl.sh domain)
+        - Moodle defaults to HTTP in config.php
+        - Browsers block HTTP resources (CSS/JS) on HTTPS pages
+        - Our script forces HTTPS detection = CSS loads perfectly!
+      zh_cn: |
+        ## 默认管理员凭据
+        | 用户名 | 密码 |
+        |--------|------|
+        | `admin` | `$default_pwd` |
+
+        ## 重要说明
+        - **首次安装需要 5-10 分钟** - 请耐心等待!
+        - **HTTPS 和 CSS 加载自动配置** - 通过 fix-https.sh 脚本
+        - 通过 NSL 路由器访问: `https://8080-moodle-{username}.nsl.sh/`
+        - CSS、JS 和图像将正确通过 HTTPS 加载
