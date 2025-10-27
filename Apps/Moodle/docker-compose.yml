@@ -30,7 +30,7 @@ services:
 
   moodle:
     image: ellakcy/moodle:mysql_maria_apache_latest
-    user: $PUID:$PGID
+    # No user specification - runs as root for initialization
     expose:
       - 80  # Use port 80 for clean NSL router URLs
     environment:
