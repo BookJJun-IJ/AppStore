@@ -40,22 +40,6 @@ services:
     user: 0:0  # Root required for Bitnami initialization
     expose:
       - 8080  # Bitnami default port
-    command: >
-      bash -c "
-        (/opt/bitnami/scripts/moodle/entrypoint.sh /opt/bitnami/scripts/moodle/run.sh) &
-        MOODLE_PID=\$!;
-        echo 'Waiting for Moodle config.php to be generated...';
-        for i in {1..300}; do
-          if [ -f /bitnami/moodle/config.php ]; then
-            echo 'Config file found! Applying HTTPS fix...';
-            sed -i \"s/if (isset(\\\$_SERVER\['HTTPS'\]) && \\\$_SERVER\['HTTPS'\] == 'on')/\\\$CFG->sslproxy = true; if (true)/\" /bitnami/moodle/config.php;
-            echo 'HTTPS fix applied successfully!';
-            break;
-          fi;
-          sleep 2;
-        done;
-        wait \$MOODLE_PID
-      "
     environment:
       # Database configuration - must match MariaDB settings
       MOODLE_DATABASE_TYPE: mariadb
@@ -86,8 +70,14 @@ services:
       BITNAMI_DEBUG: 'false'
       ALLOW_EMPTY_PASSWORD: 'no'
       
-      # Apache uses default port 8080 (APACHE_HTTP_PORT_NUMBER not needed)
+      # Apache configuration for reverse proxy
       APACHE_HTTPS_PORT_NUMBER: 8443
+      
+      # Critical: Force HTTPS environment variable for reverse proxy
+      # This makes PHP believe the connection is HTTPS
+      APACHE_EXTRA_CONF_CONTENT: |
+        SetEnvIf X-Forwarded-Proto https HTTPS=on
+        SetEnv HTTPS on
       
       # Installation
       MOODLE_SKIP_BOOTSTRAP: 'no'
@@ -181,7 +171,7 @@ x-casaos:
         - First installation may take 5-10 minutes
         - The application will be accessible via NSL router at `https://8080-moodle-{username}.nsl.sh/`
         - Database is automatically configured and initialized
-        - HTTPS configuration is automatically applied during startup
+        - HTTPS is automatically configured via Apache environment variables
         - Using named volumes for automatic permission management
         - Using Bitnami's default port 8080 for maximum stability
         
@@ -199,7 +189,7 @@ x-casaos:
         6. Create courses and enroll users
         
         ## Troubleshooting
-        - Check container logs if installation takes longer than expected: `docker logs moodle-moodle-1`
-        - Both MariaDB and Moodle containers must be running and healthy
-        - CSS and styling load automatically with HTTPS support
+        - Check container logs: `docker logs moodle-moodle-1`
+        - Both MariaDB and Moodle containers must be healthy
+        - CSS loads automatically with Apache HTTPS environment
         - Named volumes automatically handle permissions
