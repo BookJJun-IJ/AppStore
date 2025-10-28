@@ -89,6 +89,8 @@ x-casaos:
     - amd64
     - arm64
   main: moodle
+  pre-install-cmd: |
+    docker run --rm -v moodle_moodle_data:/data alpine sh -c "chmod -R 777 /data && echo 'Moodle data permissions fixed'"
   webui_port: 80  # Port 80 for clean NSL router URLs
   category: Education
   description:
