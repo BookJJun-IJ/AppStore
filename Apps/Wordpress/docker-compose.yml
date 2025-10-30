@@ -19,8 +19,8 @@ services:
       WORDPRESS_DB_NAME: wordpress
       WORDPRESS_CONFIG_EXTRA: |
         /* HTTPS Reverse Proxy Configuration - NSL Router */
-        $_SERVER['HTTPS'] = 'on';
-        $_SERVER['SERVER_PORT'] = 443;
+        $${_SERVER}['HTTPS'] = 'on';
+        $${_SERVER}['SERVER_PORT'] = 443;
         
         /* Dynamic Site URLs */
         define('WP_HOME', 'https://' . getenv('DOMAIN'));
