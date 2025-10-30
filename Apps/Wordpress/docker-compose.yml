@@ -17,12 +17,10 @@ services:
       WORDPRESS_DB_USER: wordpress
       WORDPRESS_DB_PASSWORD: $default_pwd
       WORDPRESS_DB_NAME: wordpress
+      APACHE_HTTP_PORT_NUMBER: 80
+      APACHE_HTTPS_PORT_NUMBER: 443
       WORDPRESS_CONFIG_EXTRA: |
-        /* HTTPS Reverse Proxy Configuration - NSL Router */
-        $${_SERVER}['HTTPS'] = 'on';
-        $${_SERVER}['SERVER_PORT'] = 443;
-        
-        /* Dynamic Site URLs */
+        /* Dynamic Site URLs with HTTPS */
         define('WP_HOME', 'https://' . getenv('DOMAIN'));
         define('WP_SITEURL', 'https://' . getenv('DOMAIN'));
         
@@ -34,6 +32,9 @@ services:
         
         /* Memory Limit */
         define('WP_MEMORY_LIMIT', '256M');
+        
+        /* Disable file editing from dashboard */
+        define('DISALLOW_FILE_EDIT', false);
       DOMAIN: $domain
     depends_on:
       db:
