@@ -2,226 +2,161 @@ name: wordpress
 
 services:
   wordpress:
-    image: wordpress:6.7-apache
-    container_name: wordpress_app
+    image: wordpress:6.8.1-apache
     restart: unless-stopped
     user: 0:0
     expose:
       - 80
     volumes:
       - /DATA/AppData/$AppID/html:/var/www/html
+      - /DATA/Downloads:/downloads
     environment:
-      PUID: $PUID
-      PGID: $PGID
+      PUID: 0
+      PGID: 0
+      TZ: $TZ
       WORDPRESS_DB_HOST: db:3306
       WORDPRESS_DB_USER: wordpress
       WORDPRESS_DB_PASSWORD: $default_pwd
       WORDPRESS_DB_NAME: wordpress
-      WORDPRESS_SITE_URL: https://$domain
-      WORDPRESS_HOME: https://$domain
-    depends_on:
-      db:
-        condition: service_healthy
+      WORDPRESS_CONFIG_EXTRA: |
+        /* HTTPS Reverse Proxy Configuration - NSL Router */
+        $_SERVER['HTTPS'] = 'on';
+        $_SERVER['SERVER_PORT'] = 443;
+        
+        /* Dynamic Site URLs */
+        if (!empty(getenv('DOMAIN'))) {
+          define('WP_HOME', 'https://' . getenv('DOMAIN'));
+          define('WP_SITEURL', 'https://' . getenv('DOMAIN'));
+        }
+        
+        /* Force SSL for Admin Panel */
+        define('FORCE_SSL_ADMIN', true);
+        
+        /* File System Method for Updates */
+        define('FS_METHOD', 'direct');
+        
+        /* Memory Limit */
+        define('WP_MEMORY_LIMIT', '256M');
     deploy:
       resources:
         limits:
           memory: 1G
+    depends_on:
+      - db
+    networks:
+      - wordpress_network
 
   db:
-    image: mariadb:10.11
-    container_name: wordpress_db
+    image: mariadb:11.6
     restart: unless-stopped
-    user: 0:0
     volumes:
       - /DATA/AppData/$AppID/db:/var/lib/mysql
     environment:
+      TZ: $TZ
       MYSQL_ROOT_PASSWORD: $default_pwd
       MYSQL_DATABASE: wordpress
       MYSQL_USER: wordpress
       MYSQL_PASSWORD: $default_pwd
-      MARIADB_AUTO_UPGRADE: 1
-      MARIADB_DISABLE_UPGRADE_BACKUP: 1
-    healthcheck:
-      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
     deploy:
       resources:
         limits:
           memory: 1G
+    networks:
+      - wordpress_network
+
+networks:
+  wordpress_network:
+    driver: bridge
 
 x-casaos:
   architectures:
     - amd64
     - arm64
-  author: CasaOS Team
-  category: Web
-  developer: WordPress Foundation
-  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Wordpress/icon.png
-  screenshot_link:
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Wordpress/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Wordpress/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Wordpress/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Wordpress/thumbnail.png
-  index: /
-  tagline:
-    en_us: Create beautiful websites with ease
-    zh_cn: 轻松创建精美网站
-    ko_kr: 아름다운 웹사이트를 손쉽게 만들기
-    fr_fr: Créez facilement de beaux sites web
-    es_es: Crea hermosos sitios web con facilidad
-  title:
-    en_us: Wordpress
-  store_app_id: wordpress
   main: wordpress
-  webui_port: 80
-  pre-install-cmd: |
-    mkdir -p /DATA/AppData/$AppID/html /DATA/AppData/$AppID/db &&
-    chown -R $PUID:$PGID /DATA/AppData/$AppID/html &&
-    chmod -R 755 /DATA/AppData/$AppID/html &&
-    chmod -R 777 /DATA/AppData/$AppID/db
   description:
-    en_us: |
-      **The world's #1 website builder - from blogs to online stores**
-      
-      WordPress powers 43% of all websites on the internet. Whether you're starting a personal blog, building a business website, or launching an online store, WordPress makes it simple with no coding required.
-      
-      **What you can do:**
-      • Create beautiful websites with drag-and-drop blocks
-      • Choose from 10,000+ free themes to match your style
-      • Add features instantly with 60,000+ plugins (contact forms, SEO, social media, shops)
-      • Sell products with built-in e-commerce tools
-      • Write blog posts with a powerful editor
-      • Upload unlimited photos and videos
-      
-      **Perfect for:** Bloggers, small businesses, photographers, restaurants, online stores, portfolios, and anyone who wants a professional website without the complexity.
-    ko_kr: |
-      **세계 1위 웹사이트 빌더 - 블로그부터 온라인 스토어까지**
-      
-      WordPress는 인터넷 전체 웹사이트의 43%를 구동합니다. 개인 블로그, 비즈니스 웹사이트, 온라인 스토어 등 코딩 없이 간단하게 만들 수 있습니다.
-      
-      **할 수 있는 것:**
-      • 드래그 앤 드롭 블록으로 아름다운 웹사이트 제작
-      • 10,000개 이상의 무료 테마 중 선택
-      • 60,000개 이상의 플러그인으로 즉시 기능 추가 (문의 양식, SEO, 소셜 미디어, 쇼핑몰)
-      • 내장된 전자상거래 도구로 제품 판매
-      • 강력한 편집기로 블로그 글 작성
-      • 무제한 사진과 비디오 업로드
-      
-      **이런 분께 완벽해요:** 블로거, 소상공인, 사진작가, 레스토랑, 온라인 스토어, 포트폴리오, 복잡함 없이 전문적인 웹사이트를 원하는 모든 분.
-    zh_cn: |
-      **世界第一的网站构建器 - 从博客到在线商店**
-      
-      WordPress 为互联网上 43% 的网站提供支持。无论您是开始个人博客、建立商业网站还是开设在线商店，WordPress 都能让一切变得简单，无需编码。
-      
-      **您可以做的事:**
-      • 使用拖放块创建漂亮的网站
-      • 从 10,000+ 免费主题中选择符合您风格的
-      • 使用 60,000+ 插件即时添加功能（联系表单、SEO、社交媒体、商店）
-      • 使用内置电子商务工具销售产品
-      • 使用强大的编辑器撰写博客文章
-      • 上传无限照片和视频
-      
-      **完美适合:** 博主、小企业、摄影师、餐厅、在线商店、作品集，以及任何想要专业网站而不需要复杂性的人。
-    es_es: |
-      **El constructor de sitios web #1 del mundo - desde blogs hasta tiendas online**
-      
-      WordPress impulsa el 43% de todos los sitios web en Internet. Ya sea que estés comenzando un blog personal, construyendo un sitio web empresarial o lanzando una tienda online, WordPress lo hace simple sin necesidad de programar.
-      
-      **Lo que puedes hacer:**
-      • Crear sitios web hermosos con bloques de arrastrar y soltar
-      • Elegir entre más de 10,000 temas gratuitos para tu estilo
-      • Añadir funciones al instante con más de 60,000 plugins (formularios, SEO, redes sociales, tiendas)
-      • Vender productos con herramientas de comercio electrónico integradas
-      • Escribir entradas de blog con un editor potente
-      • Subir fotos y videos ilimitados
-      
-      **Perfecto para:** Bloggers, pequeñas empresas, fotógrafos, restaurantes, tiendas online, portafolios y cualquiera que quiera un sitio web profesional sin complejidad.
-    fr_fr: |
-      **Le constructeur de sites web n°1 mondial - des blogs aux boutiques en ligne**
-      
-      WordPress alimente 43% de tous les sites web sur Internet. Que vous lanciez un blog personnel, créiez un site d'entreprise ou ouvriez une boutique en ligne, WordPress rend tout simple sans codage requis.
-      
-      **Ce que vous pouvez faire:**
-      • Créer de beaux sites avec des blocs glisser-déposer
-      • Choisir parmi plus de 10 000 thèmes gratuits
-      • Ajouter des fonctions instantanément avec plus de 60 000 plugins (formulaires, SEO, réseaux sociaux, boutiques)
-      • Vendre des produits avec des outils e-commerce intégrés
-      • Écrire des articles de blog avec un éditeur puissant
-      • Télécharger photos et vidéos illimitées
-      
-      **Parfait pour:** Blogueurs, petites entreprises, photographes, restaurants, boutiques en ligne, portfolios et toute personne voulant un site professionnel sans complexité.
+    en_us: WordPress is the world's most popular website builder and content management system. Create beautiful websites, blogs, and online stores with thousands of themes and plugins available.
+    fr_fr: WordPress est le créateur de sites Web et le système de gestion de contenu les plus populaires au monde. Créez de magnifiques sites Web, blogs et boutiques en ligne avec des milliers de thèmes et plugins disponibles.
+    es_es: WordPress es el creador de sitios web y sistema de gestión de contenidos más popular del mundo. Crea hermosos sitios web, blogs y tiendas online con miles de temas y plugins disponibles.
+    zh_cn: WordPress是世界上最受欢迎的网站构建器和内容管理系统。使用数千种主题和插件创建精美的网站、博客和在线商店。
+    ko_kr: WordPress는 세계에서 가장 인기 있는 웹사이트 빌더 및 콘텐츠 관리 시스템입니다. 수천 개의 테마와 플러그인으로 아름다운 웹사이트, 블로그 및 온라인 스토어를 만드세요.
+  tagline:
+    en_us: The world's most popular website builder and CMS
+    fr_fr: Le créateur de sites Web et CMS le plus populaire au monde
+    es_es: El creador de sitios web y CMS más popular del mundo
+    zh_cn: 世界上最受欢迎的网站构建器和CMS
+    ko_kr: 세계에서 가장 인기 있는 웹사이트 빌더 및 CMS
+  developer: WordPress Foundation
+  author: Yundera Team
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Wordpress/icon.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Wordpress/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Wordpress/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Wordpress/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Wordpress/thumbnail.png
+  title:
+    en_us: WordPress
+  category: Content Management
+  port_map: "80"
   tips:
     before_install:
       en_us: |
-        **Quick Setup (5 minutes):**
-        1. Open the app after installation
-        2. Choose your language
-        3. Fill in: Site Title, Username, Password, Email
-        4. Click "Install WordPress"
-        5. Done! Start building your website
+        ## Default Credentials
         
-        **First things to do:**
-        • Pick a theme (Appearance → Themes)
-        • Create your first page or post
-        • Install useful plugins like Yoast SEO or Contact Form 7
+        During WordPress installation, you will need to create an admin account.
         
-        The database is already configured automatically.
-      ko_kr: |
-        **빠른 설정 (5분):**
-        1. 설치 후 앱 열기
-        2. 언어 선택
-        3. 입력: 사이트 제목, 사용자명, 비밀번호, 이메일
-        4. "WordPress 설치" 클릭
-        5. 완료! 웹사이트 만들기 시작
+        **Recommended Settings:**
+        - Use a strong admin password (suggestion: `$default_pwd`)
+        - Enable automatic updates for security
+        - Choose a memorable site title
         
-        **처음 할 일:**
-        • 테마 선택 (외모 → 테마)
-        • 첫 페이지나 글 작성
-        • Yoast SEO나 Contact Form 7 같은 유용한 플러그인 설치
+        ## Post-Installation Steps
         
-        데이터베이스는 이미 자동으로 구성되어 있습니다.
-      zh_cn: |
-        **快速设置（5分钟）：**
-        1. 安装后打开应用
-        2. 选择您的语言
-        3. 填写：站点标题、用户名、密码、电子邮件
-        4. 点击"安装 WordPress"
-        5. 完成！开始建立您的网站
+        1. Complete the WordPress installation wizard
+        2. Navigate to **Settings > Permalinks** and choose a permalink structure (recommended: Post name)
+        3. Install security plugins like Wordfence or iThemes Security
+        4. Set up regular backups
         
-        **首先要做的事：**
-        • 选择主题（外观 → 主题）
-        • 创建您的第一个页面或文章
-        • 安装有用的插件，如 Yoast SEO 或 Contact Form 7
+        ## Important Notes
         
-        数据库已自动配置。
-      es_es: |
-        **Configuración rápida (5 minutos):**
-        1. Abre la app después de la instalación
-        2. Elige tu idioma
-        3. Completa: Título del sitio, Usuario, Contraseña, Email
-        4. Haz clic en "Instalar WordPress"
-        5. ¡Listo! Empieza a construir tu sitio
-        
-        **Primeras cosas por hacer:**
-        • Elige un tema (Apariencia → Temas)
-        • Crea tu primera página o entrada
-        • Instala plugins útiles como Yoast SEO o Contact Form 7
-        
-        La base de datos ya está configurada automáticamente.
+        - Your site will be accessible via HTTPS automatically through NSL Router
+        - The publishing functionality requires the HTTPS configuration included in this setup
+        - Downloads folder is mapped to `/downloads` for easy file access
       fr_fr: |
-        **Configuration rapide (5 minutes):**
-        1. Ouvrez l'app après l'installation
-        2. Choisissez votre langue
-        3. Remplissez: Titre du site, Nom d'utilisateur, Mot de passe, Email
-        4. Cliquez sur "Installer WordPress"
-        5. Terminé! Commencez à construire votre site
+        ## Identifiants par défaut
         
-        **Premières choses à faire:**
-        • Choisir un thème (Apparence → Thèmes)
-        • Créer votre première page ou article
-        • Installer des plugins utiles comme Yoast SEO ou Contact Form 7
+        Lors de l'installation de WordPress, vous devrez créer un compte administrateur.
         
-        La base de données est déjà configurée automatiquement.
+        **Paramètres recommandés :**
+        - Utilisez un mot de passe administrateur fort (suggestion : `$default_pwd`)
+        - Activez les mises à jour automatiques pour la sécurité
+        - Choisissez un titre de site mémorable
+      es_es: |
+        ## Credenciales predeterminadas
+        
+        Durante la instalación de WordPress, deberá crear una cuenta de administrador.
+        
+        **Configuración recomendada:**
+        - Use una contraseña de administrador segura (sugerencia: `$default_pwd`)
+        - Habilite las actualizaciones automáticas para la seguridad
+        - Elija un título de sitio memorable
+      zh_cn: |
+        ## 默认凭据
+        
+        在WordPress安装过程中，您需要创建一个管理员帐户。
+        
+        **推荐设置：**
+        - 使用强管理员密码（建议：`$default_pwd`）
+        - 启用自动更新以确保安全
+        - 选择一个易记的站点标题
+      ko_kr: |
+        ## 기본 자격 증명
+        
+        WordPress 설치 중에 관리자 계정을 만들어야 합니다.
+        
+        **권장 설정:**
+        - 강력한 관리자 비밀번호 사용 (제안: `$default_pwd`)
+        - 보안을 위해 자동 업데이트 활성화
+        - 기억하기 쉬운 사이트 제목 선택
+  scheme: https
+  index: /
+  webui_port: 80
