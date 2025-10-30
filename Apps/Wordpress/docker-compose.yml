@@ -21,7 +21,14 @@ services:
       WORDPRESS_SITE_URL: https://$domain # Site URL for WordPress / WordPress 사이트 URL
       WORDPRESS_HOME: https://$domain    # Home URL for WordPress / WordPress 홈 URL
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
     deploy:
       resources:
         limits:
@@ -42,10 +49,17 @@ services:
       MYSQL_PASSWORD: $default_pwd       # Password for MySQL user / MySQL 사용자 비밀번호
       MARIADB_AUTO_UPGRADE: 1            # Enable automatic database upgrades / 자동 데이터베이스 업그레이드 활성화
       MARIADB_DISABLE_UPGRADE_BACKUP: 1  # Disable backup during upgrades / 업그레이드 시 백업 비활성화
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     deploy:
       resources:
         limits:
           memory: 1G                    # Memory limit for database / 데이터베이스 메모리 제한
+
 x-casaos:
   architectures:
     - amd64
