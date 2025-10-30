@@ -21,9 +21,12 @@ services:
       APACHE_HTTPS_PORT_NUMBER: 443
       WORDPRESS_CONFIG_EXTRA: |
         /* Force HTTPS Detection for NSL Router */
-        if (!isset($${_SERVER}['HTTPS']) || $${_SERVER}['HTTPS'] !== 'on') {
-            $${_SERVER}['HTTPS'] = 'on';
+        if (isset($$_SERVER['HTTP_X_FORWARDED_PROTO']) && $$_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
+            $$_SERVER['HTTPS'] = 'on';
         }
+        
+        /* Always set HTTPS for NSL Router environment */
+        $$_SERVER['HTTPS'] = 'on';
         
         /* Dynamic Site URLs with HTTPS */
         define('WP_HOME', 'https://' . getenv('DOMAIN'));
@@ -81,12 +84,12 @@ x-casaos:
   author: CasaOS Team
   category: Web
   developer: WordPress Foundation
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Wordpress/icon.png
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/WordPress/icon.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Wordpress/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Wordpress/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Wordpress/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Wordpress/thumbnail.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/WordPress/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/WordPress/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/WordPress/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/WordPress/thumbnail.png
   index: /
   tagline:
     en_us: Create beautiful websites with ease
@@ -95,15 +98,15 @@ x-casaos:
     fr_fr: Créez facilement de beaux sites web
     es_es: Crea hermosos sitios web con facilidad
   title:
-    en_us: Wordpress
+    en_us: WordPress
   store_app_id: wordpress
   main: wordpress
   webui_port: 80
   pre-install-cmd: |
     mkdir -p /DATA/AppData/$AppID/html /DATA/AppData/$AppID/db &&
     chown -R $PUID:$PGID /DATA/AppData/$AppID/html &&
-    chmod -R 755 /DATA/AppData/$AppID/html &&
-    chmod -R 777 /DATA/AppData/$AppID/db
+    chown -R $PUID:$PGID /DATA/AppData/$AppID/db &&
+    chmod -R 755 /DATA/AppData/$AppID
   description:
     en_us: |
       **The world's #1 website builder - from blogs to online stores**
