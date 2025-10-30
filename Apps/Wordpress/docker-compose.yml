@@ -22,13 +22,6 @@ services:
       WORDPRESS_HOME: https://$domain    # Home URL for WordPress / WordPress 홈 URL
     depends_on:
       - db
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80/wp-admin/install.php"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-
     deploy:
       resources:
         limits:
