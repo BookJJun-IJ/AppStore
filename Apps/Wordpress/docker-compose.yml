@@ -35,7 +35,7 @@ services:
         
         /* Disable file editing from dashboard */
         define('DISALLOW_FILE_EDIT', false);
-      DOMAIN: $domain
+      DOMAIN: wordpress-$domain
     depends_on:
       db:
         condition: service_healthy
@@ -176,7 +176,7 @@ x-casaos:
         **⚠️ IMPORTANT: First-time Setup Required**
         
         After installation, you MUST access WordPress directly via this URL to complete setup:
-        👉 **https://$domain**
+        👉 **https://wordpress-$domain**
         
         The app icon won't work until you complete the WordPress installation wizard.
         After setup is complete, you can use the app icon normally.
@@ -184,7 +184,7 @@ x-casaos:
         ---
         
         **Quick Setup (5 minutes):**
-        1. Visit https://$domain after installation
+        1. Visit https://wordpress-$domain after installation
         2. Choose your language
         3. Fill in: Site Title, Username, Password, Email
         4. Click "Install WordPress"
@@ -200,7 +200,7 @@ x-casaos:
         **⚠️ 중요: 최초 설정 필수**
         
         설치 후, WordPress 설정을 완료하려면 반드시 이 URL로 직접 접속하세요:
-        👉 **https://$domain**
+        👉 **https://wordpress-$domain**
         
         WordPress 설치 마법사를 완료하기 전까지는 앱 아이콘이 작동하지 않습니다.
         설정 완료 후에는 앱 아이콘으로 정상 접속 가능합니다.
@@ -208,7 +208,7 @@ x-casaos:
         ---
         
         **빠른 설정 (5분):**
-        1. 설치 후 https://$domain 접속
+        1. 설치 후 https://wordpress-$domain 접속
         2. 언어 선택
         3. 입력: 사이트 제목, 사용자명, 비밀번호, 이메일
         4. "WordPress 설치" 클릭
@@ -224,7 +224,7 @@ x-casaos:
         **⚠️ 重要：首次设置必需**
         
         安装后，您必须通过此 URL 直接访问以完成设置：
-        👉 **https://$domain**
+        👉 **https://wordpress-$domain**
         
         在完成 WordPress 安装向导之前，应用图标将无法使用。
         设置完成后，您可以正常使用应用图标。
@@ -232,7 +232,7 @@ x-casaos:
         ---
         
         **快速设置（5分钟）：**
-        1. 安装后访问 https://$domain
+        1. 安装后访问 https://wordpress-$domain
         2. 选择您的语言
         3. 填写：站点标题、用户名、密码、电子邮件
         4. 点击"安装 WordPress"
@@ -248,7 +248,7 @@ x-casaos:
         **⚠️ IMPORTANTE: Configuración inicial requerida**
         
         Después de la instalación, DEBE acceder a WordPress directamente mediante esta URL para completar la configuración:
-        👉 **https://$domain**
+        👉 **https://wordpress-$domain**
         
         El ícono de la aplicación no funcionará hasta que complete el asistente de instalación de WordPress.
         Una vez completada la configuración, puede usar el ícono de la aplicación normalmente.
@@ -256,7 +256,7 @@ x-casaos:
         ---
         
         **Configuración rápida (5 minutos):**
-        1. Visita https://$domain después de la instalación
+        1. Visita https://wordpress-$domain después de la instalación
         2. Elige tu idioma
         3. Completa: Título del sitio, Usuario, Contraseña, Email
         4. Haz clic en "Instalar WordPress"
@@ -272,7 +272,7 @@ x-casaos:
         **⚠️ IMPORTANT : Configuration initiale requise**
         
         Après l'installation, vous DEVEZ accéder à WordPress directement via cette URL pour terminer la configuration :
-        👉 **https://$domain**
+        👉 **https://wordpress-$domain**
         
         L'icône de l'application ne fonctionnera pas tant que vous n'aurez pas terminé l'assistant d'installation de WordPress.
         Une fois la configuration terminée, vous pouvez utiliser l'icône de l'application normalement.
@@ -280,7 +280,7 @@ x-casaos:
         ---
         
         **Configuration rapide (5 minutes) :**
-        1. Visitez https://$domain après l'installation
+        1. Visitez https://wordpress-$domain après l'installation
         2. Choisissez votre langue
         3. Remplissez : Titre du site, Nom d'utilisateur, Mot de passe, Email
         4. Cliquez sur "Installer WordPress"
