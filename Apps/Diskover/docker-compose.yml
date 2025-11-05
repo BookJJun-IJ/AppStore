@@ -20,7 +20,7 @@ services:
       resources:
         limits:
           memory: 2048M
-          cpus: '1.0'
+          cpus: '2.0'
     restart: unless-stopped
     depends_on:
       elasticsearch:
@@ -29,7 +29,10 @@ services:
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.17.22
     container_name: diskover-elasticsearch
+    user: $PUID:$PGID
     environment:
+      PUID: $PUID
+      PGID: $PGID
       - discovery.type=single-node
       - xpack.security.enabled=false
       - bootstrap.memory_lock=true
@@ -44,7 +47,7 @@ services:
       resources:
         limits:
           memory: 2048M
-          cpus: '1.0'
+          cpus: '2.0'
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
       interval: 30s
@@ -74,6 +77,12 @@ x-casaos:
   main: diskover
   author: CasaOS Team
   category: Utilities
+  pre-install-cmd: |
+    docker run --rm -v /DATA/AppData/$AppID:/data ubuntu:22.04 sh -c "
+      mkdir -p /data/config /data/esdata &&
+      chown -R $PUID:$PGID /data/config /data/esdata &&
+      chmod -R 755 /data/config /data/esdata
+    "
   description:
     en_us: |
       Diskover is a powerful open-source file system indexer and search engine that uses Elasticsearch to catalog and manage data across different storage systems.
