@@ -29,8 +29,10 @@ services:
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.17.22
     container_name: diskover-elasticsearch
-    user: "0:0"
+    user: "1000:1000"
     environment:
+      PUID: "1000"
+      PGID: "1000"
       discovery.type: single-node
       xpack.security.enabled: false
       bootstrap.memory_lock: true
@@ -45,7 +47,7 @@ services:
       resources:
         limits:
           memory: 2048M
-          cpus: 1.0'
+          cpus: '1.0'
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
       interval: 30s
@@ -62,7 +64,8 @@ services:
     command: sh -c "
       sysctl -w vm.max_map_count=262144 &&
       mkdir -p /data/esdata /data/config &&
-      chmod -R 777 /data
+      chown -R 1000:1000 /data/esdata &&
+      chmod -R 755 /data
       "
     privileged: true
     volumes:
@@ -155,23 +158,23 @@ x-casaos:
       
       **Nota:** La aplicación solo indexa metadatos de archivos y nunca modifica sus archivos reales.
     zh_cn: |
-      Diskover 是一个强大的开源文件系统索引器和搜索引擎，使用 Elasticsearch 对不同存储系统的数据进行分类和管理。
+      Diskover 是一个强大的开源文件系统索引器和搜索引擎,使用 Elasticsearch 对不同存储系统的数据进行分类和管理。
       
       **主要功能:**
       - 使用 Elasticsearch 快速索引文件系统
       - 用于搜索和分析文件的 Web 界面
-      - 元数据收集（大小、日期、所有权）
+      - 元数据收集(大小、日期、所有权)
       - 存储分析和可视化
       - 支持本地、NFS、SMB 和云存储
       - 使用 cron 作业自动索引
       
       **安装后步骤:**
       1. 等待 2-3 分钟让 Elasticsearch 初始化
-      2. 访问 Web 界面（默认凭证：diskover / $default_pwd）
-      3. 运行初始索引：`docker exec -u abc diskover python3 /app/diskover/diskover.py -i diskover-main /data`
-      4. 在 `/DATA/AppData/diskover/config/crontab` 中配置自动索引（需要重启容器）
+      2. 访问 Web 界面(默认凭证:diskover / $default_pwd)
+      3. 运行初始索引:`docker exec -u abc diskover python3 /app/diskover/diskover.py -i diskover-main /data`
+      4. 在 `/DATA/AppData/diskover/config/crontab` 中配置自动索引(需要重启容器)
       
-      **注意:** 应用程序仅索引文件元数据，永远不会修改您的实际文件。
+      **注意:** 应用程序仅索引文件元数据,永远不会修改您的实际文件。
   developer: Diskover Data / LinuxServer.io
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Diskover/icon.png
   screenshot_link:
@@ -204,8 +207,9 @@ x-casaos:
         - Automated indexing can be configured via crontab after installation
         
         **Security Note:**
-        - Elasticsearch runs with elevated privileges for data directory management
-        - This is isolated to AppData only and does not access user files
+        - Elasticsearch runs as UID 1000 for proper data directory management
+        - Diskover runs with elevated privileges for read-only access to all file systems
+        - Both are isolated to AppData and do not modify user files
         - See rationale.md for complete security justification
       ko_kr: |
         **기본 계정:**
@@ -222,8 +226,9 @@ x-casaos:
         - 설치 후 crontab을 통해 자동 인덱싱을 구성할 수 있습니다
         
         **보안 참고:**
-        - Elasticsearch는 데이터 디렉토리 관리를 위해 높은 권한으로 실행됩니다
-        - 이것은 AppData에만 격리되며 사용자 파일에 접근하지 않습니다
+        - Elasticsearch는 올바른 데이터 디렉토리 관리를 위해 UID 1000으로 실행됩니다
+        - Diskover는 모든 파일 시스템에 대한 읽기 전용 접근을 위해 높은 권한으로 실행됩니다
+        - 둘 다 AppData에 격리되어 있으며 사용자 파일을 수정하지 않습니다
         - 전체 보안 정당화는 rationale.md를 참조하세요
       fr_fr: |
         **Compte par défaut:**
@@ -240,8 +245,9 @@ x-casaos:
         - L'indexation automatisée peut être configurée via crontab après l'installation
         
         **Note de sécurité:**
-        - Elasticsearch s'exécute avec des privilèges élevés pour la gestion du répertoire de données
-        - Ceci est isolé à AppData uniquement et n'accède pas aux fichiers utilisateur
+        - Elasticsearch s'exécute en tant qu'UID 1000 pour une gestion correcte du répertoire de données
+        - Diskover s'exécute avec des privilèges élevés pour un accès en lecture seule à tous les systèmes de fichiers
+        - Les deux sont isolés à AppData et ne modifient pas les fichiers utilisateur
         - Voir rationale.md pour la justification complète de la sécurité
       es_es: |
         **Cuenta predeterminada:**
@@ -258,8 +264,9 @@ x-casaos:
         - La indexación automatizada se puede configurar mediante crontab después de la instalación
         
         **Nota de seguridad:**
-        - Elasticsearch se ejecuta con privilegios elevados para la gestión del directorio de datos
-        - Esto está aislado solo a AppData y no accede a archivos de usuario
+        - Elasticsearch se ejecuta como UID 1000 para la gestión adecuada del directorio de datos
+        - Diskover se ejecuta con privilegios elevados para acceso de solo lectura a todos los sistemas de archivos
+        - Ambos están aislados a AppData y no modifican archivos de usuario
         - Ver rationale.md para la justificación completa de seguridad
       zh_cn: |
         **默认账户:**
@@ -271,13 +278,14 @@ x-casaos:
         **重要注意事项:**
         - Elasticsearch 需要 2-3 分钟启动和初始化
         - 安装后必须手动运行初始索引
-        - 在 Elasticsearch 准备就绪之前，Web 界面可能无响应
+        - 在 Elasticsearch 准备就绪之前,Web 界面可能无响应
         - 大型文件系统的初始索引可能需要大量时间
         - 安装后可以通过 crontab 配置自动索引
         
         **安全说明:**
-        - Elasticsearch 以提升的权限运行以管理数据目录
-        - 这仅隔离到 AppData 并不访问用户文件
+        - Elasticsearch 以 UID 1000 运行以正确管理数据目录
+        - Diskover 以提升的权限运行以对所有文件系统进行只读访问
+        - 两者都隔离到 AppData 并不修改用户文件
         - 请参阅 rationale.md 了解完整的安全理由
   index: /
   webui_port: 80
