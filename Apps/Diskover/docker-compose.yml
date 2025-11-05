@@ -6,8 +6,8 @@ services:
     container_name: diskover
     user: "0:0"
     environment:
-      PUID: $PUID
-      PGID: $PGID
+      PUID: "0"
+      PGID: "0"
       TZ: $TZ
       ES_HOST: elasticsearch
       ES_PORT: 9200
@@ -45,7 +45,7 @@ services:
       resources:
         limits:
           memory: 2048M
-          cpus: '1.0'
+          cpus: 1.0'
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
       interval: 30s
@@ -59,8 +59,14 @@ services:
   elasticsearch-helper:
     image: alpine:3.20
     container_name: diskover-elasticsearch-helper
-    command: sh -c "sysctl -w vm.max_map_count=262144"
+    command: sh -c "
+      sysctl -w vm.max_map_count=262144 &&
+      mkdir -p /data/esdata /data/config &&
+      chmod -R 777 /data
+      "
     privileged: true
+    volumes:
+      - /DATA/AppData/$AppID:/data
     deploy:
       resources:
         limits:
