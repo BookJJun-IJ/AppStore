@@ -28,11 +28,8 @@ services:
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.17.22
-    container_name: diskover-elasticsearch
-    user: $PUID:$PGID
+    container_name: diskover-Elasticsearch
     environment:
-      PUID: $PUID
-      PGID: $PGID
       discovery.type: single-node
       xpack.security.enabled: false
       bootstrap.memory_lock: true
@@ -77,12 +74,6 @@ x-casaos:
   main: diskover
   author: CasaOS Team
   category: Utilities
-  pre-install-cmd: |
-    docker run --rm -v /DATA/AppData/$AppID:/data ubuntu:22.04 sh -c "
-      mkdir -p /data/config /data/esdata &&
-      chown -R $PUID:$PGID /data/config /data/esdata &&
-      chmod -R 755 /data/config /data/esdata
-    "
   description:
     en_us: |
       Diskover is a powerful open-source file system indexer and search engine that uses Elasticsearch to catalog and manage data across different storage systems.
@@ -204,6 +195,11 @@ x-casaos:
         - The web interface may be unresponsive until Elasticsearch is ready
         - Large file systems may take significant time for initial indexing
         - Automated indexing can be configured via crontab after installation
+        
+        **Security Note:**
+        - Elasticsearch runs with elevated privileges for data directory management
+        - This is isolated to AppData only and does not access user files
+        - See rationale.md for complete security justification
       ko_kr: |
         **기본 계정:**
         
@@ -217,6 +213,11 @@ x-casaos:
         - Elasticsearch가 준비될 때까지 웹 인터페이스가 응답하지 않을 수 있습니다
         - 큰 파일 시스템은 초기 인덱싱에 상당한 시간이 걸릴 수 있습니다
         - 설치 후 crontab을 통해 자동 인덱싱을 구성할 수 있습니다
+        
+        **보안 참고:**
+        - Elasticsearch는 데이터 디렉토리 관리를 위해 높은 권한으로 실행됩니다
+        - 이것은 AppData에만 격리되며 사용자 파일에 접근하지 않습니다
+        - 전체 보안 정당화는 rationale.md를 참조하세요
       fr_fr: |
         **Compte par défaut:**
         
@@ -230,6 +231,11 @@ x-casaos:
         - L'interface Web peut ne pas répondre jusqu'à ce qu'Elasticsearch soit prêt
         - Les grands systèmes de fichiers peuvent nécessiter un temps considérable pour l'indexation initiale
         - L'indexation automatisée peut être configurée via crontab après l'installation
+        
+        **Note de sécurité:**
+        - Elasticsearch s'exécute avec des privilèges élevés pour la gestion du répertoire de données
+        - Ceci est isolé à AppData uniquement et n'accède pas aux fichiers utilisateur
+        - Voir rationale.md pour la justification complète de la sécurité
       es_es: |
         **Cuenta predeterminada:**
         
@@ -243,6 +249,11 @@ x-casaos:
         - La interfaz web puede no responder hasta que Elasticsearch esté listo
         - Los sistemas de archivos grandes pueden tardar mucho tiempo en la indexación inicial
         - La indexación automatizada se puede configurar mediante crontab después de la instalación
+        
+        **Nota de seguridad:**
+        - Elasticsearch se ejecuta con privilegios elevados para la gestión del directorio de datos
+        - Esto está aislado solo a AppData y no accede a archivos de usuario
+        - Ver rationale.md para la justificación completa de seguridad
       zh_cn: |
         **默认账户:**
         
@@ -256,6 +267,11 @@ x-casaos:
         - 在 Elasticsearch 准备就绪之前，Web 界面可能无响应
         - 大型文件系统的初始索引可能需要大量时间
         - 安装后可以通过 crontab 配置自动索引
+        
+        **安全说明:**
+        - Elasticsearch 以提升的权限运行以管理数据目录
+        - 这仅隔离到 AppData 并不访问用户文件
+        - 请参阅 rationale.md 了解完整的安全理由
   index: /
   webui_port: 80
   scheme: https
