@@ -4,7 +4,7 @@ services:
   diskover:
     image: lscr.io/linuxserver/diskover:v2.3.3-ls213
     container_name: diskover
-    user: $PUID:$PGID
+    user: "0:0"
     environment:
       PUID: $PUID
       PGID: $PGID
@@ -20,7 +20,7 @@ services:
       resources:
         limits:
           memory: 2048M
-          cpus: '1.0'
+          cpus: '2.0'
     restart: unless-stopped
     depends_on:
       elasticsearch:
@@ -28,7 +28,8 @@ services:
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.17.22
-    container_name: diskover-Elasticsearch
+    container_name: diskover-elasticsearch
+    user: "0:0"
     environment:
       discovery.type: single-node
       xpack.security.enabled: false
@@ -44,7 +45,7 @@ services:
       resources:
         limits:
           memory: 2048M
-          cpus: '1.0'
+          cpus: '2.0'
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
       interval: 30s
