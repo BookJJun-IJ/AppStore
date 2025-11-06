@@ -2,16 +2,17 @@ name: odoo
 
 services:
   postgres:
-    image: bitnami/postgresql:15.8.0
-    user: "1001:1001"
+    image: postgres:15.8
+    user: "0:0"
     environment:
-      POSTGRESQL_DATABASE: postgres
-      POSTGRESQL_USERNAME: odoo
-      POSTGRESQL_PASSWORD: $default_pwd
-      PUID: "1001"
-      PGID: "1001"
+      POSTGRES_DB: postgres
+      POSTGRES_USER: odoo
+      POSTGRES_PASSWORD: $default_pwd
+      PGDATA: /var/lib/postgresql/data/pgdata
+      PUID: "0"
+      PGID: "0"
     volumes:
-      - /DATA/AppData/$AppID/postgresql:/bitnami/postgresql
+      - /DATA/AppData/$AppID/postgres-data:/var/lib/postgresql/data
     deploy:
       resources:
         limits:
@@ -25,26 +26,24 @@ services:
     restart: unless-stopped
 
   odoo:
-    image: bitnami/odoo:18.0.20241104
-    user: "1001:1001"
+    image: odoo:18.0
+    user: "0:0"
     depends_on:
       postgres:
         condition: service_healthy
     expose:
       - 8069
     environment:
-      ODOO_DATABASE_HOST: postgres
-      ODOO_DATABASE_PORT_NUMBER: 5432
-      ODOO_DATABASE_USER: odoo
-      ODOO_DATABASE_PASSWORD: $default_pwd
-      ODOO_DATABASE_NAME: postgres
-      ODOO_DATABASE_ADMIN_PASSWORD: $default_pwd
-      ODOO_SKIP_BOOTSTRAP: "no"
-      PUID: "1001"
-      PGID: "1001"
+      HOST: postgres
+      USER: odoo
+      PASSWORD: $default_pwd
+      PUID: "0"
+      PGID: "0"
       TZ: $TZ
     volumes:
-      - /DATA/AppData/$AppID/odoo:/bitnami/odoo
+      - /DATA/AppData/$AppID/odoo-data:/var/lib/odoo
+      - /DATA/AppData/$AppID/config:/etc/odoo
+      - /DATA/AppData/$AppID/addons:/mnt/extra-addons
     deploy:
       resources:
         limits:
@@ -56,12 +55,7 @@ x-casaos:
   architectures:
     - amd64
     - arm64
-  main: odoo  
-  pre-install-cmd: |
-    docker run --rm -v /DATA/AppData/$AppID:/data ubuntu:22.04 sh -c '
-      mkdir -p /data/postgresql /data/odoo &&
-      chown -R 1001:1001 /data/postgresql /data/odoo
-    '
+  main: odoo
   webui_port: 8069
   category: Business
   author: CasaOS Team
@@ -84,122 +78,107 @@ x-casaos:
       Odoo is a suite of open source business apps that cover all your company needs: CRM, eCommerce, accounting, inventory, point of sale, project management, and more.
       
       Odoo's unique value proposition is to be at the same time very easy to use and fully integrated.
-      
-      **This version uses Bitnami images** which run as non-root user (UID 1001) for enhanced security.
     ko_kr: |
       Odoo는 CRM, 전자상거래, 회계, 재고 관리, POS, 프로젝트 관리 등 회사의 모든 비즈니스 요구사항을 충족하는 오픈 소스 비즈니스 앱 모음입니다.
       
       Odoo의 고유한 가치는 사용이 매우 쉬우면서도 완전히 통합되어 있다는 점입니다.
-      
-      **이 버전은 Bitnami 이미지를 사용**하여 보안 강화를 위해 non-root 사용자(UID 1001)로 실행됩니다.
     zh_cn: |
       Odoo 是一套开源业务应用程序,涵盖公司的所有需求:CRM、电子商务、会计、库存、销售点、项目管理等。
       
       Odoo 的独特价值主张是同时非常易于使用且完全集成。
-      
-      **此版本使用 Bitnami 镜像**,以非 root 用户 (UID 1001) 运行以增强安全性。
     es_es: |
       Odoo es un conjunto de aplicaciones empresariales de código abierto que cubren todas las necesidades de su empresa: CRM, comercio electrónico, contabilidad, inventario, punto de venta, gestión de proyectos y más.
       
       La propuesta de valor única de Odoo es ser al mismo tiempo muy fácil de usar y totalmente integrado.
-      
-      **Esta versión utiliza imágenes de Bitnami** que se ejecutan como usuario no root (UID 1001) para mayor seguridad.
     fr_fr: |
       Odoo est une suite d'applications commerciales open source qui couvrent tous les besoins de votre entreprise : CRM, commerce électronique, comptabilité, inventaire, point de vente, gestion de projet et plus encore.
       
       La proposition de valeur unique d'Odoo est d'être à la fois très facile à utiliser et entièrement intégré.
-      
-      **Cette version utilise des images Bitnami** qui s'exécutent en tant qu'utilisateur non-root (UID 1001) pour une sécurité renforcée.
   tips:
     before_install:
       en_us: |
         ## Initial Setup Information
         
-        This app uses **Bitnami images** running as non-root user (UID 1001) for enhanced security.
-        
-        After installation, access the web UI to complete setup:
+        After installation, use the following information to create your database on first access:
         
         | Item | Value |
         | --- | --- |
-        | Admin Email | Your email address |
-        | Admin Password | Choose a secure password |
         | Master Password | `$default_pwd` |
         | Database Name | `odoo` |
+        | Email | Admin email address |
+        | Password | Admin account password |
+        | Language | Select your preferred language |
+        | Country | Your country |
         
         **Note**: 
         - Initial setup may take a few minutes
-        - Database will be created automatically on first access
-        - Admin credentials can be set during initial setup wizard
+        - After database creation, you can log in with your admin account
       ko_kr: |
         ## 초기 설정 정보
         
-        이 앱은 보안 강화를 위해 non-root 사용자(UID 1001)로 실행되는 **Bitnami 이미지**를 사용합니다.
-        
-        설치 후 웹 UI에 접속하여 설정을 완료하세요:
+        설치 후 첫 접속시 다음 정보를 사용하여 데이터베이스를 생성하세요:
         
         | 항목 | 값 |
         | --- | --- |
-        | 관리자 이메일 | 이메일 주소 |
-        | 관리자 비밀번호 | 안전한 비밀번호 선택 |
         | 마스터 비밀번호 | `$default_pwd` |
         | 데이터베이스 이름 | `odoo` |
+        | 이메일 | 관리자 이메일 주소 |
+        | 비밀번호 | 관리자 계정 비밀번호 |
+        | 언어 | 원하는 언어 선택 |
+        | 국가 | 대한민국 |
         
         **참고**: 
         - 첫 설정 시 몇 분이 소요될 수 있습니다
-        - 첫 접속 시 데이터베이스가 자동으로 생성됩니다
-        - 초기 설정 마법사에서 관리자 계정을 설정할 수 있습니다
+        - 데이터베이스 생성 후 관리자 계정으로 로그인할 수 있습니다
       zh_cn: |
         ## 初始设置信息
         
-        此应用使用 **Bitnami 镜像**,以非 root 用户 (UID 1001) 运行以增强安全性。
-        
-        安装后访问 Web UI 完成设置:
+        安装后首次访问时,使用以下信息创建数据库:
         
         | 项目 | 值 |
         | --- | --- |
-        | 管理员电子邮件 | 您的电子邮件地址 |
-        | 管理员密码 | 选择安全密码 |
         | 主密码 | `$default_pwd` |
         | 数据库名称 | `odoo` |
+        | 电子邮件 | 管理员电子邮件地址 |
+        | 密码 | 管理员帐户密码 |
+        | 语言 | 选择您的首选语言 |
+        | 国家 | 您的国家 |
         
         **注意**: 
         - 初始设置可能需要几分钟
-        - 首次访问时将自动创建数据库
-        - 可以在初始设置向导中设置管理员帐户
+        - 创建数据库后,您可以使用管理员帐户登录
       es_es: |
         ## Información de configuración inicial
         
-        Esta aplicación usa **imágenes de Bitnami** que se ejecutan como usuario no root (UID 1001) para mayor seguridad.
-        
-        Después de la instalación, acceda a la interfaz web para completar la configuración:
+        Después de la instalación, use la siguiente información para crear su base de datos en el primer acceso:
         
         | Elemento | Valor |
         | --- | --- |
-        | Correo electrónico del administrador | Su dirección de correo electrónico |
-        | Contraseña del administrador | Elija una contraseña segura |
         | Contraseña maestra | `$default_pwd` |
         | Nombre de la base de datos | `odoo` |
+        | Correo electrónico | Dirección de correo electrónico del administrador |
+        | Contraseña | Contraseña de la cuenta de administrador |
+        | Idioma | Seleccione su idioma preferido |
+        | País | Su país |
         
         **Nota**: 
         - La configuración inicial puede tardar unos minutos
-        - La base de datos se creará automáticamente en el primer acceso
-        - Las credenciales de administrador se pueden configurar durante el asistente de configuración inicial
+        - Después de crear la base de datos, puede iniciar sesión con su cuenta de administrador
       fr_fr: |
         ## Informations de configuration initiale
         
-        Cette application utilise des **images Bitnami** fonctionnant en tant qu'utilisateur non-root (UID 1001) pour une sécurité renforcée.
-        
-        Après l'installation, accédez à l'interface Web pour terminer la configuration:
+        Après l'installation, utilisez les informations suivantes pour créer votre base de données lors du premier accès:
         
         | Élément | Valeur |
         | --- | --- |
-        | Email administrateur | Votre adresse e-mail |
-        | Mot de passe administrateur | Choisissez un mot de passe sécurisé |
         | Mot de passe principal | `$default_pwd` |
         | Nom de la base de données | `odoo` |
+        | Email | Adresse e-mail de l'administrateur |
+        | Mot de passe | Mot de passe du compte administrateur |
+        | Langue | Sélectionnez votre langue préférée |
+        | Pays | Votre pays |
         
         **Remarque**: 
         - La configuration initiale peut prendre quelques minutes
-        - La base de données sera créée automatiquement lors du premier accès
-        - Les identifiants administrateur peuvent être définis pendant l'assistant de configuration initial
+        - Après la création de la base de données, vous pouvez vous connecter avec votre compte administrateur
   index: /
