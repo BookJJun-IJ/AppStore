@@ -4,10 +4,7 @@ services:
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.17.9
     container_name: sist2-elasticsearch
-    user: "1000:1000"
     environment:
-      PUID: "1000"
-      PGID: "1000"
       discovery.type: single-node
       xpack.security.enabled: false
       bootstrap.memory_lock: true
@@ -68,10 +65,11 @@ x-casaos:
   category: Utilities
   pre-install-cmd: |
     docker run --rm --privileged alpine:3.20 sh -c "sysctl -w vm.max_map_count=262144" &&
-    docker run --rm -v /DATA/AppData/$AppID:/data alpine:3.20 sh -c "
+    docker run --rm -v /DATA/AppData/$AppID:/data ubuntu:22.04 sh -c "
       mkdir -p /data/esdata /data/admin-data &&
-      chown -R 1000:1000 /data/esdata /data/admin-data &&
-      chmod -R 755 /data
+      chmod 777 /data/esdata &&
+      chown -R 1000:1000 /data/admin-data &&
+      chmod -R 755 /data/admin-data
     "
   description:
     en_us: |
