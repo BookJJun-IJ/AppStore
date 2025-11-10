@@ -1,33 +1,6 @@
 name: sist2
 
 services:
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.9
-    container_name: sist2-elasticsearch
-    environment:
-      discovery.type: single-node
-      xpack.security.enabled: false
-      bootstrap.memory_lock: true
-      ES_JAVA_OPTS: "-Xms1g -Xmx1g"
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
-    volumes:
-      - /DATA/AppData/$AppID/esdata:/usr/share/elasticsearch/data
-    deploy:
-      resources:
-        limits:
-          memory: 2048M
-          cpus: '1.0'
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 60s
-    restart: unless-stopped
-
   sist2-admin:
     image: sist2app/sist2:x64-linux
     container_name: sist2-admin
@@ -38,6 +11,7 @@ services:
       TZ: $TZ
     volumes:
       - /DATA/AppData/$AppID/admin-data:/sist2-admin
+      - /DATA/AppData/$AppID/indices:/indices
       - /DATA:/host:ro
     expose:
       - 4090
@@ -49,12 +23,9 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1024M
-          cpus: '0.5'
+          memory: 2048M
+          cpus: '1.0'
     restart: unless-stopped
-    depends_on:
-      elasticsearch:
-        condition: service_healthy
 
 x-casaos:
   architectures:
@@ -64,19 +35,18 @@ x-casaos:
   author: CasaOS Team
   category: Utilities
   pre-install-cmd: |
-    docker run --rm --privileged alpine:3.20 sh -c "sysctl -w vm.max_map_count=262144" &&
-    docker run --rm -v /DATA/AppData/$AppID:/data ubuntu:22.04 sh -c "
-      mkdir -p /data/esdata /data/admin-data &&
-      chmod 777 /data/esdata &&
-      chown -R 1000:1000 /data/admin-data &&
-      chmod -R 755 /data/admin-data
+    docker run --rm -v /DATA/AppData/$AppID:/data alpine:3.20 sh -c "
+      mkdir -p /data/admin-data /data/indices &&
+      chown -R $PUID:$PGID /data &&
+      chmod -R 755 /data
     "
   description:
     en_us: |
-      Sist2 is a lightning-fast file system indexer and search engine that uses Elasticsearch to provide powerful full-text search capabilities across your entire file system.
+      Sist2 is a lightning-fast file system indexer and search engine using SQLite backend for simple, reliable operation without complex dependencies.
       
       **Key Features:**
       - Fast multi-threaded file indexing with low memory usage
+      - SQLite backend - no Elasticsearch needed!
       - OCR support for extracting text from PDFs and images (Tesseract)
       - Full-text search across file names and content
       - Archive support (ZIP, TAR, 7Z, RAR) with recursive scanning
@@ -86,10 +56,11 @@ x-casaos:
       - Automatic tagging via user scripts
       
       **Post-Installation Steps:**
-      1. Wait 2-3 minutes for Elasticsearch to initialize
-      2. Access sist2-admin at `https://8080-sist2-[username].nsl.sh`
-      3. Configure your first scan job to index `/host` (your entire /DATA directory)
-      4. Access search interface at `https://4090-sist2-[username].nsl.sh`
+      1. Access sist2-admin at `https://8080-sist2-[username].nsl.sh`
+      2. Create new scan job with SQLite backend
+      3. Set scan path to `/host` (your entire /DATA directory)
+      4. Run the scan to build your index
+      5. Access search interface at `https://4090-sist2-[username].nsl.sh`
       
       **Two Web Interfaces:**
       - Port 4090: Search interface (for finding files)
@@ -97,10 +68,11 @@ x-casaos:
       
       **Note:** The application indexes file metadata and content but never modifies your actual files. All files are mounted read-only.
     ko_kr: |
-      Sist2는 Elasticsearch를 사용하여 전체 파일 시스템에서 강력한 전문 검색 기능을 제공하는 초고속 파일 시스템 인덱서 및 검색 엔진입니다.
+      Sist2는 복잡한 종속성 없이 간단하고 안정적인 작동을 위해 SQLite 백엔드를 사용하는 초고속 파일 시스템 인덱서 및 검색 엔진입니다.
       
       **주요 기능:**
       - 낮은 메모리 사용량으로 빠른 멀티스레드 파일 인덱싱
+      - SQLite 백엔드 - Elasticsearch 불필요!
       - PDF 및 이미지에서 텍스트 추출을 위한 OCR 지원 (Tesseract)
       - 파일 이름 및 내용 전체 텍스트 검색
       - 재귀 스캔을 통한 아카이브 지원 (ZIP, TAR, 7Z, RAR)
@@ -110,10 +82,11 @@ x-casaos:
       - 사용자 스크립트를 통한 자동 태그 지정
       
       **설치 후 단계:**
-      1. Elasticsearch 초기화를 위해 2-3분 대기
-      2. `https://8080-sist2-[사용자명].nsl.sh`에서 sist2-admin 접속
-      3. `/host`를 인덱싱하는 첫 번째 스캔 작업 구성 (전체 /DATA 디렉토리)
-      4. `https://4090-sist2-[사용자명].nsl.sh`에서 검색 인터페이스 접속
+      1. `https://8080-sist2-[사용자명].nsl.sh`에서 sist2-admin 접속
+      2. SQLite 백엔드로 새 스캔 작업 생성
+      3. 스캔 경로를 `/host`로 설정 (전체 /DATA 디렉토리)
+      4. 스캔을 실행하여 인덱스 구축
+      5. `https://4090-sist2-[사용자명].nsl.sh`에서 검색 인터페이스 접속
       
       **두 개의 웹 인터페이스:**
       - 포트 4090: 검색 인터페이스 (파일 찾기용)
@@ -121,10 +94,11 @@ x-casaos:
       
       **참고:** 이 애플리케이션은 파일 메타데이터와 내용을 인덱싱하지만 실제 파일을 수정하지 않습니다. 모든 파일은 읽기 전용으로 마운트됩니다.
     fr_fr: |
-      Sist2 est un indexeur de système de fichiers ultra-rapide et un moteur de recherche qui utilise Elasticsearch pour fournir de puissantes capacités de recherche en texte intégral sur l'ensemble de votre système de fichiers.
+      Sist2 est un indexeur de système de fichiers ultra-rapide et un moteur de recherche utilisant un backend SQLite pour un fonctionnement simple et fiable sans dépendances complexes.
       
       **Fonctionnalités clés:**
       - Indexation rapide multi-thread avec faible utilisation de la mémoire
+      - Backend SQLite - Elasticsearch non requis!
       - Support OCR pour extraire le texte des PDF et images (Tesseract)
       - Recherche en texte intégral sur les noms et le contenu des fichiers
       - Support des archives (ZIP, TAR, 7Z, RAR) avec scan récursif
@@ -134,10 +108,11 @@ x-casaos:
       - Balisage automatique via scripts utilisateur
       
       **Étapes post-installation:**
-      1. Attendez 2-3 minutes pour l'initialisation d'Elasticsearch
-      2. Accédez à sist2-admin à `https://8080-sist2-[nomutilisateur].nsl.sh`
-      3. Configurez votre premier travail de scan pour indexer `/host` (tout votre répertoire /DATA)
-      4. Accédez à l'interface de recherche à `https://4090-sist2-[nomutilisateur].nsl.sh`
+      1. Accédez à sist2-admin à `https://8080-sist2-[nomutilisateur].nsl.sh`
+      2. Créez un nouveau travail de scan avec backend SQLite
+      3. Définissez le chemin de scan sur `/host` (tout votre répertoire /DATA)
+      4. Exécutez le scan pour construire votre index
+      5. Accédez à l'interface de recherche à `https://4090-sist2-[nomutilisateur].nsl.sh`
       
       **Deux interfaces Web:**
       - Port 4090: Interface de recherche (pour trouver des fichiers)
@@ -145,10 +120,11 @@ x-casaos:
       
       **Note:** L'application indexe les métadonnées et le contenu des fichiers mais ne modifie jamais vos fichiers réels. Tous les fichiers sont montés en lecture seule.
     es_es: |
-      Sist2 es un indexador de sistema de archivos ultrarrápido y motor de búsqueda que utiliza Elasticsearch para proporcionar potentes capacidades de búsqueda de texto completo en todo su sistema de archivos.
+      Sist2 es un indexador de sistema de archivos ultrarrápido y motor de búsqueda que utiliza backend SQLite para una operación simple y confiable sin dependencias complejas.
       
       **Características principales:**
       - Indexación rápida multiproceso con bajo uso de memoria
+      - Backend SQLite - ¡no se requiere Elasticsearch!
       - Soporte OCR para extraer texto de PDFs e imágenes (Tesseract)
       - Búsqueda de texto completo en nombres y contenido de archivos
       - Soporte de archivos (ZIP, TAR, 7Z, RAR) con escaneo recursivo
@@ -158,10 +134,11 @@ x-casaos:
       - Etiquetado automático mediante scripts de usuario
       
       **Pasos posteriores a la instalación:**
-      1. Espere 2-3 minutos para la inicialización de Elasticsearch
-      2. Acceda a sist2-admin en `https://8080-sist2-[nombreusuario].nsl.sh`
-      3. Configure su primer trabajo de escaneo para indexar `/host` (todo su directorio /DATA)
-      4. Acceda a la interfaz de búsqueda en `https://4090-sist2-[nombreusuario].nsl.sh`
+      1. Acceda a sist2-admin en `https://8080-sist2-[nombreusuario].nsl.sh`
+      2. Cree un nuevo trabajo de escaneo con backend SQLite
+      3. Establezca la ruta de escaneo en `/host` (todo su directorio /DATA)
+      4. Ejecute el escaneo para construir su índice
+      5. Acceda a la interfaz de búsqueda en `https://4090-sist2-[nombreusuario].nsl.sh`
       
       **Dos interfaces web:**
       - Puerto 4090: Interfaz de búsqueda (para encontrar archivos)
@@ -169,10 +146,11 @@ x-casaos:
       
       **Nota:** La aplicación indexa metadatos y contenido de archivos pero nunca modifica sus archivos reales. Todos los archivos están montados como solo lectura.
     zh_cn: |
-      Sist2 是一个闪电般快速的文件系统索引器和搜索引擎，它使用 Elasticsearch 在整个文件系统中提供强大的全文搜索功能。
+      Sist2 是一个闪电般快速的文件系统索引器和搜索引擎，使用 SQLite 后端实现简单可靠的操作，无需复杂的依赖项。
       
       **主要功能:**
       - 低内存使用的快速多线程文件索引
+      - SQLite 后端 - 不需要 Elasticsearch！
       - OCR 支持从 PDF 和图像中提取文本 (Tesseract)
       - 对文件名和内容的全文搜索
       - 支持递归扫描的存档文件 (ZIP、TAR、7Z、RAR)
@@ -182,10 +160,11 @@ x-casaos:
       - 通过用户脚本自动标记
       
       **安装后步骤:**
-      1. 等待 2-3 分钟让 Elasticsearch 初始化
-      2. 在 `https://8080-sist2-[用户名].nsl.sh` 访问 sist2-admin
-      3. 配置您的第一个扫描作业以索引 `/host`（整个 /DATA 目录）
-      4. 在 `https://4090-sist2-[用户名].nsl.sh` 访问搜索界面
+      1. 在 `https://8080-sist2-[用户名].nsl.sh` 访问 sist2-admin
+      2. 使用 SQLite 后端创建新的扫描作业
+      3. 将扫描路径设置为 `/host`（整个 /DATA 目录）
+      4. 运行扫描以构建索引
+      5. 在 `https://4090-sist2-[用户名].nsl.sh` 访问搜索界面
       
       **两个 Web 界面:**
       - 端口 4090：搜索界面（用于查找文件）
@@ -199,101 +178,111 @@ x-casaos:
     - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Sist2/screenshot-2.png
     - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Sist2/screenshot-3.png
   tagline:
-    en_us: Lightning-fast file system indexer and search engine with OCR support
-    ko_kr: OCR 지원을 갖춘 초고속 파일 시스템 인덱서 및 검색 엔진
-    fr_fr: Indexeur de système de fichiers ultra-rapide et moteur de recherche avec support OCR
-    es_es: Indexador de sistema de archivos ultrarrápido y motor de búsqueda con soporte OCR
-    zh_cn: 具有 OCR 支持的闪电般快速文件系统索引器和搜索引擎
+    en_us: Lightning-fast file system indexer with SQLite backend - no Elasticsearch needed
+    ko_kr: SQLite 백엔드를 사용한 초고속 파일 시스템 인덱서 - Elasticsearch 불필요
+    fr_fr: Indexeur ultra-rapide avec backend SQLite - Elasticsearch non requis
+    es_es: Indexador ultrarrápido con backend SQLite - no se requiere Elasticsearch
+    zh_cn: 使用 SQLite 后端的超快速文件系统索引器 - 不需要 Elasticsearch
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Sist2/thumbnail.png
   title:
     en_us: Sist2
   tips:
     before_install:
       en_us: |
-        **Important Notes:**
+        **Simple Setup - No Elasticsearch!**
         
-        - Elasticsearch requires 2-3 minutes to start and initialize
+        Sist2 uses SQLite backend for simple, reliable operation without complex database setup.
+        
+        **Important Notes:**
         - Initial scan must be configured via admin interface after installation
-        - Large file systems may take significant time for initial indexing
+        - Large file systems may take time for initial indexing
         - OCR processing requires additional time but enables content search in PDFs/images
+        - All data stored in `/DATA/AppData/sist2/indices/`
         
         **Two Web Interfaces:**
         - **Port 4090** (Search): `https://4090-sist2-[username].nsl.sh` - Search your indexed files
         - **Port 8080** (Admin): `https://8080-sist2-[username].nsl.sh` - Configure scans and settings
         
         **Security Note:**
-        - Elasticsearch runs as UID 1000 for proper data directory management
         - Sist2 has read-only access to /DATA for indexing purposes
         - No files are ever modified, only metadata is collected
-        - Both containers are isolated to AppData for configuration
+        - All configuration isolated to AppData directory
       ko_kr: |
-        **중요 참고사항:**
+        **간단한 설정 - Elasticsearch 불필요!**
         
-        - Elasticsearch는 시작 및 초기화에 2-3분이 필요합니다
+        Sist2는 복잡한 데이터베이스 설정 없이 간단하고 안정적인 작동을 위해 SQLite 백엔드를 사용합니다.
+        
+        **중요 참고사항:**
         - 설치 후 관리 인터페이스를 통해 초기 스캔을 구성해야 합니다
-        - 큰 파일 시스템은 초기 인덱싱에 상당한 시간이 걸릴 수 있습니다
+        - 큰 파일 시스템은 초기 인덱싱에 시간이 걸릴 수 있습니다
         - OCR 처리는 추가 시간이 필요하지만 PDF/이미지의 내용 검색이 가능합니다
+        - 모든 데이터는 `/DATA/AppData/sist2/indices/`에 저장됩니다
         
         **두 개의 웹 인터페이스:**
         - **포트 4090** (검색): `https://4090-sist2-[사용자명].nsl.sh` - 인덱싱된 파일 검색
         - **포트 8080** (관리): `https://8080-sist2-[사용자명].nsl.sh` - 스캔 및 설정 구성
         
         **보안 참고:**
-        - Elasticsearch는 적절한 데이터 디렉토리 관리를 위해 UID 1000으로 실행됩니다
         - Sist2는 인덱싱 목적으로 /DATA에 대한 읽기 전용 액세스 권한을 가집니다
         - 파일은 수정되지 않으며 메타데이터만 수집됩니다
-        - 두 컨테이너 모두 구성을 위해 AppData에 격리됩니다
+        - 모든 구성은 AppData 디렉토리에 격리됩니다
       fr_fr: |
-        **Notes importantes:**
+        **Configuration simple - Elasticsearch non requis!**
         
-        - Elasticsearch nécessite 2-3 minutes pour démarrer et s'initialiser
+        Sist2 utilise un backend SQLite pour un fonctionnement simple et fiable sans configuration complexe de base de données.
+        
+        **Notes importantes:**
         - Le scan initial doit être configuré via l'interface d'administration après l'installation
-        - Les grands systèmes de fichiers peuvent nécessiter beaucoup de temps pour l'indexation initiale
-        - Le traitement OCR nécessite un temps supplémentaire mais permet la recherche de contenu dans les PDF/images
+        - Les grands systèmes de fichiers peuvent prendre du temps pour l'indexation initiale
+        - Le traitement OCR nécessite du temps supplémentaire mais permet la recherche de contenu dans les PDF/images
+        - Toutes les données stockées dans `/DATA/AppData/sist2/indices/`
         
         **Deux interfaces Web:**
         - **Port 4090** (Recherche): `https://4090-sist2-[nomutilisateur].nsl.sh` - Recherchez vos fichiers indexés
         - **Port 8080** (Admin): `https://8080-sist2-[nomutilisateur].nsl.sh` - Configurez les scans et les paramètres
         
         **Note de sécurité:**
-        - Elasticsearch s'exécute en tant qu'UID 1000 pour une gestion correcte du répertoire de données
         - Sist2 a un accès en lecture seule à /DATA à des fins d'indexation
         - Aucun fichier n'est jamais modifié, seules les métadonnées sont collectées
-        - Les deux conteneurs sont isolés à AppData pour la configuration
+        - Toute la configuration est isolée dans le répertoire AppData
       es_es: |
-        **Notas importantes:**
+        **Configuración simple - ¡Elasticsearch no requerido!**
         
-        - Elasticsearch requiere 2-3 minutos para iniciar e inicializarse
+        Sist2 utiliza backend SQLite para una operación simple y confiable sin configuración compleja de base de datos.
+        
+        **Notas importantes:**
         - El escaneo inicial debe configurarse mediante la interfaz de administración después de la instalación
-        - Los sistemas de archivos grandes pueden tardar mucho tiempo en la indexación inicial
+        - Los sistemas de archivos grandes pueden tardar en la indexación inicial
         - El procesamiento OCR requiere tiempo adicional pero permite la búsqueda de contenido en PDF/imágenes
+        - Todos los datos almacenados en `/DATA/AppData/sist2/indices/`
         
         **Dos interfaces web:**
         - **Puerto 4090** (Búsqueda): `https://4090-sist2-[nombreusuario].nsl.sh` - Busque sus archivos indexados
         - **Puerto 8080** (Admin): `https://8080-sist2-[nombreusuario].nsl.sh` - Configure escaneos y ajustes
         
         **Nota de seguridad:**
-        - Elasticsearch se ejecuta como UID 1000 para la gestión adecuada del directorio de datos
         - Sist2 tiene acceso de solo lectura a /DATA con fines de indexación
         - Nunca se modifican archivos, solo se recopilan metadatos
-        - Ambos contenedores están aislados a AppData para la configuración
+        - Toda la configuración está aislada en el directorio AppData
       zh_cn: |
-        **重要注意事项:**
+        **简单设置 - 不需要 Elasticsearch！**
         
-        - Elasticsearch 需要 2-3 分钟启动和初始化
+        Sist2 使用 SQLite 后端实现简单可靠的操作，无需复杂的数据库设置。
+        
+        **重要注意事项:**
         - 安装后必须通过管理界面配置初始扫描
-        - 大型文件系统的初始索引可能需要大量时间
+        - 大型文件系统的初始索引可能需要时间
         - OCR 处理需要额外时间，但可以在 PDF/图像中进行内容搜索
+        - 所有数据存储在 `/DATA/AppData/sist2/indices/`
         
         **两个 Web 界面:**
         - **端口 4090**（搜索）：`https://4090-sist2-[用户名].nsl.sh` - 搜索您的索引文件
         - **端口 8080**（管理）：`https://8080-sist2-[用户名].nsl.sh` - 配置扫描和设置
         
         **安全说明:**
-        - Elasticsearch 以 UID 1000 运行以正确管理数据目录
         - Sist2 对 /DATA 具有只读访问权限以进行索引
         - 永远不会修改文件，只收集元数据
-        - 两个容器都隔离到 AppData 进行配置
+        - 所有配置都隔离到 AppData 目录
   index: /
   webui_port: 4090
   scheme: https
