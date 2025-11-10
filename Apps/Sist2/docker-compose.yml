@@ -4,10 +4,10 @@ services:
   sist2-admin:
     image: sist2app/sist2:x64-linux
     container_name: sist2-admin
-    user: $PUID:$PGID
+    user: 0:0
     environment:
-      PUID: $PUID
-      PGID: $PGID
+      PUID: 0
+      PGID: 0
       TZ: $TZ
     volumes:
       - /DATA/AppData/$AppID/admin-data:/sist2-admin
@@ -37,7 +37,6 @@ x-casaos:
   pre-install-cmd: |
     docker run --rm -v /DATA/AppData/$AppID:/data alpine:3.20 sh -c "
       mkdir -p /data/admin-data /data/indices &&
-      chown -R $PUID:$PGID /data &&
       chmod -R 755 /data
     "
   description:
@@ -146,15 +145,15 @@ x-casaos:
       
       **Nota:** La aplicación indexa metadatos y contenido de archivos pero nunca modifica sus archivos reales. Todos los archivos están montados como solo lectura.
     zh_cn: |
-      Sist2 是一个闪电般快速的文件系统索引器和搜索引擎，使用 SQLite 后端实现简单可靠的操作，无需复杂的依赖项。
+      Sist2 是一个闪电般快速的文件系统索引器和搜索引擎,使用 SQLite 后端实现简单可靠的操作,无需复杂的依赖项。
       
       **主要功能:**
       - 低内存使用的快速多线程文件索引
-      - SQLite 后端 - 不需要 Elasticsearch！
+      - SQLite 后端 - 不需要 Elasticsearch!
       - OCR 支持从 PDF 和图像中提取文本 (Tesseract)
       - 对文件名和内容的全文搜索
       - 支持递归扫描的存档文件 (ZIP、TAR、7Z、RAR)
-      - 增量扫描（仅更新更改的文件）
+      - 增量扫描(仅更新更改的文件)
       - 可视化分析和磁盘使用统计
       - 移动友好的 Web 界面
       - 通过用户脚本自动标记
@@ -162,15 +161,15 @@ x-casaos:
       **安装后步骤:**
       1. 在 `https://8080-sist2-[用户名].nsl.sh` 访问 sist2-admin
       2. 使用 SQLite 后端创建新的扫描作业
-      3. 将扫描路径设置为 `/host`（整个 /DATA 目录）
+      3. 将扫描路径设置为 `/host`(整个 /DATA 目录)
       4. 运行扫描以构建索引
       5. 在 `https://4090-sist2-[用户名].nsl.sh` 访问搜索界面
       
       **两个 Web 界面:**
-      - 端口 4090：搜索界面（用于查找文件）
-      - 端口 8080：管理界面（用于管理扫描和设置）
+      - 端口 4090:搜索界面(用于查找文件)
+      - 端口 8080:管理界面(用于管理扫描和设置)
       
-      **注意:** 应用程序索引文件元数据和内容，但永远不会修改您的实际文件。所有文件都以只读方式挂载。
+      **注意:** 应用程序索引文件元数据和内容,但永远不会修改您的实际文件。所有文件都以只读方式挂载。
   developer: simon987 / sist2app
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Sist2/icon.png
   screenshot_link:
@@ -265,23 +264,23 @@ x-casaos:
         - Nunca se modifican archivos, solo se recopilan metadatos
         - Toda la configuración está aislada en el directorio AppData
       zh_cn: |
-        **简单设置 - 不需要 Elasticsearch！**
+        **简单设置 - 不需要 Elasticsearch!**
         
-        Sist2 使用 SQLite 后端实现简单可靠的操作，无需复杂的数据库设置。
+        Sist2 使用 SQLite 后端实现简单可靠的操作,无需复杂的数据库设置。
         
         **重要注意事项:**
         - 安装后必须通过管理界面配置初始扫描
         - 大型文件系统的初始索引可能需要时间
-        - OCR 处理需要额外时间，但可以在 PDF/图像中进行内容搜索
+        - OCR 处理需要额外时间,但可以在 PDF/图像中进行内容搜索
         - 所有数据存储在 `/DATA/AppData/sist2/indices/`
         
         **两个 Web 界面:**
-        - **端口 4090**（搜索）：`https://4090-sist2-[用户名].nsl.sh` - 搜索您的索引文件
-        - **端口 8080**（管理）：`https://8080-sist2-[用户名].nsl.sh` - 配置扫描和设置
+        - **端口 4090**(搜索):`https://4090-sist2-[用户名].nsl.sh` - 搜索您的索引文件
+        - **端口 8080**(管理):`https://8080-sist2-[用户名].nsl.sh` - 配置扫描和设置
         
         **安全说明:**
         - Sist2 对 /DATA 具有只读访问权限以进行索引
-        - 永远不会修改文件，只收集元数据
+        - 永远不会修改文件,只收集元数据
         - 所有配置都隔离到 AppData 目录
   index: /
   webui_port: 4090
