@@ -24,6 +24,12 @@ services:
         limits:
           memory: 2048M
           cpus: '1.0'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     restart: unless-stopped
 
 x-casaos:
