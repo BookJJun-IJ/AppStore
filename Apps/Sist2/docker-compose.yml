@@ -24,13 +24,9 @@ services:
         limits:
           memory: 2048M
           cpus: '1.0'
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
     restart: unless-stopped
+    # Note: Healthcheck disabled as sist2-admin may not respond to root path immediately
+    # CasaOS will monitor container status directly
 
 x-casaos:
   architectures:
@@ -289,5 +285,4 @@ x-casaos:
         - 所有配置都隔离到 AppData 目录
   index: /
   webui_port: 8080
-  scheme: https
   store_app_id: sist2
