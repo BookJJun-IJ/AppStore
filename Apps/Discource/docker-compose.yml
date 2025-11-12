@@ -2,7 +2,7 @@ name: discourse
 
 services:
   postgresql:
-    image: bitnami/postgresql:15
+    image: bitnami/postgresql:latest
     container_name: discourse-postgresql
     restart: unless-stopped
     environment:
@@ -21,7 +21,7 @@ services:
       - discourse-network
 
   redis:
-    image: bitnami/redis:7
+    image: bitnami/redis:latest
     container_name: discourse-redis
     restart: unless-stopped
     environment:
@@ -37,7 +37,7 @@ services:
       - discourse-network
 
   discourse:
-    image: bitnami/discourse:3
+    image: bitnami/discourse:latest
     container_name: discourse-main
     restart: unless-stopped
     user: $PUID:$PGID
@@ -89,7 +89,7 @@ services:
       - discourse-network
 
   sidekiq:
-    image: bitnami/discourse:3
+    image: bitnami/discourse:latest
     container_name: discourse-sidekiq
     restart: unless-stopped
     user: $PUID:$PGID
