@@ -1,0 +1,106 @@
+name: netdata
+
+services:
+  netdata:
+    image: netdata/netdata:v2.0.3
+    container_name: netdata
+    hostname: $domain
+    user: 0:0
+    expose:
+      - 19999
+    environment:
+      PUID: 0
+      PGID: 0
+      TZ: $TZ
+      DOCKER_HOST: /var/run/docker.sock
+    cap_add:
+      - SYS_PTRACE
+      - SYS_ADMIN
+    security_opt:
+      - apparmor:unconfined
+    volumes:
+      - /DATA/AppData/$AppID/config:/etc/netdata
+      - /DATA/AppData/$AppID/lib:/var/lib/netdata
+      - /DATA/AppData/$AppID/cache:/var/cache/netdata
+      - /etc/passwd:/host/etc/passwd:ro
+      - /etc/group:/host/etc/group:ro
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/os-release:/host/etc/os-release:ro
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /var/log:/host/var/log:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  main: netdata
+  author: Netdata Team
+  category: Utilities
+  description:
+    en_us: Real-time performance and health monitoring for systems, containers, and applications. Monitor everything with per-second granularity and beautiful, interactive dashboards.
+    ko_kr: 시스템, 컨테이너, 애플리케이션의 실시간 성능 및 상태 모니터링. 초 단위 세분성과 아름다운 대화형 대시보드로 모든 것을 모니터링합니다.
+    zh_cn: 系统、容器和应用程序的实时性能和健康监控。通过每秒粒度和精美的交互式仪表板监控一切。
+    es_es: Monitoreo de rendimiento y salud en tiempo real para sistemas, contenedores y aplicaciones. Monitorea todo con granularidad por segundo y hermosos paneles interactivos.
+    fr_fr: Surveillance des performances et de la santé en temps réel pour les systèmes, conteneurs et applications. Surveillez tout avec une granularité à la seconde et de magnifiques tableaux de bord interactifs.
+  developer: Netdata Inc.
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Netdata/icon.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Netdata/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Netdata/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Netdata/screenshot-3.png
+  tagline:
+    en_us: Real-time system performance monitoring with beautiful dashboards
+    ko_kr: 아름다운 대시보드로 실시간 시스템 성능 모니터링
+    zh_cn: 使用精美仪表板进行实时系统性能监控
+    es_es: Monitoreo de rendimiento del sistema en tiempo real con hermosos paneles
+    fr_fr: Surveillance des performances du système en temps réel avec de beaux tableaux de bord
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Netdata/thumbnail.png
+  title:
+    en_us: Netdata
+  tips:
+    before_install:
+      en_us: |
+        ## System Performance Monitoring
+        
+        Netdata provides real-time monitoring of:
+        - CPU usage per core
+        - Memory and swap usage
+        - Disk I/O and space
+        - Network traffic
+        - Docker containers
+        - System processes
+        
+        **Access**: After installation, access at `https://netdata-username.nsl.sh`
+        
+        **Note**: Netdata requires elevated privileges to monitor system resources.
+      ko_kr: |
+        ## 시스템 성능 모니터링
+        
+        Netdata는 다음을 실시간으로 모니터링합니다:
+        - 코어별 CPU 사용량
+        - 메모리 및 스왑 사용량
+        - 디스크 I/O 및 공간
+        - 네트워크 트래픽
+        - Docker 컨테이너
+        - 시스템 프로세스
+        
+        **접속**: 설치 후 `https://netdata-username.nsl.sh`에서 접속하세요
+        
+        **참고**: Netdata는 시스템 리소스 모니터링을 위해 상승된 권한이 필요합니다.
+  index: /
+  webui_port: 19999
+  scheme: http
+  store_app_id: netdata
+  pre_install_cmd: |
+    docker run --rm -v /DATA/AppData/$AppID:/data ubuntu:22.04 sh -c '
+      mkdir -p /data/config /data/lib /data/cache &&
+      chmod 755 /data/config /data/lib /data/cache
+    '
