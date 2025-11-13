@@ -4,7 +4,7 @@ services:
   netdata:
     image: netdata/netdata:v2.0.3
     container_name: netdata
-    hostname: $domain
+    hostname: netdata
     user: 0:0
     expose:
       - 80
@@ -101,6 +101,7 @@ x-casaos:
   store_app_id: netdata
   pre_install_cmd: |
     docker run --rm -v /DATA/AppData/$AppID:/data ubuntu:22.04 sh -c '
-      mkdir -p /data/config /data/lib /data/cache &&
-      chmod 755 /data/config /data/lib /data/cache
+    mkdir -p /data/config /data/lib /data/cache &&
+    chmod 755 /data/config /data/lib /data/cache &&
+    printf "[web]\n    default port = 80\n    bind to = *\n" > /data/config/netdata.conf
     '
