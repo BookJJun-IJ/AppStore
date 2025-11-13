@@ -7,7 +7,7 @@ services:
     hostname: netdata
     user: 0:0
     expose:
-      - 80
+      - 19999
     environment:
       PUID: 0
       PGID: 0
@@ -96,12 +96,11 @@ x-casaos:
         
         **참고**: Netdata는 시스템 리소스 모니터링을 위해 상승된 권한이 필요합니다.
   index: /
-  webui_port: 80
+  webui_port: 19999
   scheme: http
   store_app_id: netdata
   pre_install_cmd: |
     docker run --rm -v /DATA/AppData/$AppID:/data ubuntu:22.04 sh -c '
     mkdir -p /data/config /data/lib /data/cache &&
     chmod 755 /data/config /data/lib /data/cache &&
-    printf "[web]\n    default port = 80\n    bind to = *\n" > /data/config/netdata.conf
     '
