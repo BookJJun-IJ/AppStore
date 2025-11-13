@@ -1,0 +1,250 @@
+name: discourse
+
+services:
+  postgresql:
+    image: bitnami/postgresql:latest
+    container_name: discourse-postgresql
+    restart: unless-stopped
+    environment:
+      POSTGRESQL_USERNAME: bn_discourse
+      POSTGRESQL_PASSWORD: $default_pwd
+      POSTGRESQL_DATABASE: bitnami_discourse
+      POSTGRESQL_POSTGRES_PASSWORD: $default_pwd
+    volumes:
+      - /DATA/AppData/$AppID/postgresql:/bitnami/postgresql
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+    networks:
+      - discourse-network
+
+  redis:
+    image: bitnami/redis:latest
+    container_name: discourse-redis
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: $default_pwd
+    volumes:
+      - /DATA/AppData/$AppID/redis:/bitnami/redis/data
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+    networks:
+      - discourse-network
+
+  discourse:
+    image: bitnami/discourse:latest
+    container_name: discourse-main
+    restart: unless-stopped
+    user: $PUID:$PGID
+    depends_on:
+      - postgresql
+      - redis
+    expose:
+      - 3000
+    environment:
+      PUID: $PUID
+      PGID: $PGID
+      TZ: $TZ
+      # Database Configuration
+      DISCOURSE_DATABASE_HOST: postgresql
+      DISCOURSE_DATABASE_PORT_NUMBER: 5432
+      DISCOURSE_DATABASE_USER: bn_discourse
+      DISCOURSE_DATABASE_PASSWORD: $default_pwd
+      DISCOURSE_DATABASE_NAME: bitnami_discourse
+      # Redis Configuration
+      DISCOURSE_REDIS_HOST: redis
+      DISCOURSE_REDIS_PORT_NUMBER: 6379
+      DISCOURSE_REDIS_PASSWORD: $default_pwd
+      # Application Configuration
+      DISCOURSE_HOST: $domain
+      DISCOURSE_PORT_NUMBER: 3000
+      DISCOURSE_SITENAME: "Discourse Community"
+      DISCOURSE_USERNAME: admin
+      DISCOURSE_PASSWORD: $default_pwd
+      DISCOURSE_EMAIL: admin@$domain
+      # PostgreSQL Extensions
+      POSTGRESQL_CLIENT_POSTGRES_USER: postgres
+      POSTGRESQL_CLIENT_POSTGRES_PASSWORD: $default_pwd
+      POSTGRESQL_CLIENT_CREATE_DATABASE_NAME: bitnami_discourse
+      POSTGRESQL_CLIENT_CREATE_DATABASE_EXTENSIONS: hstore,pg_trgm
+      # SMTP Configuration (optional, can be configured later)
+      DISCOURSE_SMTP_HOST: ""
+      DISCOURSE_SMTP_PORT: ""
+      DISCOURSE_SMTP_USER: ""
+      DISCOURSE_SMTP_PASSWORD: ""
+      DISCOURSE_SMTP_PROTOCOL: ""
+    volumes:
+      - /DATA/AppData/$AppID/discourse:/bitnami/discourse
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '2.0'
+    networks:
+      - discourse-network
+
+  sidekiq:
+    image: bitnami/discourse:latest
+    container_name: discourse-sidekiq
+    restart: unless-stopped
+    user: $PUID:$PGID
+    depends_on:
+      - discourse
+    command: /opt/bitnami/scripts/discourse-sidekiq/run.sh
+    environment:
+      PUID: $PUID
+      PGID: $PGID
+      TZ: $TZ
+      # Database Configuration
+      DISCOURSE_DATABASE_HOST: postgresql
+      DISCOURSE_DATABASE_PORT_NUMBER: 5432
+      DISCOURSE_DATABASE_USER: bn_discourse
+      DISCOURSE_DATABASE_PASSWORD: $default_pwd
+      DISCOURSE_DATABASE_NAME: bitnami_discourse
+      # Redis Configuration
+      DISCOURSE_REDIS_HOST: redis
+      DISCOURSE_REDIS_PORT_NUMBER: 6379
+      DISCOURSE_REDIS_PASSWORD: $default_pwd
+      # Application Configuration
+      DISCOURSE_HOST: $domain
+      DISCOURSE_PORT_NUMBER: 3000
+      DISCOURSE_SKIP_INSTALL: "true"
+    volumes:
+      - /DATA/AppData/$AppID/discourse:/bitnami/discourse
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+    networks:
+      - discourse-network
+
+networks:
+  discourse-network:
+    driver: bridge
+
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  main: discourse
+  webui_port: 3000
+  author: CasaOS Team
+  category: Social
+  description:
+    en_us: Discourse is a modern, open-source discussion platform built for the next decade of the Internet. It features real-time notifications, infinite scrolling, advanced moderation tools, and seamless mobile support. Perfect for building engaged online communities with built-in governance systems and spam protection.
+    ko_kr: Discourse는 차세대 인터넷을 위해 구축된 현대적인 오픈소스 토론 플랫폼입니다. 실시간 알림, 무한 스크롤, 고급 관리 도구, 원활한 모바일 지원을 제공합니다. 내장된 거버넌스 시스템과 스팸 방지 기능으로 활발한 온라인 커뮤니티를 구축하기에 완벽합니다.
+    zh_cn: Discourse 是为下一代互联网构建的现代开源讨论平台。它具有实时通知、无限滚动、高级审核工具和无缝移动支持。非常适合构建具有内置治理系统和垃圾邮件防护的活跃在线社区。
+    es_es: Discourse es una plataforma de discusión moderna de código abierto construida para la próxima década de Internet. Cuenta con notificaciones en tiempo real, desplazamiento infinito, herramientas de moderación avanzadas y soporte móvil sin problemas. Perfecto para construir comunidades en línea comprometidas con sistemas de gobernanza integrados y protección contra spam.
+    fr_fr: Discourse est une plateforme de discussion moderne open-source construite pour la prochaine décennie d'Internet. Elle offre des notifications en temps réel, un défilement infini, des outils de modération avancés et un support mobile transparent. Parfait pour créer des communautés en ligne engagées avec des systèmes de gouvernance intégrés et une protection anti-spam.
+  developer: Discourse
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Discourse/icon.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Discourse/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Discourse/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Discourse/screenshot-3.png
+  tagline:
+    en_us: Modern forum platform for community discussion
+    ko_kr: 커뮤니티 토론을 위한 현대적인 포럼 플랫폼
+    zh_cn: 用于社区讨论的现代论坛平台
+    es_es: Plataforma de foro moderna para discusiones comunitarias
+    fr_fr: Plateforme de forum moderne pour les discussions communautaires
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Discourse/thumbnail.png
+  title:
+    en_us: Discourse
+  index: /
+  scheme: http
+  store_app_id: discourse
+  tips:
+    before_install:
+      en_us: |
+        ## Default Account
+        
+        | Username | Password       |
+        | -------- | -------------- |
+        | `admin`  | `$default_pwd` |
+        
+        ## Important Notes
+        
+        1. **First Access**: After installation, visit the web interface to complete the initial setup wizard
+        2. **SMTP Configuration**: Email functionality requires SMTP configuration in the settings
+        3. **Performance**: Discourse requires at least 2GB RAM for optimal performance
+        4. **Database Setup**: PostgreSQL extensions (hstore, pg_trgm) are automatically installed
+        5. **Background Jobs**: Sidekiq handles background tasks like email delivery and notifications
+        
+        ## Post-Installation
+        
+        - Configure email settings in Admin → Settings → Email
+        - Customize your site appearance and logo
+        - Set up categories for organizing discussions
+        - Configure user permissions and trust levels
+        
+        For more information, visit the [Discourse documentation](https://docs.discourse.org/).
+      ko_kr: |
+        ## 기본 계정
+        
+        | 사용자명 | 비밀번호       |
+        | -------- | -------------- |
+        | `admin`  | `$default_pwd` |
+        
+        ## 중요 사항
+        
+        1. **첫 접속**: 설치 후 웹 인터페이스를 방문하여 초기 설정 마법사를 완료하세요
+        2. **SMTP 설정**: 이메일 기능을 사용하려면 설정에서 SMTP 구성이 필요합니다
+        3. **성능**: Discourse는 최적의 성능을 위해 최소 2GB RAM이 필요합니다
+        4. **데이터베이스 설정**: PostgreSQL 확장(hstore, pg_trgm)이 자동으로 설치됩니다
+        5. **백그라운드 작업**: Sidekiq가 이메일 전송 및 알림과 같은 백그라운드 작업을 처리합니다
+        
+        ## 설치 후 작업
+        
+        - 관리자 → 설정 → 이메일에서 이메일 설정 구성
+        - 사이트 외관 및 로고 사용자 지정
+        - 토론 정리를 위한 카테고리 설정
+        - 사용자 권한 및 신뢰 수준 구성
+      zh_cn: |
+        ## 默认账户
+        
+        | 用户名   | 密码           |
+        | -------- | -------------- |
+        | `admin`  | `$default_pwd` |
+        
+        ## 重要说明
+        
+        1. **首次访问**: 安装后访问Web界面完成初始设置向导
+        2. **SMTP配置**: 电子邮件功能需要在设置中配置SMTP
+        3. **性能**: Discourse需要至少2GB RAM才能获得最佳性能
+        4. **数据库设置**: PostgreSQL扩展(hstore, pg_trgm)将自动安装
+        5. **后台任务**: Sidekiq处理电子邮件发送和通知等后台任务
+      es_es: |
+        ## Cuenta Predeterminada
+        
+        | Usuario  | Contraseña     |
+        | -------- | -------------- |
+        | `admin`  | `$default_pwd` |
+        
+        ## Notas Importantes
+        
+        1. **Primer Acceso**: Después de la instalación, visite la interfaz web para completar el asistente de configuración inicial
+        2. **Configuración SMTP**: La funcionalidad de correo electrónico requiere configuración SMTP en los ajustes
+        3. **Rendimiento**: Discourse requiere al menos 2GB de RAM para un rendimiento óptimo
+        4. **Configuración de Base de Datos**: Las extensiones de PostgreSQL (hstore, pg_trgm) se instalan automáticamente
+        5. **Trabajos en Segundo Plano**: Sidekiq maneja tareas en segundo plano como entrega de correo y notificaciones
+      fr_fr: |
+        ## Compte par Défaut
+        
+        | Nom d'utilisateur | Mot de passe   |
+        | ----------------- | -------------- |
+        | `admin`           | `$default_pwd` |
+        
+        ## Notes Importantes
+        
+        1. **Premier Accès**: Après l'installation, visitez l'interface web pour terminer l'assistant de configuration initiale
+        2. **Configuration SMTP**: La fonctionnalité email nécessite une configuration SMTP dans les paramètres
+        3. **Performance**: Discourse nécessite au moins 2 Go de RAM pour des performances optimales
+        4. **Configuration Base de Données**: Les extensions PostgreSQL (hstore, pg_trgm) sont installées automatiquement
+        5. **Tâches en Arrière-plan**: Sidekiq gère les tâches en arrière-plan comme la livraison d'email et les notifications
