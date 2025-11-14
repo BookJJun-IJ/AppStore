@@ -30,6 +30,12 @@ services:
       - /var/log:/host/var/log:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "true"]
+      interval: 10s
+      timeout: 5s
+      retries: 1
+      start_period: 10s
     deploy:
       resources:
         limits:
