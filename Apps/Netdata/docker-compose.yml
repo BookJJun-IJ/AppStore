@@ -95,5 +95,5 @@ x-casaos:
         **참고**: Netdata는 시스템 리소스 모니터링을 위해 상승된 권한이 필요합니다.
   index: /
   webui_port: 19999
-  scheme: http
+  scheme: https
   store_app_id: netdata
