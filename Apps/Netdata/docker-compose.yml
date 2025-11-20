@@ -4,7 +4,7 @@ services:
   netdata:
     image: netdata/netdata:v2.7.0
     hostname: netdata
-    user: $PUID:$PGID
+    user: 0:0
     expose:
       - 19999
     environment:
