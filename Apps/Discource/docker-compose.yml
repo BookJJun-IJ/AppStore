@@ -158,7 +158,7 @@ x-casaos:
   title:
     en_us: Discourse
   index: /
-  scheme: http
+  scheme: https
   store_app_id: discourse
   tips:
     before_install:
