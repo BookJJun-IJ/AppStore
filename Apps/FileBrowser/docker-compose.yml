@@ -124,38 +124,41 @@ x-casaos:
       en_us: |
         Default Account
 
-        Username: `admin`
-        
-        Password: Check the container logs for the randomly generated password on first startup.
+        | Username | Password |
+        | -------- | -------- |
+        | `admin`  | `$PCS_DEFAULT_PASSWORD` |
       zh_cn: |
         默认账号
 
-        用户名：`admin`
-        
-        密码：首次启动时请检查容器日志以获取随机生成的密码。
+        | 用户名 | 密码 |
+        | -------- | -------- |
+        | `admin`  | `$PCS_DEFAULT_PASSWORD` |
       ko_kr: |
         기본 계정
 
-        사용자명: `admin`
-        
-        비밀번호: 첫 시작 시 컨테이너 로그에서 무작위로 생성된 비밀번호를 확인하세요.
+        | 사용자명 | 비밀번호 |
+        | -------- | -------- |
+        | `admin`  | `$PCS_DEFAULT_PASSWORD` |
       es_es: |
         Cuenta predeterminada
 
-        Usuario: `admin`
-        
-        Contraseña: Revise los registros del contenedor para obtener la contraseña generada aleatoriamente en el primer inicio.
+        | Usuario | Contraseña |
+        | -------- | -------- |
+        | `admin`  | `$PCS_DEFAULT_PASSWORD` |
       fr_fr: |
         Compte par défaut
 
-        Nom d'utilisateur: `admin`
-        
-        Mot de passe: Vérifiez les journaux du conteneur pour le mot de passe généré aléatoirement au premier démarrage.
+        | Nom d'utilisateur | Mot de passe |
+        | -------- | -------- |
+        | `admin`  | `$PCS_DEFAULT_PASSWORD` |
   title:
     en_us: FileBrowser
   index: /
-  scheme: https
+  port_map: "80"
+  scheme: http
   store_app_id: filebrowser
   pre-install-cmd: |
     mkdir -p /DATA/AppData/filebrowser/db /DATA/AppData/filebrowser/config &&
-    chown -R $PUID:$PGID /DATA/AppData/filebrowser
+    chown -R $PUID:$PGID /DATA/AppData/filebrowser &&
+    docker run --rm -v /DATA/AppData/filebrowser/db:/database -v /DATA/AppData/filebrowser/config:/config filebrowser/filebrowser:v2.44.0 config init --database /database/filebrowser.db --config /config/settings.json &&
+    docker run --rm -v /DATA/AppData/filebrowser/db:/database -v /DATA/AppData/filebrowser/config:/config filebrowser/filebrowser:v2.44.0 users add admin $PCS_DEFAULT_PASSWORD --perm.admin --database /database/filebrowser.db
