@@ -1,47 +1,79 @@
 name: filebrowser
 services:
   filebrowser:
+    cpu_shares: 80
+    command: []
+    container_name: filebrowser
+    deploy:
+      resources:
+        reservations:
+          memory: "64M"
     environment:
       PGID: $PGID
       PUID: $PUID
       TZ: $TZ
-    image: filebrowser/filebrowser:v2.23.0
+    image: filebrowser/filebrowser:v2.44.0
+    labels:
+      icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/FileBrowser/icon.png
     network_mode: bridge
     restart: unless-stopped
     volumes:
       - type: bind
         source: /DATA/AppData/$AppID/db
-        target: /db
+        target: /database
+      - type: bind
+        source: /DATA/AppData/$AppID/config
+        target: /config
       - type: bind
         source: /DATA
         target: /srv
     expose:
-      - 80
+      - "80"
     x-casaos:
       envs:
         - container: TZ
           description:
             en_us: TimeZone
             zh_cn: 时区
+            ko_kr: 시간대
+            es_es: Zona horaria
+            fr_fr: Fuseau horaire
         - container: PUID
           description:
             en_us: Run FileBrowser as specified uid.
             zh_cn: 以指定的用户ID运行FileBrowser
+            ko_kr: 지정된 uid로 FileBrowser 실행
+            es_es: Ejecutar FileBrowser con el uid especificado
+            fr_fr: Exécuter FileBrowser avec l'uid spécifié
         - container: PGID
           description:
             en_us: Run FileBrowser as specified gid.
             zh_cn: 以指定的组ID运行FileBrowser
-
+            ko_kr: 지정된 gid로 FileBrowser 실행
+            es_es: Ejecutar FileBrowser con el gid especificado
+            fr_fr: Exécuter FileBrowser avec le gid spécifié
       volumes:
-        - container: /db
+        - container: /database
           description:
             en_us: FileBrowser database directory.
             zh_cn: FileBrowser数据库目录
+            ko_kr: FileBrowser 데이터베이스 디렉토리
+            es_es: Directorio de base de datos de FileBrowser
+            fr_fr: Répertoire de base de données FileBrowser
+        - container: /config
+          description:
+            en_us: FileBrowser configuration directory.
+            zh_cn: FileBrowser配置目录
+            ko_kr: FileBrowser 설정 디렉토리
+            es_es: Directorio de configuración de FileBrowser
+            fr_fr: Répertoire de configuration FileBrowser
         - container: /srv
           description:
             en_us: FileBrowser managed directory.
             zh_cn: FileBrowser管理的目录
-    container_name: filebrowser
+            ko_kr: FileBrowser가 관리하는 디렉토리
+            es_es: Directorio gestionado por FileBrowser
+            fr_fr: Répertoire géré par FileBrowser
 x-casaos:
   architectures:
     - amd64
@@ -51,40 +83,42 @@ x-casaos:
   author: CasaOS Team
   category: Cloud
   description:
-    en_us: File Browser - Webbased File Browser including sharing functions etc.
-    zh_cn: File Browser - 包含分享功能等的Webbased文件浏览器
-    ar_sa: متصفح الملفات - متصفح ملفات Webbased يشمل وظائف المشاركة وما إلى ذلك
-    de_de: Datei Browser - Webbasierte Datei Browser, einschließlich Sharing-Funktionen usw.
-    es_es: File Browser - Navegador de archivos Webbased que incluye funciones de compartición, etc.
-    fr_fr: File Browser - Navigateur de fichiers Webbased incluant des fonctions de partage, etc.
-    hu_hu: File Browser - Webbased File Browser, beleértve a megosztási funkciókat stb.
-    it_it: File Browser - Browser di file Webbased che include funzioni di condivisione, ecc.
-    ru_ru: File Browser - Webbased File Browser, включая функции обмена, и т.д.
-    pl_pl: File Browser - Przeglądarka plików Webbased, w tym funkcje udostępniania itp.
-    pt_br: File Browser - Navegador de arquivos Webbased que inclui funções de compartilhamento, etc.
-    sv_se: File Browser - Webbaserad filbläddrare inklusive delningsfunktioner etc.
-    uk_ua: File Browser - Webbased File Browser, включаючи функції обміну, тощо
-  developer: File Browser
-  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/FileBrowser/icon.png
+    en_us: File Browser provides a file managing interface within a specified directory. It can be used to upload, delete, preview, rename and edit your files. It allows the creation of multiple users and each user can have its own directory.
+    zh_cn: File Browser 在指定目录中提供文件管理界面。它可用于上传、删除、预览、重命名和编辑您的文件。它允许创建多个用户，每个用户可以拥有自己的目录。
+    ko_kr: File Browser는 지정된 디렉토리 내에서 파일 관리 인터페이스를 제공합니다. 파일 업로드, 삭제, 미리보기, 이름 변경 및 편집에 사용할 수 있습니다. 여러 사용자 생성이 가능하며 각 사용자는 자신의 디렉토리를 가질 수 있습니다.
+    es_es: File Browser proporciona una interfaz de gestión de archivos dentro de un directorio especificado. Se puede usar para cargar, eliminar, previsualizar, renombrar y editar sus archivos. Permite la creación de múltiples usuarios y cada usuario puede tener su propio directorio.
+    fr_fr: File Browser fournit une interface de gestion de fichiers dans un répertoire spécifié. Il peut être utilisé pour télécharger, supprimer, prévisualiser, renommer et modifier vos fichiers. Il permet la création de plusieurs utilisateurs et chaque utilisateur peut avoir son propre répertoire.
+    de_de: File Browser bietet eine Dateiverwaltungsoberfläche in einem bestimmten Verzeichnis. Es kann zum Hochladen, Löschen, Vorschau, Umbenennen und Bearbeiten Ihrer Dateien verwendet werden.
+    ar_sa: يوفر File Browser واجهة إدارة الملفات ضمن دليل محدد. يمكن استخدامه لتحميل الملفات وحذفها ومعاينتها وإعادة تسميتها وتحريرها.
+    hu_hu: A File Browser fájlkezelési felületet biztosít egy megadott könyvtárban. Használható fájlok feltöltésére, törlésére, előnézetére, átnevezésére és szerkesztésére.
+    it_it: File Browser fornisce un'interfaccia di gestione file all'interno di una directory specificata. Può essere utilizzato per caricare, eliminare, visualizzare in anteprima, rinominare e modificare i tuoi file.
+    ru_ru: File Browser предоставляет интерфейс управления файлами в указанном каталоге. Его можно использовать для загрузки, удаления, предварительного просмотра, переименования и редактирования ваших файлов.
+    pl_pl: File Browser zapewnia interfejs zarządzania plikami w określonym katalogu. Może być używany do przesyłania, usuwania, podglądu, zmiany nazwy i edycji plików.
+    pt_br: O File Browser fornece uma interface de gerenciamento de arquivos dentro de um diretório especificado. Pode ser usado para fazer upload, excluir, visualizar, renomear e editar seus arquivos.
+    sv_se: File Browser tillhandahåller ett filhanteringsgränssnitt inom en specificerad katalog. Det kan användas för att ladda upp, ta bort, förhandsgranska, byta namn på och redigera dina filer.
+    uk_ua: File Browser надає інтерфейс керування файлами у вказаному каталозі. Його можна використовувати для завантаження, видалення, попереднього перегляду, перейменування та редагування ваших файлів.
+  developer: File Browser Contributors
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/FileBrowser/icon.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/FileBrowser/screenshot-1.jpg
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/FileBrowser/screenshot-2.jpg
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/FileBrowser/screenshot-3.jpg
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/FileBrowser/screenshot-1.jpg
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/FileBrowser/screenshot-2.jpg
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/FileBrowser/screenshot-3.jpg
   tagline:
     en_us: Upload, delete, preview, rename, edit and share your files.
-    zh_cn: 上传，删除，预览，重命名，编辑和共享您的文件。
-    ar_sa: قم بتحميل، حذف، معاينة، إعادة تسمية، تحرير ومشاركة ملفاتك.
+    zh_cn: 上传、删除、预览、重命名、编辑和共享您的文件。
+    ko_kr: 파일을 업로드, 삭제, 미리보기, 이름 변경, 편집 및 공유하세요.
+    es_es: Cargue, elimine, previsualice, renombre, edite y comparta sus archivos.
+    fr_fr: Téléchargez, supprimez, prévisualisez, renommez, modifiez et partagez vos fichiers.
     de_de: Hochladen, Löschen, Vorschau, Umbenennen, Bearbeiten und Freigeben Ihrer Dateien.
-    es_es: Subir, eliminar, previsualizar, renombrar, editar y compartir sus archivos.
-    fr_fr: Télécharger, supprimer, prévisualiser, renommer, modifier et partager vos fichiers.
+    ar_sa: قم بتحميل وحذف ومعاينة وإعادة تسمية وتحرير ومشاركة ملفاتك.
     hu_hu: Töltsön fel, törölje, előnézze, átnevezze, szerkessze és ossza meg fájljait.
     it_it: Carica, elimina, anteprima, rinomina, modifica e condividi i tuoi file.
-    ru_ru: Загрузите, удалите, просмотрите, переименуйте, отредактируйте и поделитесь своими файлами.
-    pl_pl: Prześlij, usuń, podgląd, zmień nazwę, edytuj i udostępnij swoje pliki.
+    ru_ru: Загружайте, удаляйте, просматривайте, переименовывайте, редактируйте и делитесь своими файлами.
+    pl_pl: Przesyłaj, usuwaj, przeglądaj, zmieniaj nazwy, edytuj i udostępniaj swoje pliki.
     pt_br: Faça upload, exclua, visualize, renomeie, edite e compartilhe seus arquivos.
     sv_se: Ladda upp, ta bort, förhandsgranska, byt namn, redigera och dela dina filer.
-    uk_ua: Завантажте, видаліть, перегляньте, перейменуйте, відредагуйте і поділіться своїми файлами.
-  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/FileBrowser/thumbnail.jpg
+    uk_ua: Завантажуйте, видаляйте, переглядайте, перейменовуйте, редагуйте та діліться своїми файлами.
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/FileBrowser/thumbnail.jpg
   tips:
     before_install:
       en_us: |
@@ -102,4 +136,5 @@ x-casaos:
   title:
     en_us: FileBrowser
   index: /
-  webui_port: 80
+  scheme: https
+  store_app_id: filebrowser
