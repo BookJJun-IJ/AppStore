@@ -154,8 +154,7 @@ x-casaos:
   title:
     en_us: FileBrowser
   index: /
-  port_map: "80"
-  scheme: http
+  scheme: https
   store_app_id: filebrowser
   pre-install-cmd: |
     mkdir -p /DATA/AppData/filebrowser/db /DATA/AppData/filebrowser/config &&
