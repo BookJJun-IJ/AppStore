@@ -13,7 +13,6 @@ services:
       - /DATA/AppData/$AppID/indices:/indices
       - /DATA:/host:ro
     expose:
-      - 4090
       - 8080
     working_dir: /root/sist2-admin/
     entrypoint: python3
@@ -25,8 +24,12 @@ services:
           memory: 2048M
           cpus: '1.0'
     restart: unless-stopped
-    # Note: Healthcheck disabled as sist2-admin may not respond to root path immediately
-    # CasaOS will monitor container status directly
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
 x-casaos:
   architectures:
@@ -56,15 +59,15 @@ x-casaos:
       - Automatic tagging via user scripts
       
       **Post-Installation Steps:**
-      1. **Start here**: Access sist2-admin at `https://8080-sist2-[username].nsl.sh` (Port 8080)
+      1. **Start here**: Click the WebUI button in CasaOS or access sist2-admin at `https://8080-sist2-[username].nsl.sh`
       2. Create new scan job with SQLite backend
       3. Set scan path to `/host` (your entire /DATA directory)
       4. Click "Index now" to build your index
-      5. Once indexing completes, access search at `https://4090-sist2-[username].nsl.sh`
+      5. Once indexing completes, access search at `http://[your-server-ip]:4090`
       
       **Two Web Interfaces:**
-      - **Port 8080 (Admin)**: Primary interface - configure scans and manage jobs
-      - **Port 4090 (Search)**: Search interface - available after first index is created
+      - **Port 8080 (Admin)**: Primary interface via HTTPS - configure scans and manage jobs (default WebUI)
+      - **Port 4090 (Search)**: Direct HTTP access via server IP - available after first index is created
       
       **Note:** The application indexes file metadata and content but never modifies your actual files. All files are mounted read-only.
     ko_kr: |
@@ -82,15 +85,15 @@ x-casaos:
       - 사용자 스크립트를 통한 자동 태그 지정
       
       **설치 후 단계:**
-      1. **여기서 시작**: `https://8080-sist2-[사용자명].nsl.sh`에서 sist2-admin 접속 (포트 8080)
+      1. **여기서 시작**: CasaOS의 WebUI 버튼 클릭 또는 `https://8080-sist2-[사용자명].nsl.sh`에서 sist2-admin 접속
       2. SQLite 백엔드로 새 스캔 작업 생성
       3. 스캔 경로를 `/host`로 설정 (전체 /DATA 디렉토리)
       4. "Index now" 클릭하여 인덱스 구축
-      5. 인덱싱 완료 후 `https://4090-sist2-[사용자명].nsl.sh`에서 검색 가능
+      5. 인덱싱 완료 후 `http://[서버-IP]:4090`에서 검색 가능
       
       **두 개의 웹 인터페이스:**
-      - **포트 8080 (관리)**: 기본 인터페이스 - 스캔 구성 및 작업 관리
-      - **포트 4090 (검색)**: 검색 인터페이스 - 첫 인덱스 생성 후 사용 가능
+      - **포트 8080 (관리)**: HTTPS를 통한 기본 인터페이스 - 스캔 구성 및 작업 관리 (기본 WebUI)
+      - **포트 4090 (검색)**: 서버 IP를 통한 직접 HTTP 액세스 - 첫 인덱스 생성 후 사용 가능
       
       **참고:** 이 애플리케이션은 파일 메타데이터와 내용을 인덱싱하지만 실제 파일을 수정하지 않습니다. 모든 파일은 읽기 전용으로 마운트됩니다.
     fr_fr: |
@@ -108,15 +111,15 @@ x-casaos:
       - Balisage automatique via scripts utilisateur
       
       **Étapes post-installation:**
-      1. **Commencez ici**: Accédez à sist2-admin à `https://8080-sist2-[nomutilisateur].nsl.sh` (Port 8080)
+      1. **Commencez ici**: Cliquez sur le bouton WebUI dans CasaOS ou accédez à `https://8080-sist2-[nomutilisateur].nsl.sh`
       2. Créez un nouveau travail de scan avec backend SQLite
       3. Définissez le chemin de scan sur `/host` (tout votre répertoire /DATA)
       4. Cliquez sur "Index now" pour construire votre index
-      5. Une fois l'indexation terminée, accédez à `https://4090-sist2-[nomutilisateur].nsl.sh`
+      5. Une fois l'indexation terminée, accédez à `http://[ip-serveur]:4090`
       
       **Deux interfaces Web:**
-      - **Port 8080 (Admin)**: Interface principale - configurer les scans et gérer les tâches
-      - **Port 4090 (Recherche)**: Interface de recherche - disponible après la création du premier index
+      - **Port 8080 (Admin)**: Interface principale via HTTPS - configurer les scans et gérer les tâches (WebUI par défaut)
+      - **Port 4090 (Recherche)**: Accès HTTP direct via IP serveur - disponible après la création du premier index
       
       **Note:** L'application indexe les métadonnées et le contenu des fichiers mais ne modifie jamais vos fichiers réels. Tous les fichiers sont montés en lecture seule.
     es_es: |
@@ -134,15 +137,15 @@ x-casaos:
       - Etiquetado automático mediante scripts de usuario
       
       **Pasos posteriores a la instalación:**
-      1. **Comience aquí**: Acceda a sist2-admin en `https://8080-sist2-[nombreusuario].nsl.sh` (Puerto 8080)
+      1. **Comience aquí**: Haga clic en el botón WebUI en CasaOS o acceda a `https://8080-sist2-[nombreusuario].nsl.sh`
       2. Cree un nuevo trabajo de escaneo con backend SQLite
       3. Establezca la ruta de escaneo en `/host` (todo su directorio /DATA)
       4. Haga clic en "Index now" para construir su índice
-      5. Una vez completada la indexación, acceda a `https://4090-sist2-[nombreusuario].nsl.sh`
+      5. Una vez completada la indexación, acceda a `http://[ip-servidor]:4090`
       
       **Dos interfaces web:**
-      - **Puerto 8080 (Admin)**: Interfaz principal - configurar escaneos y gestionar trabajos
-      - **Puerto 4090 (Búsqueda)**: Interfaz de búsqueda - disponible después de crear el primer índice
+      - **Puerto 8080 (Admin)**: Interfaz principal vía HTTPS - configurar escaneos y gestionar trabajos (WebUI predeterminada)
+      - **Puerto 4090 (Búsqueda)**: Acceso HTTP directo vía IP del servidor - disponible después de crear el primer índice
       
       **Nota:** La aplicación indexa metadatos y contenido de archivos pero nunca modifica sus archivos reales. Todos los archivos están montados como solo lectura.
     zh_cn: |
@@ -160,15 +163,15 @@ x-casaos:
       - 通过用户脚本自动标记
       
       **安装后步骤:**
-      1. **从这里开始**: 在 `https://8080-sist2-[用户名].nsl.sh` 访问 sist2-admin (端口 8080)
+      1. **从这里开始**: 点击 CasaOS 中的 WebUI 按钮或在 `https://8080-sist2-[用户名].nsl.sh` 访问 sist2-admin
       2. 使用 SQLite 后端创建新的扫描作业
       3. 将扫描路径设置为 `/host`(整个 /DATA 目录)
       4. 点击 "Index now" 构建索引
-      5. 索引完成后,在 `https://4090-sist2-[用户名].nsl.sh` 访问搜索
+      5. 索引完成后,在 `http://[服务器IP]:4090` 访问搜索
       
       **两个 Web 界面:**
-      - **端口 8080 (管理)**: 主界面 - 配置扫描和管理作业
-      - **端口 4090 (搜索)**: 搜索界面 - 创建第一个索引后可用
+      - **端口 8080 (管理)**: 通过 HTTPS 的主界面 - 配置扫描和管理作业 (默认 WebUI)
+      - **端口 4090 (搜索)**: 通过服务器 IP 的直接 HTTP 访问 - 创建第一个索引后可用
       
       **注意:** 应用程序索引文件元数据和内容,但永远不会修改您的实际文件。所有文件都以只读方式挂载。
   developer: simon987 / sist2app
@@ -200,8 +203,8 @@ x-casaos:
         - All data stored in `/DATA/AppData/sist2/indices/`
         
         **Two Web Interfaces:**
-        - **Port 8080** (Admin): `https://8080-sist2-[username].nsl.sh` - Configure scans and settings (start here)
-        - **Port 4090** (Search): `https://4090-sist2-[username].nsl.sh` - Search indexed files (available after first scan)
+        - **Port 8080** (Admin): Default WebUI via HTTPS - Configure scans and settings (start here)
+        - **Port 4090** (Search): Direct HTTP access via server IP - Search indexed files (available after first scan)
         
         **Security Note:**
         - Sist2 has read-only access to /DATA for indexing purposes
@@ -219,8 +222,8 @@ x-casaos:
         - 모든 데이터는 `/DATA/AppData/sist2/indices/`에 저장됩니다
         
         **두 개의 웹 인터페이스:**
-        - **포트 8080** (관리): `https://8080-sist2-[사용자명].nsl.sh` - 스캔 및 설정 구성 (여기서 시작)
-        - **포트 4090** (검색): `https://4090-sist2-[사용자명].nsl.sh` - 인덱싱된 파일 검색 (첫 스캔 후 사용 가능)
+        - **포트 8080** (관리): HTTPS를 통한 기본 WebUI - 스캔 및 설정 구성 (여기서 시작)
+        - **포트 4090** (검색): 서버 IP를 통한 직접 HTTP 액세스 - 인덱싱된 파일 검색 (첫 스캔 후 사용 가능)
         
         **보안 참고:**
         - Sist2는 인덱싱 목적으로 /DATA에 대한 읽기 전용 액세스 권한을 가집니다
@@ -238,8 +241,8 @@ x-casaos:
         - Toutes les données stockées dans `/DATA/AppData/sist2/indices/`
         
         **Deux interfaces Web:**
-        - **Port 8080** (Admin): `https://8080-sist2-[nomutilisateur].nsl.sh` - Configurez les scans et les paramètres (commencez ici)
-        - **Port 4090** (Recherche): `https://4090-sist2-[nomutilisateur].nsl.sh` - Recherchez les fichiers indexés (disponible après le premier scan)
+        - **Port 8080** (Admin): WebUI par défaut via HTTPS - Configurez les scans et les paramètres (commencez ici)
+        - **Port 4090** (Recherche): Accès HTTP direct via IP serveur - Recherchez les fichiers indexés (disponible après le premier scan)
         
         **Note de sécurité:**
         - Sist2 a un accès en lecture seule à /DATA à des fins d'indexation
@@ -257,8 +260,8 @@ x-casaos:
         - Todos los datos almacenados en `/DATA/AppData/sist2/indices/`
         
         **Dos interfaces web:**
-        - **Puerto 8080** (Admin): `https://8080-sist2-[nombreusuario].nsl.sh` - Configure escaneos y ajustes (comience aquí)
-        - **Puerto 4090** (Búsqueda): `https://4090-sist2-[nombreusuario].nsl.sh` - Busque archivos indexados (disponible después del primer escaneo)
+        - **Puerto 8080** (Admin): WebUI predeterminada vía HTTPS - Configure escaneos y ajustes (comience aquí)
+        - **Puerto 4090** (Búsqueda): Acceso HTTP directo vía IP del servidor - Busque archivos indexados (disponible después del primer escaneo)
         
         **Nota de seguridad:**
         - Sist2 tiene acceso de solo lectura a /DATA con fines de indexación
@@ -276,8 +279,8 @@ x-casaos:
         - 所有数据存储在 `/DATA/AppData/sist2/indices/`
         
         **两个 Web 界面:**
-        - **端口 8080**(管理):`https://8080-sist2-[用户名].nsl.sh` - 配置扫描和设置(从这里开始)
-        - **端口 4090**(搜索):`https://4090-sist2-[用户名].nsl.sh` - 搜索索引文件(第一次扫描后可用)
+        - **端口 8080**(管理): 通过 HTTPS 的默认 WebUI - 配置扫描和设置(从这里开始)
+        - **端口 4090**(搜索): 通过服务器 IP 的直接 HTTP 访问 - 搜索索引文件(第一次扫描后可用)
         
         **安全说明:**
         - Sist2 对 /DATA 具有只读访问权限以进行索引
@@ -285,5 +288,5 @@ x-casaos:
         - 所有配置都隔离到 AppData 目录
   index: /
   webui_port: 8080
-  store_app_id: sist2
   scheme: https
+  store_app_id: sist2
