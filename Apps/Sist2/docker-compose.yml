@@ -286,3 +286,4 @@ x-casaos:
   index: /
   webui_port: 8080
   store_app_id: sist2
+  scheme: https
