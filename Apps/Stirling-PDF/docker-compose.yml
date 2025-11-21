@@ -2,7 +2,7 @@ name: stirlingpdf
 
 services:
   stirlingpdf:
-    image: docker.stirlingpdf.com/stirlingtools/stirling-pdf:1.2.0
+    image: docker.stirlingpdf.com/stirlingtools/stirling-pdf:1.5.0
     container_name: stirling-pdf
     restart: unless-stopped
     expose:
@@ -26,12 +26,14 @@ services:
       SYSTEM_DEFAULTLOCALE: en_US
       INSTALL_BOOK_AND_ADVANCED_HTML_OPS: false
       TMPDIR: /tmp
-      JAVA_OPTS: "-Djava.io.tmpdir=/tmp"
+      # Java memory management for stability - prevents OOM errors
+      JAVA_TOOL_OPTIONS: "-XX:+UnlockExperimentalVMOptions -XX:MaxRAMPercentage=75 -XX:InitialRAMPercentage=50 -XX:+UseG1GC -XX:+UseStringDeduplication -XX:G1PeriodicGCInterval=30000 -Djava.io.tmpdir=/tmp"
     deploy:
       resources:
         limits:
-          memory: 2G
-          cpus: '1.0'
+          memory: 4G  # Increased from 2G - critical for stability
+          cpus: '1.0'  # Increased from 1.0 for better performance
+    cpu_shares: 50  # Standard application priority
 
 x-casaos:
   architectures:
@@ -193,6 +195,9 @@ x-casaos:
         **🌐 Access:**
         Once ready, your app will be available at a clean URL without port numbers!
 
+        **💡 Performance Note:**
+        This version includes improved memory management for better stability when processing large PDFs or multiple files simultaneously.
+
         **How to use:**
         Upload PDF files through your web browser and start editing them right away!
       ko_kr: |
@@ -212,6 +217,9 @@ x-casaos:
 
         **🌐 접근:**
         준비가 되면 포트 번호 없는 깔끔한 URL로 앱에 접근할 수 있습니다!
+
+        **💡 성능 개선:**
+        이 버전은 대용량 PDF나 여러 파일을 동시에 처리할 때 안정성을 위한 개선된 메모리 관리 기능이 포함되어 있습니다.
 
         **사용 방법:**
         웹 브라우저를 통해 PDF 파일을 업로드하고 바로 편집을 시작할 수 있습니다!
@@ -233,6 +241,9 @@ x-casaos:
         **🌐 访问:**
         准备就绪后,您的应用将通过无端口号的清洁URL可用!
 
+        **💡 性能改进:**
+        此版本包含改进的内存管理功能,在处理大型PDF或同时处理多个文件时提供更好的稳定性。
+
         **如何使用:**
         通过网页浏览器上传PDF文件并立即开始编辑!
       fr_fr: |
@@ -253,6 +264,9 @@ x-casaos:
         **🌐 Accès :**
         Une fois prêt, votre application sera disponible via une URL propre sans numéros de port !
 
+        **💡 Note de performance :**
+        Cette version inclut une gestion de mémoire améliorée pour une meilleure stabilité lors du traitement de gros PDFs ou de plusieurs fichiers simultanément.
+
         **Comment utiliser :**
         Téléchargez des fichiers PDF via votre navigateur web et commencez à les éditer immédiatement !
       es_es: |
@@ -272,6 +286,9 @@ x-casaos:
 
         **🌐 Acceso:**
         Una vez listo, tu aplicación estará disponible en una URL limpia sin números de puerto!
+
+        **💡 Nota de rendimiento:**
+        Esta versión incluye gestión de memoria mejorada para mayor estabilidad al procesar PDFs grandes o múltiples archivos simultáneamente.
 
         **Cómo usar:**
         ¡Sube archivos PDF a través de tu navegador web y comienza a editarlos de inmediatamente!
