@@ -15,7 +15,7 @@ services:
     expose:
       - 8080
     ports:
-      - "$PCS_PUBLIC_IP:4090:4090"
+      - "4090:4090"
     working_dir: /root/sist2-admin/
     entrypoint: python3
     command:
