@@ -58,7 +58,7 @@ x-casaos:
     - amd64
     - arm64
   main: odoo
-  webui_port: 8069
+  webui_port: 80
   category: Business
   author: CasaOS Team
   developer: Odoo S.A.
