@@ -18,6 +18,7 @@ services:
         limits:
           memory: 512M
           cpus: '0.5'
+    cpu_shares: 50
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U odoo -d postgres"]
       interval: 10s
@@ -32,11 +33,12 @@ services:
       postgres:
         condition: service_healthy
     expose:
-      - 8069
+      - 80
     environment:
       HOST: postgres
       USER: odoo
       PASSWORD: $default_pwd
+      PORT: 80
       PUID: "0"
       PGID: "0"
       TZ: $TZ
@@ -44,6 +46,7 @@ services:
       - /DATA/AppData/$AppID/odoo-data:/var/lib/odoo
       - /DATA/AppData/$AppID/config:/etc/odoo
       - /DATA/AppData/$AppID/addons:/mnt/extra-addons
+    cpu_shares: 70
     deploy:
       resources:
         limits:
@@ -60,12 +63,12 @@ x-casaos:
   category: Business
   author: CasaOS Team
   developer: Odoo S.A.
-  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Odoo/icon.png
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Odoo/icon.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Odoo/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Odoo/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Odoo/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Odoo/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Odoo/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Odoo/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Odoo/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Odoo/screenshot-1.png
   title:
     en_us: Odoo
     ko_kr: 오두
