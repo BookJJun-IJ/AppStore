@@ -161,3 +161,4 @@ x-casaos:
     chown -R $PUID:$PGID /DATA/AppData/filebrowser &&
     docker run --rm -v /DATA/AppData/filebrowser/db:/database -v /DATA/AppData/filebrowser/config:/config filebrowser/filebrowser:v2.44.0 config init --database /database/filebrowser.db --config /config/settings.json &&
     docker run --rm -v /DATA/AppData/filebrowser/db:/database -v /DATA/AppData/filebrowser/config:/config filebrowser/filebrowser:v2.44.0 users add admin $PCS_DEFAULT_PASSWORD --perm.admin --database /database/filebrowser.db
+  webui_port: 80
