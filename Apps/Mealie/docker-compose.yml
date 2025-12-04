@@ -4,7 +4,6 @@ services:
   mealie:
     image: ghcr.io/mealie-recipes/mealie:v3.5.0
     container_name: mealie
-    user: $PUID:$PGID
     restart: unless-stopped
     cpu_shares: 80
     
@@ -17,10 +16,6 @@ services:
       - 80
     
     environment:
-      # Permission settings
-      PUID: $PUID
-      PGID: $PGID
-      
       # Timezone
       TZ: $TZ
       
@@ -381,4 +376,3 @@ x-casaos:
   webui_port: 80
   index: /
   store_app_id: mealie
-  scheme: https
