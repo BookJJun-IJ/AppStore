@@ -16,6 +16,10 @@ services:
       - 80
     
     environment:
+      # Permission settings (image internally uses these)
+      PUID: $PUID
+      PGID: $PGID
+      
       # Timezone
       TZ: $TZ
       
@@ -56,8 +60,9 @@ x-casaos:
     - arm64
   main: mealie
   pre-install-cmd: |
-    # Create required directories
-    mkdir -p /DATA/AppData/$AppID/data
+    # Ensure data directory exists with proper ownership
+    mkdir -p /DATA/AppData/$AppID/data &&
+    chown -R $PUID:$PGID /DATA/AppData/$AppID/data
   author: Yundera Team
   category: Utilities
   description:
@@ -74,11 +79,11 @@ x-casaos:
       • **Multi-User Support** - Share recipes with family while keeping some private
       • **Mobile Friendly** - Works perfectly on phones, tablets, and computers
       
-      **v3.5.0 Latest Features:**
+      **✨ v3.5.0 Latest Features:**
       • **Recipe as Ingredient** - Add recipes as ingredients in other recipes (perfect for sauces!)
       • **Enhanced Cook Mode** - Independently scrollable ingredients and instructions
       • **Improved Recipe Selection** - Better ingredient selection workflow
-      • **Simplified ZIP Export** - Streamlined recipe export process
+      • **Simplified ZIP Export** - Streamlined recipe export process (no more zip tokens!)
       • **Better Recipe Parsing** - More accurate automatic ingredient parsing
       • **PDF Recipe Export** - Print or share recipes easily
       • **Webhook Support** - Automation integration for smart homes
@@ -100,11 +105,11 @@ x-casaos:
       • **다중 사용자 지원** - 일부는 비공개로 유지하면서 가족과 레시피 공유
       • **모바일 친화적** - 휴대폰, 태블릿, 컴퓨터에서 완벽 작동
       
-      **v3.5.0 최신 기능:**
+      **✨ v3.5.0 최신 기능:**
       • **레시피를 재료로** - 다른 레시피에 레시피를 재료로 추가 (소스에 완벽!)
       • **향상된 쿠킹 모드** - 독립적으로 스크롤 가능한 재료와 조리법
       • **개선된 레시피 선택** - 더 나은 재료 선택 워크플로우
-      • **간소화된 ZIP 내보내기** - 간편해진 레시피 내보내기 프로세스
+      • **간소화된 ZIP 내보내기** - 간편해진 레시피 내보내기 (zip 토큰 불필요!)
       • **더 나은 레시피 파싱** - 더욱 정확한 자동 재료 파싱
       • **PDF 레시피 내보내기** - 인쇄 또는 공유를 위한 PDF 내보내기
       • **웹훅 지원** - 스마트 홈을 위한 자동화 통합
@@ -126,11 +131,11 @@ x-casaos:
       • **多用户支持** - 与家人分享食谱，同时保持一些私密
       • **移动友好** - 在手机、平板和电脑上完美运行
       
-      **v3.5.0最新功能:**
+      **✨ v3.5.0最新功能:**
       • **食谱作为配料** - 在其他食谱中添加食谱作为配料（非常适合酱料！）
       • **增强的烹饪模式** - 可独立滚动的配料和说明
       • **改进的食谱选择** - 更好的配料选择工作流程
-      • **简化的ZIP导出** - 简化的食谱导出流程
+      • **简化的ZIP导出** - 简化的食谱导出流程（无需zip令牌！）
       • **更好的食谱解析** - 更准确的自动配料解析
       • **PDF食谱导出** - 轻松打印或分享食谱
       • **Webhook支持** - 智能家居的自动化集成
@@ -152,11 +157,11 @@ x-casaos:
       • **Support multi-utilisateurs** - Partagez avec la famille tout en gardant certaines privées
       • **Mobile friendly** - Fonctionne parfaitement sur téléphones, tablettes et ordinateurs
       
-      **Fonctionnalités v3.5.0:**
+      **✨ Fonctionnalités v3.5.0:**
       • **Recette comme ingrédient** - Ajoutez des recettes comme ingrédients (parfait pour les sauces !)
       • **Mode cuisson amélioré** - Ingrédients et instructions défilables indépendamment
       • **Sélection améliorée** - Meilleur workflow de sélection d'ingrédients
-      • **Export ZIP simplifié** - Processus d'export de recettes rationalisé
+      • **Export ZIP simplifié** - Processus d'export rationalisé (plus besoin de jetons zip !)
       • **Meilleur parsing** - Analyse automatique plus précise des ingrédients
       • **Export PDF** - Imprimez ou partagez facilement les recettes
       • **Support Webhook** - Intégration d'automatisation pour maisons intelligentes
@@ -178,11 +183,11 @@ x-casaos:
       • **Soporte multiusuario** - Comparte con familia mientras mantienes algunas privadas
       • **Amigable móvil** - Funciona perfectamente en teléfonos, tablets y computadoras
       
-      **Características v3.5.0:**
+      **✨ Características v3.5.0:**
       • **Receta como ingrediente** - Añade recetas como ingredientes (¡perfecto para salsas!)
       • **Modo cocción mejorado** - Ingredientes e instrucciones con scroll independiente
       • **Selección mejorada** - Mejor flujo de trabajo de selección de ingredientes
-      • **Exportación ZIP simplificada** - Proceso de exportación de recetas simplificado
+      • **Exportación ZIP simplificada** - Proceso simplificado (¡no más tokens zip!)
       • **Mejor análisis** - Análisis automático más preciso de ingredientes
       • **Exportación PDF** - Imprime o comparte recetas fácilmente
       • **Soporte Webhook** - Integración de automatización para hogares inteligentes
