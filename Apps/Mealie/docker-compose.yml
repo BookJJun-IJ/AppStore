@@ -2,18 +2,22 @@ name: mealie
 
 services:
   mealie:
-    image: ghcr.io/mealie-recipes/mealie:v3.1.2
+    image: ghcr.io/mealie-recipes/mealie:v3.5.0
     container_name: mealie
-    # Mealie는 내부적으로 권한 처리
+    user: $PUID:$PGID
+    restart: unless-stopped
+    cpu_shares: 80
+    
     deploy:
       resources:
         limits:
           memory: 1G
-          cpus: '1.0'
+    
     expose:
-      - 9000
+      - 80
+    
     environment:
-      # 권한 설정
+      # Permission settings
       PUID: $PUID
       PGID: $PGID
       
@@ -24,27 +28,28 @@ services:
       ALLOW_SIGNUP: "false"
       
       # NSL Router settings
-      BASE_URL: https://$domain
+      BASE_URL: https://$PCS_DOMAIN
       
       # Performance settings
       MAX_WORKERS: 1
       WEB_CONCURRENCY: 1
       
       # API settings
-      API_PORT: 9000
+      API_PORT: 80
       
       # Default admin account
       DEFAULT_EMAIL: admin@example.com
-      DEFAULT_PASSWORD: $default_pwd
+      DEFAULT_PASSWORD: $PCS_DEFAULT_PASSWORD
       
       # Additional settings
       TOKEN_TIME: 720  # 12 hours token expiry
       LOG_LEVEL: info
+    
     volumes:
       - /DATA/AppData/$AppID/data:/app/data
-    restart: unless-stopped
+    
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9000/api/app/about"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/api/app/about"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -56,7 +61,7 @@ x-casaos:
     - arm64
   main: mealie
   pre-install-cmd: |
-    # 디렉토리 생성
+    # Create required directories
     mkdir -p /DATA/AppData/$AppID/data
   author: Yundera Team
   category: Utilities
@@ -74,15 +79,14 @@ x-casaos:
       • **Multi-User Support** - Share recipes with family while keeping some private
       • **Mobile Friendly** - Works perfectly on phones, tablets, and computers
       
-      **v3.1.2 Latest Features:**
-      • Enhanced recipe scraping with better site compatibility
-      • Improved shopping list merging (combines duplicate ingredients)
-      • Better nutrition calculations
-      • Faster search and filtering
-      • PDF recipe export
-      • Webhook support for automation
-      • Improved household management
-      • Better ingredient parsing
+      **v3.5.0 Latest Features:**
+      • **Recipe as Ingredient** - Add recipes as ingredients in other recipes (perfect for sauces!)
+      • **Enhanced Cook Mode** - Independently scrollable ingredients and instructions
+      • **Improved Recipe Selection** - Better ingredient selection workflow
+      • **Simplified ZIP Export** - Streamlined recipe export process
+      • **Better Recipe Parsing** - More accurate automatic ingredient parsing
+      • **PDF Recipe Export** - Print or share recipes easily
+      • **Webhook Support** - Automation integration for smart homes
       
       **Works with thousands of sites including:**
       AllRecipes, Food Network, BBC Good Food, Serious Eats, NYT Cooking, and most food blogs
@@ -101,15 +105,14 @@ x-casaos:
       • **다중 사용자 지원** - 일부는 비공개로 유지하면서 가족과 레시피 공유
       • **모바일 친화적** - 휴대폰, 태블릿, 컴퓨터에서 완벽 작동
       
-      **v3.1.2 최신 기능:**
-      • 더 나은 사이트 호환성으로 향상된 레시피 스크래핑
-      • 개선된 쇼핑 리스트 병합 (중복 재료 결합)
-      • 더 나은 영양 계산
-      • 더 빠른 검색 및 필터링
-      • PDF 레시피 내보내기
-      • 자동화를 위한 웹훅 지원
-      • 개선된 가구 관리
-      • 더 나은 재료 파싱
+      **v3.5.0 최신 기능:**
+      • **레시피를 재료로** - 다른 레시피에 레시피를 재료로 추가 (소스에 완벽!)
+      • **향상된 쿠킹 모드** - 독립적으로 스크롤 가능한 재료와 조리법
+      • **개선된 레시피 선택** - 더 나은 재료 선택 워크플로우
+      • **간소화된 ZIP 내보내기** - 간편해진 레시피 내보내기 프로세스
+      • **더 나은 레시피 파싱** - 더욱 정확한 자동 재료 파싱
+      • **PDF 레시피 내보내기** - 인쇄 또는 공유를 위한 PDF 내보내기
+      • **웹훅 지원** - 스마트 홈을 위한 자동화 통합
       
       **작동하는 사이트:**
       만개의레시피, 네이버 블로그, 쿡패드, 유튜브 레시피 등 대부분의 음식 블로그
@@ -128,15 +131,14 @@ x-casaos:
       • **多用户支持** - 与家人分享食谱，同时保持一些私密
       • **移动友好** - 在手机、平板和电脑上完美运行
       
-      **v3.1.2最新功能:**
-      • 增强的食谱抓取，更好的网站兼容性
-      • 改进的购物清单合并（合并重复配料）
-      • 更好的营养计算
-      • 更快的搜索和筛选
-      • PDF食谱导出
-      • 自动化的Webhook支持
-      • 改进的家庭管理
-      • 更好的配料解析
+      **v3.5.0最新功能:**
+      • **食谱作为配料** - 在其他食谱中添加食谱作为配料（非常适合酱料！）
+      • **增强的烹饪模式** - 可独立滚动的配料和说明
+      • **改进的食谱选择** - 更好的配料选择工作流程
+      • **简化的ZIP导出** - 简化的食谱导出流程
+      • **更好的食谱解析** - 更准确的自动配料解析
+      • **PDF食谱导出** - 轻松打印或分享食谱
+      • **Webhook支持** - 智能家居的自动化集成
       
       **适用于数千个网站包括:**
       下厨房、美食杰、豆果美食、小红书食谱等大多数美食博客
@@ -155,15 +157,14 @@ x-casaos:
       • **Support multi-utilisateurs** - Partagez avec la famille tout en gardant certaines privées
       • **Mobile friendly** - Fonctionne parfaitement sur téléphones, tablettes et ordinateurs
       
-      **Fonctionnalités v3.1.2:**
-      • Extraction de recettes améliorée avec meilleure compatibilité
-      • Fusion améliorée des listes de courses (combine les ingrédients en double)
-      • Meilleurs calculs nutritionnels
-      • Recherche et filtrage plus rapides
-      • Export PDF de recettes
-      • Support Webhook pour l'automatisation
-      • Gestion des foyers améliorée
-      • Meilleure analyse des ingrédients
+      **Fonctionnalités v3.5.0:**
+      • **Recette comme ingrédient** - Ajoutez des recettes comme ingrédients (parfait pour les sauces !)
+      • **Mode cuisson amélioré** - Ingrédients et instructions défilables indépendamment
+      • **Sélection améliorée** - Meilleur workflow de sélection d'ingrédients
+      • **Export ZIP simplifié** - Processus d'export de recettes rationalisé
+      • **Meilleur parsing** - Analyse automatique plus précise des ingrédients
+      • **Export PDF** - Imprimez ou partagez facilement les recettes
+      • **Support Webhook** - Intégration d'automatisation pour maisons intelligentes
       
       **Fonctionne avec des milliers de sites incluant:**
       Marmiton, 750g, Cuisine Actuelle, Chef Simon, et la plupart des blogs culinaires
@@ -182,27 +183,26 @@ x-casaos:
       • **Soporte multiusuario** - Comparte con familia mientras mantienes algunas privadas
       • **Amigable móvil** - Funciona perfectamente en teléfonos, tablets y computadoras
       
-      **Características v3.1.2:**
-      • Extracción mejorada de recetas con mejor compatibilidad
-      • Fusión mejorada de listas de compras (combina ingredientes duplicados)
-      • Mejores cálculos nutricionales
-      • Búsqueda y filtrado más rápidos
-      • Exportación PDF de recetas
-      • Soporte Webhook para automatización
-      • Gestión de hogares mejorada
-      • Mejor análisis de ingredientes
+      **Características v3.5.0:**
+      • **Receta como ingrediente** - Añade recetas como ingredientes (¡perfecto para salsas!)
+      • **Modo cocción mejorado** - Ingredientes e instrucciones con scroll independiente
+      • **Selección mejorada** - Mejor flujo de trabajo de selección de ingredientes
+      • **Exportación ZIP simplificada** - Proceso de exportación de recetas simplificado
+      • **Mejor análisis** - Análisis automático más preciso de ingredientes
+      • **Exportación PDF** - Imprime o comparte recetas fácilmente
+      • **Soporte Webhook** - Integración de automatización para hogares inteligentes
       
       **Funciona con miles de sitios incluyendo:**
       Cookpad, Directo al Paladar, RecetasGratis, Cocina Fácil, y la mayoría de blogs de cocina
       
       **Piénsalo como:** Tu base de datos personal de recetas que reemplaza marcadores, capturas de pantalla y recetas en papel con un sistema organizado y buscable.
   developer: Mealie Recipes Team    
-  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Mealie/icon.png
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mealie/icon.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Mealie/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Mealie/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Mealie/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Mealie/thumbnail.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mealie/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mealie/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mealie/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mealie/thumbnail.png
   tagline:
     en_us: Smart recipe manager with meal planning and shopping lists
     fr_fr: Gestionnaire de recettes intelligent avec planification et listes de courses
@@ -214,12 +214,16 @@ x-casaos:
   tips:
     before_install:
       en_us: |
-        **Default Login**
-        | Username | Password |
-        | -------- | -------- |
-        | `admin@example.com` | `$default_pwd` |
+        ## Default Credentials
+        
+        | Field              | Value                    |
+        |--------------------|--------------------------|
+        | Email              | `admin@example.com`      |
+        | Password           | `$PCS_DEFAULT_PASSWORD` |
         
         **⚠️ Important: Change these credentials after first login!**
+        
+        **Access:** `https://mealie-[username].nsl.sh/`
         
         **Getting Started:**
         1. Login with the credentials above
@@ -229,25 +233,30 @@ x-casaos:
         5. Use the Meal Planner to organize your week
         6. Generate shopping lists from your planned meals
         
-        **v3.1.2 Highlights:**
-        • Better recipe scraping from more websites
-        • Smart ingredient merging in shopping lists
+        **v3.5.0 Highlights:**
+        • Add recipes as ingredients in other recipes
+        • Improved cook mode with independent scrolling
+        • Better recipe parsing and ingredient selection
+        • Simplified ZIP export workflow
         • PDF export for printing or sharing
         • Webhook support for home automation
-        • Improved household management
         
         **Pro Tips:**
-        • Import multiple recipes at once using the bulk import feature
+        • Import multiple recipes at once using bulk import
         • Use tags to organize recipes by dietary restrictions
         • Set up webhooks to sync with other apps
         • Export recipes as PDFs for offline use
       ko_kr: |
-        **기본 로그인**
-        | 사용자명 | 비밀번호 |
-        | -------- | -------- |
-        | `admin@example.com` | `$default_pwd` |
+        ## 기본 인증 정보
+        
+        | 항목              | 값                      |
+        |------------------|-------------------------|
+        | 이메일            | `admin@example.com`     |
+        | 비밀번호          | `$PCS_DEFAULT_PASSWORD` |
         
         **⚠️ 중요: 첫 로그인 후 이 자격 증명을 변경하세요!**
+        
+        **접속 주소:** `https://mealie-[사용자명].nsl.sh/`
         
         **시작하기:**
         1. 위의 자격 증명으로 로그인
@@ -257,25 +266,30 @@ x-casaos:
         5. 식사 플래너를 사용하여 일주일 정리
         6. 계획된 식사에서 쇼핑 리스트 생성
         
-        **v3.1.2 하이라이트:**
-        • 더 많은 웹사이트에서 더 나은 레시피 스크래핑
-        • 쇼핑 리스트에서 스마트 재료 병합
+        **v3.5.0 하이라이트:**
+        • 다른 레시피에 레시피를 재료로 추가
+        • 독립적 스크롤이 가능한 개선된 쿠킹 모드
+        • 더 나은 레시피 파싱 및 재료 선택
+        • 간소화된 ZIP 내보내기 워크플로우
         • 인쇄 또는 공유를 위한 PDF 내보내기
         • 홈 자동화를 위한 웹훅 지원
-        • 개선된 가구 관리
         
         **프로 팁:**
-        • 대량 가져오기 기능으로 여러 레시피 한 번에 가져오기
+        • 대량 가져오기로 여러 레시피 한 번에 가져오기
         • 태그를 사용하여 식단 제한별로 레시피 정리
         • 다른 앱과 동기화하기 위한 웹훅 설정
         • 오프라인 사용을 위해 레시피를 PDF로 내보내기
       zh_cn: |
-        **默认登录**
-        | 用户名   | 密码 |
-        | -------- | ---- |
-        | `admin@example.com` | `$default_pwd` |
+        ## 默认凭据
+        
+        | 字段              | 值                      |
+        |------------------|-------------------------|
+        | 邮箱              | `admin@example.com`     |
+        | 密码              | `$PCS_DEFAULT_PASSWORD` |
         
         **⚠️ 重要：首次登录后更改这些凭据！**
+        
+        **访问地址:** `https://mealie-[用户名].nsl.sh/`
         
         **开始使用:**
         1. 使用上述凭据登录
@@ -285,25 +299,30 @@ x-casaos:
         5. 使用餐食规划器组织您的一周
         6. 从计划的餐食生成购物清单
         
-        **v3.1.2亮点:**
-        • 从更多网站更好地抓取食谱
-        • 购物清单中的智能配料合并
+        **v3.5.0亮点:**
+        • 在其他食谱中添加食谱作为配料
+        • 改进的烹饪模式与独立滚动
+        • 更好的食谱解析和配料选择
+        • 简化的ZIP导出工作流程
         • 用于打印或分享的PDF导出
         • 家庭自动化的Webhook支持
-        • 改进的家庭管理
         
         **专业提示:**
-        • 使用批量导入功能一次导入多个食谱
+        • 使用批量导入一次导入多个食谱
         • 使用标签按饮食限制组织食谱
         • 设置webhook与其他应用同步
         • 将食谱导出为PDF供离线使用
       fr_fr: |
-        **Connexion par défaut**
-        | Nom d'utilisateur | Mot de passe |
-        | ----------------- | ------------ |
-        | `admin@example.com` | `$default_pwd` |
+        ## Identifiants par défaut
+        
+        | Champ             | Valeur                  |
+        |-------------------|-------------------------|
+        | Email             | `admin@example.com`     |
+        | Mot de passe      | `$PCS_DEFAULT_PASSWORD` |
         
         **⚠️ Important: Changez ces identifiants après la première connexion!**
+        
+        **Accès:** `https://mealie-[nomutilisateur].nsl.sh/`
         
         **Pour commencer:**
         1. Connectez-vous avec les identifiants ci-dessus
@@ -313,12 +332,13 @@ x-casaos:
         5. Utilisez le planificateur de repas pour organiser votre semaine
         6. Générez des listes de courses depuis vos repas planifiés
         
-        **Points forts v3.1.2:**
-        • Meilleure extraction de recettes depuis plus de sites
-        • Fusion intelligente d'ingrédients dans les listes
+        **Points forts v3.5.0:**
+        • Ajoutez des recettes comme ingrédients dans d'autres recettes
+        • Mode cuisson amélioré avec défilement indépendant
+        • Meilleur parsing et sélection d'ingrédients
+        • Workflow d'export ZIP simplifié
         • Export PDF pour impression ou partage
         • Support Webhook pour domotique
-        • Gestion des foyers améliorée
         
         **Conseils pro:**
         • Importez plusieurs recettes à la fois avec l'import en masse
@@ -326,12 +346,16 @@ x-casaos:
         • Configurez des webhooks pour synchroniser avec d'autres apps
         • Exportez les recettes en PDF pour usage hors ligne
       es_es: |
-        **Inicio de sesión predeterminado**
-        | Usuario  | Contraseña |
-        | -------- | ---------- |
-        | `admin@example.com` | `$default_pwd` |
+        ## Credenciales predeterminadas
+        
+        | Campo             | Valor                   |
+        |-------------------|-------------------------|
+        | Correo            | `admin@example.com`     |
+        | Contraseña        | `$PCS_DEFAULT_PASSWORD` |
         
         **⚠️ Importante: ¡Cambia estas credenciales después del primer inicio!**
+        
+        **Acceso:** `https://mealie-[nombreusuario].nsl.sh/`
         
         **Para empezar:**
         1. Inicia sesión con las credenciales anteriores
@@ -341,17 +365,20 @@ x-casaos:
         5. Usa el planificador de comidas para organizar tu semana
         6. Genera listas de compras desde tus comidas planificadas
         
-        **Destacados v3.1.2:**
-        • Mejor extracción de recetas desde más sitios web
-        • Fusión inteligente de ingredientes en listas
+        **Destacados v3.5.0:**
+        • Añade recetas como ingredientes en otras recetas
+        • Modo cocción mejorado con scroll independiente
+        • Mejor análisis y selección de ingredientes
+        • Flujo de exportación ZIP simplificado
         • Exportación PDF para imprimir o compartir
         • Soporte Webhook para automatización del hogar
-        • Gestión de hogares mejorada
         
         **Consejos pro:**
         • Importa múltiples recetas a la vez con importación masiva
         • Usa etiquetas para organizar por restricciones dietéticas
         • Configura webhooks para sincronizar con otras apps
         • Exporta recetas como PDF para uso sin conexión
-  webui_port: 9000
+  webui_port: 80
   index: /
+  store_app_id: mealie
+  scheme: https
