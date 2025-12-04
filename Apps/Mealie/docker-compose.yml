@@ -4,55 +4,44 @@ services:
   mealie:
     image: ghcr.io/mealie-recipes/mealie:v3.5.0
     container_name: mealie
-    restart: unless-stopped
-    cpu_shares: 80
-    
+    user: $PUID:$PGID
     deploy:
       resources:
         limits:
           memory: 1G
-    
+          cpus: '1.0'
     expose:
-      - 80
-    
+      - 80                    # Default port for Mealie v3
     environment:
-      # Permission settings (image internally uses these)
-      PUID: $PUID
-      PGID: $PGID
-      
-      # Timezone
-      TZ: $TZ
+      PUID: $PUID              # Process user ID
+      PGID: $PGID              # Process group ID
+      TZ: $TZ                  # Timezone setting
       
       # Security settings
-      ALLOW_SIGNUP: "false"
+      ALLOW_SIGNUP: "false"    # Disable user registration after initial setup
       
       # NSL Router settings
-      BASE_URL: https://$PCS_DOMAIN
+      BASE_URL: https://$domain  # Set base URL for proper routing
       
       # Performance settings
-      MAX_WORKERS: 1
-      WEB_CONCURRENCY: 1
+      MAX_WORKERS: 1           # Single worker for resource efficiency
+      WEB_CONCURRENCY: 1       # Single concurrent process
       
-      # API settings
-      API_PORT: 80
+      # Database settings
+      DB_ENGINE: sqlite        # Use SQLite for simplicity
       
-      # Default admin account
-      DEFAULT_EMAIL: admin@example.com
-      DEFAULT_PASSWORD: $PCS_DEFAULT_PASSWORD
-      
-      # Additional settings
-      TOKEN_TIME: 720  # 12 hours token expiry
-      LOG_LEVEL: info
-    
+      # Default admin user (will be created on first run)
+      DEFAULT_EMAIL: changeme@example.com
+      DEFAULT_PASSWORD: MyPassword
     volumes:
       - /DATA/AppData/$AppID/data:/app/data
-    
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/api/app/about"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 60s
+      start_period: 40s
 
 x-casaos:
   architectures:
@@ -60,324 +49,200 @@ x-casaos:
     - arm64
   main: mealie
   pre-install-cmd: |
-    # Ensure data directory exists with proper ownership
-    mkdir -p /DATA/AppData/$AppID/data &&
-    chown -R $PUID:$PGID /DATA/AppData/$AppID/data
+    docker run --rm -v /DATA/AppData/$AppID:/fix-permissions ubuntu:22.04 sh -c "
+    mkdir -p /fix-permissions/data &&
+    chown -R 1000:1000 /fix-permissions &&
+    chmod -R 755 /fix-permissions/data
+    "
   author: Yundera Team
   category: Utilities
   description:
     en_us: |
-      **Your smart recipe manager and meal planner that saves everything**
+      **Your family cookbook that never loses recipes**
       
-      Never lose a recipe again! Mealie automatically saves recipes from any cooking website with one click - capturing ingredients, instructions, photos, and nutrition info. Plus, it helps you plan meals and create shopping lists.
+      Tired of losing great recipes when websites disappear? Mealie solves this by saving any recipe from any website directly to your personal collection. Just paste a recipe link and it automatically saves everything - ingredients, instructions, and photos.
       
-      **Core Features:**
-      • **One-Click Import** - Paste any recipe URL and watch it save automatically
-      • **Meal Planning** - Drag-and-drop calendar for weekly meal organization  
-      • **Smart Shopping Lists** - Auto-generate lists from your meal plans
-      • **Recipe Collections** - Organize recipes by cuisine, occasion, or dietary needs
-      • **Multi-User Support** - Share recipes with family while keeping some private
-      • **Mobile Friendly** - Works perfectly on phones, tablets, and computers
+      **What you can do:**
+      • Save recipes from any cooking website with one click
+      • Plan your weekly meals and automatically create shopping lists
+      • Share recipes with family members
+      • Access your recipes from phone, tablet, or computer
       
-      **✨ v3.5.0 Latest Features:**
-      • **Recipe as Ingredient** - Add recipes as ingredients in other recipes (perfect for sauces!)
-      • **Enhanced Cook Mode** - Independently scrollable ingredients and instructions
-      • **Improved Recipe Selection** - Better ingredient selection workflow
-      • **Simplified ZIP Export** - Streamlined recipe export process (no more zip tokens!)
-      • **Better Recipe Parsing** - More accurate automatic ingredient parsing
-      • **PDF Recipe Export** - Print or share recipes easily
-      • **Webhook Support** - Automation integration for smart homes
+      **Think of it like:** A smart recipe box that automatically clips recipes from magazines and websites, then helps you plan meals and make shopping lists.
       
-      **Works with thousands of sites including:**
-      AllRecipes, Food Network, BBC Good Food, Serious Eats, NYT Cooking, and most food blogs
-      
-      **Think of it as:** Your personal recipe database that replaces bookmarks, screenshots, and paper recipes with one searchable, organized system.
+      **Perfect if you:** Cook at home, want to try new recipes, or are tired of losing great recipes when websites change or disappear.
     ko_kr: |
-      **모든 레시피를 저장하는 스마트 레시피 매니저 및 식사 플래너**
+      **절대 잃어버리지 않는 가족 요리책**
       
-      레시피를 다시는 잃어버리지 마세요! Mealie는 모든 요리 웹사이트에서 원클릭으로 레시피를 자동 저장합니다 - 재료, 조리법, 사진, 영양 정보까지 캡처합니다. 게다가 식사 계획과 쇼핑 리스트 작성도 도와줍니다.
+      웹사이트가 사라져서 좋은 레시피를 잃어버린 적이 있나요? 미일리는 어떤 웹사이트의 레시피든 개인 컬렉션에 직접 저장해서 이 문제를 해결합니다. 레시피 링크를 붙여넣기만 하면 재료, 조리법, 사진까지 모든 것을 자동으로 저장합니다.
       
-      **핵심 기능:**
-      • **원클릭 가져오기** - 레시피 URL을 붙여넣으면 자동으로 저장
-      • **식사 계획** - 주간 식사 구성을 위한 드래그 앤 드롭 캘린더
-      • **스마트 쇼핑 리스트** - 식사 계획에서 리스트 자동 생성
-      • **레시피 컬렉션** - 요리 종류, 행사, 식단별로 레시피 정리
-      • **다중 사용자 지원** - 일부는 비공개로 유지하면서 가족과 레시피 공유
-      • **모바일 친화적** - 휴대폰, 태블릿, 컴퓨터에서 완벽 작동
+      **할 수 있는 것:**
+      • 모든 요리 웹사이트에서 원클릭으로 레시피 저장
+      • 주간 식사를 계획하고 쇼핑 리스트 자동 생성
+      • 가족들과 레시피 공유
+      • 휴대폰, 태블릿, 컴퓨터에서 레시피 확인
       
-      **✨ v3.5.0 최신 기능:**
-      • **레시피를 재료로** - 다른 레시피에 레시피를 재료로 추가 (소스에 완벽!)
-      • **향상된 쿠킹 모드** - 독립적으로 스크롤 가능한 재료와 조리법
-      • **개선된 레시피 선택** - 더 나은 재료 선택 워크플로우
-      • **간소화된 ZIP 내보내기** - 간편해진 레시피 내보내기 (zip 토큰 불필요!)
-      • **더 나은 레시피 파싱** - 더욱 정확한 자동 재료 파싱
-      • **PDF 레시피 내보내기** - 인쇄 또는 공유를 위한 PDF 내보내기
-      • **웹훅 지원** - 스마트 홈을 위한 자동화 통합
+      **이렇게 생각해보세요:** 잡지와 웹사이트에서 레시피를 자동으로 스크랩한 다음, 식사 계획과 쇼핑 리스트 작성을 도와주는 스마트 레시피 보관함.
       
-      **작동하는 사이트:**
-      만개의레시피, 네이버 블로그, 쿡패드, 유튜브 레시피 등 대부분의 음식 블로그
-      
-      **이렇게 생각하세요:** 북마크, 스크린샷, 종이 레시피를 하나의 검색 가능하고 정리된 시스템으로 대체하는 개인 레시피 데이터베이스.
+      **이런 분께 완벽해요:** 집에서 요리하고, 새로운 레시피를 시도하고 싶거나, 웹사이트가 변경되거나 사라져서 좋은 레시피를 잃어버린 경험이 있는 분들.
     zh_cn: |
-      **智能食谱管理器和餐食规划器，保存一切**
+      **永不丢失食谱的家庭食谱书**
       
-      再也不会丢失食谱！Mealie一键自动保存任何烹饪网站的食谱 - 捕获配料、说明、照片和营养信息。此外，它还帮助您规划餐食并创建购物清单。
+      厌倦了因网站消失而丢失好食谱吗？Mealie通过将任何网站的食谱直接保存到您的个人收藏来解决这个问题。只需粘贴食谱链接，它就会自动保存所有内容 - 配料、说明和照片。
       
-      **核心功能:**
-      • **一键导入** - 粘贴任何食谱URL并观看它自动保存
-      • **餐食规划** - 用于每周餐食组织的拖放日历
-      • **智能购物清单** - 从您的餐食计划自动生成清单
-      • **食谱集合** - 按菜系、场合或饮食需求组织食谱
-      • **多用户支持** - 与家人分享食谱，同时保持一些私密
-      • **移动友好** - 在手机、平板和电脑上完美运行
+      **您可以做的事:**
+      • 一键保存任何烹饪网站的食谱
+      • 规划每周餐食并自动创建购物清单
+      • 与家庭成员分享食谱
+      • 从手机、平板或电脑访问您的食谱
       
-      **✨ v3.5.0最新功能:**
-      • **食谱作为配料** - 在其他食谱中添加食谱作为配料（非常适合酱料！）
-      • **增强的烹饪模式** - 可独立滚动的配料和说明
-      • **改进的食谱选择** - 更好的配料选择工作流程
-      • **简化的ZIP导出** - 简化的食谱导出流程（无需zip令牌！）
-      • **更好的食谱解析** - 更准确的自动配料解析
-      • **PDF食谱导出** - 轻松打印或分享食谱
-      • **Webhook支持** - 智能家居的自动化集成
+      **可以这样想:** 一个智能食谱盒，自动从杂志和网站剪辑食谱，然后帮助您规划餐食和制作购物清单。
       
-      **适用于数千个网站包括:**
-      下厨房、美食杰、豆果美食、小红书食谱等大多数美食博客
-      
-      **可以这样想:** 您的个人食谱数据库，用一个可搜索、有组织的系统取代书签、截图和纸质食谱。
+      **非常适合:** 在家烹饪、想尝试新食谱，或因网站更改或消失而失去好食谱感到沮丧的人。
     fr_fr: |
-      **Votre gestionnaire de recettes intelligent et planificateur de repas qui sauvegarde tout**
+      **Votre livre de cuisine familial qui ne perd jamais de recettes**
       
-      Ne perdez plus jamais une recette ! Mealie sauvegarde automatiquement les recettes de n'importe quel site de cuisine en un clic - capturant ingrédients, instructions, photos et infos nutritionnelles. De plus, il aide à planifier les repas et créer des listes de courses.
+      Fatigué de perdre d'excellentes recettes quand les sites web disparaissent ? Mealie résout ce problème en sauvegardant n'importe quelle recette de n'importe quel site web directement dans votre collection personnelle. Collez simplement un lien de recette et tout se sauvegarde automatiquement - ingrédients, instructions et photos.
       
-      **Fonctionnalités principales:**
-      • **Import en un clic** - Collez n'importe quelle URL de recette et regardez-la se sauvegarder automatiquement
-      • **Planification des repas** - Calendrier glisser-déposer pour l'organisation hebdomadaire
-      • **Listes de courses intelligentes** - Génération automatique depuis vos plans de repas
-      • **Collections de recettes** - Organisez par cuisine, occasion ou besoins diététiques
-      • **Support multi-utilisateurs** - Partagez avec la famille tout en gardant certaines privées
-      • **Mobile friendly** - Fonctionne parfaitement sur téléphones, tablettes et ordinateurs
+      **Ce que vous pouvez faire :**
+      • Sauvegarder des recettes de n'importe quel site de cuisine en un clic
+      • Planifier vos repas hebdomadaires et créer automatiquement des listes de courses
+      • Partager des recettes avec les membres de la famille
+      • Accéder à vos recettes depuis téléphone, tablette ou ordinateur
       
-      **✨ Fonctionnalités v3.5.0:**
-      • **Recette comme ingrédient** - Ajoutez des recettes comme ingrédients (parfait pour les sauces !)
-      • **Mode cuisson amélioré** - Ingrédients et instructions défilables indépendamment
-      • **Sélection améliorée** - Meilleur workflow de sélection d'ingrédients
-      • **Export ZIP simplifié** - Processus d'export rationalisé (plus besoin de jetons zip !)
-      • **Meilleur parsing** - Analyse automatique plus précise des ingrédients
-      • **Export PDF** - Imprimez ou partagez facilement les recettes
-      • **Support Webhook** - Intégration d'automatisation pour maisons intelligentes
+      **Pensez-y comme :** Une boîte à recettes intelligente qui découpe automatiquement les recettes des magazines et sites web, puis vous aide à planifier les repas et faire les listes de courses.
       
-      **Fonctionne avec des milliers de sites incluant:**
-      Marmiton, 750g, Cuisine Actuelle, Chef Simon, et la plupart des blogs culinaires
-      
-      **Pensez-y comme:** Votre base de données personnelle de recettes qui remplace les favoris, captures d'écran et recettes papier par un système organisé et consultable.
+      **Parfait si vous :** Cuisinez à la maison, voulez essayer de nouvelles recettes, ou êtes fatigué de perdre d'excellentes recettes quand les sites changent ou disparaissent.
     es_es: |
-      **Tu gestor inteligente de recetas y planificador de comidas que guarda todo**
+      **Tu libro de cocina familiar que nunca pierde recetas**
       
-      ¡Nunca pierdas una receta otra vez! Mealie guarda automáticamente recetas de cualquier sitio de cocina con un clic - capturando ingredientes, instrucciones, fotos e información nutricional. Además, ayuda a planificar comidas y crear listas de compras.
+      ¿Cansado de perder excelentes recetas cuando los sitios web desaparecen? Mealie soluciona esto guardando cualquier receta de cualquier sitio web directamente en tu colección personal. Solo pega un enlace de receta y automáticamente guarda todo - ingredientes, instrucciones y fotos.
       
-      **Características principales:**
-      • **Importación con un clic** - Pega cualquier URL de receta y mírala guardarse automáticamente
-      • **Planificación de comidas** - Calendario arrastrar y soltar para organización semanal
-      • **Listas de compras inteligentes** - Auto-genera listas desde tus planes de comidas
-      • **Colecciones de recetas** - Organiza por cocina, ocasión o necesidades dietéticas
-      • **Soporte multiusuario** - Comparte con familia mientras mantienes algunas privadas
-      • **Amigable móvil** - Funciona perfectamente en teléfonos, tablets y computadoras
+      **Lo que puedes hacer:**
+      • Guardar recetas de cualquier sitio de cocina con un clic
+      • Planificar tus comidas semanales y crear automáticamente listas de compras
+      • Compartir recetas con miembros de la familia
+      • Acceder a tus recetas desde teléfono, tablet o computadora
       
-      **✨ Características v3.5.0:**
-      • **Receta como ingrediente** - Añade recetas como ingredientes (¡perfecto para salsas!)
-      • **Modo cocción mejorado** - Ingredientes e instrucciones con scroll independiente
-      • **Selección mejorada** - Mejor flujo de trabajo de selección de ingredientes
-      • **Exportación ZIP simplificada** - Proceso simplificado (¡no más tokens zip!)
-      • **Mejor análisis** - Análisis automático más preciso de ingredientes
-      • **Exportación PDF** - Imprime o comparte recetas fácilmente
-      • **Soporte Webhook** - Integración de automatización para hogares inteligentes
+      **Piénsalo como:** Una caja de recetas inteligente que automáticamente recorta recetas de revistas y sitios web, luego te ayuda a planificar comidas y hacer listas de compras.
       
-      **Funciona con miles de sitios incluyendo:**
-      Cookpad, Directo al Paladar, RecetasGratis, Cocina Fácil, y la mayoría de blogs de cocina
-      
-      **Piénsalo como:** Tu base de datos personal de recetas que reemplaza marcadores, capturas de pantalla y recetas en papel con un sistema organizado y buscable.
+      **Perfecto si:** Cocinas en casa, quieres probar nuevas recetas, o estás cansado de perder excelentes recetas cuando los sitios cambian o desaparecen.
   developer: Mealie Recipes Team    
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mealie/icon.png
   screenshot_link:
     - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mealie/screenshot-1.png
     - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mealie/screenshot-2.png
     - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mealie/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mealie/thumbnail.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mealie/screenshot-1.png
   tagline:
-    en_us: Smart recipe manager with meal planning and shopping lists
-    fr_fr: Gestionnaire de recettes intelligent avec planification et listes de courses
-    ko_kr: 식사 계획과 쇼핑 리스트를 갖춘 스마트 레시피 매니저
-    zh_cn: 智能食谱管理器，带餐食规划和购物清单
-    es_es: Gestor inteligente de recetas con planificación y listas de compras
+    en_us: Your family recipes, organized and accessible forever
+    fr_fr: Vos recettes familiales, organisées et accessibles pour toujours
+    ko_kr: 가족 레시피를 영원히 체계적으로 관리
+    zh_cn: 您的家庭食谱，永久整理和访问
+    es_es: Tus recetas familiares, organizadas y accesibles para siempre
   title:
     en_us: Mealie
   tips:
     before_install:
       en_us: |
-        ## Default Credentials
+        **Getting Started**
+        | Username | Password |
+        | -------- | -------- |
+        | `changeme@example.com` | `MyPassword` |
         
-        | Field              | Value                    |
-        |--------------------|--------------------------|
-        | Email              | `admin@example.com`      |
-        | Password           | `$PCS_DEFAULT_PASSWORD` |
+        **⚠️ Change these after your first login!**
         
-        **⚠️ Important: Change these credentials after first login!**
-        
-        **Access:** `https://mealie-[username].nsl.sh/`
-        
-        **Getting Started:**
-        1. Login with the credentials above
-        2. Go to Settings → Change your email and password
-        3. Click the "+" button to add your first recipe
-        4. Paste any recipe URL and watch it import automatically
-        5. Use the Meal Planner to organize your week
+        **How to use:**
+        1. Visit the website and login with the details above
+        2. Go to Profile Settings → Change your email & password
+        3. Click the "+" button, then paste any recipe URL
+        4. Watch as it automatically saves the recipe with photos
+        5. Use the meal planner to organize your week
         6. Generate shopping lists from your planned meals
         
-        **v3.5.0 Highlights:**
-        • Add recipes as ingredients in other recipes
-        • Improved cook mode with independent scrolling
-        • Better recipe parsing and ingredient selection
-        • Simplified ZIP export workflow
-        • PDF export for printing or sharing
-        • Webhook support for home automation
+        **Recipe sources that work:**
+        AllRecipes, Food Network, BBC Good Food, and thousands of cooking blogs and websites.
         
-        **Pro Tips:**
-        • Import multiple recipes at once using bulk import
-        • Use tags to organize recipes by dietary restrictions
-        • Set up webhooks to sync with other apps
-        • Export recipes as PDFs for offline use
+        **Tip:** Try copying recipe URLs from your favorite cooking YouTube videos' descriptions!
       ko_kr: |
-        ## 기본 인증 정보
+        **시작하기**
+        | 사용자명 | 비밀번호 |
+        | -------- | -------- |
+        | `changeme@example.com` | `MyPassword` |
         
-        | 항목              | 값                      |
-        |------------------|-------------------------|
-        | 이메일            | `admin@example.com`     |
-        | 비밀번호          | `$PCS_DEFAULT_PASSWORD` |
+        **⚠️ 첫 로그인 후에 이것들을 변경하세요!**
         
-        **⚠️ 중요: 첫 로그인 후 이 자격 증명을 변경하세요!**
-        
-        **접속 주소:** `https://mealie-[사용자명].nsl.sh/`
-        
-        **시작하기:**
-        1. 위의 자격 증명으로 로그인
-        2. 설정 → 이메일과 비밀번호 변경
-        3. "+" 버튼을 클릭하여 첫 레시피 추가
-        4. 레시피 URL을 붙여넣고 자동으로 가져오는 것을 확인
-        5. 식사 플래너를 사용하여 일주일 정리
+        **사용 방법:**
+        1. 웹사이트를 방문하고 위의 정보로 로그인
+        2. 프로필 설정 → 이메일과 비밀번호 변경
+        3. "+" 버튼을 클릭한 후 레시피 URL 붙여넣기
+        4. 사진과 함께 자동으로 레시피가 저장되는 것을 확인
+        5. 식사 플래너를 사용하여 일주일 계획
         6. 계획된 식사에서 쇼핑 리스트 생성
         
-        **v3.5.0 하이라이트:**
-        • 다른 레시피에 레시피를 재료로 추가
-        • 독립적 스크롤이 가능한 개선된 쿠킹 모드
-        • 더 나은 레시피 파싱 및 재료 선택
-        • 간소화된 ZIP 내보내기 워크플로우
-        • 인쇄 또는 공유를 위한 PDF 내보내기
-        • 홈 자동화를 위한 웹훅 지원
+        **작동하는 레시피 소스:**
+        만개의레시피, 쿠킹클래스, 네이버 블로그, 그리고 수천 개의 요리 블로그와 웹사이트.
         
-        **프로 팁:**
-        • 대량 가져오기로 여러 레시피 한 번에 가져오기
-        • 태그를 사용하여 식단 제한별로 레시피 정리
-        • 다른 앱과 동기화하기 위한 웹훅 설정
-        • 오프라인 사용을 위해 레시피를 PDF로 내보내기
+        **팁:** 좋아하는 요리 유튜브 영상 설명란에서 레시피 URL을 복사해보세요!
       zh_cn: |
-        ## 默认凭据
+        **开始使用**
+        | 用户名   | 密码 |
+        | -------- | ---- |
+        | `changeme@example.com` | `MyPassword` |
         
-        | 字段              | 值                      |
-        |------------------|-------------------------|
-        | 邮箱              | `admin@example.com`     |
-        | 密码              | `$PCS_DEFAULT_PASSWORD` |
+        **⚠️ 首次登录后请更改这些！**
         
-        **⚠️ 重要：首次登录后更改这些凭据！**
-        
-        **访问地址:** `https://mealie-[用户名].nsl.sh/`
-        
-        **开始使用:**
-        1. 使用上述凭据登录
-        2. 设置 → 更改您的邮箱和密码
-        3. 点击"+"按钮添加第一个食谱
-        4. 粘贴任何食谱URL并观看它自动导入
-        5. 使用餐食规划器组织您的一周
+        **使用方法:**
+        1. 访问网站并使用上述信息登录
+        2. 个人资料设置 → 更改您的邮箱和密码
+        3. 点击"+"按钮，然后粘贴任何食谱URL
+        4. 观看它自动保存带有照片的食谱
+        5. 使用餐食规划器来组织您的一周
         6. 从计划的餐食生成购物清单
         
-        **v3.5.0亮点:**
-        • 在其他食谱中添加食谱作为配料
-        • 改进的烹饪模式与独立滚动
-        • 更好的食谱解析和配料选择
-        • 简化的ZIP导出工作流程
-        • 用于打印或分享的PDF导出
-        • 家庭自动化的Webhook支持
+        **有效的食谱来源:**
+        AllRecipes、美食网、BBC美食，以及数千个烹饪博客和网站。
         
-        **专业提示:**
-        • 使用批量导入一次导入多个食谱
-        • 使用标签按饮食限制组织食谱
-        • 设置webhook与其他应用同步
-        • 将食谱导出为PDF供离线使用
+        **提示:** 尝试从您喜欢的烹饪YouTube视频描述中复制食谱URL！
       fr_fr: |
-        ## Identifiants par défaut
+        **Commencer**
+        | Nom d'utilisateur | Mot de passe |
+        | ----------------- | ------------ |
+        | `changeme@example.com` | `MyPassword` |
         
-        | Champ             | Valeur                  |
-        |-------------------|-------------------------|
-        | Email             | `admin@example.com`     |
-        | Mot de passe      | `$PCS_DEFAULT_PASSWORD` |
+        **⚠️ Changez ceci après votre première connexion !**
         
-        **⚠️ Important: Changez ces identifiants après la première connexion!**
-        
-        **Accès:** `https://mealie-[nomutilisateur].nsl.sh/`
-        
-        **Pour commencer:**
-        1. Connectez-vous avec les identifiants ci-dessus
-        2. Paramètres → Changez votre email et mot de passe
-        3. Cliquez sur "+" pour ajouter votre première recette
-        4. Collez n'importe quelle URL de recette et regardez l'import automatique
+        **Comment utiliser:**
+        1. Visitez le site web et connectez-vous avec les détails ci-dessus
+        2. Paramètres du profil → Changez votre email et mot de passe
+        3. Cliquez sur le bouton "+", puis collez n'importe quelle URL de recette
+        4. Regardez comme elle sauvegarde automatiquement la recette avec photos
         5. Utilisez le planificateur de repas pour organiser votre semaine
         6. Générez des listes de courses depuis vos repas planifiés
         
-        **Points forts v3.5.0:**
-        • Ajoutez des recettes comme ingrédients dans d'autres recettes
-        • Mode cuisson amélioré avec défilement indépendant
-        • Meilleur parsing et sélection d'ingrédients
-        • Workflow d'export ZIP simplifié
-        • Export PDF pour impression ou partage
-        • Support Webhook pour domotique
+        **Sources de recettes qui fonctionnent:**
+        AllRecipes, Food Network, BBC Good Food, et des milliers de blogs culinaires et sites web.
         
-        **Conseils pro:**
-        • Importez plusieurs recettes à la fois avec l'import en masse
-        • Utilisez des tags pour organiser par restrictions alimentaires
-        • Configurez des webhooks pour synchroniser avec d'autres apps
-        • Exportez les recettes en PDF pour usage hors ligne
+        **Astuce:** Essayez de copier les URLs de recettes des descriptions de vos vidéos YouTube culinaires préférées !
       es_es: |
-        ## Credenciales predeterminadas
+        **Comenzar**
+        | Usuario  | Contraseña |
+        | -------- | ---------- |
+        | `changeme@example.com` | `MyPassword` |
         
-        | Campo             | Valor                   |
-        |-------------------|-------------------------|
-        | Correo            | `admin@example.com`     |
-        | Contraseña        | `$PCS_DEFAULT_PASSWORD` |
+        **⚠️ ¡Cambia estos después de tu primer inicio de sesión!**
         
-        **⚠️ Importante: ¡Cambia estas credenciales después del primer inicio!**
-        
-        **Acceso:** `https://mealie-[nombreusuario].nsl.sh/`
-        
-        **Para empezar:**
-        1. Inicia sesión con las credenciales anteriores
-        2. Configuración → Cambia tu email y contraseña
-        3. Haz clic en "+" para agregar tu primera receta
-        4. Pega cualquier URL de receta y mira cómo se importa automáticamente
+        **Cómo usar:**
+        1. Visita el sitio web e inicia sesión con los detalles de arriba
+        2. Configuración de Perfil → Cambia tu email y contraseña
+        3. Haz clic en el botón "+", luego pega cualquier URL de receta
+        4. Observa cómo automáticamente guarda la receta con fotos
         5. Usa el planificador de comidas para organizar tu semana
         6. Genera listas de compras desde tus comidas planificadas
         
-        **Destacados v3.5.0:**
-        • Añade recetas como ingredientes en otras recetas
-        • Modo cocción mejorado con scroll independiente
-        • Mejor análisis y selección de ingredientes
-        • Flujo de exportación ZIP simplificado
-        • Exportación PDF para imprimir o compartir
-        • Soporte Webhook para automatización del hogar
+        **Fuentes de recetas que funcionan:**
+        AllRecipes, Food Network, BBC Good Food, y miles de blogs de cocina y sitios web.
         
-        **Consejos pro:**
-        • Importa múltiples recetas a la vez con importación masiva
-        • Usa etiquetas para organizar por restricciones dietéticas
-        • Configura webhooks para sincronizar con otras apps
-        • Exporta recetas como PDF para uso sin conexión
+        **Consejo:** ¡Intenta copiar URLs de recetas de las descripciones de tus videos de cocina favoritos de YouTube!
   webui_port: 80
   index: /
-  store_app_id: mealie
