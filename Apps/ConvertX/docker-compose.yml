@@ -1,19 +1,35 @@
 name: convertx
 
 services:
+  nginx-proxy:
+    image: nginx:1.27-alpine
+    container_name: convertx-nginx
+    restart: unless-stopped
+    user: "0:0"
+    cpu_shares: 80
+    expose:
+      - 80
+    volumes:
+      - /DATA/AppData/$AppID/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - convertx
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--tries=1", "http://localhost:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
   convertx:
     image: ghcr.io/c4illin/convertx:v0.15.1
     container_name: convertx
     restart: unless-stopped
-    user: "0:0"  # Root user required for SQLite access - see rationale.md
+    user: "0:0"
     cpu_shares: 70
     deploy:
       resources:
         limits:
           memory: 2G
           cpus: '1.0'
-    expose:
-      - 3000
     environment:
       - PUID=0
       - PGID=0
@@ -27,7 +43,7 @@ services:
       - /DATA/Downloads:/downloads:ro
       - /DATA/Documents:/documents:ro
     healthcheck:
-      test: ["CMD", "wget", "--spider", "--tries=1", "http://localhost:80/"]
+      test: ["CMD", "wget", "--spider", "--tries=1", "http://localhost:3000/"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -37,11 +53,28 @@ x-casaos:
   architectures:
     - amd64
     - arm64
-  main: convertx
+  main: nginx-proxy
   pre-install-cmd: |
     mkdir -p /DATA/AppData/$AppID/data &&
     chmod -R 777 /DATA/AppData/$AppID/data &&
-    echo "ConvertX data directory prepared with full permissions"
+    cat > /DATA/AppData/$AppID/nginx.conf << 'EOF'
+    events {
+        worker_connections 1024;
+    }
+    http {
+        server {
+            listen 80;
+            location / {
+                proxy_pass http://convertx:3000;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+            }
+        }
+    }
+    EOF
+    echo "ConvertX nginx proxy configuration created"
   author: CasaOS Team
   category: Utilities
   developer: C4illin
@@ -71,7 +104,7 @@ x-casaos:
         **Important Setup Instructions**
         
         - **First User is Admin**: The first registered account becomes administrator
-        - **HTTP_ALLOWED**: Set to true for NSL router compatibility
+        - **Clean URLs**: Accessible via `https://convertx-[username].nsl.sh` (no port prefix)
         - **Auto Cleanup**: Files auto-delete after 24 hours (configurable)
         - **Root User**: Running as root (0:0) due to SQLite permission requirements (see rationale.md)
         
@@ -83,8 +116,6 @@ x-casaos:
         - 3D Models: STL, OBJ, PLY, DAE
         - Archives: ZIP, RAR, 7Z, TAR
         
-        Access via: `https://convertx-[username].nsl.sh`
-        
         **Note**: This app requires root permissions to function properly with SQLite database.
   index: /
-  webui_port: 3000
+  webui_port: 80
