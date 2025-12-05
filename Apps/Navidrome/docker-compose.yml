@@ -33,7 +33,7 @@ x-casaos:
     - amd64
     - arm64
   main: navidrome
-  pre-install-cmd: docker run --rm --user $PUID:$PGID -v /DATA/AppData/$AppID/data:/data ubuntu:22.04 sh -c "mkdir -p /data/cache && chmod -R 755 /data"
+  pre-install-cmd: docker run --rm -v /DATA/AppData/$AppID:/appdata ubuntu:22.04 sh -c "mkdir -p /appdata/data/cache && chown -R $PUID:$PGID /appdata && chmod -R 755 /appdata"
   author: Yundera Team
   category: Media
   developer: Deluan Quintão
