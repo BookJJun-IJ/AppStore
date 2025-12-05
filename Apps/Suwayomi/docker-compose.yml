@@ -19,7 +19,7 @@ services:
       # Authentication settings - Simple Login method
       AUTH_MODE: simple_login                        # Authentication mode
       AUTH_USERNAME: admin                           # Admin username
-      AUTH_PASSWORD: $PCS_DEFAULT_PASSWORD           # Admin password
+      AUTH_PASSWORD: $default_pwd                    # Admin password
       
       # Download settings
       DOWNLOAD_AS_CBZ: true                          # Download manga as CBZ format
@@ -69,12 +69,11 @@ services:
         limits:
           memory: 1G
           cpus: '1.0'
-      cpu_shares: 70                                # Interactive with heavy tasks
     depends_on:
       - flaresolverr
 
   flaresolverr:
-    image: ghcr.io/flaresolverr/flaresolverr:v3.4.5
+    image: ghcr.io/flaresolverr/flaresolverr:latest
     container_name: suwayomi-flaresolverr
     user: $PUID:$PGID
     environment:
@@ -94,7 +93,6 @@ services:
         limits:
           memory: 512M
           cpus: '0.5'
-      cpu_shares: 50                                # Standard application
 
 x-casaos:
   architectures:
@@ -109,12 +107,12 @@ x-casaos:
     "
   author: Yundera Team
   category: Media
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Suwayomi/icon.png
+  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Suwayomi/icon.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Suwayomi/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Suwayomi/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Suwayomi/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Suwayomi/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Suwayomi/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Suwayomi/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Suwayomi/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Suwayomi/screenshot-1.png
   description:
     en_us: |
       **Read manga like Netflix for comics**
@@ -152,7 +150,7 @@ x-casaos:
       **您可以做的事:**
       • 在手机、平板或电脑上阅读漫画
       • 自动跟踪您的阅读进度
-      • 下载章节离线阅读(通勤时很棒！)
+      • 下载章节离线阅读（通勤时很棒！）
       • 与您已使用的热门漫画应用配合使用
       
       **可以这样想:** 一个自动整理所有喜爱漫画并准确记住您停止阅读位置的个人图书馆。
@@ -199,9 +197,9 @@ x-casaos:
     before_install:
       en_us: |
         **Getting Started**
-        | Username | Password               |
-        | -------- | ---------------------- |
-        | `admin`  | `$PCS_DEFAULT_PASSWORD` |
+        | Username | Password       |
+        | -------- | -------------- |
+        | `admin`  | `$default_pwd` |
         
         **How to use:**
         1. Open the website in your browser
@@ -216,9 +214,9 @@ x-casaos:
         **Tip:** Download chapters when on WiFi, then read offline during commutes!
       ko_kr: |
         **시작하기**
-        | 사용자명 | 비밀번호               |
-        | -------- | ---------------------- |
-        | `admin`  | `$PCS_DEFAULT_PASSWORD` |
+        | 사용자명 | 비밀번호       |
+        | -------- | -------------- |
+        | `admin`  | `$default_pwd` |
         
         **사용 방법:**
         1. 브라우저에서 웹사이트 열기
@@ -233,9 +231,9 @@ x-casaos:
         **팁:** WiFi에서 챕터를 다운로드한 후 통근 중에 오프라인으로 읽어보세요!
       zh_cn: |
         **开始使用**
-        | 用户名   | 密码                   |
-        | -------- | ---------------------- |
-        | `admin`  | `$PCS_DEFAULT_PASSWORD` |
+        | 用户名   | 密码           |
+        | -------- | -------------- |
+        | `admin`  | `$default_pwd` |
         
         **使用方法:**
         1. 在浏览器中打开网站
@@ -250,9 +248,9 @@ x-casaos:
         **提示:** 在WiFi下下载章节，然后在通勤时离线阅读！
       fr_fr: |
         **Commencer**
-        | Nom d'utilisateur | Mot de passe           |
-        | ----------------- | ---------------------- |
-        | `admin`           | `$PCS_DEFAULT_PASSWORD` |
+        | Nom d'utilisateur | Mot de passe   |
+        | ----------------- | -------------- |
+        | `admin`           | `$default_pwd` |
         
         **Comment utiliser:**
         1. Ouvrez le site web dans votre navigateur
@@ -267,9 +265,9 @@ x-casaos:
         **Astuce:** Téléchargez les chapitres en WiFi, puis lisez hors ligne pendant les trajets !
       es_es: |
         **Comenzar**
-        | Usuario  | Contraseña             |
-        | -------- | ---------------------- |
-        | `admin`  | `$PCS_DEFAULT_PASSWORD` |
+        | Usuario  | Contraseña     |
+        | -------- | -------------- |
+        | `admin`  | `$default_pwd` |
         
         **Cómo usar:**
         1. Abre el sitio web en tu navegador
@@ -284,4 +282,3 @@ x-casaos:
         **Consejo:** ¡Descarga capítulos en WiFi, luego lee sin conexión durante viajes!
   index: /
   webui_port: 80
-  store_app_id: suwayomi

@@ -2,7 +2,7 @@ name: navidrome
 
 services:
   navidrome:
-    image: deluan/navidrome:0.58.0
+    image: deluan/navidrome:0.56.1
     container_name: navidrome
     restart: unless-stopped
     user: $PUID:$PGID
@@ -27,7 +27,6 @@ services:
         limits:
           memory: 512M
           cpus: '0.5'
-      cpu_shares: 80                          # User-facing interactive application
 
 x-casaos:
   architectures:
@@ -81,11 +80,11 @@ x-casaos:
       • 在有网络的任何地方听您的音乐
       • 使用美观的网页播放器或连接移动音乐应用
       • 与家庭成员分享您的音乐库
-      • 适用于所有音乐格式(MP3、FLAC等)
+      • 适用于所有音乐格式（MP3、FLAC等）
       
-      **可以这样想:** 拥有自己的个人Spotify,但使用您的音乐收藏而不是支付月费。
+      **可以这样想:** 拥有自己的个人Spotify，但使用您的音乐收藏而不是支付月费。
       
-      **非常适合:** 在电脑上有音乐收藏、想在任何地方收听,或想与家人分享音乐而不违反流媒体服务规则的人。
+      **非常适合:** 在电脑上有音乐收藏、想在任何地方收听，或想与家人分享音乐而不违反流媒体服务规则的人。
     fr_fr: |
       **Streamez votre collection musicale partout comme Spotify**
       
@@ -114,12 +113,12 @@ x-casaos:
       **Piénsalo como:** Tener tu propio Spotify personal, pero con tu colección musical en lugar de pagar tarifas mensuales.
       
       **Perfecto si:** Tienes una colección musical en tu computadora, quieres escuchar en cualquier lugar, o quieres compartir tu música con la familia sin violar las reglas de servicios de streaming.
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Navidrome/icon.png
+  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Navidrome/icon.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Navidrome/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Navidrome/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Navidrome/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Navidrome/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Navidrome/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Navidrome/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Navidrome/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Navidrome/screenshot-1.png
   tagline:
     en_us: Your personal music streaming server with modern web interface
     ko_kr: 현대적인 웹 인터페이스를 갖춘 개인 음악 스트리밍 서버
@@ -190,11 +189,11 @@ x-casaos:
         Navidrome会自动找到并整理您的收藏。
         
         **2. 支持的音乐文件:**
-        MP3、FLAC、OGG、M4A、WAV、AIFF(基本上任何音乐文件!)
+        MP3、FLAC、OGG、M4A、WAV、AIFF（基本上任何音乐文件！）
         
         **3. 首次设置:**
         1. 访问网站 - 它会自动扫描您的音乐
-        2. 首次访问时创建账户(无默认密码)
+        2. 首次访问时创建账户（无默认密码）
         3. 使用网页播放器开始收听
         
         **4. 在手机上收听:**
@@ -207,7 +206,7 @@ x-casaos:
         用户名: [您的账户名]
         密码: [您的密码]
         
-        **专业提示:** 按"艺术家/专辑/歌曲.mp3"格式整理音乐可获得最佳体验!
+        **专业提示:** 按"艺术家/专辑/歌曲.mp3"格式整理音乐可获得最佳体验！
       fr_fr: |
         **Commencer**
         
