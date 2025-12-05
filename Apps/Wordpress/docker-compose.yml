@@ -11,14 +11,39 @@ services:
     volumes:
       - /DATA/AppData/$AppID/html:/var/www/html  # WordPress files and uploads 
     environment:
-      PUID: $PUID                        # Process User ID
-      PGID: $PGID                        # Process Group ID
-      WORDPRESS_DB_HOST: db:3306         # Database host and port
-      WORDPRESS_DB_USER: wordpress       # Database username
-      WORDPRESS_DB_PASSWORD: $PCS_DEFAULT_PASSWORD # Database password (auto-generated) 
-      WORDPRESS_DB_NAME: wordpress       # Database name
-      WORDPRESS_SITE_URL: https://$PCS_DOMAIN # Site URL for WordPress 
-      WORDPRESS_HOME: https://$PCS_DOMAIN    # Home URL for WordPress
+      PUID: $PUID
+      PGID: $PGID
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: $default_pwd
+      WORDPRESS_DB_NAME: wordpress
+      APACHE_HTTP_PORT_NUMBER: 80
+      APACHE_HTTPS_PORT_NUMBER: 443
+      WORDPRESS_CONFIG_EXTRA: |
+        /* Force HTTPS Detection for NSL Router */
+        if (isset($$_SERVER['HTTP_X_FORWARDED_PROTO']) && $$_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
+            $$_SERVER['HTTPS'] = 'on';
+        }
+        
+        /* Always set HTTPS for NSL Router environment */
+        $$_SERVER['HTTPS'] = 'on';
+        
+        /* Dynamic Site URLs with HTTPS */
+        define('WP_HOME', 'https://' . getenv('DOMAIN'));
+        define('WP_SITEURL', 'https://' . getenv('DOMAIN'));
+        
+        /* Force SSL for Admin Panel */
+        define('FORCE_SSL_ADMIN', true);
+        
+        /* File System Method for Updates */
+        define('FS_METHOD', 'direct');
+        
+        /* Memory Limit */
+        define('WP_MEMORY_LIMIT', '256M');
+        
+        /* Allow file editing from dashboard */
+        define('DISALLOW_FILE_EDIT', false);
+      DOMAIN: wordpress-$domain
     depends_on:
       - db
     deploy:
