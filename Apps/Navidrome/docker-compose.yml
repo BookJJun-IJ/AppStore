@@ -35,9 +35,9 @@ x-casaos:
   main: navidrome
   pre-install-cmd: |
     docker run --rm -v /DATA/AppData/$AppID:/fix-permissions ubuntu:22.04 sh -c "
-    mkdir -p /fix-permissions/data &&
+    mkdir -p /fix-permissions/data/cache &&
     chown -R 1000:1000 /fix-permissions &&
-    chmod -R 755 /fix-permissions/data
+    chmod -R 755 /fix-permissions/data/cashe
     "
   author: Yundera Team
   category: Media
