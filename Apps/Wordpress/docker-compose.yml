@@ -2,80 +2,50 @@ name: wordpress
 
 services:
   wordpress:
-    image: wordpress:6.7-apache
+    image: wordpress:6.9.0-apache
     container_name: wordpress_app
     restart: unless-stopped
     user: 0:0
     expose:
-      - 80
+      - 80                              # Web UI port for NSL router
     volumes:
-      - /DATA/AppData/$AppID/html:/var/www/html
+      - /DATA/AppData/$AppID/html:/var/www/html  # WordPress files and uploads 
     environment:
-      PUID: $PUID
-      PGID: $PGID
-      WORDPRESS_DB_HOST: db:3306
-      WORDPRESS_DB_USER: wordpress
-      WORDPRESS_DB_PASSWORD: $default_pwd
-      WORDPRESS_DB_NAME: wordpress
-      APACHE_HTTP_PORT_NUMBER: 80
-      APACHE_HTTPS_PORT_NUMBER: 443
-      WORDPRESS_CONFIG_EXTRA: |
-        /* Force HTTPS Detection for NSL Router */
-        if (isset($$_SERVER['HTTP_X_FORWARDED_PROTO']) && $$_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
-            $$_SERVER['HTTPS'] = 'on';
-        }
-        
-        /* Always set HTTPS for NSL Router environment */
-        $$_SERVER['HTTPS'] = 'on';
-        
-        /* Dynamic Site URLs with HTTPS */
-        define('WP_HOME', 'https://' . getenv('DOMAIN'));
-        define('WP_SITEURL', 'https://' . getenv('DOMAIN'));
-        
-        /* Force SSL for Admin Panel */
-        define('FORCE_SSL_ADMIN', true);
-        
-        /* File System Method for Updates */
-        define('FS_METHOD', 'direct');
-        
-        /* Memory Limit */
-        define('WP_MEMORY_LIMIT', '256M');
-        
-        /* Allow file editing from dashboard */
-        define('DISALLOW_FILE_EDIT', false);
-      DOMAIN: wordpress-$domain
+      PUID: $PUID                        # Process User ID
+      PGID: $PGID                        # Process Group ID
+      WORDPRESS_DB_HOST: db:3306         # Database host and port
+      WORDPRESS_DB_USER: wordpress       # Database username
+      WORDPRESS_DB_PASSWORD: $PCS_DEFAULT_PASSWORD # Database password (auto-generated) 
+      WORDPRESS_DB_NAME: wordpress       # Database name
+      WORDPRESS_SITE_URL: https://$PCS_DOMAIN # Site URL for WordPress 
+      WORDPRESS_HOME: https://$PCS_DOMAIN    # Home URL for WordPress
     depends_on:
-      db:
-        condition: service_healthy
+      - db
     deploy:
       resources:
         limits:
-          memory: 1G
+          memory: 1G                    # Memory limit for WordPress
+      cpu_shares: 70                    # Interactive with heavy tasks
 
   db:
-    image: mariadb:10.11
+    image: mariadb:11.8
     container_name: wordpress_db
     restart: unless-stopped
     user: 0:0
     volumes:
-      - /DATA/AppData/$AppID/db:/var/lib/mysql
+      - /DATA/AppData/$AppID/db:/var/lib/mysql   # Database files storage
     environment:
-      MYSQL_ROOT_PASSWORD: $default_pwd
-      MYSQL_DATABASE: wordpress
-      MYSQL_USER: wordpress
-      MYSQL_PASSWORD: $default_pwd
-      MARIADB_AUTO_UPGRADE: 1
-      MARIADB_DISABLE_UPGRADE_BACKUP: 1
-    healthcheck:
-      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
+      MYSQL_ROOT_PASSWORD: $PCS_DEFAULT_PASSWORD  # MySQL root password (auto-generated)
+      MYSQL_DATABASE: wordpress          # Database to create on startup
+      MYSQL_USER: wordpress              # MySQL user to create
+      MYSQL_PASSWORD: $PCS_DEFAULT_PASSWORD       # Password for MySQL user
+      MARIADB_AUTO_UPGRADE: 1            # Enable automatic database upgrades
+      MARIADB_DISABLE_UPGRADE_BACKUP: 1  # Disable backup during upgrades
     deploy:
       resources:
         limits:
-          memory: 1G
+          memory: 1G                    # Memory limit for database
+      cpu_shares: 70                    # Interactive with heavy tasks
 
 x-casaos:
   architectures:
@@ -84,12 +54,12 @@ x-casaos:
   author: CasaOS Team
   category: Web
   developer: WordPress Foundation
-  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Wordpress/icon.png
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Wordpress/icon.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Wordpress/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Wordpress/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Wordpress/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Wordpress/thumbnail.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Wordpress/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Wordpress/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Wordpress/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Wordpress/thumbnail.png
   index: /
   tagline:
     en_us: Create beautiful websites with ease
@@ -98,15 +68,15 @@ x-casaos:
     fr_fr: Créez facilement de beaux sites web
     es_es: Crea hermosos sitios web con facilidad
   title:
-    en_us: WordPress
+    en_us: Wordpress
   store_app_id: wordpress
   main: wordpress
   webui_port: 80
   pre-install-cmd: |
     mkdir -p /DATA/AppData/$AppID/html /DATA/AppData/$AppID/db &&
     chown -R $PUID:$PGID /DATA/AppData/$AppID/html &&
-    chown -R $PUID:$PGID /DATA/AppData/$AppID/db &&
-    chmod -R 755 /DATA/AppData/$AppID
+    chmod -R 755 /DATA/AppData/$AppID/html &&
+    chmod -R 777 /DATA/AppData/$AppID/db
   description:
     en_us: |
       **The world's #1 website builder - from blogs to online stores**
@@ -139,17 +109,17 @@ x-casaos:
     zh_cn: |
       **世界第一的网站构建器 - 从博客到在线商店**
       
-      WordPress 为互联网上 43% 的网站提供支持。无论您是开始个人博客、建立商业网站还是开设在线商店，WordPress 都能让一切变得简单，无需编码。
+      WordPress 为互联网上 43% 的网站提供支持。无论您是开始个人博客、建立商业网站还是开设在线商店,WordPress 都能让一切变得简单,无需编码。
       
       **您可以做的事:**
       • 使用拖放块创建漂亮的网站
       • 从 10,000+ 免费主题中选择符合您风格的
-      • 使用 60,000+ 插件即时添加功能（联系表单、SEO、社交媒体、商店）
+      • 使用 60,000+ 插件即时添加功能(联系表单、SEO、社交媒体、商店)
       • 使用内置电子商务工具销售产品
       • 使用强大的编辑器撰写博客文章
       • 上传无限照片和视频
       
-      **完美适合:** 博主、小企业、摄影师、餐厅、在线商店、作品集，以及任何想要专业网站而不需要复杂性的人。
+      **完美适合:** 博主、小企业、摄影师、餐厅、在线商店、作品集,以及任何想要专业网站而不需复杂性的人。
     es_es: |
       **El constructor de sitios web #1 del mundo - desde blogs hasta tiendas online**
       
@@ -188,11 +158,6 @@ x-casaos:
         4. Click "Install WordPress"
         5. Done! Start building your website
         
-        **Admin Panel Access:**
-        👉 **https://wordpress-$domain/wp-admin**
-        
-        Use this URL to access the WordPress admin dashboard where you can manage your site, create content, and customize your website.
-        
         **First things to do:**
         • Pick a theme (Appearance → Themes)
         • Create your first page or post
@@ -207,11 +172,6 @@ x-casaos:
         4. "WordPress 설치" 클릭
         5. 완료! 웹사이트 만들기 시작
         
-        **관리자 페이지 접속:**
-        👉 **https://wordpress-$domain/wp-admin**
-        
-        이 URL로 WordPress 관리자 대시보드에 접속하여 사이트 관리, 콘텐츠 작성, 웹사이트 커스터마이징을 할 수 있습니다.
-        
         **처음 할 일:**
         • 테마 선택 (외모 → 테마)
         • 첫 페이지나 글 작성
@@ -219,22 +179,17 @@ x-casaos:
         
         데이터베이스는 이미 자동으로 구성되어 있습니다.
       zh_cn: |
-        **快速设置（5分钟）：**
+        **快速设置(5分钟):**
         1. 安装后打开应用
         2. 选择您的语言
-        3. 填写：站点标题、用户名、密码、电子邮件
+        3. 填写:站点标题、用户名、密码、电子邮件
         4. 点击"安装 WordPress"
-        5. 完成！开始建立您的网站
+        5. 完成!开始建立您的网站
         
-        **管理面板访问：**
-        👉 **https://wordpress-$domain/wp-admin**
-        
-        使用此 URL 访问 WordPress 管理仪表板，您可以在其中管理站点、创建内容和自定义网站。
-        
-        **首先要做的事：**
-        • 选择主题（外观 → 主题）
+        **首先要做的事:**
+        • 选择主题(外观 → 主题)
         • 创建您的第一个页面或文章
-        • 安装有用的插件，如 Yoast SEO 或 Contact Form 7
+        • 安装有用的插件,如 Yoast SEO 或 Contact Form 7
         
         数据库已自动配置。
       es_es: |
@@ -244,11 +199,6 @@ x-casaos:
         3. Completa: Título del sitio, Usuario, Contraseña, Email
         4. Haz clic en "Instalar WordPress"
         5. ¡Listo! Empieza a construir tu sitio
-        
-        **Acceso al Panel de Administración:**
-        👉 **https://wordpress-$domain/wp-admin**
-        
-        Usa esta URL para acceder al panel de administración de WordPress donde puedes gestionar tu sitio, crear contenido y personalizar tu sitio web.
         
         **Primeras cosas por hacer:**
         • Elige un tema (Apariencia → Temas)
@@ -263,11 +213,6 @@ x-casaos:
         3. Remplissez: Titre du site, Nom d'utilisateur, Mot de passe, Email
         4. Cliquez sur "Installer WordPress"
         5. Terminé! Commencez à construire votre site
-        
-        **Accès au Panneau d'Administration:**
-        👉 **https://wordpress-$domain/wp-admin**
-        
-        Utilisez cette URL pour accéder au tableau de bord d'administration WordPress où vous pouvez gérer votre site, créer du contenu et personnaliser votre site web.
         
         **Premières choses à faire:**
         • Choisir un thème (Apparence → Thèmes)
