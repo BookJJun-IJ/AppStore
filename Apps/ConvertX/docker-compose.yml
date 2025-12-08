@@ -7,6 +7,8 @@ services:
     restart: unless-stopped
     user: "0:0"
     cpu_shares: 70
+    networks:
+      - convertx-network
     deploy:
       resources:
         limits:
@@ -20,6 +22,7 @@ services:
       - HTTP_ALLOWED=true
       - ALLOW_UNAUTHENTICATED=false
       - AUTO_DELETE_EVERY_N_HOURS=24
+      - HOST=0.0.0.0
     volumes:
       - /DATA/AppData/$AppID/data:/app/data
       - /DATA/Downloads:/downloads:ro
@@ -31,7 +34,8 @@ services:
     restart: unless-stopped
     user: "0:0"
     cpu_shares: 80
-    network_mode: "service:convertx"
+    networks:
+      - convertx-network
     expose:
       - 80
     entrypoint: /bin/sh
@@ -42,7 +46,7 @@ services:
         echo '    listen 80;' >> /etc/nginx/conf.d/default.conf
         echo '    server_name _;' >> /etc/nginx/conf.d/default.conf
         echo '    location / {' >> /etc/nginx/conf.d/default.conf
-        echo '        proxy_pass http://127.0.0.1:3000;' >> /etc/nginx/conf.d/default.conf
+        echo '        proxy_pass http://convertx:3000;' >> /etc/nginx/conf.d/default.conf
         echo '        proxy_set_header Host $$host;' >> /etc/nginx/conf.d/default.conf
         echo '        proxy_set_header X-Real-IP $$remote_addr;' >> /etc/nginx/conf.d/default.conf
         echo '        proxy_set_header X-Forwarded-For $$proxy_add_x_forwarded_for;' >> /etc/nginx/conf.d/default.conf
@@ -64,6 +68,10 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
+
+networks:
+  convertx-network:
+    driver: bridge
 
 x-casaos:
   architectures:
