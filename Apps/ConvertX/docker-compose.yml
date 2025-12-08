@@ -10,7 +10,7 @@ services:
     expose:
       - 80
     volumes:
-      - /DATA/AppData/$AppID/nginx.conf:/etc/nginx/nginx.conf:ro
+      - /DATA/AppData/$AppID/nginx:/etc/nginx:ro
     depends_on:
       - convertx
     healthcheck:
@@ -56,8 +56,9 @@ x-casaos:
   main: nginx-proxy
   pre-install-cmd: |
     mkdir -p /DATA/AppData/$AppID/data &&
+    mkdir -p /DATA/AppData/$AppID/nginx &&
     chmod -R 777 /DATA/AppData/$AppID/data &&
-    cat > /DATA/AppData/$AppID/nginx.conf << 'EOF'
+    cat > /DATA/AppData/$AppID/nginx/nginx.conf << 'EOF'
     events {
         worker_connections 1024;
     }
@@ -75,7 +76,7 @@ x-casaos:
     }
     EOF
     echo "ConvertX nginx proxy configuration created"
-  author: CasaOS Team
+  author: Yundera Team
   category: Utilities
   developer: C4illin
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ConvertX/icon.png
