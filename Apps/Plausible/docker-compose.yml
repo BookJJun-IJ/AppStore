@@ -224,7 +224,7 @@ x-casaos:
   port_map: "80"
   scheme: http
   store_app_id: plausible
-  pre_install_cmd: |
+  pre-install-cmd: |
     mkdir -p /DATA/AppData/plausible/db /DATA/AppData/plausible/event-data /DATA/AppData/plausible/event-logs &&
     if [ ! -f /DATA/AppData/plausible/plausible-conf.env ]; then
       SECRET_KEY_BASE=$(docker run --rm alpine:3.19 sh -c "apk add --no-cache openssl > /dev/null 2>&1 && openssl rand -base64 64 | tr -d '\n'") &&
