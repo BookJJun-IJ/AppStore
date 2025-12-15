@@ -67,6 +67,9 @@ services:
         condition: service_healthy
     expose:
       - "80"
+    volumes:
+      - /DATA/AppData/plausible/secret_key_base.txt:/run/secrets/secret_key_base:ro
+      - /DATA/AppData/plausible/totp_vault_key.txt:/run/secrets/totp_vault_key:ro
     environment:
       BASE_URL: https://$PCS_DOMAIN
       SECRET_KEY_BASE_FILE: /run/secrets/secret_key_base
@@ -76,9 +79,6 @@ services:
       DISABLE_REGISTRATION: invite_only
       LISTEN_IP: 0.0.0.0
       PORT: 80
-    secrets:
-      - secret_key_base
-      - totp_vault_key
     deploy:
       resources:
         reservations:
@@ -90,12 +90,6 @@ services:
 networks:
   plausible-network:
     driver: bridge
-
-secrets:
-  secret_key_base:
-    file: /DATA/AppData/plausible/secret_key_base.txt
-  totp_vault_key:
-    file: /DATA/AppData/plausible/totp_vault_key.txt
 
 x-casaos:
   architectures:
