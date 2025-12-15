@@ -67,18 +67,10 @@ services:
         condition: service_healthy
     expose:
       - "80"
+    env_file:
+      - /DATA/AppData/plausible/plausible-conf.env
     environment:
       BASE_URL: https://$PCS_DOMAIN
-      SECRET_KEY_BASE_FILE: /run/secrets/secret_key_base
-      TOTP_VAULT_KEY_FILE: /run/secrets/totp_vault_key
-      DATABASE_URL: postgres://postgres:postgres@plausible-db:5432/plausible
-      CLICKHOUSE_DATABASE_URL: http://plausible-events-db:8123/plausible_events_db
-      DISABLE_REGISTRATION: invite_only
-      LISTEN_IP: 0.0.0.0
-      PORT: 80
-    secrets:
-      - secret_key_base
-      - totp_vault_key
     deploy:
       resources:
         reservations:
@@ -90,12 +82,6 @@ services:
 networks:
   plausible-network:
     driver: bridge
-
-secrets:
-  secret_key_base:
-    file: /DATA/AppData/plausible/secret_key_base.txt
-  totp_vault_key:
-    file: /DATA/AppData/plausible/totp_vault_key.txt
 
 x-casaos:
   architectures:
@@ -238,12 +224,11 @@ x-casaos:
   port_map: "80"
   scheme: http
   store_app_id: plausible
-  pre-install-cmd: |
+  pre_install_cmd: |
     mkdir -p /DATA/AppData/plausible/db /DATA/AppData/plausible/event-data /DATA/AppData/plausible/event-logs &&
-    if [ ! -f /DATA/AppData/plausible/secret_key_base.txt ]; then
-      docker run --rm alpine:3.19 sh -c "apk add --no-cache openssl && openssl rand -base64 64" | tr -d '\n' > /DATA/AppData/plausible/secret_key_base.txt
-    fi &&
-    if [ ! -f /DATA/AppData/plausible/totp_vault_key.txt ]; then
-      docker run --rm alpine:3.19 sh -c "apk add --no-cache openssl && openssl rand -base64 32" | tr -d '\n' > /DATA/AppData/plausible/totp_vault_key.txt
+    if [ ! -f /DATA/AppData/plausible/plausible-conf.env ]; then
+      SECRET_KEY_BASE=$(docker run --rm alpine:3.19 sh -c "apk add --no-cache openssl > /dev/null 2>&1 && openssl rand -base64 64 | tr -d '\n'") &&
+      TOTP_VAULT_KEY=$(docker run --rm alpine:3.19 sh -c "apk add --no-cache openssl > /dev/null 2>&1 && openssl rand -base64 32 | tr -d '\n'") &&
+      printf '%s\n' "SECRET_KEY_BASE=$SECRET_KEY_BASE" "TOTP_VAULT_KEY=$TOTP_VAULT_KEY" "DATABASE_URL=postgres://postgres:postgres@plausible-db:5432/plausible" "CLICKHOUSE_DATABASE_URL=http://plausible-events-db:8123/plausible_events_db" "DISABLE_REGISTRATION=invite_only" "LISTEN_IP=0.0.0.0" "PORT=80" > /DATA/AppData/plausible/plausible-conf.env
     fi &&
     chown -R $PUID:$PGID /DATA/AppData/plausible
