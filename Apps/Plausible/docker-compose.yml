@@ -67,10 +67,13 @@ services:
         condition: service_healthy
     expose:
       - "80"
+    volumes:
+      - /DATA/AppData/plausible/secret_key_base.txt:/run/secrets/secret_key_base:ro
+      - /DATA/AppData/plausible/totp_vault_key.txt:/run/secrets/totp_vault_key:ro
     environment:
       BASE_URL: https://$PCS_DOMAIN
-      SECRET_KEY_BASE: ${SECRET_KEY_BASE}
-      TOTP_VAULT_KEY: ${TOTP_VAULT_KEY}
+      SECRET_KEY_BASE_FILE: /run/secrets/secret_key_base
+      TOTP_VAULT_KEY_FILE: /run/secrets/totp_vault_key
       DATABASE_URL: postgres://postgres:postgres@plausible-db:5432/plausible
       CLICKHOUSE_DATABASE_URL: http://plausible-events-db:8123/plausible_events_db
       DISABLE_REGISTRATION: invite_only
@@ -235,8 +238,4 @@ x-casaos:
     if [ ! -f /DATA/AppData/plausible/totp_vault_key.txt ]; then
       docker run --rm alpine:3.19 sh -c "apk add --no-cache openssl > /dev/null 2>&1 && openssl rand -base64 32" | tr -d '\n' > /DATA/AppData/plausible/totp_vault_key.txt
     fi &&
-    chown -R $PUID:$PGID /DATA/AppData/plausible &&
-    SECRET_KEY_BASE=$(cat /DATA/AppData/plausible/secret_key_base.txt) &&
-    TOTP_VAULT_KEY=$(cat /DATA/AppData/plausible/totp_vault_key.txt) &&
-    echo "SECRET_KEY_BASE=${SECRET_KEY_BASE}" > /DATA/AppData/casaos/apps/$AppID/.env &&
-    echo "TOTP_VAULT_KEY=${TOTP_VAULT_KEY}" >> /DATA/AppData/casaos/apps/$AppID/.env
+    chown -R $PUID:$PGID /DATA/AppData/plausible
