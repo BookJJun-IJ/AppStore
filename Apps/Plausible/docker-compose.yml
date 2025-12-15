@@ -67,13 +67,10 @@ services:
         condition: service_healthy
     expose:
       - "80"
-    volumes:
-      - /DATA/AppData/plausible/secret_key_base.txt:/run/secrets/secret_key_base:ro
-      - /DATA/AppData/plausible/totp_vault_key.txt:/run/secrets/totp_vault_key:ro
     environment:
       BASE_URL: https://$PCS_DOMAIN
-      SECRET_KEY_BASE_FILE: /run/secrets/secret_key_base
-      TOTP_VAULT_KEY_FILE: /run/secrets/totp_vault_key
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE}
+      TOTP_VAULT_KEY: ${TOTP_VAULT_KEY}
       DATABASE_URL: postgres://postgres:postgres@plausible-db:5432/plausible
       CLICKHOUSE_DATABASE_URL: http://plausible-events-db:8123/plausible_events_db
       DISABLE_REGISTRATION: invite_only
@@ -138,24 +135,24 @@ x-casaos:
       **설계 기반 프라이버시:**
       Plausible Analytics는 프라이버시를 핵심 원칙으로 구축되었습니다. 집계 데이터만 수집하며 웹사이트 간 개별 사용자를 추적하지 않습니다. 모든 데이터는 익명화되며 개인 정보는 수집되지 않습니다.
     zh_cn: |
-      Plausible Analytics 是一个简单、开源、轻量级（< 1 KB）且注重隐私的 Google Analytics 替代方案。它不使用 cookie，完全符合 GDPR、CCPA 和 PECR。在欧盟制造和托管，由欧洲所有的云基础设施提供支持。
+      Plausible Analytics 是一个简单、开源、轻量级(< 1 KB)且注重隐私的 Google Analytics 替代方案。它不使用 cookie,完全符合 GDPR、CCPA 和 PECR。在欧盟制造和托管,由欧洲所有的云基础设施提供支持。
       
       **主要功能:**
-      - 轻量级脚本（< 1 KB），不影响页面加载时间
+      - 轻量级脚本(< 1 KB),不影响页面加载时间
       - 不使用 cookie 或收集个人数据
       - 开箱即用符合 GDPR、CCPA 和 PECR
-      - 简单直观的仪表板，包含所有基本指标
+      - 简单直观的仪表板,包含所有基本指标
       - 可公开分享的仪表板以提高透明度
       - 目标转化和自定义事件跟踪
       - 实时分析和最新统计数据
       - Google Search Console 集成
-      - 自托管，完全拥有数据所有权
+      - 自托管,完全拥有数据所有权
       
       **首次设置:**
-      安装后，访问您的 Plausible 实例并创建您的第一个账户。第一个用户自动成为管理员。然后您可以添加要跟踪的网站并生成跟踪脚本。
+      安装后,访问您的 Plausible 实例并创建您的第一个账户。第一个用户自动成为管理员。然后您可以添加要跟踪的网站并生成跟踪脚本。
       
       **隐私设计:**
-      Plausible Analytics 以隐私为核心原则构建。它仅收集聚合数据，不跨网站跟踪个人用户。所有数据都是匿名的，不收集个人信息。
+      Plausible Analytics 以隐私为核心原则构建。它仅收集聚合数据,不跨网站跟踪个人用户。所有数据都是匿名的,不收集个人信息。
     es_es: |
       Plausible Analytics es una alternativa simple, de código abierto, ligera (< 1 KB) y respetuosa con la privacidad a Google Analytics. No utiliza cookies y cumple completamente con GDPR, CCPA y PECR. Hecho y alojado en la UE, impulsado por infraestructura cloud de propiedad europea.
       
@@ -238,4 +235,6 @@ x-casaos:
     if [ ! -f /DATA/AppData/plausible/totp_vault_key.txt ]; then
       docker run --rm alpine:3.19 sh -c "apk add --no-cache openssl && openssl rand -base64 32" | tr -d '\n' > /DATA/AppData/plausible/totp_vault_key.txt
     fi &&
-    chown -R $PUID:$PGID /DATA/AppData/plausible
+    chown -R $PUID:$PGID /DATA/AppData/plausible &&
+    export SECRET_KEY_BASE=$(cat /DATA/AppData/plausible/secret_key_base.txt) &&
+    export TOTP_VAULT_KEY=$(cat /DATA/AppData/plausible/totp_vault_key.txt)
