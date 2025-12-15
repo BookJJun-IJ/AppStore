@@ -221,8 +221,6 @@ x-casaos:
         For detailed configuration options, visit the [Plausible CE Wiki](https://github.com/plausible/community-edition/wiki)
   index: /
   webui_port: 80
-  port_map: "80"
-  scheme: http
   store_app_id: plausible
   pre-install-cmd: |
     mkdir -p /DATA/AppData/plausible/db /DATA/AppData/plausible/event-data /DATA/AppData/plausible/event-logs &&
