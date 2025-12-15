@@ -59,7 +59,7 @@ services:
     container_name: plausible
     restart: unless-stopped
     user: "0:0"
-    command: sh -c "sleep 10 && /entrypoint.sh db createdb && /entrypoint.sh db migrate && /entrypoint.sh run"
+    command: sh -c "/entrypoint.sh db createdb && /entrypoint.sh db migrate && /entrypoint.sh run"
     depends_on:
       plausible-db:
         condition: service_healthy
@@ -67,10 +67,18 @@ services:
         condition: service_healthy
     expose:
       - "80"
-    env_file:
-      - /DATA/AppData/plausible/plausible-conf.env
     environment:
       BASE_URL: https://$PCS_DOMAIN
+      SECRET_KEY_BASE_FILE: /run/secrets/secret_key_base
+      TOTP_VAULT_KEY_FILE: /run/secrets/totp_vault_key
+      DATABASE_URL: postgres://postgres:postgres@plausible-db:5432/plausible
+      CLICKHOUSE_DATABASE_URL: http://plausible-events-db:8123/plausible_events_db
+      DISABLE_REGISTRATION: invite_only
+      LISTEN_IP: 0.0.0.0
+      PORT: 80
+    secrets:
+      - secret_key_base
+      - totp_vault_key
     deploy:
       resources:
         reservations:
@@ -82,6 +90,12 @@ services:
 networks:
   plausible-network:
     driver: bridge
+
+secrets:
+  secret_key_base:
+    file: /DATA/AppData/plausible/secret_key_base.txt
+  totp_vault_key:
+    file: /DATA/AppData/plausible/totp_vault_key.txt
 
 x-casaos:
   architectures:
@@ -188,6 +202,10 @@ x-casaos:
       Plausible Analytics est construit avec la confidentialité comme principe fondamental. Il ne collecte que des données agrégées et ne suit pas les utilisateurs individuels entre les sites web. Toutes les données sont anonymisées et aucune information personnelle n'est collectée.
   developer: Plausible Insights
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Plausible/icon.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Plausible/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Plausible/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Plausible/screenshot-3.png
   tagline:
     en_us: Simple, open-source, lightweight and privacy-friendly web analytics
     ko_kr: 간단하고 오픈소스이며 가벼운 프라이버시 친화적 웹 분석
@@ -220,15 +238,10 @@ x-casaos:
   store_app_id: plausible
   pre-install-cmd: |
     mkdir -p /DATA/AppData/plausible/db /DATA/AppData/plausible/event-data /DATA/AppData/plausible/event-logs &&
-    if [ ! -f /DATA/AppData/plausible/plausible-conf.env ]; then
-      SECRET_KEY_BASE=$(docker run --rm alpine:3.19 sh -c "apk add --no-cache openssl > /dev/null 2>&1 && openssl rand -base64 64 | tr -d '\n'") &&
-      TOTP_VAULT_KEY=$(docker run --rm alpine:3.19 sh -c "apk add --no-cache openssl > /dev/null 2>&1 && openssl rand -base64 32 | tr -d '\n'") &&
-      echo "SECRET_KEY_BASE=$SECRET_KEY_BASE" > /DATA/AppData/plausible/plausible-conf.env &&
-      echo "TOTP_VAULT_KEY=$TOTP_VAULT_KEY" >> /DATA/AppData/plausible/plausible-conf.env &&
-      echo "DATABASE_URL=postgres://postgres:postgres@plausible-db:5432/plausible" >> /DATA/AppData/plausible/plausible-conf.env &&
-      echo "CLICKHOUSE_DATABASE_URL=http://plausible-events-db:8123/plausible_events_db" >> /DATA/AppData/plausible/plausible-conf.env &&
-      echo "DISABLE_REGISTRATION=invite_only" >> /DATA/AppData/plausible/plausible-conf.env &&
-      echo "LISTEN_IP=0.0.0.0" >> /DATA/AppData/plausible/plausible-conf.env &&
-      echo "PORT=80" >> /DATA/AppData/plausible/plausible-conf.env
+    if [ ! -f /DATA/AppData/plausible/secret_key_base.txt ]; then
+      docker run --rm alpine:3.19 sh -c "apk add --no-cache openssl && openssl rand -base64 64" | tr -d '\n' > /DATA/AppData/plausible/secret_key_base.txt
+    fi &&
+    if [ ! -f /DATA/AppData/plausible/totp_vault_key.txt ]; then
+      docker run --rm alpine:3.19 sh -c "apk add --no-cache openssl && openssl rand -base64 32" | tr -d '\n' > /DATA/AppData/plausible/totp_vault_key.txt
     fi &&
     chown -R $PUID:$PGID /DATA/AppData/plausible
