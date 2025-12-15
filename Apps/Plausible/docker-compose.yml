@@ -236,5 +236,7 @@ x-casaos:
       docker run --rm alpine:3.19 sh -c "apk add --no-cache openssl && openssl rand -base64 32" | tr -d '\n' > /DATA/AppData/plausible/totp_vault_key.txt
     fi &&
     chown -R $PUID:$PGID /DATA/AppData/plausible &&
-    export SECRET_KEY_BASE=$(cat /DATA/AppData/plausible/secret_key_base.txt) &&
-    export TOTP_VAULT_KEY=$(cat /DATA/AppData/plausible/totp_vault_key.txt)
+    SECRET_KEY_BASE=$(cat /DATA/AppData/plausible/secret_key_base.txt) &&
+    TOTP_VAULT_KEY=$(cat /DATA/AppData/plausible/totp_vault_key.txt) &&
+    echo "SECRET_KEY_BASE=${SECRET_KEY_BASE}" > /DATA/AppData/casaos/apps/$AppID/.env &&
+    echo "TOTP_VAULT_KEY=${TOTP_VAULT_KEY}" >> /DATA/AppData/casaos/apps/$AppID/.env
