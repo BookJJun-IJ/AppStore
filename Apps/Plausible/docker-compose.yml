@@ -67,10 +67,10 @@ services:
         condition: service_healthy
     expose:
       - "80"
+    env_file:
+      - /DATA/AppData/$AppID/.env
     environment:
       BASE_URL: https://$PCS_DOMAIN
-      SECRET_KEY_BASE: ${SECRET_KEY_BASE}
-      TOTP_VAULT_KEY: ${TOTP_VAULT_KEY}
       DATABASE_URL: postgres://postgres:postgres@plausible-db:5432/plausible
       CLICKHOUSE_DATABASE_URL: http://plausible-events-db:8123/plausible_events_db
       DISABLE_REGISTRATION: invite_only
@@ -239,7 +239,7 @@ x-casaos:
     chown -R $PUID:$PGID /DATA/AppData/$AppID &&
     SECRET_KEY_BASE=$(cat /DATA/AppData/$AppID/secret_key_base.txt) &&
     TOTP_VAULT_KEY=$(cat /DATA/AppData/$AppID/totp_vault_key.txt) &&
-    cat > /DATA/AppData/casaos/apps/$AppID/.env << EOF
+    cat > /DATA/AppData/$AppID/.env << EOF
     SECRET_KEY_BASE=${SECRET_KEY_BASE}
     TOTP_VAULT_KEY=${TOTP_VAULT_KEY}
     EOF
