@@ -5,255 +5,279 @@ services:
     image: postgres:16-alpine
     container_name: plausible-db
     restart: unless-stopped
+    user: "0:0"
     volumes:
-      - /DATA/AppData/$AppID/pgdata:/var/lib/postgresql/data
+      - /DATA/AppData/$AppID/db:/var/lib/postgresql/data
     environment:
-      POSTGRES_USER: plausible
-      POSTGRES_PASSWORD: plausible
       POSTGRES_DB: plausible
-      TZ: $TZ
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U plausible -d plausible"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d plausible"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 1m
-    networks:
-      - plausible-network
+      start_period: 40s
     deploy:
       resources:
         reservations:
-          memory: "256M"
+          memory: 256M
+    networks:
+      - plausible-network
     cpu_shares: 50
-    security_opt:
-      - no-new-privileges:true
 
   plausible-events-db:
     image: clickhouse/clickhouse-server:24.12-alpine
     container_name: plausible-events-db
     restart: unless-stopped
+    user: "0:0"
     volumes:
-      - /DATA/AppData/$AppID/clickhouse:/var/lib/clickhouse
-      - /DATA/AppData/$AppID/clickhouse-logs:/var/log/clickhouse-server
-    environment:
-      CLICKHOUSE_SKIP_USER_SETUP: "1"
-      TZ: $TZ
+      - /DATA/AppData/$AppID/event-data:/var/lib/clickhouse
+      - /DATA/AppData/$AppID/event-logs:/var/log/clickhouse-server
     ulimits:
       nofile:
         soft: 262144
         hard: 262144
+    environment:
+      CLICKHOUSE_SKIP_USER_SETUP: 1
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 -O - http://127.0.0.1:8123/ping || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 1m
-    networks:
-      - plausible-network
+      start_period: 60s
     deploy:
       resources:
         reservations:
-          memory: "512M"
+          memory: 512M
+    networks:
+      - plausible-network
     cpu_shares: 50
-    security_opt:
-      - no-new-privileges:true
 
   plausible:
     image: ghcr.io/plausible/community-edition:v3.1.0
     container_name: plausible
     restart: unless-stopped
-    command: sh -c "sleep 10 && /entrypoint.sh db createdb && /entrypoint.sh db migrate && /entrypoint.sh run"
+    user: "0:0"
+    entrypoint: ["/bin/sh", "/custom-entrypoint.sh"]
     depends_on:
       plausible-db:
         condition: service_healthy
       plausible-events-db:
         condition: service_healthy
     expose:
-      - "8000"
+      - "80"
+    volumes:
+      - /DATA/AppData/$AppID/custom-entrypoint.sh:/custom-entrypoint.sh:ro
+      - /DATA/AppData/$AppID/secret_key_base.txt:/secrets/secret_key_base.txt:ro
+      - /DATA/AppData/$AppID/totp_vault_key.txt:/secrets/totp_vault_key.txt:ro
     environment:
       BASE_URL: https://$PCS_DOMAIN
-      SECRET_KEY_BASE: ${SECRET_KEY_BASE:-GLVzDZW04FzuS1gMcmBRVhwgd4Gu9YmSl_k_TqfTUXti7FLBd7aflXeQDdwCj6Cz}
-      TOTP_VAULT_KEY: ${TOTP_VAULT_KEY:-dsxvbn3jxDd16az2QpsX5B8O_llxjQ2SJE2i5Bzx38I}
-      DATABASE_URL: postgres://plausible:plausible@plausible-db:5432/plausible
+      DATABASE_URL: postgres://postgres:postgres@plausible-db:5432/plausible
       CLICKHOUSE_DATABASE_URL: http://plausible-events-db:8123/plausible_events_db
-      DISABLE_REGISTRATION: "invite_only"
-      TZ: $TZ
-    networks:
-      - plausible-network
+      DISABLE_REGISTRATION: invite_only
+      LISTEN_IP: 0.0.0.0
+      PORT: 80
     deploy:
       resources:
         reservations:
-          memory: "512M"
+          memory: 512M
+    networks:
+      - plausible-network
     cpu_shares: 70
-    security_opt:
-      - no-new-privileges:true
 
 networks:
   plausible-network:
     driver: bridge
 
 x-casaos:
-  author: Yundera Team
-  category: Analytics
-  hostname: plausible
-  description:
-    en_us: |
-      Plausible Analytics is an intuitive, lightweight, and open source web analytics tool. No cookies and fully compliant with GDPR, CCPA and PECR. Made and hosted in the EU 🇪🇺
-      
-      **Key Features:**
-      - Lightweight script (< 1 KB) that doesn't slow down your website
-      - No cookies and fully privacy-friendly analytics
-      - All visitor data is exclusively processed with servers owned and operated by Plausible Analytics
-      - Simple, easy to understand dashboard with all the key metrics on one page
-      - Event tracking and custom goal conversions
-      - Search console integration for keyword insights
-      - 100% data ownership - you own all of your website data
-    ko_kr: |
-      Plausible Analytics는 직관적이고 가볍고 오픈 소스인 웹 분석 도구입니다. 쿠키를 사용하지 않으며 GDPR, CCPA 및 PECR을 완벽하게 준수합니다. EU 🇪🇺에서 제작 및 호스팅됩니다.
-      
-      **주요 기능:**
-      - 웹사이트 속도를 늦추지 않는 경량 스크립트 (< 1 KB)
-      - 쿠키 없이 완벽한 프라이버시 친화적 분석
-      - 모든 방문자 데이터는 Plausible Analytics가 소유하고 운영하는 서버에서만 처리
-      - 한 페이지에 모든 핵심 지표가 있는 간단하고 이해하기 쉬운 대시보드
-      - 이벤트 추적 및 맞춤 목표 전환
-      - 키워드 인사이트를 위한 검색 콘솔 통합
-      - 100% 데이터 소유권 - 웹사이트 데이터를 완전히 소유
-    zh_cn: |
-      Plausible Analytics 是一个直观、轻量级和开源的网络分析工具。无需 Cookie，完全符合 GDPR、CCPA 和 PECR。在欧盟 🇪🇺 制造和托管。
-      
-      **主要功能:**
-      - 不会降低网站速度的轻量级脚本（< 1 KB）
-      - 无 Cookie 且完全隐私友好的分析
-      - 所有访问者数据仅在 Plausible Analytics 拥有和运营的服务器上处理
-      - 简单易懂的仪表板，所有关键指标都在一个页面上
-      - 事件跟踪和自定义目标转换
-      - 搜索控制台集成以获取关键词洞察
-      - 100% 数据所有权 - 您完全拥有您的网站数据
-    es_es: |
-      Plausible Analytics es una herramienta de análisis web intuitiva, ligera y de código abierto. Sin cookies y totalmente conforme con GDPR, CCPA y PECR. Hecho y alojado en la UE 🇪🇺
-      
-      **Características principales:**
-      - Script ligero (< 1 KB) que no ralentiza tu sitio web
-      - Sin cookies y análisis totalmente respetuosos con la privacidad
-      - Todos los datos de visitantes se procesan exclusivamente en servidores propiedad y operados por Plausible Analytics
-      - Panel simple y fácil de entender con todas las métricas clave en una página
-      - Seguimiento de eventos y conversiones de objetivos personalizados
-      - Integración con Search Console para información de palabras clave
-      - 100% de propiedad de datos - eres dueño de todos tus datos del sitio web
-    fr_fr: |
-      Plausible Analytics est un outil d'analyse web intuitif, léger et open source. Sans cookies et entièrement conforme au RGPD, CCPA et PECR. Fabriqué et hébergé dans l'UE 🇪🇺
-      
-      **Fonctionnalités principales:**
-      - Script léger (< 1 KB) qui ne ralentit pas votre site web
-      - Sans cookies et analyses totalement respectueuses de la vie privée
-      - Toutes les données des visiteurs sont traitées exclusivement sur des serveurs détenus et exploités par Plausible Analytics
-      - Tableau de bord simple et facile à comprendre avec toutes les métriques clés sur une page
-      - Suivi des événements et conversions d'objectifs personnalisés
-      - Intégration de la console de recherche pour les informations sur les mots-clés
-      - 100% de propriété des données - vous possédez toutes vos données de site web
-  developer: Plausible Insights OÜ
-  icon: https://cdn.jsdelivr.net/gh/Worph/AppStore@main/Apps/Plausible/icon.png
-  screenshot_link:
-    - https://cdn.jsdelivr.net/gh/Worph/AppStore@main/Apps/Plausible/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/Worph/AppStore@main/Apps/Plausible/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/Worph/AppStore@main/Apps/Plausible/screenshot-3.png
-  tagline:
-    en_us: Simple, lightweight, and privacy-friendly Google Analytics alternative
-    ko_kr: 간단하고 가볍고 프라이버시 친화적인 Google Analytics 대안
-    zh_cn: 简单、轻量且注重隐私的 Google Analytics 替代品
-    es_es: Alternativa simple, ligera y respetuosa con la privacidad a Google Analytics
-    fr_fr: Alternative simple, légère et respectueuse de la vie privée à Google Analytics
-  thumbnail: https://cdn.jsdelivr.net/gh/Worph/AppStore@main/Apps/Plausible/thumbnail.png
-  tips:
-    before_install:
-      en_us: |
-        **Important Setup Information:**
-        
-        After installation, you will need to:
-        1. Visit the Plausible web interface
-        2. Create your first admin account
-        3. Add your website(s) to start tracking
-        4. Install the tracking script on your website
-        
-        **Privacy-Focused Analytics:**
-        - No cookies used
-        - No personal data collected
-        - GDPR, CCPA, and PECR compliant
-        - All data is stored on your server
-        
-        **Note:** Initial setup may take 1-2 minutes while databases initialize.
-      ko_kr: |
-        **중요한 설정 정보:**
-        
-        설치 후 다음을 수행해야 합니다:
-        1. Plausible 웹 인터페이스 방문
-        2. 첫 번째 관리자 계정 생성
-        3. 추적을 시작할 웹사이트 추가
-        4. 웹사이트에 추적 스크립트 설치
-        
-        **프라이버시 중심 분석:**
-        - 쿠키 사용 안 함
-        - 개인 데이터 수집 안 함
-        - GDPR, CCPA, PECR 준수
-        - 모든 데이터는 서버에 저장
-        
-        **참고:** 데이터베이스 초기화 중에 초기 설정은 1-2분이 걸릴 수 있습니다.
-      zh_cn: |
-        **重要设置信息:**
-        
-        安装后，您需要:
-        1. 访问 Plausible 网络界面
-        2. 创建您的第一个管理员账户
-        3. 添加您的网站以开始跟踪
-        4. 在您的网站上安装跟踪脚本
-        
-        **注重隐私的分析:**
-        - 不使用 Cookie
-        - 不收集个人数据
-        - 符合 GDPR、CCPA 和 PECR
-        - 所有数据存储在您的服务器上
-        
-        **注意:** 数据库初始化时，初始设置可能需要 1-2 分钟。
-      es_es: |
-        **Información de configuración importante:**
-        
-        Después de la instalación, deberá:
-        1. Visitar la interfaz web de Plausible
-        2. Crear su primera cuenta de administrador
-        3. Agregar su(s) sitio(s) web para comenzar el seguimiento
-        4. Instalar el script de seguimiento en su sitio web
-        
-        **Análisis centrados en la privacidad:**
-        - No se utilizan cookies
-        - No se recopilan datos personales
-        - Cumple con GDPR, CCPA y PECR
-        - Todos los datos se almacenan en su servidor
-        
-        **Nota:** La configuración inicial puede tardar 1-2 minutos mientras se inicializan las bases de datos.
-      fr_fr: |
-        **Informations de configuration importantes:**
-        
-        Après l'installation, vous devrez:
-        1. Visiter l'interface web de Plausible
-        2. Créer votre premier compte administrateur
-        3. Ajouter votre/vos site(s) web pour commencer le suivi
-        4. Installer le script de suivi sur votre site web
-        
-        **Analyses respectueuses de la vie privée:**
-        - Aucun cookie utilisé
-        - Aucune donnée personnelle collectée
-        - Conforme au RGPD, CCPA et PECR
-        - Toutes les données sont stockées sur votre serveur
-        
-        **Remarque:** La configuration initiale peut prendre 1-2 minutes pendant l'initialisation des bases de données.
-  title:
-    en_us: Plausible Analytics
-  index: /
-  webui_port: 8000
-  main: plausible
-  scheme: http
   architectures:
     - amd64
     - arm64
+  main: plausible
+  author: Yundera Team
+  category: Analytics
+  description:
+    en_us: |
+      Plausible Analytics is a simple, open-source, lightweight (< 1 KB) and privacy-friendly web analytics alternative to Google Analytics. It doesn't use cookies and is fully compliant with GDPR, CCPA and PECR. Made and hosted in the EU, powered by European-owned cloud infrastructure.
+      
+      **Key Features:**
+      - Lightweight script (< 1 KB) with no impact on page load times
+      - No cookies or personal data collection
+      - GDPR, CCPA, and PECR compliant out of the box
+      - Simple, intuitive dashboard with all essential metrics
+      - Publicly shareable dashboards for transparency
+      - Goal conversions and custom event tracking
+      - Real-time analytics with up-to-the-minute stats
+      - Google Search Console integration
+      - Self-hosted with full data ownership
+      
+      **First Time Setup:**
+      After installation, visit your Plausible instance and create your first account. The first user automatically becomes the admin. You can then add websites to track and generate tracking scripts.
+      
+      **Privacy by Design:**
+      Plausible Analytics is built with privacy as a core principle. It collects only aggregate data and doesn't track individual users across websites. All data is anonymized and no personal information is collected.
+    ko_kr: |
+      Plausible Analytics는 Google Analytics의 간단하고, 오픈소스이며, 가벼운 (< 1 KB) 프라이버시 친화적 웹 분석 대안입니다. 쿠키를 사용하지 않으며 GDPR, CCPA 및 PECR을 완전히 준수합니다. EU에서 제작 및 호스팅되며 유럽 소유의 클라우드 인프라로 구동됩니다.
+      
+      **주요 기능:**
+      - 페이지 로드 시간에 영향을 주지 않는 경량 스크립트 (< 1 KB)
+      - 쿠키나 개인 데이터 수집 없음
+      - 기본적으로 GDPR, CCPA 및 PECR 준수
+      - 모든 필수 지표를 포함한 간단하고 직관적인 대시보드
+      - 투명성을 위한 공개 공유 가능한 대시보드
+      - 목표 전환 및 커스텀 이벤트 추적
+      - 실시간 분석 및 최신 통계
+      - Google Search Console 통합
+      - 완전한 데이터 소유권을 가진 셀프 호스팅
+      
+      **최초 설정:**
+      설치 후 Plausible 인스턴스를 방문하여 첫 번째 계정을 생성하세요. 첫 번째 사용자는 자동으로 관리자가 됩니다. 그런 다음 추적할 웹사이트를 추가하고 추적 스크립트를 생성할 수 있습니다.
+      
+      **설계 기반 프라이버시:**
+      Plausible Analytics는 프라이버시를 핵심 원칙으로 구축되었습니다. 집계 데이터만 수집하며 웹사이트 간 개별 사용자를 추적하지 않습니다. 모든 데이터는 익명화되며 개인 정보는 수집되지 않습니다.
+    zh_cn: |
+      Plausible Analytics 是一个简单、开源、轻量级(< 1 KB)且注重隐私的 Google Analytics 替代方案。它不使用 cookie,完全符合 GDPR、CCPA 和 PECR。在欧盟制造和托管,由欧洲所有的云基础设施提供支持。
+      
+      **主要功能:**
+      - 轻量级脚本(< 1 KB),不影响页面加载时间
+      - 不使用 cookie 或收集个人数据
+      - 开箱即用符合 GDPR、CCPA 和 PECR
+      - 简单直观的仪表板,包含所有基本指标
+      - 可公开分享的仪表板以提高透明度
+      - 目标转化和自定义事件跟踪
+      - 实时分析和最新统计数据
+      - Google Search Console 集成
+      - 自托管,完全拥有数据所有权
+      
+      **首次设置:**
+      安装后,访问您的 Plausible 实例并创建您的第一个账户。第一个用户自动成为管理员。然后您可以添加要跟踪的网站并生成跟踪脚本。
+      
+      **隐私设计:**
+      Plausible Analytics 以隐私为核心原则构建。它仅收集聚合数据,不跨网站跟踪个人用户。所有数据都是匿名的,不收集个人信息。
+    es_es: |
+      Plausible Analytics es una alternativa simple, de código abierto, ligera (< 1 KB) y respetuosa con la privacidad a Google Analytics. No utiliza cookies y cumple completamente con GDPR, CCPA y PECR. Hecho y alojado en la UE, impulsado por infraestructura cloud de propiedad europea.
+      
+      **Características principales:**
+      - Script ligero (< 1 KB) sin impacto en los tiempos de carga de página
+      - Sin cookies ni recopilación de datos personales
+      - Cumple con GDPR, CCPA y PECR desde el principio
+      - Panel simple e intuitivo con todas las métricas esenciales
+      - Paneles compartibles públicamente para transparencia
+      - Conversiones de objetivos y seguimiento de eventos personalizados
+      - Análisis en tiempo real con estadísticas al minuto
+      - Integración con Google Search Console
+      - Auto-alojado con propiedad total de los datos
+      
+      **Configuración inicial:**
+      Después de la instalación, visite su instancia de Plausible y cree su primera cuenta. El primer usuario se convierte automáticamente en administrador. Luego puede agregar sitios web para rastrear y generar scripts de seguimiento.
+      
+      **Privacidad por diseño:**
+      Plausible Analytics está construido con la privacidad como principio fundamental. Recopila solo datos agregados y no rastrea usuarios individuales entre sitios web. Todos los datos están anonimizados y no se recopila información personal.
+    fr_fr: |
+      Plausible Analytics est une alternative simple, open-source, légère (< 1 Ko) et respectueuse de la vie privée à Google Analytics. Il n'utilise pas de cookies et est entièrement conforme au RGPD, CCPA et PECR. Fabriqué et hébergé dans l'UE, alimenté par une infrastructure cloud appartenant à l'Europe.
+      
+      **Fonctionnalités principales:**
+      - Script léger (< 1 Ko) sans impact sur les temps de chargement
+      - Pas de cookies ni de collecte de données personnelles
+      - Conforme RGPD, CCPA et PECR dès le départ
+      - Tableau de bord simple et intuitif avec toutes les métriques essentielles
+      - Tableaux de bord partageables publiquement pour la transparence
+      - Conversions d'objectifs et suivi d'événements personnalisés
+      - Analyse en temps réel avec statistiques à la minute
+      - Intégration Google Search Console
+      - Auto-hébergé avec propriété complète des données
+      
+      **Configuration initiale:**
+      Après l'installation, visitez votre instance Plausible et créez votre premier compte. Le premier utilisateur devient automatiquement administrateur. Vous pouvez ensuite ajouter des sites web à suivre et générer des scripts de suivi.
+      
+      **Confidentialité par conception:**
+      Plausible Analytics est construit avec la confidentialité comme principe fondamental. Il ne collecte que des données agrégées et ne suit pas les utilisateurs individuels entre les sites web. Toutes les données sont anonymisées et aucune information personnelle n'est collectée.
+  developer: Plausible Insights
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Plausible/icon.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Plausible/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Plausible/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Plausible/screenshot-3.png
+  tagline:
+    en_us: Simple, open-source, lightweight and privacy-friendly web analytics
+    ko_kr: 간단하고 오픈소스이며 가벼운 프라이버시 친화적 웹 분석
+    zh_cn: 简单、开源、轻量级且注重隐私的网络分析
+    es_es: Análisis web simple, de código abierto, ligero y respetuoso con la privacidad
+    fr_fr: Analyse web simple, open-source, légère et respectueuse de la vie privée
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Plausible/thumbnail.png
+  title:
+    en_us: Plausible Analytics
+  tips:
+    before_install:
+      en_us: |
+        **First Time Setup:**
+        
+        1. After installation, visit your Plausible instance
+        2. Create your first admin account
+        3. Add your website and get the tracking script
+        4. Install the tracking script on your website
+        5. Start receiving analytics data!
+        
+        **Important Notes:**
+        - The first user to register becomes the admin
+        - Registration is set to "invite only" by default
+        - Requires at least 2GB RAM for optimal performance
+        - Uses PostgreSQL for user data and ClickHouse for analytics
+        - Cryptographic secrets are automatically generated on first install
+        
+        For detailed configuration options, visit the [Plausible CE Wiki](https://github.com/plausible/community-edition/wiki)
+  index: /
+  webui_port: 80
   store_app_id: plausible
+  pre-install-cmd: |
+    mkdir -p /DATA/AppData/$AppID/db /DATA/AppData/$AppID/event-data /DATA/AppData/$AppID/event-logs
+    if [ ! -f /DATA/AppData/$AppID/secret_key_base.txt ]; then
+      openssl rand -base64 64 | tr -d '\n' > /DATA/AppData/$AppID/secret_key_base.txt
+    fi
+    if [ ! -f /DATA/AppData/$AppID/totp_vault_key.txt ]; then
+      openssl rand -base64 32 | tr -d '\n' > /DATA/AppData/$AppID/totp_vault_key.txt
+    fi
+    cat > /DATA/AppData/$AppID/custom-entrypoint.sh << 'ENTRYPOINT_EOF'
+    #!/bin/sh
+    set -e
+    
+    # Read secrets from mounted files
+    if [ -f /secrets/secret_key_base.txt ]; then
+      export SECRET_KEY_BASE=$(cat /secrets/secret_key_base.txt)
+    else
+      echo "ERROR: SECRET_KEY_BASE file not found"
+      exit 1
+    fi
+    
+    if [ -f /secrets/totp_vault_key.txt ]; then
+      export TOTP_VAULT_KEY=$(cat /secrets/totp_vault_key.txt)
+    else
+      echo "ERROR: TOTP_VAULT_KEY file not found"
+      exit 1
+    fi
+    
+    # Verify secrets are properly set
+    if [ -z "$SECRET_KEY_BASE" ]; then
+      echo "ERROR: SECRET_KEY_BASE is empty"
+      exit 1
+    fi
+    
+    if [ -z "$TOTP_VAULT_KEY" ]; then
+      echo "ERROR: TOTP_VAULT_KEY is empty"
+      exit 1
+    fi
+    
+    echo "Secrets loaded successfully"
+    echo "SECRET_KEY_BASE length: ${#SECRET_KEY_BASE}"
+    echo "TOTP_VAULT_KEY length: ${#TOTP_VAULT_KEY}"
+    
+    # Initialize database
+    /entrypoint.sh db createdb
+    /entrypoint.sh db migrate
+    
+    # Start the application
+    exec /entrypoint.sh run
+    ENTRYPOINT_EOF
+    chmod +x /DATA/AppData/$AppID/custom-entrypoint.sh
+    chown -R $PUID:$PGID /DATA/AppData/$AppID
