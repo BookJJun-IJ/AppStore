@@ -59,7 +59,15 @@ services:
     container_name: plausible
     restart: unless-stopped
     user: "0:0"
-    entrypoint: ["/bin/sh", "/custom-entrypoint.sh"]
+    entrypoint: ["/bin/sh", "-c"]
+    command: |
+      sh -c '
+      export SECRET_KEY_BASE=$$(cat /secrets/secret_key_base.txt)
+      export TOTP_VAULT_KEY=$$(cat /secrets/totp_vault_key.txt)
+      /entrypoint.sh db createdb
+      /entrypoint.sh db migrate
+      exec /entrypoint.sh run
+      '
     depends_on:
       plausible-db:
         condition: service_healthy
@@ -68,7 +76,7 @@ services:
     expose:
       - "80"
     volumes:
-      - /DATA/AppData/$AppID/custom-entrypoint.sh:/custom-entrypoint.sh:ro
+      - /DATA/AppData/$AppID/secrets:/secrets:ro
     environment:
       BASE_URL: https://$PCS_DOMAIN
       DATABASE_URL: postgres://postgres:postgres@plausible-db:5432/plausible
@@ -229,25 +237,11 @@ x-casaos:
   webui_port: 80
   store_app_id: plausible
   pre-install-cmd: |
-    mkdir -p /DATA/AppData/$AppID/db /DATA/AppData/$AppID/event-data /DATA/AppData/$AppID/event-logs
-    if [ ! -f /DATA/AppData/$AppID/secret_key_base.txt ]; then
-      openssl rand -base64 64 | tr -d '\n' > /DATA/AppData/$AppID/secret_key_base.txt
-    fi
-    if [ ! -f /DATA/AppData/$AppID/totp_vault_key.txt ]; then
-      openssl rand -base64 32 | tr -d '\n' > /DATA/AppData/$AppID/totp_vault_key.txt
-    fi
-    SECRET_KEY_BASE=$(cat /DATA/AppData/$AppID/secret_key_base.txt)
-    TOTP_VAULT_KEY=$(cat /DATA/AppData/$AppID/totp_vault_key.txt)
-    cat > /DATA/AppData/$AppID/custom-entrypoint.sh << 'ENTRYPOINT_EOF'
-    #!/bin/sh
-    set -e
-    export SECRET_KEY_BASE="SECRET_KEY_BASE_PLACEHOLDER"
-    export TOTP_VAULT_KEY="TOTP_VAULT_KEY_PLACEHOLDER"
-    /entrypoint.sh db createdb
-    /entrypoint.sh db migrate
-    exec /entrypoint.sh run
-    ENTRYPOINT_EOF
-    sed -i "s|SECRET_KEY_BASE_PLACEHOLDER|${SECRET_KEY_BASE}|g" /DATA/AppData/$AppID/custom-entrypoint.sh
-    sed -i "s|TOTP_VAULT_KEY_PLACEHOLDER|${TOTP_VAULT_KEY}|g" /DATA/AppData/$AppID/custom-entrypoint.sh
-    chmod +x /DATA/AppData/$AppID/custom-entrypoint.sh
+    mkdir -p /DATA/AppData/$AppID/db /DATA/AppData/$AppID/event-data /DATA/AppData/$AppID/event-logs /DATA/AppData/$AppID/secrets &&
+    if [ ! -f /DATA/AppData/$AppID/secrets/secret_key_base.txt ]; then
+      openssl rand -base64 64 | tr -d '\n' > /DATA/AppData/$AppID/secrets/secret_key_base.txt
+    fi &&
+    if [ ! -f /DATA/AppData/$AppID/secrets/totp_vault_key.txt ]; then
+      openssl rand -base64 32 | tr -d '\n' > /DATA/AppData/$AppID/secrets/totp_vault_key.txt
+    fi &&
     chown -R $PUID:$PGID /DATA/AppData/$AppID
