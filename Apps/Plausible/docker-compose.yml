@@ -75,8 +75,7 @@ services:
     expose:
       - "80"
     volumes:
-      - /DATA/AppData/$AppID/secret_key_base.txt:/secrets/secret_key_base.txt:ro
-      - /DATA/AppData/$AppID/totp_vault_key.txt:/secrets/totp_vault_key.txt:ro
+      - /DATA/AppData/$AppID/secrets:/secrets:ro
     environment:
       BASE_URL: https://$PCS_DOMAIN
       DATABASE_URL: postgres://postgres:postgres@plausible-db:5432/plausible
@@ -237,11 +236,11 @@ x-casaos:
   webui_port: 80
   store_app_id: plausible
   pre-install-cmd: |
-    mkdir -p /DATA/AppData/$AppID/db /DATA/AppData/$AppID/event-data /DATA/AppData/$AppID/event-logs
-    if [ ! -f /DATA/AppData/$AppID/secret_key_base.txt ]; then
-      openssl rand -base64 64 | tr -d '\n' > /DATA/AppData/$AppID/secret_key_base.txt
+    mkdir -p /DATA/AppData/$AppID/db /DATA/AppData/$AppID/event-data /DATA/AppData/$AppID/event-logs /DATA/AppData/$AppID/secrets
+    if [ ! -f /DATA/AppData/$AppID/secrets/secret_key_base.txt ]; then
+      openssl rand -base64 64 | tr -d '\n' > /DATA/AppData/$AppID/secrets/secret_key_base.txt
     fi
-    if [ ! -f /DATA/AppData/$AppID/totp_vault_key.txt ]; then
-      openssl rand -base64 32 | tr -d '\n' > /DATA/AppData/$AppID/totp_vault_key.txt
+    if [ ! -f /DATA/AppData/$AppID/secrets/totp_vault_key.txt ]; then
+      openssl rand -base64 32 | tr -d '\n' > /DATA/AppData/$AppID/secrets/totp_vault_key.txt
     fi
     chown -R $PUID:$PGID /DATA/AppData/$AppID
