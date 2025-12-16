@@ -59,7 +59,14 @@ services:
     container_name: plausible
     restart: unless-stopped
     user: "0:0"
-    entrypoint: ["/bin/sh", "/custom-entrypoint.sh"]
+    command: >
+      sh -c '
+        export SECRET_KEY_BASE=$$(cat /secrets/secret_key_base.txt) &&
+        export TOTP_VAULT_KEY=$$(cat /secrets/totp_vault_key.txt) &&
+        /entrypoint.sh db createdb &&
+        /entrypoint.sh db migrate &&
+        exec /entrypoint.sh run
+      '
     depends_on:
       plausible-db:
         condition: service_healthy
@@ -68,7 +75,6 @@ services:
     expose:
       - "80"
     volumes:
-      - /DATA/AppData/$AppID/custom-entrypoint.sh:/custom-entrypoint.sh:ro
       - /DATA/AppData/$AppID/secret_key_base.txt:/secrets/secret_key_base.txt:ro
       - /DATA/AppData/$AppID/totp_vault_key.txt:/secrets/totp_vault_key.txt:ro
     environment:
@@ -238,46 +244,4 @@ x-casaos:
     if [ ! -f /DATA/AppData/$AppID/totp_vault_key.txt ]; then
       openssl rand -base64 32 | tr -d '\n' > /DATA/AppData/$AppID/totp_vault_key.txt
     fi
-    cat > /DATA/AppData/$AppID/custom-entrypoint.sh << 'ENTRYPOINT_EOF'
-    #!/bin/sh
-    set -e
-    
-    # Read secrets from mounted files
-    if [ -f /secrets/secret_key_base.txt ]; then
-      export SECRET_KEY_BASE=$(cat /secrets/secret_key_base.txt)
-    else
-      echo "ERROR: SECRET_KEY_BASE file not found"
-      exit 1
-    fi
-    
-    if [ -f /secrets/totp_vault_key.txt ]; then
-      export TOTP_VAULT_KEY=$(cat /secrets/totp_vault_key.txt)
-    else
-      echo "ERROR: TOTP_VAULT_KEY file not found"
-      exit 1
-    fi
-    
-    # Verify secrets are properly set
-    if [ -z "$SECRET_KEY_BASE" ]; then
-      echo "ERROR: SECRET_KEY_BASE is empty"
-      exit 1
-    fi
-    
-    if [ -z "$TOTP_VAULT_KEY" ]; then
-      echo "ERROR: TOTP_VAULT_KEY is empty"
-      exit 1
-    fi
-    
-    echo "Secrets loaded successfully"
-    echo "SECRET_KEY_BASE length: ${#SECRET_KEY_BASE}"
-    echo "TOTP_VAULT_KEY length: ${#TOTP_VAULT_KEY}"
-    
-    # Initialize database
-    /entrypoint.sh db createdb
-    /entrypoint.sh db migrate
-    
-    # Start the application
-    exec /entrypoint.sh run
-    ENTRYPOINT_EOF
-    chmod +x /DATA/AppData/$AppID/custom-entrypoint.sh
     chown -R $PUID:$PGID /DATA/AppData/$AppID
