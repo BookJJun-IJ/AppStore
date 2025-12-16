@@ -64,20 +64,31 @@ services:
         echo "=== Plausible Initialization ===" &&
         echo "Checking secrets directory..." &&
         ls -la /secrets/ &&
-        if [ -f /secrets/secret_key_base.txt ]; then
-          echo "secret_key_base.txt found" &&
-          export SECRET_KEY_BASE=$(cat /secrets/secret_key_base.txt) &&
-          echo "SECRET_KEY_BASE length: $${#SECRET_KEY_BASE}"
-        else
-          echo "ERROR: secret_key_base.txt not found" &&
+        if [ ! -f /secrets/secret_key_base.txt ]; then
+          echo "secret_key_base.txt not found, generating..." &&
+          apk add --no-cache openssl &&
+          openssl rand -base64 64 | tr -d "\n" > /secrets/secret_key_base.txt &&
+          echo "secret_key_base.txt created"
+        fi &&
+        if [ ! -f /secrets/totp_vault_key.txt ]; then
+          echo "totp_vault_key.txt not found, generating..." &&
+          if ! command -v openssl >/dev/null 2>&1; then
+            apk add --no-cache openssl
+          fi &&
+          openssl rand -base64 32 | tr -d "\n" > /secrets/totp_vault_key.txt &&
+          echo "totp_vault_key.txt created"
+        fi &&
+        echo "Reading secrets..." &&
+        export SECRET_KEY_BASE=$(cat /secrets/secret_key_base.txt) &&
+        export TOTP_VAULT_KEY=$(cat /secrets/totp_vault_key.txt) &&
+        echo "SECRET_KEY_BASE length: $${#SECRET_KEY_BASE}" &&
+        echo "TOTP_VAULT_KEY length: $${#TOTP_VAULT_KEY}" &&
+        if [ $${#SECRET_KEY_BASE} -lt 32 ]; then
+          echo "ERROR: SECRET_KEY_BASE too short" &&
           exit 1
         fi &&
-        if [ -f /secrets/totp_vault_key.txt ]; then
-          echo "totp_vault_key.txt found" &&
-          export TOTP_VAULT_KEY=$(cat /secrets/totp_vault_key.txt) &&
-          echo "TOTP_VAULT_KEY length: $${#TOTP_VAULT_KEY}"
-        else
-          echo "ERROR: totp_vault_key.txt not found" &&
+        if [ $${#TOTP_VAULT_KEY} -lt 32 ]; then
+          echo "ERROR: TOTP_VAULT_KEY too short" &&
           exit 1
         fi &&
         echo "Starting database initialization..." &&
@@ -94,7 +105,7 @@ services:
     expose:
       - "80"
     volumes:
-      - /DATA/AppData/$AppID/secrets:/secrets:ro
+      - /DATA/AppData/$AppID/secrets:/secrets
     environment:
       BASE_URL: https://$PCS_DOMAIN
       DATABASE_URL: postgres://postgres:postgres@plausible-db:5432/plausible
