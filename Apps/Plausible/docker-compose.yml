@@ -59,7 +59,7 @@ services:
     container_name: plausible
     restart: unless-stopped
     user: "0:0"
-    command: sh -c "/entrypoint.sh db createdb && /entrypoint.sh db migrate && /entrypoint.sh run"
+    command: sh -c "export SECRET_KEY_BASE=$(cat /secrets/secret_key_base.txt) && export TOTP_VAULT_KEY=$(cat /secrets/totp_vault_key.txt) && /entrypoint.sh db createdb && /entrypoint.sh db migrate && /entrypoint.sh run"
     depends_on:
       plausible-db:
         condition: service_healthy
@@ -67,10 +67,11 @@ services:
         condition: service_healthy
     expose:
       - "80"
+    volumes:
+      - /DATA/AppData/$AppID/secret_key_base.txt:/secrets/secret_key_base.txt:ro
+      - /DATA/AppData/$AppID/totp_vault_key.txt:/secrets/totp_vault_key.txt:ro
     environment:
       BASE_URL: https://$PCS_DOMAIN
-      SECRET_KEY_BASE: ${SECRET_KEY_BASE}
-      TOTP_VAULT_KEY: ${TOTP_VAULT_KEY}
       DATABASE_URL: postgres://postgres:postgres@plausible-db:5432/plausible
       CLICKHOUSE_DATABASE_URL: http://plausible-events-db:8123/plausible_events_db
       DISABLE_REGISTRATION: invite_only
@@ -237,6 +238,3 @@ x-casaos:
       openssl rand -base64 32 | tr -d '\n' > /DATA/AppData/$AppID/totp_vault_key.txt
     fi
     chown -R $PUID:$PGID /DATA/AppData/$AppID
-    echo "SECRET_KEY_BASE=$(cat /DATA/AppData/$AppID/secret_key_base.txt)" > /DATA/AppData/$AppID/.env
-    echo "TOTP_VAULT_KEY=$(cat /DATA/AppData/$AppID/totp_vault_key.txt)" >> /DATA/AppData/$AppID/.env
-
