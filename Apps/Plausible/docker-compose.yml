@@ -231,13 +231,12 @@ x-casaos:
   pre-install-cmd: |
     mkdir -p /DATA/AppData/$AppID/db /DATA/AppData/$AppID/event-data /DATA/AppData/$AppID/event-logs
     if [ ! -f /DATA/AppData/$AppID/secret_key_base.txt ]; then
-      docker run --rm alpine:3.19 sh -c "apk add --no-cache openssl && openssl rand -base64 64" | tr -d '\n' > /DATA/AppData/$AppID/secret_key_base.txt
+      openssl rand -base64 64 | tr -d '\n' > /DATA/AppData/$AppID/secret_key_base.txt
     fi
     if [ ! -f /DATA/AppData/$AppID/totp_vault_key.txt ]; then
-      docker run --rm alpine:3.19 sh -c "apk add --no-cache openssl && openssl rand -base64 32" | tr -d '\n' > /DATA/AppData/$AppID/totp_vault_key.txt
+      openssl rand -base64 32 | tr -d '\n' > /DATA/AppData/$AppID/totp_vault_key.txt
     fi
     chown -R $PUID:$PGID /DATA/AppData/$AppID
     echo "SECRET_KEY_BASE=$(cat /DATA/AppData/$AppID/secret_key_base.txt)" > /DATA/AppData/$AppID/.env
     echo "TOTP_VAULT_KEY=$(cat /DATA/AppData/$AppID/totp_vault_key.txt)" >> /DATA/AppData/$AppID/.env
-
 
