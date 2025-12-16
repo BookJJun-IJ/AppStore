@@ -67,8 +67,6 @@ services:
         condition: service_healthy
     expose:
       - "80"
-    env_file:
-      - /DATA/AppData/$AppID/.env
     environment:
       BASE_URL: https://$PCS_DOMAIN
       DATABASE_URL: postgres://postgres:postgres@plausible-db:5432/plausible
