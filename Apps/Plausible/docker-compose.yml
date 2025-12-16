@@ -4,19 +4,20 @@ services:
   plausible-init:
     image: alpine:3.19
     container_name: plausible-init
-    command: >
-      sh -c "
-      mkdir -p /secrets &&
-      if [ ! -f /secrets/secret_key_base.txt ]; then 
-        head -c 48 /dev/urandom | base64 | tr -d '\n' > /secrets/secret_key_base.txt;
-      fi &&
-      if [ ! -f /secrets/totp_vault_key.txt ]; then 
-        head -c 24 /dev/urandom | base64 | tr -d '\n' > /secrets/totp_vault_key.txt;
-      fi &&
-      chmod 644 /secrets/*.txt &&
-      echo 'Secrets generated successfully' &&
-      exit 0
-      "
+    command:
+      - sh
+      - -c
+      - |
+        mkdir -p /secrets
+        if [ ! -f /secrets/secret_key_base.txt ]; then
+          head -c 48 /dev/urandom | base64 | tr -d '\n' > /secrets/secret_key_base.txt
+        fi
+        if [ ! -f /secrets/totp_vault_key.txt ]; then
+          head -c 24 /dev/urandom | base64 | tr -d '\n' > /secrets/totp_vault_key.txt
+        fi
+        chmod 644 /secrets/*.txt
+        echo "Secrets generated successfully"
+        ls -la /secrets/
     volumes:
       - /DATA/AppData/$AppID/secrets:/secrets
     networks:
