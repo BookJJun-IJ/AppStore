@@ -59,15 +59,6 @@ services:
     container_name: plausible
     restart: unless-stopped
     user: "0:0"
-    command:
-      - /bin/sh
-      - -c
-      - |
-        export SECRET_KEY_BASE=$$(cat /secrets/secret_key_base.txt)
-        export TOTP_VAULT_KEY=$$(cat /secrets/totp_vault_key.txt)
-        /entrypoint.sh db createdb
-        /entrypoint.sh db migrate
-        exec /entrypoint.sh run
     depends_on:
       plausible-db:
         condition: service_healthy
@@ -84,6 +75,7 @@ services:
       DISABLE_REGISTRATION: invite_only
       LISTEN_IP: 0.0.0.0
       PORT: 80
+    command: sh -c "export SECRET_KEY_BASE=$$(cat /secrets/secret_key_base.txt) && export TOTP_VAULT_KEY=$$(cat /secrets/totp_vault_key.txt) && /entrypoint.sh db createdb && /entrypoint.sh db migrate && exec /entrypoint.sh run"
     deploy:
       resources:
         reservations:
@@ -236,4 +228,12 @@ x-casaos:
   index: /
   webui_port: 80
   store_app_id: plausible
-  pre-install-cmd: mkdir -p /DATA/AppData/$AppID/db /DATA/AppData/$AppID/event-data /DATA/AppData/$AppID/event-logs /DATA/AppData/$AppID/secrets && if [ ! -f /DATA/AppData/$AppID/secrets/secret_key_base.txt ]; then openssl rand -base64 64 | tr -d '\n' > /DATA/AppData/$AppID/secrets/secret_key_base.txt; fi && if [ ! -f /DATA/AppData/$AppID/secrets/totp_vault_key.txt ]; then openssl rand -base64 32 | tr -d '\n' > /DATA/AppData/$AppID/secrets/totp_vault_key.txt; fi && chown -R $PUID:$PGID /DATA/AppData/$AppID
+  pre-install-cmd: >
+    mkdir -p /DATA/AppData/$AppID/db /DATA/AppData/$AppID/event-data /DATA/AppData/$AppID/event-logs /DATA/AppData/$AppID/secrets &&
+    if [ ! -f /DATA/AppData/$AppID/secrets/secret_key_base.txt ]; then 
+      openssl rand -base64 64 | tr -d '\n' > /DATA/AppData/$AppID/secrets/secret_key_base.txt; 
+    fi &&
+    if [ ! -f /DATA/AppData/$AppID/secrets/totp_vault_key.txt ]; then 
+      openssl rand -base64 32 | tr -d '\n' > /DATA/AppData/$AppID/secrets/totp_vault_key.txt; 
+    fi &&
+    chown -R $PUID:$PGID /DATA/AppData/$AppID
