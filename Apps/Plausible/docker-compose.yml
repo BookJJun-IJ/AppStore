@@ -7,7 +7,7 @@ services:
     restart: unless-stopped
     user: "0:0"
     volumes:
-      - /DATA/AppData/plausible/db:/var/lib/postgresql/data
+      - /DATA/AppData/$AppID/db:/var/lib/postgresql/data
     environment:
       POSTGRES_DB: plausible
       POSTGRES_USER: postgres
@@ -32,8 +32,8 @@ services:
     restart: unless-stopped
     user: "0:0"
     volumes:
-      - /DATA/AppData/plausible/event-data:/var/lib/clickhouse
-      - /DATA/AppData/plausible/event-logs:/var/log/clickhouse-server
+      - /DATA/AppData/$AppID/event-data:/var/lib/clickhouse
+      - /DATA/AppData/$AppID/event-logs:/var/log/clickhouse-server
     ulimits:
       nofile:
         soft: 262144
@@ -67,13 +67,10 @@ services:
         condition: service_healthy
     expose:
       - "80"
-    volumes:
-      - /DATA/AppData/plausible/secret_key_base.txt:/run/secrets/secret_key_base:ro
-      - /DATA/AppData/plausible/totp_vault_key.txt:/run/secrets/totp_vault_key:ro
     environment:
       BASE_URL: https://$PCS_DOMAIN
-      SECRET_KEY_BASE_FILE: /run/secrets/secret_key_base
-      TOTP_VAULT_KEY_FILE: /run/secrets/totp_vault_key
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE}
+      TOTP_VAULT_KEY: ${TOTP_VAULT_KEY}
       DATABASE_URL: postgres://postgres:postgres@plausible-db:5432/plausible
       CLICKHOUSE_DATABASE_URL: http://plausible-events-db:8123/plausible_events_db
       DISABLE_REGISTRATION: invite_only
@@ -225,17 +222,24 @@ x-casaos:
         - Registration is set to "invite only" by default
         - Requires at least 2GB RAM for optimal performance
         - Uses PostgreSQL for user data and ClickHouse for analytics
+        - Cryptographic secrets are automatically generated on first install
         
         For detailed configuration options, visit the [Plausible CE Wiki](https://github.com/plausible/community-edition/wiki)
   index: /
   webui_port: 80
   store_app_id: plausible
   pre-install-cmd: |
-    mkdir -p /DATA/AppData/plausible/db /DATA/AppData/plausible/event-data /DATA/AppData/plausible/event-logs &&
-    if [ ! -f /DATA/AppData/plausible/secret_key_base.txt ]; then
-      docker run --rm alpine:3.19 sh -c "apk add --no-cache openssl > /dev/null 2>&1 && openssl rand -base64 64" | tr -d '\n' > /DATA/AppData/plausible/secret_key_base.txt
+    mkdir -p /DATA/AppData/$AppID/db /DATA/AppData/$AppID/event-data /DATA/AppData/$AppID/event-logs &&
+    if [ ! -f /DATA/AppData/$AppID/secret_key_base.txt ]; then
+      docker run --rm alpine:3.19 sh -c "apk add --no-cache openssl && openssl rand -base64 64" | tr -d '\n' > /DATA/AppData/$AppID/secret_key_base.txt
     fi &&
-    if [ ! -f /DATA/AppData/plausible/totp_vault_key.txt ]; then
-      docker run --rm alpine:3.19 sh -c "apk add --no-cache openssl > /dev/null 2>&1 && openssl rand -base64 32" | tr -d '\n' > /DATA/AppData/plausible/totp_vault_key.txt
+    if [ ! -f /DATA/AppData/$AppID/totp_vault_key.txt ]; then
+      docker run --rm alpine:3.19 sh -c "apk add --no-cache openssl && openssl rand -base64 32" | tr -d '\n' > /DATA/AppData/$AppID/totp_vault_key.txt
     fi &&
-    chown -R $PUID:$PGID /DATA/AppData/plausible
+    chown -R $PUID:$PGID /DATA/AppData/$AppID &&
+    SECRET_KEY_BASE=$(cat /DATA/AppData/$AppID/secret_key_base.txt) &&
+    TOTP_VAULT_KEY=$(cat /DATA/AppData/$AppID/totp_vault_key.txt) &&
+    cat > /DATA/AppData/casaos/apps/$AppID/.env << EOF
+    SECRET_KEY_BASE=${SECRET_KEY_BASE}
+    TOTP_VAULT_KEY=${TOTP_VAULT_KEY}
+    EOF
