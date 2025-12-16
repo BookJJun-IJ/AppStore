@@ -69,6 +69,8 @@ services:
       - "80"
     environment:
       BASE_URL: https://$PCS_DOMAIN
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE}
+      TOTP_VAULT_KEY: ${TOTP_VAULT_KEY}
       DATABASE_URL: postgres://postgres:postgres@plausible-db:5432/plausible
       CLICKHOUSE_DATABASE_URL: http://plausible-events-db:8123/plausible_events_db
       DISABLE_REGISTRATION: invite_only
