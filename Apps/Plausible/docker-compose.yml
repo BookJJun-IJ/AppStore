@@ -67,10 +67,10 @@ services:
         condition: service_healthy
     expose:
       - "80"
+    env_file:
+      - /DATA/AppData/$AppID/.env
     environment:
       BASE_URL: https://$PCS_DOMAIN
-      SECRET_KEY_BASE: ${SECRET_KEY_BASE}
-      TOTP_VAULT_KEY: ${TOTP_VAULT_KEY}
       DATABASE_URL: postgres://postgres:postgres@plausible-db:5432/plausible
       CLICKHOUSE_DATABASE_URL: http://plausible-events-db:8123/plausible_events_db
       DISABLE_REGISTRATION: invite_only
@@ -230,13 +230,3 @@ x-casaos:
   store_app_id: plausible
   pre-install-cmd: |
     mkdir -p /DATA/AppData/$AppID/db /DATA/AppData/$AppID/event-data /DATA/AppData/$AppID/event-logs && if [ ! -f /DATA/AppData/$AppID/secret_key_base.txt ]; then docker run --rm alpine:3.19 sh -c "apk add --no-cache openssl && openssl rand -base64 64" | tr -d '\n' > /DATA/AppData/$AppID/secret_key_base.txt; fi && if [ ! -f /DATA/AppData/$AppID/totp_vault_key.txt ]; then docker run --rm alpine:3.19 sh -c "apk add --no-cache openssl && openssl rand -base64 32" | tr -d '\n' > /DATA/AppData/$AppID/totp_vault_key.txt; fi && chown -R $PUID:$PGID /DATA/AppData/$AppID && printf "SECRET_KEY_BASE=%s\nTOTP_VAULT_KEY=%s\n" "$(cat /DATA/AppData/$AppID/secret_key_base.txt)" "$(cat /DATA/AppData/$AppID/totp_vault_key.txt)" > /DATA/AppData/$AppID/.env
-
-
-
-
-
-
-
-
-
-
