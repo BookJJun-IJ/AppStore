@@ -5,7 +5,6 @@ services:
     image: postgres:16-alpine
     container_name: plausible-db
     restart: unless-stopped
-    user: "0:0"
     volumes:
       - /DATA/AppData/$AppID/pgdata:/var/lib/postgresql/data
     environment:
@@ -33,7 +32,6 @@ services:
     image: clickhouse/clickhouse-server:24.12-alpine
     container_name: plausible-events-db
     restart: unless-stopped
-    user: "0:0"
     volumes:
       - /DATA/AppData/$AppID/clickhouse:/var/lib/clickhouse
       - /DATA/AppData/$AppID/clickhouse-logs:/var/log/clickhouse-server
@@ -64,7 +62,6 @@ services:
     image: ghcr.io/plausible/community-edition:v3.1.0
     container_name: plausible
     restart: unless-stopped
-    user: "0:0"
     command: sh -c "sleep 10 && /entrypoint.sh db createdb && /entrypoint.sh db migrate && /entrypoint.sh run"
     depends_on:
       plausible-db:
@@ -96,12 +93,6 @@ networks:
     driver: bridge
 
 x-casaos:
-  main: plausible
-  architectures:
-    - amd64
-    - arm64
-  store_app_id: plausible
-  webui_port: 8000
   author: Yundera Team
   category: Analytics
   hostname: plausible
@@ -259,3 +250,10 @@ x-casaos:
   title:
     en_us: Plausible Analytics
   index: /
+  webui_port: 8000
+  main: plausible
+  scheme: http
+  architectures:
+    - amd64
+    - arm64
+  store_app_id: plausible
