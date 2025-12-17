@@ -50,6 +50,24 @@ services:
     command:
       - -c
       - |
+        echo "Waiting for ConvertX to be ready..."
+        max_attempts=30
+        attempt=0
+        while [ $attempt -lt $max_attempts ]; do
+          if wget --spider --tries=1 --timeout=2 http://convertx:3000 2>/dev/null; then
+            echo "ConvertX is ready!"
+            break
+          fi
+          echo "Waiting for ConvertX... (attempt $((attempt+1))/$max_attempts)"
+          sleep 2
+          attempt=$((attempt+1))
+        done
+        
+        if [ $attempt -eq $max_attempts ]; then
+          echo "ERROR: ConvertX did not become ready in time"
+          exit 1
+        fi
+        
         echo 'server {' > /etc/nginx/conf.d/default.conf
         echo '    listen 80;' >> /etc/nginx/conf.d/default.conf
         echo '    server_name _;' >> /etc/nginx/conf.d/default.conf
@@ -67,10 +85,11 @@ services:
         echo '        proxy_read_timeout 60s;' >> /etc/nginx/conf.d/default.conf
         echo '    }' >> /etc/nginx/conf.d/default.conf
         echo '}' >> /etc/nginx/conf.d/default.conf
+        
+        echo "Starting nginx..."
         exec nginx -g 'daemon off;'
     depends_on:
-      convertx:
-        condition: service_healthy
+      - convertx
     healthcheck:
       test: ["CMD", "wget", "--spider", "--tries=1", "http://localhost:80/"]
       interval: 30s
