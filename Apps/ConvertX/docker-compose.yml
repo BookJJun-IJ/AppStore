@@ -22,6 +22,7 @@ services:
       - HTTP_ALLOWED=true
       - ALLOW_UNAUTHENTICATED=false
       - AUTO_DELETE_EVERY_N_HOURS=24
+      - HOST=0.0.0.0
     volumes:
       - /DATA/AppData/$AppID/data:/app/data
       - /DATA/Downloads:/downloads:ro
