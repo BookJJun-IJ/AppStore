@@ -113,6 +113,7 @@ services:
       DISABLE_REGISTRATION: invite_only
       LISTEN_IP: 0.0.0.0
       PORT: 80
+      CHECK_ORIGIN: "false"
     deploy:
       resources:
         reservations:
