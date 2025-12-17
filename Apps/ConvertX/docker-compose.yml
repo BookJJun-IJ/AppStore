@@ -39,25 +39,25 @@ services:
     restart: unless-stopped
     network_mode: "service:convertx"
     cpu_shares: 80
-    entrypoint: /bin/sh
     command:
+      - /bin/sh
       - -c
       - |
         apk add --no-cache curl
         echo "Waiting for ConvertX to be ready..."
         max_attempts=30
         attempt=0
-        while [ $$attempt -lt $$max_attempts ]; do
+        while [ $attempt -lt $max_attempts ]; do
           if curl -f -s http://localhost:3000 >/dev/null 2>&1; then
             echo "ConvertX is ready!"
             break
           fi
-          echo "Waiting for ConvertX... (attempt $$((attempt+1))/$$max_attempts)"
+          echo "Waiting for ConvertX... (attempt $((attempt+1))/$max_attempts)"
           sleep 2
-          attempt=$$((attempt+1))
+          attempt=$((attempt+1))
         done
         
-        if [ $$attempt -eq $$max_attempts ]; then
+        if [ $attempt -eq $max_attempts ]; then
           echo "ERROR: ConvertX did not become ready in time"
           exit 1
         fi
@@ -70,12 +70,12 @@ services:
             
             location / {
                 proxy_pass http://localhost:3000;
-                proxy_set_header Host $$host;
-                proxy_set_header X-Real-IP $$remote_addr;
-                proxy_set_header X-Forwarded-For $$proxy_add_x_forwarded_for;
-                proxy_set_header X-Forwarded-Proto $$scheme;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
                 proxy_http_version 1.1;
-                proxy_set_header Upgrade $$http_upgrade;
+                proxy_set_header Upgrade $http_upgrade;
                 proxy_set_header Connection "upgrade";
                 proxy_connect_timeout 60s;
                 proxy_send_timeout 300s;
