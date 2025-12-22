@@ -1,187 +1,108 @@
 name: tubearchivist
+
 services:
   tubearchivist:
     image: bbilly1/tubearchivist:v0.5.7
     container_name: tubearchivist
     restart: unless-stopped
     expose:
-      - 80
+      - "8000"  # Default TubeArchivist port - NSL Router will handle routing
     volumes:
-      - /DATA/AppData/tubearchivist/youtube:/youtube
-      - /DATA/AppData/tubearchivist/cache:/cache
-      - /DATA/Media:/media
+      - type: bind
+        source: /DATA/AppData/tubearchivist/youtube
+        target: /youtube
+      - type: bind
+        source: /DATA/AppData/tubearchivist/cache
+        target: /cache
     environment:
-      ES_URL: http://tubearchivist-es:9200
-      REDIS_CON: redis://tubearchivist-redis:6379
-      HOST_UID: $PUID
-      HOST_GID: $PGID
-      TA_HOST: http://$PCS_DOMAIN
-      TA_PORT: "80"
-      TA_USERNAME: admin
-      TA_PASSWORD: $PCS_DEFAULT_PASSWORD
-      ELASTIC_PASSWORD: $PCS_DEFAULT_PASSWORD
-      TZ: $TZ
-    depends_on:
-      tubearchivist-es:
-        condition: service_started
-      tubearchivist-redis:
-        condition: service_started
+      - ES_URL=http://tubearchivist-es:9200
+      - REDIS_CON=redis://tubearchivist-redis:6379  # v0.5.0+ format
+      - HOST_UID=$PUID
+      - HOST_GID=$PGID
+      - TA_HOST=http://$PCS_DOMAIN  # Protocol required since v0.5.0
+      - TA_USERNAME=admin
+      - TA_PASSWORD=$PCS_DEFAULT_PASSWORD
+      - ELASTIC_PASSWORD=$PCS_DEFAULT_PASSWORD
+      - TZ=$TZ
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80/api/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 2m
       timeout: 10s
       retries: 3
       start_period: 60s
+    depends_on:
+      tubearchivist-es:
+        condition: service_healthy
+      tubearchivist-redis:
+        condition: service_healthy
     deploy:
       resources:
-        reservations:
-          cpus: '0.50'
+        limits:
           memory: 512M
+          cpus: '0.50'
+        reservations:
+          cpus: '0.25'
     cpu_shares: 70
-    networks:
-      - tubearchivist
-    x-casaos:
-      envs:
-        - container: ES_URL
-          description:
-            en_us: Elasticsearch URL with protocol and port
-            ko_kr: 프로토콜과 포트를 포함한 Elasticsearch URL
-        - container: REDIS_CON
-          description:
-            en_us: Redis connection string
-            ko_kr: Redis 연결 문자열
-        - container: HOST_UID
-          description:
-            en_us: User ID for file permissions
-            ko_kr: 파일 권한을 위한 사용자 ID
-        - container: HOST_GID
-          description:
-            en_us: Group ID for file permissions
-            ko_kr: 파일 권한을 위한 그룹 ID
-        - container: TA_HOST
-          description:
-            en_us: Hostname for TubeArchivist
-            ko_kr: TubeArchivist 호스트명
-        - container: TA_PORT
-          description:
-            en_us: Port for TubeArchivist web UI
-            ko_kr: TubeArchivist 웹 UI 포트
-        - container: TA_USERNAME
-          description:
-            en_us: Initial admin username
-            ko_kr: 초기 관리자 사용자명
-        - container: TA_PASSWORD
-          description:
-            en_us: Initial admin password
-            ko_kr: 초기 관리자 비밀번호
-        - container: ELASTIC_PASSWORD
-          description:
-            en_us: Elasticsearch password (must match TA_PASSWORD)
-            ko_kr: Elasticsearch 비밀번호 (TA_PASSWORD와 일치해야 함)
-        - container: TZ
-          description:
-            en_us: Timezone
-            ko_kr: 시간대
-      volumes:
-        - container: /youtube
-          description:
-            en_us: YouTube video storage location
-            ko_kr: YouTube 비디오 저장 위치
-        - container: /cache
-          description:
-            en_us: Application cache and database
-            ko_kr: 애플리케이션 캐시 및 데이터베이스
-        - container: /media
-          description:
-            en_us: Optional media directory for additional storage
-            ko_kr: 추가 저장소를 위한 선택적 미디어 디렉토리
-      ports:
-        - container: "80"
-          description:
-            en_us: TubeArchivist web interface
-            ko_kr: TubeArchivist 웹 인터페이스
-          
+
   tubearchivist-redis:
     image: redis:7.4-alpine
     container_name: tubearchivist-redis
     restart: unless-stopped
     expose:
-      - 6379
+      - "6379"
     volumes:
-      - /DATA/AppData/tubearchivist/redis:/data
-    command: redis-server --save 60 1 --loglevel warning
+      - type: bind
+        source: /DATA/AppData/tubearchivist/redis
+        target: /data
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      test: ["CMD", "redis-cli", "ping"]
       interval: 30s
-      timeout: 3s
-      retries: 5
+      timeout: 10s
+      retries: 3
       start_period: 20s
     deploy:
       resources:
-        reservations:
-          cpus: '0.25'
+        limits:
           memory: 256M
+          cpus: '0.25'
+        reservations:
+          cpus: '0.10'
     cpu_shares: 50
-    networks:
-      - tubearchivist
-    x-casaos:
-      volumes:
-        - container: /data
-          description:
-            en_us: Redis data storage
-            ko_kr: Redis 데이터 저장소
 
   tubearchivist-es:
     image: bbilly1/tubearchivist-es:latest
     container_name: tubearchivist-es
     restart: unless-stopped
+    expose:
+      - "9200"
     environment:
-      ELASTIC_PASSWORD: $PCS_DEFAULT_PASSWORD
-      ES_JAVA_OPTS: "-Xms1g -Xmx1g"
-      xpack.security.enabled: "true"
-      discovery.type: single-node
-      path.repo: /usr/share/elasticsearch/data/snapshot
+      - "ELASTIC_PASSWORD=$PCS_DEFAULT_PASSWORD"
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "xpack.security.enabled=true"
+      - "discovery.type=single-node"
+      - "path.repo=/usr/share/elasticsearch/data/snapshot"
     ulimits:
       memlock:
         soft: -1
         hard: -1
     volumes:
-      - /DATA/AppData/tubearchivist/es:/usr/share/elasticsearch/data
-    expose:
-      - 9200
+      - type: bind
+        source: /DATA/AppData/tubearchivist/es
+        target: /usr/share/elasticsearch/data
     healthcheck:
-      test: ["CMD-SHELL", "curl -s -u elastic:$$ELASTIC_PASSWORD http://localhost:9200/_cluster/health | grep -q '\"status\":\"green\\|yellow\"'"]
+      test: ["CMD-SHELL", "curl -u elastic:$PCS_DEFAULT_PASSWORD -f http://localhost:9200/_cluster/health || exit 1"]
       interval: 30s
       timeout: 10s
-      retries: 5
+      retries: 3
       start_period: 60s
     deploy:
       resources:
-        reservations:
-          cpus: '1.00'
+        limits:
           memory: 2G
+          cpus: '1.00'
+        reservations:
+          cpus: '0.50'
     cpu_shares: 50
-    networks:
-      - tubearchivist
-    x-casaos:
-      envs:
-        - container: ELASTIC_PASSWORD
-          description:
-            en_us: Elasticsearch password (must match TA_PASSWORD)
-            ko_kr: Elasticsearch 비밀번호 (TA_PASSWORD와 일치해야 함)
-        - container: ES_JAVA_OPTS
-          description:
-            en_us: Java memory options for Elasticsearch
-            ko_kr: Elasticsearch용 Java 메모리 옵션
-      volumes:
-        - container: /usr/share/elasticsearch/data
-          description:
-            en_us: Elasticsearch data storage
-            ko_kr: Elasticsearch 데이터 저장소
-
-networks:
-  tubearchivist:
-    name: tubearchivist
 
 x-casaos:
   architectures:
@@ -191,111 +112,206 @@ x-casaos:
   author: Yundera Team
   category: Media
   description:
-    en_us: TubeArchivist is a self-hosted YouTube media server that downloads, organizes, and indexes your favorite YouTube content. Subscribe to channels, download videos, search metadata, and enjoy offline viewing through a beautiful web interface. Features include automatic metadata extraction, thumbnail management, sponsorblock integration, and full-text search powered by Elasticsearch.
-    ko_kr: TubeArchivist는 좋아하는 YouTube 콘텐츠를 다운로드하고 정리하며 인덱싱하는 자체 호스팅 YouTube 미디어 서버입니다. 채널 구독, 비디오 다운로드, 메타데이터 검색을 통해 아름다운 웹 인터페이스에서 오프라인 시청을 즐기세요. 자동 메타데이터 추출, 썸네일 관리, sponsorblock 통합, Elasticsearch 기반 전문 검색 기능을 제공합니다.
-    fr_fr: TubeArchivist est un serveur multimédia YouTube auto-hébergé qui télécharge, organise et indexe votre contenu YouTube préféré. Abonnez-vous aux chaînes, téléchargez des vidéos, recherchez des métadonnées et profitez d'une visualisation hors ligne via une belle interface web. Comprend l'extraction automatique de métadonnées, la gestion des miniatures, l'intégration sponsorblock et la recherche en texte intégral alimentée par Elasticsearch.
-    es_es: TubeArchivist es un servidor multimedia de YouTube autoalojado que descarga, organiza e indexa tu contenido favorito de YouTube. Suscríbete a canales, descarga videos, busca metadatos y disfruta de visualización sin conexión a través de una hermosa interfaz web. Incluye extracción automática de metadatos, gestión de miniaturas, integración de sponsorblock y búsqueda de texto completo con Elasticsearch.
-    zh_cn: TubeArchivist 是一个自托管的 YouTube 媒体服务器，可下载、整理和索引您喜爱的 YouTube 内容。订阅频道、下载视频、搜索元数据，并通过精美的网页界面享受离线观看。功能包括自动元数据提取、缩略图管理、sponsorblock 集成以及由 Elasticsearch 提供支持的全文搜索。
-  developer: bbilly1
+    en_us: |
+      Your self-hosted YouTube media server. TubeArchivist is a powerful self-hosted application for organizing and searching your personal YouTube video library.
+
+      ## Features:
+      - Subscribe to your favorite channels
+      - Download videos with metadata and thumbnails
+      - Full-text search across all metadata
+      - Re-index and update metadata from YouTube
+      - Create playlists and organize content
+      - Built-in video player with subtitle support
+      - Download management and scheduler
+      - Elasticsearch-powered search functionality
+
+      ## Important System Requirements:
+      ⚠️ **CRITICAL**: Elasticsearch requires `vm.max_map_count` to be set to at least 262144.
+
+      Run this command on your host system BEFORE installing:
+      ```
+      echo "vm.max_map_count = 262144" | sudo tee -a /etc/sysctl.conf
+      sudo sysctl -p
+      ```
+
+      Without this setting, Elasticsearch will fail to start.
+
+      Default Account
+      | Username | Password                |
+      |----------|-------------------------|
+      | `admin`  | `$PCS_DEFAULT_PASSWORD` |
+    ko_kr: |
+      자체 호스팅 YouTube 미디어 서버. TubeArchivist는 개인 YouTube 비디오 라이브러리를 구성하고 검색하기 위한 강력한 자체 호스팅 애플리케이션입니다.
+
+      ## 주요 기능:
+      - 좋아하는 채널 구독
+      - 메타데이터 및 썸네일과 함께 비디오 다운로드
+      - 모든 메타데이터에 대한 전체 텍스트 검색
+      - YouTube에서 메타데이터 다시 색인화 및 업데이트
+      - 재생 목록 생성 및 콘텐츠 구성
+      - 자막 지원이 있는 내장 비디오 플레이어
+      - 다운로드 관리 및 스케줄러
+      - Elasticsearch 기반 검색 기능
+
+      ## 중요한 시스템 요구사항:
+      ⚠️ **필수**: Elasticsearch는 `vm.max_map_count`를 최소 262144로 설정해야 합니다.
+
+      설치 전에 호스트 시스템에서 이 명령을 실행하세요:
+      ```
+      echo "vm.max_map_count = 262144" | sudo tee -a /etc/sysctl.conf
+      sudo sysctl -p
+      ```
+
+      이 설정이 없으면 Elasticsearch가 시작되지 않습니다.
+
+      기본 계정
+      | 사용자명 | 비밀번호                |
+      |----------|-------------------------|
+      | `admin`  | `$PCS_DEFAULT_PASSWORD` |
+    fr_fr: |
+      Votre serveur multimédia YouTube auto-hébergé. TubeArchivist est une application auto-hébergée puissante pour organiser et rechercher votre bibliothèque vidéo YouTube personnelle.
+
+      ## Fonctionnalités:
+      - Abonnez-vous à vos chaînes préférées
+      - Téléchargez des vidéos avec métadonnées et vignettes
+      - Recherche en texte intégral dans toutes les métadonnées
+      - Réindexation et mise à jour des métadonnées depuis YouTube
+      - Créez des listes de lecture et organisez le contenu
+      - Lecteur vidéo intégré avec prise en charge des sous-titres
+      - Gestion et planification des téléchargements
+      - Fonctionnalité de recherche alimentée par Elasticsearch
+
+      ## Configuration système importante:
+      ⚠️ **CRITIQUE**: Elasticsearch nécessite que `vm.max_map_count` soit défini à au moins 262144.
+
+      Exécutez cette commande sur votre système hôte AVANT l'installation:
+      ```
+      echo "vm.max_map_count = 262144" | sudo tee -a /etc/sysctl.conf
+      sudo sysctl -p
+      ```
+
+      Sans ce paramètre, Elasticsearch ne démarrera pas.
+
+      Compte par défaut
+      | Nom d'utilisateur | Mot de passe            |
+      |-------------------|-------------------------|
+      | `admin`           | `$PCS_DEFAULT_PASSWORD` |
+    es_es: |
+      Tu servidor multimedia YouTube autoalojado. TubeArchivist es una potente aplicación autoalojada para organizar y buscar tu biblioteca personal de videos de YouTube.
+
+      ## Características:
+      - Suscríbete a tus canales favoritos
+      - Descarga videos con metadatos y miniaturas
+      - Búsqueda de texto completo en todos los metadatos
+      - Reindexación y actualización de metadatos desde YouTube
+      - Crea listas de reproducción y organiza contenido
+      - Reproductor de video integrado con soporte de subtítulos
+      - Gestión y programación de descargas
+      - Funcionalidad de búsqueda con Elasticsearch
+
+      ## Requisitos del sistema importantes:
+      ⚠️ **CRÍTICO**: Elasticsearch requiere que `vm.max_map_count` esté configurado en al menos 262144.
+
+      Ejecuta este comando en tu sistema host ANTES de instalar:
+      ```
+      echo "vm.max_map_count = 262144" | sudo tee -a /etc/sysctl.conf
+      sudo sysctl -p
+      ```
+
+      Sin esta configuración, Elasticsearch no se iniciará.
+
+      Cuenta predeterminada
+      | Usuario | Contraseña              |
+      |---------|-------------------------|
+      | `admin` | `$PCS_DEFAULT_PASSWORD` |
+    zh_cn: |
+      您的自托管 YouTube 媒体服务器。TubeArchivist 是一个强大的自托管应用程序，用于组织和搜索您的个人 YouTube 视频库。
+
+      ## 功能：
+      - 订阅您喜爱的频道
+      - 下载带有元数据和缩略图的视频
+      - 在所有元数据中进行全文搜索
+      - 从 YouTube 重新索引和更新元数据
+      - 创建播放列表并组织内容
+      - 支持字幕的内置视频播放器
+      - 下载管理和调度程序
+      - Elasticsearch 驱动的搜索功能
+
+      ## 重要系统要求：
+      ⚠️ **关键**：Elasticsearch 需要将 `vm.max_map_count` 设置为至少 262144。
+
+      在安装前在您的主机系统上运行此命令：
+      ```
+      echo "vm.max_map_count = 262144" | sudo tee -a /etc/sysctl.conf
+      sudo sysctl -p
+      ```
+
+      没有此设置，Elasticsearch 将无法启动。
+
+      默认账户
+      | 用户名  | 密码                    |
+      |---------|-------------------------|
+      | `admin` | `$PCS_DEFAULT_PASSWORD` |
+  developer: TubeArchivist
   icon: https://cdn.jsdelivr.net/gh/Worph/AppStore@main/Apps/TubeArchivist/icon.png
   screenshot_link:
     - https://cdn.jsdelivr.net/gh/Worph/AppStore@main/Apps/TubeArchivist/screenshot-1.png
     - https://cdn.jsdelivr.net/gh/Worph/AppStore@main/Apps/TubeArchivist/screenshot-2.png
     - https://cdn.jsdelivr.net/gh/Worph/AppStore@main/Apps/TubeArchivist/screenshot-3.png
   tagline:
-    en_us: Self-hosted YouTube media server with powerful search
-    ko_kr: 강력한 검색 기능을 갖춘 자체 호스팅 YouTube 미디어 서버
-    fr_fr: Serveur multimédia YouTube auto-hébergé avec recherche puissante
-    es_es: Servidor multimedia de YouTube autoalojado con búsqueda potente
-    zh_cn: 具有强大搜索功能的自托管 YouTube 媒体服务器
+    en_us: Your self-hosted YouTube media server with full metadata and search
+    ko_kr: 완전한 메타데이터 및 검색 기능이 있는 자체 호스팅 YouTube 미디어 서버
+    fr_fr: Votre serveur multimédia YouTube auto-hébergé avec métadonnées complètes et recherche
+    es_es: Tu servidor multimedia YouTube autoalojado con metadatos completos y búsqueda
+    zh_cn: 具有完整元数据和搜索功能的自托管 YouTube 媒体服务器
   thumbnail: https://cdn.jsdelivr.net/gh/Worph/AppStore@main/Apps/TubeArchivist/thumbnail.png
   title:
     en_us: TubeArchivist
-  webui_port: 80
+  webui_port: "8000"
+  store_app_id: tubearchivist
   tips:
     before_install:
       en_us: |
-        ### Default Account
-        | Username   | Password                |
-        | ---------- | ----------------------- |
-        | `admin`    | `$PCS_DEFAULT_PASSWORD` |
+        ⚠️ **CRITICAL SYSTEM REQUIREMENT**
 
-        ### Important Notes
-        - Elasticsearch requires at least 2GB of RAM for proper operation
-        - First startup may take several minutes to initialize Elasticsearch
-        - Downloads are stored in `/DATA/AppData/tubearchivist/youtube`
-        - You can access additional media at `/DATA/Media` for organization
-        - Configure your preferred download quality in settings after first login
-        
-        ### System Requirements
-        - The kernel parameter `vm.max_map_count` must be set to at least 262144
-        - On most systems, add `vm.max_map_count = 262144` to `/etc/sysctl.conf`
-        - Apply with: `sudo sysctl -p`
-      ko_kr: |
-        ### 기본 계정
-        | 사용자명   | 비밀번호                |
-        | ---------- | ----------------------- |
-        | `admin`    | `$PCS_DEFAULT_PASSWORD` |
+        Elasticsearch requires `vm.max_map_count` to be at least 262144.
 
-        ### 중요 사항
-        - Elasticsearch는 정상 작동을 위해 최소 2GB RAM이 필요합니다
-        - 첫 시작 시 Elasticsearch 초기화에 몇 분이 걸릴 수 있습니다
-        - 다운로드는 `/DATA/AppData/tubearchivist/youtube`에 저장됩니다
-        - 정리를 위해 `/DATA/Media`에서 추가 미디어에 액세스할 수 있습니다
-        - 첫 로그인 후 설정에서 선호하는 다운로드 품질을 구성하세요
-        
-        ### 시스템 요구사항
-        - 커널 매개변수 `vm.max_map_count`는 최소 262144로 설정되어야 합니다
-        - 대부분의 시스템에서 `/etc/sysctl.conf`에 `vm.max_map_count = 262144` 추가
-        - 적용: `sudo sysctl -p`
-      fr_fr: |
-        ### Compte par défaut
-        | Nom d'utilisateur | Mot de passe          |
-        | ----------------- | --------------------- |
-        | `admin`           | `$PCS_DEFAULT_PASSWORD` |
+        **Run this command on your HOST system BEFORE installation:**
+        ```bash
+        echo "vm.max_map_count = 262144" | sudo tee -a /etc/sysctl.conf
+        sudo sysctl -p
+        ```
 
-        ### Notes importantes
-        - Elasticsearch nécessite au moins 2 Go de RAM pour fonctionner correctement
-        - Le premier démarrage peut prendre plusieurs minutes pour initialiser Elasticsearch
-        - Les téléchargements sont stockés dans `/DATA/AppData/tubearchivist/youtube`
-        - Vous pouvez accéder à des médias supplémentaires dans `/DATA/Media` pour l'organisation
-        - Configurez votre qualité de téléchargement préférée dans les paramètres après la première connexion
-        
-        ### Configuration système requise
-        - Le paramètre du noyau `vm.max_map_count` doit être défini sur au moins 262144
-        - Sur la plupart des systèmes, ajoutez `vm.max_map_count = 262144` à `/etc/sysctl.conf`
-        - Appliquez avec : `sudo sysctl -p`
-      es_es: |
-        ### Cuenta predeterminada
-        | Nombre de usuario | Contraseña            |
-        | ----------------- | --------------------- |
-        | `admin`           | `$PCS_DEFAULT_PASSWORD` |
+        To verify the setting:
+        ```bash
+        sysctl vm.max_map_count
+        ```
 
-        ### Notas importantes
-        - Elasticsearch requiere al menos 2GB de RAM para funcionar correctamente
-        - El primer inicio puede tardar varios minutos en inicializar Elasticsearch
-        - Las descargas se almacenan en `/DATA/AppData/tubearchivist/youtube`
-        - Puede acceder a medios adicionales en `/DATA/Media` para organización
-        - Configure su calidad de descarga preferida en configuración después del primer inicio de sesión
-        
-        ### Requisitos del sistema
-        - El parámetro del kernel `vm.max_map_count` debe establecerse en al menos 262144
-        - En la mayoría de los sistemas, agregue `vm.max_map_count = 262144` a `/etc/sysctl.conf`
-        - Aplique con: `sudo sysctl -p`
-      zh_cn: |
-        ### 默认账户
-        | 用户名   | 密码                    |
-        | -------- | ----------------------- |
+        Default Account
+        | Username | Password                |
+        |----------|-------------------------|
         | `admin`  | `$PCS_DEFAULT_PASSWORD` |
 
-        ### 重要说明
-        - Elasticsearch 正常运行至少需要 2GB RAM
-        - 首次启动可能需要几分钟来初始化 Elasticsearch
-        - 下载存储在 `/DATA/AppData/tubearchivist/youtube`
-        - 您可以在 `/DATA/Media` 访问额外的媒体文件进行整理
-        - 首次登录后在设置中配置您首选的下载质量
-        
-        ### 系统要求
-        - 内核参数 `vm.max_map_count` 必须设置为至少 262144
-        - 在大多数系统上，将 `vm.max_map_count = 262144` 添加到 `/etc/sysctl.conf`
-        - 应用：`sudo sysctl -p`
+        The application will be accessible at: `https://8000-tubearchivist-[username].nsl.sh/`
+      ko_kr: |
+        ⚠️ **중요한 시스템 요구사항**
+
+        Elasticsearch는 `vm.max_map_count`가 최소 262144여야 합니다.
+
+        **설치 전에 호스트 시스템에서 이 명령을 실행하세요:**
+        ```bash
+        echo "vm.max_map_count = 262144" | sudo tee -a /etc/sysctl.conf
+        sudo sysctl -p
+        ```
+
+        설정 확인:
+        ```bash
+        sysctl vm.max_map_count
+        ```
+
+        기본 계정
+        | 사용자명 | 비밀번호                |
+        |----------|-------------------------|
+        | `admin`  | `$PCS_DEFAULT_PASSWORD` |
+
+        애플리케이션은 다음에서 액세스할 수 있습니다: `https://8000-tubearchivist-[username].nsl.sh/`
