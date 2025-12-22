@@ -1,21 +1,21 @@
 name: tubearchivist
 services:
   tubearchivist:
-    image: bbilly1/tubearchivist:v0.5.8
+    image: bbilly1/tubearchivist:latest
     container_name: tubearchivist
     restart: unless-stopped
     expose:
       - "80"
     volumes:
-      - /DATA/AppData/tubearchivist/youtube/:/youtube
-      - /DATA/AppData/tubearchivist/cache/:/cache
-      - /DATA/Media/:/media
+      - /DATA/AppData/tubearchivist/youtube:/youtube
+      - /DATA/AppData/tubearchivist/cache:/cache
+      - /DATA/Media:/media
     environment:
       ES_URL: http://tubearchivist-es:9200
       REDIS_CON: redis://tubearchivist-redis:6379
       HOST_UID: $PUID
       HOST_GID: $PGID
-      TA_HOST: $PCS_DOMAIN
+      TA_HOST: http://$PCS_DOMAIN
       TA_PORT: "80"
       TA_USERNAME: admin
       TA_PASSWORD: $PCS_DEFAULT_PASSWORD
@@ -108,7 +108,7 @@ services:
     expose:
       - "6379"
     volumes:
-      - /DATA/AppData/tubearchivist/redis/:/data
+      - /DATA/AppData/tubearchivist/redis:/data
     command: redis-server --save 60 1 --loglevel warning
     healthcheck:
       test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
@@ -146,7 +146,7 @@ services:
         soft: -1
         hard: -1
     volumes:
-      - /DATA/AppData/tubearchivist/es/:/usr/share/elasticsearch/data
+      - /DATA/AppData/tubearchivist/es:/usr/share/elasticsearch/data
     expose:
       - "9200"
     healthcheck:
