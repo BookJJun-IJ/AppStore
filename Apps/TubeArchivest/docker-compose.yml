@@ -2,7 +2,7 @@ name: tubearchivist
 
 services:
   tubearchivist:
-    image: bbilly1/tubearchivist:v0.5.7
+    image: bbilly1/tubearchivist:latest
     container_name: tubearchivist
     restart: unless-stopped
     expose:
