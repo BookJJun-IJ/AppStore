@@ -14,7 +14,8 @@ services:
       BACKEND_PORT: "3000"
       LISTEN_PORT: "80"
     depends_on:
-      - convertx
+      convertx:
+        condition: service_healthy
     networks:
       - pcs
     privileged: true
