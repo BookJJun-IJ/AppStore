@@ -1,120 +1,68 @@
 name: convertx
 
 services:
+  convertx-nginx:
+    image: ghcr.io/yundera/nginx-hash-lock:latest
+    container_name: convertx-nginx
+    restart: unless-stopped
+    expose:
+      - 80
+    user: "root"
+    environment:
+      AUTH_HASH: $AUTH_HASH
+      BACKEND_HOST: "convertx"
+      BACKEND_PORT: "3000"
+      LISTEN_PORT: "80"
+    depends_on:
+      - convertx
+    networks:
+      - pcs
+    privileged: true
+    cap_add:
+      - SYS_ADMIN
+      - NET_ADMIN
+
   convertx:
     image: ghcr.io/c4illin/convertx:v0.15.1
     container_name: convertx
     restart: unless-stopped
-    user: "0:0"
-    cpu_shares: 70
-    networks:
-      - convertx_network
+    user: "root"  # Root user required for SQLite access - see rationale.md
     deploy:
       resources:
         limits:
           memory: 2G
           cpus: '1.0'
     environment:
-      - PUID=0
-      - PGID=0
       - JWT_SECRET=$PCS_DEFAULT_PASSWORD
       - ACCOUNT_REGISTRATION=false
       - HTTP_ALLOWED=true
       - ALLOW_UNAUTHENTICATED=false
       - AUTO_DELETE_EVERY_N_HOURS=24
-      - HOST=0.0.0.0
     volumes:
       - /DATA/AppData/$AppID/data:/app/data
       - /DATA/Downloads:/downloads:ro
       - /DATA/Documents:/documents:ro
-    healthcheck:
-      test: ["CMD", "/bin/sh", "-c", "wget --spider --tries=1 http://localhost:3000 2>/dev/null || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-
-  nginx-proxy:
-    image: nginx:1.27-alpine
-    container_name: convertx-nginx
-    restart: unless-stopped
     networks:
-      - convertx_network
-    cpu_shares: 80
-    user: "0:0"
-    expose:
-      - 80
-    command:
-      - /bin/sh
-      - -c
-      - |
-        echo "Waiting for ConvertX to be ready..."
-        for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30; do
-          if wget --spider --tries=1 --timeout=2 http://convertx:3000 2>/dev/null; then
-            echo "ConvertX is ready!"
-            break
-          fi
-          echo "Waiting for ConvertX... (attempt $$i/30)"
-          sleep 2
-        done
-        
-        if ! wget --spider --tries=1 --timeout=2 http://convertx:3000 2>/dev/null; then
-          echo "ERROR: ConvertX did not become ready in time"
-          exit 1
-        fi
-        
-        echo 'server {' > /etc/nginx/conf.d/default.conf
-        echo '    listen 80;' >> /etc/nginx/conf.d/default.conf
-        echo '    server_name _;' >> /etc/nginx/conf.d/default.conf
-        echo '    client_max_body_size 100M;' >> /etc/nginx/conf.d/default.conf
-        echo '' >> /etc/nginx/conf.d/default.conf
-        echo '    location /health {' >> /etc/nginx/conf.d/default.conf
-        echo '        access_log off;' >> /etc/nginx/conf.d/default.conf
-        echo '        return 200 "healthy\n";' >> /etc/nginx/conf.d/default.conf
-        echo '        add_header Content-Type text/plain;' >> /etc/nginx/conf.d/default.conf
-        echo '    }' >> /etc/nginx/conf.d/default.conf
-        echo '' >> /etc/nginx/conf.d/default.conf
-        echo '    location / {' >> /etc/nginx/conf.d/default.conf
-        echo '        proxy_pass http://convertx:3000;' >> /etc/nginx/conf.d/default.conf
-        echo '        proxy_set_header Host $$host;' >> /etc/nginx/conf.d/default.conf
-        echo '        proxy_set_header X-Real-IP $$remote_addr;' >> /etc/nginx/conf.d/default.conf
-        echo '        proxy_set_header X-Forwarded-For $$proxy_add_x_forwarded_for;' >> /etc/nginx/conf.d/default.conf
-        echo '        proxy_set_header X-Forwarded-Proto $$scheme;' >> /etc/nginx/conf.d/default.conf
-        echo '        proxy_http_version 1.1;' >> /etc/nginx/conf.d/default.conf
-        echo '        proxy_set_header Upgrade $$http_upgrade;' >> /etc/nginx/conf.d/default.conf
-        echo '        proxy_set_header Connection "upgrade";' >> /etc/nginx/conf.d/default.conf
-        echo '        proxy_connect_timeout 60s;' >> /etc/nginx/conf.d/default.conf
-        echo '        proxy_send_timeout 300s;' >> /etc/nginx/conf.d/default.conf
-        echo '        proxy_read_timeout 300s;' >> /etc/nginx/conf.d/default.conf
-        echo '        proxy_intercept_errors off;' >> /etc/nginx/conf.d/default.conf
-        echo '    }' >> /etc/nginx/conf.d/default.conf
-        echo '}' >> /etc/nginx/conf.d/default.conf
-        
-        echo "Starting nginx..."
-        exec nginx -g 'daemon off;'
-    depends_on:
-      convertx:
-        condition: service_started
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "--tries=1", "http://localhost:80/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+      - pcs
+    privileged: true
+    cap_add:
+      - SYS_ADMIN
+      - NET_ADMIN
+    cpu_shares: 70
 
 networks:
-  convertx_network:
-    driver: bridge
+  pcs:
+    external: true
 
 x-casaos:
   architectures:
     - amd64
     - arm64
-  main: nginx-proxy
+  main: convertx-nginx
   pre-install-cmd: |
     mkdir -p /DATA/AppData/$AppID/data &&
     chmod -R 777 /DATA/AppData/$AppID/data &&
-    echo "ConvertX data directory prepared"
+    echo "ConvertX data directory prepared with full permissions"
   author: Yundera Team
   category: Utilities
   developer: C4illin
@@ -144,7 +92,7 @@ x-casaos:
         **Important Setup Instructions**
         
         - **First User is Admin**: The first registered account becomes administrator
-        - **Clean URLs**: Accessible via `https://convertx-[username].nsl.sh` (no port prefix)
+        - **HTTP_ALLOWED**: Set to true for NSL router compatibility
         - **Auto Cleanup**: Files auto-delete after 24 hours (configurable)
         - **Root User**: Running as root (0:0) due to SQLite permission requirements (see rationale.md)
         
@@ -156,6 +104,8 @@ x-casaos:
         - 3D Models: STL, OBJ, PLY, DAE
         - Archives: ZIP, RAR, 7Z, TAR
         
+        Access via: `https://convertx-[username].nsl.sh`
+        
         **Note**: This app requires root permissions to function properly with SQLite database.
-  index: /
+  index: /?hash=$AUTH_HASH
   webui_port: 80
