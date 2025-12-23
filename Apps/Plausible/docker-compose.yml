@@ -250,34 +250,20 @@ x-casaos:
   webui_port: 80
   store_app_id: plausible
   pre-install-cmd: |
-    echo "=== Plausible Pre-Install Script ==="
-    echo "Creating directories..."
-    mkdir -p /DATA/AppData/$AppID/db /DATA/AppData/$AppID/event-data /DATA/AppData/$AppID/event-logs /DATA/AppData/$AppID/secrets
-    echo "Directory structure created"
-    ls -la /DATA/AppData/$AppID/
-    if [ ! -f /DATA/AppData/$AppID/secrets/secret_key_base.txt ]; then
-      echo "Generating SECRET_KEY_BASE..."
-      openssl rand -base64 64 | tr -d '\n' > /DATA/AppData/$AppID/secrets/secret_key_base.txt
-      echo "SECRET_KEY_BASE generated"
-    else
-      echo "SECRET_KEY_BASE already exists"
-    fi
-    if [ ! -f /DATA/AppData/$AppID/secrets/totp_vault_key.txt ]; then
-      echo "Generating TOTP_VAULT_KEY..."
-      openssl rand -base64 32 | tr -d '\n' > /DATA/AppData/$AppID/secrets/totp_vault_key.txt
-      echo "TOTP_VAULT_KEY generated"
-    else
-      echo "TOTP_VAULT_KEY already exists"
-    fi
-    echo "Secrets directory contents:"
-    ls -la /DATA/AppData/$AppID/secrets/
-    echo "Verifying secret files..."
-    if [ -f /DATA/AppData/$AppID/secrets/secret_key_base.txt ]; then
-      echo "secret_key_base.txt size: $(wc -c < /DATA/AppData/$AppID/secrets/secret_key_base.txt) bytes"
-    fi
-    if [ -f /DATA/AppData/$AppID/secrets/totp_vault_key.txt ]; then
-      echo "totp_vault_key.txt size: $(wc -c < /DATA/AppData/$AppID/secrets/totp_vault_key.txt) bytes"
-    fi
-    echo "Setting permissions..."
-    chown -R $PUID:$PGID /DATA/AppData/$AppID
-    echo "Pre-install complete"
+    docker run --rm \
+      -v /DATA/AppData/$AppID:/data \
+      alpine:3.19 \
+      sh -c '
+        echo "=== Plausible Pre-Install ===" &&
+        mkdir -p /data/db /data/event-data /data/event-logs /data/secrets &&
+        if [ ! -f /data/secrets/secret_key_base.txt ]; then
+          echo "Generating SECRET_KEY_BASE..." &&
+          cat /dev/urandom | head -c 64 | base64 | tr -d "\n" > /data/secrets/secret_key_base.txt
+        fi &&
+        if [ ! -f /data/secrets/totp_vault_key.txt ]; then
+          echo "Generating TOTP_VAULT_KEY..." &&
+          cat /dev/urandom | head -c 32 | base64 | tr -d "\n" > /data/secrets/totp_vault_key.txt
+        fi &&
+        ls -la /data/secrets/ &&
+        echo "Secrets generated successfully"
+      '
