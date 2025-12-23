@@ -63,8 +63,8 @@ services:
       sh -c '
         echo "=== Plausible Starting ===" &&
         echo "Reading secrets..." &&
-        export SECRET_KEY_BASE=$(cat /secrets/secret_key_base.txt) &&
-        export TOTP_VAULT_KEY=$(cat /secrets/totp_vault_key.txt) &&
+        export SECRET_KEY_BASE=$$(cat /secrets/secret_key_base.txt) &&
+        export TOTP_VAULT_KEY=$$(cat /secrets/totp_vault_key.txt) &&
         echo "SECRET_KEY_BASE length: $${#SECRET_KEY_BASE}" &&
         echo "TOTP_VAULT_KEY length: $${#TOTP_VAULT_KEY}" &&
         if [ $${#SECRET_KEY_BASE} -lt 32 ]; then
