@@ -12,10 +12,10 @@ services:
       TZ: $TZ
       JAVA_OPTS: "-Dserver.port=80 -Dserver.use-forward-headers=true"    
     volumes:
-      - /DATA/AppData/$AppID/config:/config
-      - /DATA/AppData/$AppID/data:/data
-      - /DATA/Media/Music:/music:ro
-      - /DATA/AppData/$AppID/playlists:/playlists    
+      - /DATA/AppData/airsonic/config/:/config
+      - /DATA/AppData/airsonic/data/:/data
+      - /DATA/Media/Music/:/music:ro
+      - /DATA/AppData/airsonic/playlists/:/playlists    
     deploy:
       resources:
         reservations:
