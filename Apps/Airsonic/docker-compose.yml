@@ -54,12 +54,13 @@ x-casaos:
         /DATA/AppData/airsonic
   pre-install-cmd: |
     docker run --rm \
-      -v /DATA/AppData/$AppID:/data \
-      -v /DATA/Media/Music:/music \
+      -v /DATA:/DATA \
       ubuntu:22.04 sh -c "
-      mkdir -p /data/config /data/data /data/playlists &&
-      mkdir -p /music &&
-      chown -R $PUID:$PGID /data /music &&
-      chmod -R 755 /data /music &&
+      mkdir -p /DATA/AppData/airsonic/config &&
+      mkdir -p /DATA/AppData/airsonic/data &&
+      mkdir -p /DATA/AppData/airsonic/playlists &&
+      mkdir -p /DATA/Media/Music &&
+      chown -R $PUID:$PGID /DATA/AppData/airsonic /DATA/Media/Music &&
+      chmod -R 755 /DATA/AppData/airsonic /DATA/Media/Music &&
       echo 'Airsonic Advanced: directories created successfully'
       "
