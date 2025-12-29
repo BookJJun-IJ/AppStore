@@ -1,7 +1,7 @@
 name: discourse
 services:
   postgresql:
-    image: docker.io/bitnami/postgresql:16
+    image: postgres:17
     container_name: discourse-postgresql
     restart: unless-stopped
     deploy:
@@ -10,13 +10,11 @@ services:
           cpus: '0.5'
     cpu_shares: 50
     environment:
-      - POSTGRESQL_DATABASE=bitnami_discourse
-      - POSTGRESQL_USERNAME=bn_discourse
-      - POSTGRESQL_PASSWORD=$PCS_DEFAULT_PASSWORD
-      - POSTGRESQL_CLIENT_CREATE_DATABASE_NAME=bitnami_discourse
-      - POSTGRESQL_CLIENT_CREATE_DATABASE_EXTENSIONS=hstore,pg_trgm
+      - POSTGRES_DB=bitnami_discourse
+      - POSTGRES_USER=bn_discourse
+      - POSTGRES_PASSWORD=$PCS_DEFAULT_PASSWORD
     volumes:
-      - /DATA/AppData/$AppID/postgresql:/bitnami/postgresql
+      - /DATA/AppData/$AppID/postgresql:/var/lib/postgresql/data
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -h localhost -U bn_discourse -d bitnami_discourse']
       interval: 10s
@@ -26,7 +24,7 @@ services:
       - discourse-network
 
   redis:
-    image: docker.io/bitnami/redis:7.4
+    image: redis:7.4
     container_name: discourse-redis
     restart: unless-stopped
     deploy:
@@ -34,12 +32,11 @@ services:
         reservations:
           cpus: '0.25'
     cpu_shares: 30
-    environment:
-      - REDIS_PASSWORD=$PCS_DEFAULT_PASSWORD
+    command: redis-server --requirepass $PCS_DEFAULT_PASSWORD
     volumes:
-      - /DATA/AppData/$AppID/redis:/bitnami/redis
+      - /DATA/AppData/$AppID/redis:/data
     healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
+      test: ['CMD', 'redis-cli', '--askpass', 'ping']
       interval: 5s
       timeout: 5s
       retries: 10
