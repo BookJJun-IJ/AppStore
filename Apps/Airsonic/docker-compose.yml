@@ -5,12 +5,12 @@ services:
     image: lscr.io/linuxserver/airsonic-advanced:11.1.4-ls166
     restart: unless-stopped
     expose:
-      - 80    
+      - 4040 
     environment:
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
-      JAVA_OPTS: "-Dserver.port=80 -Dserver.use-forward-headers=true"    
+      JAVA_OPTS: "-Dserver.port=4040 -Dserver.use-forward-headers=true"    
     volumes:
       - /DATA/AppData/airsonic/config/:/config
       - /DATA/AppData/airsonic/data/:/data
@@ -33,7 +33,7 @@ x-casaos:
     - amd64
     - arm64
   main: airsonic
-  webui_port: 80
+  webui_port: 4040
   store_app_id: airsonic
   title:
     en_us: Airsonic Advanced
