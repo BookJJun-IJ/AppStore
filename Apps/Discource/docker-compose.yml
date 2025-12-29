@@ -47,7 +47,7 @@ services:
       - discourse-network
 
   discourse:
-    image: docker.io/bitnami/discourse:3.3.3
+    image: docker.io/bitnami/discourse:3
     container_name: discourse-app
     restart: unless-stopped
     deploy:
@@ -87,7 +87,7 @@ services:
       - discourse-network
 
   sidekiq:
-    image: docker.io/bitnami/discourse:3.3.3
+    image: docker.io/bitnami/discourse:3
     container_name: discourse-sidekiq
     restart: unless-stopped
     deploy:
