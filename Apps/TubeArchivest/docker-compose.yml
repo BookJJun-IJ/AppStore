@@ -71,7 +71,7 @@ services:
     expose:
       - "9200"
     volumes:
-      - /DATA/AppData/$AppID/es:/usr/share/elasticsearch/data
+      - tubearchivist-es-data:/usr/share/elasticsearch/data
     healthcheck:
       test: ["CMD-SHELL", "curl -s -f -u elastic:$$ELASTIC_PASSWORD http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=5s || exit 1"]
       interval: 30s
@@ -89,6 +89,10 @@ services:
 networks:
   tubearchivist_network:
     driver: bridge
+
+volumes:
+  tubearchivist-es-data:
+    driver: local
 
 x-casaos:
   architectures:
