@@ -2,7 +2,7 @@ name: tubearchivist
 
 services:
   tubearchivist:
-    image: bbilly1/tubearchivist:latest
+    image: bbilly1/tubearchivist:v0.5.8
     container_name: tubearchivist
     restart: unless-stopped
     expose:
@@ -25,7 +25,7 @@ services:
       - ELASTIC_PASSWORD=$PCS_DEFAULT_PASSWORD
       - TZ=$TZ
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health/"]
       interval: 2m
       timeout: 10s
       retries: 3
@@ -36,7 +36,7 @@ services:
     cpu_shares: 70
 
   tubearchivist-redis:
-    image: redis:7.4-alpine
+    image: redis:7.4.2-alpine
     container_name: tubearchivist-redis
     restart: unless-stopped
     expose:
@@ -54,7 +54,7 @@ services:
     cpu_shares: 50
 
   tubearchivist-es:
-    image: bbilly1/tubearchivist-es:latest
+    image: bbilly1/tubearchivist-es
     container_name: tubearchivist-es
     restart: unless-stopped
     expose:
@@ -207,9 +207,9 @@ x-casaos:
       |---------|-------------------------|
       | `admin` | `$PCS_DEFAULT_PASSWORD` |
     zh_cn: |
-      您的自托管 YouTube 媒体服务器。TubeArchivist 是一个强大的自托管应用程序，用于组织和搜索您的个人 YouTube 视频库。
+      您的自托管 YouTube 媒体服务器。TubeArchivist 是一个强大的自托管应用程序,用于组织和搜索您的个人 YouTube 视频库。
 
-      ## 功能：
+      ## 功能:
       - 订阅您喜爱的频道
       - 下载带有元数据和缩略图的视频
       - 在所有元数据中进行全文搜索
@@ -219,16 +219,16 @@ x-casaos:
       - 下载管理和调度程序
       - Elasticsearch 驱动的搜索功能
 
-      ## 重要系统要求：
-      ⚠️ **关键**：Elasticsearch 需要将 `vm.max_map_count` 设置为至少 262144。
+      ## 重要系统要求:
+      ⚠️ **关键**:Elasticsearch 需要将 `vm.max_map_count` 设置为至少 262144。
 
-      在安装前在您的主机系统上运行此命令：
+      在安装前在您的主机系统上运行此命令:
       ```
       echo "vm.max_map_count = 262144" | sudo tee -a /etc/sysctl.conf
       sudo sysctl -p
       ```
 
-      没有此设置，Elasticsearch 将无法启动。
+      没有此设置,Elasticsearch 将无法启动。
 
       默认账户
       | 用户名  | 密码                    |
