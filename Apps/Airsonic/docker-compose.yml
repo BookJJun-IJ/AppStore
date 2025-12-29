@@ -1,70 +1,75 @@
-name: audiobookshelf
+name: airsonic
 
 services:
-  # Init container to create directories
-  audiobookshelf-init:
+  airsonic-init:
     image: busybox:latest
-    container_name: audiobookshelf-init
     user: root
     volumes:
       - /DATA:/DATA
     command: >
       sh -c "
-      mkdir -p /DATA/AppData/audiobookshelf/config &&
-      mkdir -p /DATA/AppData/audiobookshelf/metadata &&
-      mkdir -p /DATA/Media/Audiobooks &&
-      mkdir -p /DATA/Media/Podcasts &&
-      chown -R 1000:1000 /DATA/AppData/audiobookshelf &&
-      chown -R 1000:1000 /DATA/Media/Audiobooks &&
-      chown -R 1000:1000 /DATA/Media/Podcasts &&
-      chmod -R 755 /DATA/AppData/audiobookshelf &&
-      chmod -R 755 /DATA/Media/Audiobooks &&
-      chmod -R 755 /DATA/Media/Podcasts &&
-      echo 'Directories created successfully'
+      mkdir -p /DATA/AppData/airsonic/config &&
+      mkdir -p /DATA/AppData/airsonic/data &&
+      mkdir -p /DATA/Media/Music &&
+      chown -R 1000:1000 /DATA/AppData/airsonic /DATA/Media/Music &&
+      chmod -R 755 /DATA/AppData/airsonic /DATA/Media/Music &&
+      echo 'Airsonic directories created successfully'
       "
     restart: "no"
+    networks:
+      - pcs
 
-  audiobookshelf:
-    image: ghcr.io/advplyr/audiobookshelf:latest
-    container_name: audiobookshelf
+  airsonic:
+    image: lscr.io/linuxserver/airsonic-advanced:latest
     restart: unless-stopped
     depends_on:
-      - audiobookshelf-init
-    expose:
-      - 80
+      - airsonic-init
+
+    ports:
+      - target: 4040
+        published: ${WEBUI_PORT:-4040}
+        protocol: tcp
+
     environment:
+      - PUID=1000
+      - PGID=1000
       - TZ=Etc/UTC
-      - HOST=0.0.0.0
-      - PORT=80
-      - ROUTER_BASE_PATH=/audiobookshelf
+      - CONTEXT_PATH=/airsonic
+
     volumes:
-      - /DATA/AppData/audiobookshelf/config:/config
-      - /DATA/AppData/audiobookshelf/metadata:/metadata
-      - /DATA/Media/Audiobooks:/audiobooks
-      - /DATA/Media/Podcasts:/podcasts
+      - /DATA/AppData/airsonic/config:/config
+      - /DATA/AppData/airsonic/data:/data
+      - /DATA/Media/Music:/music
+
+    networks:
+      - pcs
+
+networks:
+  pcs:
+    external: true
 
 x-casaos:
   architectures:
     - amd64
     - arm64
-  main: audiobookshelf
-  webui_port: 80
-  store_app_id: audiobookshelf
+  main: airsonic
+  index: /airsonic/
+  port_map: ${WEBUI_PORT:-4040}
+  store_app_id: airsonic
   title:
-    en_us: Audiobookshelf
+    en_us: Airsonic Advanced
   tagline:
-    en_us: Self hosted audiobooks and podcasts
+    en_us: Subsonic-compatible music server
   description:
     en_us: |
-      Stream your personal audiobooks and podcasts on any device. Easy library management, chapters, metadata, users, and backups. Perfect fit for Yundera PCS.
-  developer: advplyr
+      Airsonic-Advanced is a modern, actively maintained fork of Subsonic.
+      Fully compatible with Subsonic mobile and desktop apps.
+  developer: linuxserver.io
   category: Media
   tips:
     before_install:
       en_us: |
-        Directories will be created automatically on first run.
-        Media folders:
-        /DATA/Media/Audiobooks
-        /DATA/Media/Podcasts
-        You can change the paths in the compose if your media lives elsewhere.
-
+        Music folder:
+        /DATA/Media/Music
+        Config & data:
+        /DATA/AppData/airsonic
