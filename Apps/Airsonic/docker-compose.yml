@@ -4,38 +4,25 @@ services:
   airsonic:
     image: lscr.io/linuxserver/airsonic-advanced:11.1.4-ls166
     restart: unless-stopped
-    user: $PUID:$PGID
-    
     expose:
-      - 80
-    
+      - 80    
     environment:
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
-      JAVA_OPTS: "-Dserver.port=80 -Dserver.use-forward-headers=true"
-    
+      JAVA_OPTS: "-Dserver.port=80 -Dserver.use-forward-headers=true"    
     volumes:
       - /DATA/AppData/$AppID/config:/config
       - /DATA/AppData/$AppID/data:/data
       - /DATA/Media/Music:/music:ro
-      - /DATA/AppData/$AppID/playlists:/playlists
-    
+      - /DATA/AppData/$AppID/playlists:/playlists    
     deploy:
       resources:
         reservations:
-          memory: 256M
-    
-    cpu_shares: 50
-    
+          memory: 256M    
+    cpu_shares: 50    
     networks:
-      - airsonic_network
-    
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      - airsonic_network 
 
 networks:
   airsonic_network:
@@ -66,9 +53,9 @@ x-casaos:
         Config & data:
         /DATA/AppData/airsonic
   pre-install-cmd: |
-    docker run --rm -v /DATA/AppData/$AppID:/data ubuntu:22.04 sh -c "
-    mkdir -p /data/config /data/data /data/playlists &&
-    chown -R $PUID:$PGID /data &&
-    chmod -R 755 /data &&
-    echo 'Airsonic Advanced directories initialized'
+    docker run --rm -v /DATA/AppData/$AppID:/appdata -v /DATA/Media:/media ubuntu:22.04 sh -c "
+    mkdir -p /appdata/config /appdata/data /appdata/playlists /media/Music &&
+    chown -R $PUID:$PGID /appdata /media/Music &&
+    chmod -R 755 /appdata /media/Music &&
+    echo 'Airsonic Advanced directories initialized with proper permissions'
     "
