@@ -68,10 +68,6 @@ services:
       - xpack.security.enabled=true
       - discovery.type=single-node
       - path.repo=/usr/share/elasticsearch/data/snapshot
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
     expose:
       - "9200"
     volumes:
@@ -100,6 +96,8 @@ x-casaos:
     - arm64
   main: tubearchivist
   author: Yundera Team
+  pre-install-cmd: |
+    docker run --rm -v /DATA/AppData/$AppID/:/data ubuntu:22.04 sh -c "mkdir -p /data/es && chown -R 1000:0 /data/es"
   category: Media
   description:
     en_us: |
