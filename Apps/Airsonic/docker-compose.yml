@@ -1,60 +1,52 @@
-name: airsonic
+name: airsonic-advanced
 
 services:
-  airsonic-init:
-    image: busybox:latest
-    user: root
-    volumes:
-      - /DATA:/DATA
-    command: >
-      sh -c "
-      mkdir -p /DATA/AppData/airsonic/config &&
-      mkdir -p /DATA/AppData/airsonic/data &&
-      mkdir -p /DATA/Media/Music &&
-      chown -R 1000:1000 /DATA/AppData/airsonic /DATA/Media/Music &&
-      chmod -R 755 /DATA/AppData/airsonic /DATA/Media/Music &&
-      echo 'Airsonic directories created successfully'
-      "
-    restart: "no"
-    networks:
-      - pcs
-
   airsonic:
-    image: lscr.io/linuxserver/airsonic-advanced:latest
+    image: lscr.io/linuxserver/airsonic-advanced:11.1.4-ls166
     restart: unless-stopped
-    depends_on:
-      - airsonic-init
-
-    ports:
-      - target: 4040
-        published: ${WEBUI_PORT:-4040}
-        protocol: tcp
-
+    user: $PUID:$PGID
+    
+    expose:
+      - 80
+    
     environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Etc/UTC
-      - CONTEXT_PATH=/airsonic
-
+      PUID: $PUID
+      PGID: $PGID
+      TZ: $TZ
+      JAVA_OPTS: "-Dserver.port=80 -Dserver.use-forward-headers=true"
+    
     volumes:
-      - /DATA/AppData/airsonic/config:/config
-      - /DATA/AppData/airsonic/data:/data
-      - /DATA/Media/Music:/music
-
+      - /DATA/AppData/$AppID/config:/config
+      - /DATA/AppData/$AppID/data:/data
+      - /DATA/Media/Music:/music:ro
+      - /DATA/AppData/$AppID/playlists:/playlists
+    
+    deploy:
+      resources:
+        reservations:
+          memory: 256M
+    
+    cpu_shares: 50
+    
     networks:
-      - pcs
+      - airsonic_network
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 networks:
-  pcs:
-    external: true
+  airsonic_network:
+    driver: bridge
 
 x-casaos:
   architectures:
     - amd64
     - arm64
   main: airsonic
-  index: /airsonic/
-  port_map: ${WEBUI_PORT:-4040}
+  webui_port: 80
   store_app_id: airsonic
   title:
     en_us: Airsonic Advanced
@@ -73,3 +65,10 @@ x-casaos:
         /DATA/Media/Music
         Config & data:
         /DATA/AppData/airsonic
+  pre-install-cmd: |
+    docker run --rm -v /DATA/AppData/$AppID:/data ubuntu:22.04 sh -c "
+    mkdir -p /data/config /data/data /data/playlists &&
+    chown -R $PUID:$PGID /data &&
+    chmod -R 755 /data &&
+    echo 'Airsonic Advanced directories initialized'
+    "
