@@ -1,21 +1,21 @@
-name: airsonic-advanced
+name: airsonic
 
 services:
   airsonic:
     image: lscr.io/linuxserver/airsonic-advanced:11.1.4-ls166
     restart: unless-stopped
     expose:
-      - 4040 
+      - 80 
     environment:
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
-      JAVA_OPTS: "-Dserver.port=4040 -Dserver.use-forward-headers=true"    
+      JAVA_OPTS: "-Dserver.port=80 -Dserver.use-forward-headers=true"    
     volumes:
-      - /DATA/AppData/airsonic-advanced/config/:/config
-      - /DATA/AppData/airsonic-advanced/data/:/data
+      - /DATA/AppData/airsonic/config/:/config
+      - /DATA/AppData/airsonic/data/:/data
       - /DATA/Media/Music/:/music:ro
-      - /DATA/AppData/airsonic-advanced/playlists/:/playlists    
+      - /DATA/AppData/airsonic/playlists/:/playlists    
     deploy:
       resources:
         reservations:
@@ -33,10 +33,10 @@ x-casaos:
     - amd64
     - arm64
   main: airsonic
-  webui_port: 4040
+  webui_port: 80
   store_app_id: airsonic
   title:
-    en_us: Airsonic Advanced
+    en_us: Airsonic
   tagline:
     en_us: Subsonic-compatible music server
   description:
