@@ -59,7 +59,7 @@ services:
       - tubearchivist_network
 
   tubearchivist-es:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.18.2
+    image: bbilly1/tubearchivist-es
     container_name: tubearchivist-es
     restart: unless-stopped
     environment:
@@ -96,8 +96,6 @@ x-casaos:
     - arm64
   main: tubearchivist
   author: Yundera Team
-  pre-install-cmd: |
-    docker run --rm -v /DATA/AppData/$AppID/:/data ubuntu:22.04 sh -c "mkdir -p /data/es && chown -R 1000:0 /data/es"
   category: Media
   description:
     en_us: |
