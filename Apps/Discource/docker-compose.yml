@@ -1,44 +1,31 @@
 name: discourse
 services:
   discourse-app:
-    image: ghcr.io/tiredofit/docker-discourse:3.2.99
+    image: bitnami/discourse:3
     container_name: discourse
-    user: $PUID:$PGID
     environment:
-      - PUID=$PUID
-      - PGID=$PGID
-      - TZ=$TZ
-      - SETUP_MODE=AUTO
-      - ENABLE_DB_MIGRATE=TRUE
-      - ENABLE_PRECOMPILE_ASSETS=TRUE
-      - ADMIN_USER=admin
-      - ADMIN_EMAIL=$PCS_EMAIL
-      - ADMIN_PASS=$PCS_DEFAULT_PASSWORD
-      - ADMIN_NAME=Admin User
-      - DB_HOST=discourse-db
-      - DB_PORT=5432
-      - DB_NAME=discourse
-      - DB_USER=discourse
-      - DB_PASS=discourse_password
-      - DB_POOL=10
-      - REDIS_HOST=discourse-redis
-      - REDIS_PORT=6379
-      - REDIS_DB=0
-      - SMTP_DOMAIN=$PCS_DOMAIN
-      - SMTP_HOST=postfix-relay
-      - SMTP_PORT=25
-      - SMTP_AUTHENTICATION=plain
-      - UNICORN_WORKERS=4
-      - SIDEKIQ_THREADS=10
-      - LOG_LEVEL=info
+      - DISCOURSE_HOST=$PCS_DOMAIN
+      - DISCOURSE_PORT_NUMBER=3000
+      - DISCOURSE_USERNAME=admin
+      - DISCOURSE_PASSWORD=$PCS_DEFAULT_PASSWORD
+      - DISCOURSE_EMAIL=$PCS_EMAIL
+      - DISCOURSE_FIRSTNAME=Admin
+      - DISCOURSE_LASTNAME=User
+      - DISCOURSE_SITE_NAME=Discourse Forum
+      - DISCOURSE_DATABASE_HOST=discourse-db
+      - DISCOURSE_DATABASE_PORT_NUMBER=5432
+      - DISCOURSE_DATABASE_NAME=discourse
+      - DISCOURSE_DATABASE_USER=discourse
+      - DISCOURSE_DATABASE_PASSWORD=discourse_password
+      - DISCOURSE_REDIS_HOST=discourse-redis
+      - DISCOURSE_REDIS_PORT_NUMBER=6379
+      - POSTGRESQL_CLIENT_CREATE_DATABASE_NAME=discourse
+      - POSTGRESQL_CLIENT_CREATE_DATABASE_EXTENSIONS=hstore,pg_trgm
+      - ALLOW_EMPTY_PASSWORD=no
     expose:
       - 3000
     volumes:
-      - /DATA/AppData/$AppID/data:/data
-      - /DATA/AppData/$AppID/logs:/data/logs
-      - /DATA/AppData/$AppID/uploads:/data/uploads
-      - /DATA/AppData/$AppID/backups:/data/backups
-      - /DATA/AppData/$AppID/plugins:/data/plugins
+      - /DATA/AppData/$AppID/discourse:/bitnami/discourse
     restart: unless-stopped
     depends_on:
       discourse-db:
@@ -55,15 +42,15 @@ services:
     cpu_shares: 70
 
   discourse-db:
-    image: postgres:16.6
+    image: bitnami/postgresql:16
     container_name: discourse-db
     environment:
-      - POSTGRES_DB=discourse
-      - POSTGRES_USER=discourse
-      - POSTGRES_PASSWORD=discourse_password
-      - PGDATA=/var/lib/postgresql/data/pgdata
+      - POSTGRESQL_DATABASE=discourse
+      - POSTGRESQL_USERNAME=discourse
+      - POSTGRESQL_PASSWORD=discourse_password
+      - ALLOW_EMPTY_PASSWORD=no
     volumes:
-      - /DATA/AppData/$AppID/postgresql:/var/lib/postgresql/data
+      - /DATA/AppData/$AppID/postgresql:/bitnami/postgresql
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U discourse"]
@@ -80,11 +67,12 @@ services:
     cpu_shares: 70
 
   discourse-redis:
-    image: redis:7.4.1-alpine
+    image: bitnami/redis:7.4
     container_name: discourse-redis
-    command: redis-server --appendonly yes
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
     volumes:
-      - /DATA/AppData/$AppID/redis:/data
+      - /DATA/AppData/$AppID/redis:/bitnami/redis/data
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -98,6 +86,40 @@ services:
         reservations:
           cpus: "0.1"
           memory: 256M
+    cpu_shares: 50
+
+  discourse-sidekiq:
+    image: bitnami/discourse:3
+    container_name: discourse-sidekiq
+    command: /opt/bitnami/scripts/discourse-sidekiq/run.sh
+    environment:
+      - DISCOURSE_HOST=$PCS_DOMAIN
+      - DISCOURSE_PORT_NUMBER=3000
+      - DISCOURSE_DATABASE_HOST=discourse-db
+      - DISCOURSE_DATABASE_PORT_NUMBER=5432
+      - DISCOURSE_DATABASE_NAME=discourse
+      - DISCOURSE_DATABASE_USER=discourse
+      - DISCOURSE_DATABASE_PASSWORD=discourse_password
+      - DISCOURSE_REDIS_HOST=discourse-redis
+      - DISCOURSE_REDIS_PORT_NUMBER=6379
+      - ALLOW_EMPTY_PASSWORD=no
+    volumes:
+      - /DATA/AppData/$AppID/discourse:/bitnami/discourse
+    restart: unless-stopped
+    depends_on:
+      discourse-app:
+        condition: service_started
+      discourse-db:
+        condition: service_healthy
+      discourse-redis:
+        condition: service_healthy
+    networks:
+      - discourse-network
+    deploy:
+      resources:
+        reservations:
+          cpus: "0.25"
+          memory: 512M
     cpu_shares: 50
 
 networks:
@@ -198,3 +220,4 @@ x-casaos:
         - 초기 설정 중 인내심을 가지고 기다려주세요
   index: /
   store_app_id: discourse
+  webui_port: 3000
