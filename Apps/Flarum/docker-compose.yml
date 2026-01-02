@@ -1,35 +1,12 @@
 name: flarum
 services:
-  flarum-proxy:
-    image: ghcr.io/yundera/nginx-hash-lock:latest
-    container_name: flarum-proxy
-    restart: unless-stopped
-    expose:
-      - 80
-    environment:
-      - BACKEND_HOST=flarum-app
-      - BACKEND_PORT=8888
-      - LISTEN_PORT=80
-    depends_on:
-      flarum-app:
-        condition: service_healthy
-    networks:
-      - flarum-network
-    cpu_shares: 30
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 20s
-    labels:
-      icon: https://cdn.jsdelivr.net/gh/Worph/AppStore@main/Apps/Flarum/icon.png
-
-  flarum-app:
-    image: mondedie/flarum:1.8.9
-    container_name: flarum-app
+  flarum:
+    image: mondedie/flarum:latest
+    container_name: flarum
     restart: unless-stopped
     user: $PUID:$PGID
+    expose:
+      - 80
     environment:
       - PUID=$PUID
       - PGID=$PGID
@@ -101,7 +78,7 @@ x-casaos:
   architectures:
     - amd64
     - arm64
-  main: flarum-proxy
+  main: flarum
   author: Yundera Team
   category: Communication
   description:
