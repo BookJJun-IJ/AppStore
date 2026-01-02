@@ -1,0 +1,151 @@
+name: flarum
+services:
+  flarum-proxy:
+    image: ghcr.io/yundera/nginx-hash-lock:latest
+    container_name: flarum-proxy
+    restart: unless-stopped
+    expose:
+      - 80
+    environment:
+      - BACKEND_HOST=flarum-app
+      - BACKEND_PORT=8888
+      - LISTEN_PORT=80
+    depends_on:
+      flarum-app:
+        condition: service_healthy
+    networks:
+      - flarum-network
+    cpu_shares: 30
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    labels:
+      icon: https://cdn.jsdelivr.net/gh/Worph/AppStore@main/Apps/Flarum/icon.png
+
+  flarum-app:
+    image: mondedie/flarum:1.8.9
+    container_name: flarum-app
+    restart: unless-stopped
+    user: $PUID:$PGID
+    environment:
+      - PUID=$PUID
+      - PGID=$PGID
+      - TZ=$TZ
+      - FORUM_URL=https://flarum-$PCS_DOMAIN
+      - DB_HOST=flarum-db
+      - DB_NAME=flarum
+      - DB_USER=flarum
+      - DB_PASS=$PCS_DEFAULT_PASSWORD
+      - DB_PORT=3306
+      - FLARUM_ADMIN_USER=admin
+      - FLARUM_ADMIN_PASS=$PCS_DEFAULT_PASSWORD
+      - FLARUM_ADMIN_MAIL=$PCS_EMAIL
+      - FLARUM_TITLE=Flarum Community
+      - DEBUG=false
+    volumes:
+      - /DATA/AppData/$AppID/assets:/flarum/app/public/assets
+      - /DATA/AppData/$AppID/extensions:/flarum/app/extensions
+      - /DATA/AppData/$AppID/storage:/flarum/app/storage
+      - /DATA/AppData/$AppID/nginx:/etc/nginx/flarum
+    depends_on:
+      flarum-db:
+        condition: service_healthy
+    networks:
+      - flarum-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    cpu_shares: 70
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8888"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    labels:
+      icon: https://cdn.jsdelivr.net/gh/Worph/AppStore@main/Apps/Flarum/icon.png
+
+  flarum-db:
+    image: mariadb:11.6.2
+    container_name: flarum-db
+    restart: unless-stopped
+    environment:
+      - MYSQL_ROOT_PASSWORD=$PCS_DEFAULT_PASSWORD
+      - MYSQL_DATABASE=flarum
+      - MYSQL_USER=flarum
+      - MYSQL_PASSWORD=$PCS_DEFAULT_PASSWORD
+      - TZ=$TZ
+    volumes:
+      - /DATA/AppData/$AppID/db:/var/lib/mysql
+    networks:
+      - flarum-network
+    cpu_shares: 50
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    labels:
+      icon: https://cdn.jsdelivr.net/gh/Worph/AppStore@main/Apps/Flarum/icon.png
+
+networks:
+  flarum-network:
+    driver: bridge
+
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  main: flarum-proxy
+  author: Yundera Team
+  category: Communication
+  description:
+    en_us: Flarum is a modern, fast, and free forum software that makes online discussion fun. Built with PHP and MySQL, it features a beautiful, responsive design with two-pane interface, infinite scrolling, and real-time notifications. Perfect for building engaging communities with its extensible architecture and mobile-first approach.
+    fr_fr: Flarum est un logiciel de forum moderne, rapide et gratuit qui rend les discussions en ligne amusantes. Construit avec PHP et MySQL, il dispose d'une interface élégante et réactive avec une disposition à deux panneaux, un défilement infini et des notifications en temps réel. Parfait pour créer des communautés engageantes.
+    es_es: Flarum es un software de foro moderno, rápido y gratuito que hace que la discusión en línea sea divertida. Construido con PHP y MySQL, cuenta con un diseño elegante y receptivo con interfaz de dos paneles, desplazamiento infinito y notificaciones en tiempo real. Perfecto para construir comunidades atractivas.
+    zh_cn: Flarum 是一款现代、快速且免费的论坛软件，让在线讨论变得有趣。基于 PHP 和 MySQL 构建，具有精美的响应式设计，双面板界面、无限滚动和实时通知。非常适合建立引人入胜的社区。
+    ko_kr: Flarum은 온라인 토론을 즐겁게 만드는 현대적이고 빠르며 무료인 포럼 소프트웨어입니다. PHP와 MySQL로 구축되었으며, 2개 패널 인터페이스, 무한 스크롤 및 실시간 알림 기능을 갖춘 아름답고 반응형 디자인을 제공합니다. 매력적인 커뮤니티 구축에 완벽합니다.
+  developer: Flarum Foundation
+  icon: https://cdn.jsdelivr.net/gh/Worph/AppStore@main/Apps/Flarum/icon.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/Worph/AppStore@main/Apps/Flarum/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Worph/AppStore@main/Apps/Flarum/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Worph/AppStore@main/Apps/Flarum/screenshot-3.png
+  tagline:
+    en_us: Modern, fast and free discussion forum software
+    fr_fr: Logiciel de forum moderne, rapide et gratuit
+    es_es: Software de foro moderno, rápido y gratuito
+    zh_cn: 现代、快速且免费的论坛软件
+    ko_kr: 현대적이고 빠르며 무료인 포럼 소프트웨어
+  thumbnail: https://cdn.jsdelivr.net/gh/Worph/AppStore@main/Apps/Flarum/thumbnail.png
+  title:
+    en_us: Flarum
+  tips:
+    before_install:
+      en_us: |
+        Default Admin Account
+
+        | Username | Password |
+        |----------|----------|
+        | `admin` | `$PCS_DEFAULT_PASSWORD` |
+
+        **First Login:**
+        1. Access the forum using the admin credentials above
+        2. Navigate to Administration panel
+        3. Change your password immediately
+        4. Configure email settings for notifications
+        5. Customize your forum appearance and settings
+
+        **Important Notes:**
+        - Forum URL is automatically configured as `https://flarum-$PCS_DOMAIN`
+        - Email settings need to be configured in admin panel for notifications
+        - Extensions can be managed through admin panel
+        - Data is persisted in `/DATA/AppData/$AppID/`
+  index: /
+  webui_port: 80
+  store_app_id: flarum
