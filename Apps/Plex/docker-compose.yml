@@ -98,7 +98,7 @@ x-casaos:
   store_app_id: plex
   main: plex
   is_uncontrolled: false
-  webui_port: 32400
+  webui_port: 80
   tips:
     before_install:
       en_us: |
