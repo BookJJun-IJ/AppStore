@@ -1,12 +1,31 @@
 name: plex
 
 services:
+  nginxhashlock:
+    image: ghcr.io/yundera/nginx-hash-lock:latest
+    container_name: plex-nginxhashlock
+    restart: unless-stopped
+    environment:
+      AUTH_HASH: $AUTH_HASH
+      BACKEND_HOST: "plex"
+      BACKEND_PORT: "32400"
+      LISTEN_PORT: "80"
+      ALLOWED_EXTENSIONS: "js,css,png,jpg,jpeg,gif,svg,ico,woff,woff2,ttf,eot"
+      ALLOWED_PATHS: "web/index.html"
+    expose:
+      - 80
+    depends_on:
+      - plex
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    cpu_shares: 80
+
   plex:
     image: lscr.io/linuxserver/plex:1.42.2
     container_name: plex
     restart: unless-stopped
-    expose:
-      - 32400
     ports:
       - "32400:32400/tcp"
     volumes:
