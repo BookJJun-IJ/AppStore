@@ -6,12 +6,12 @@ services:
     container_name: plex
     restart: unless-stopped
     expose:
-      - 80
+      - 32400
     ports:
       - "32400:32400/tcp"
     volumes:
-      - /DATA/AppData/$AppID:/config
-      - /DATA/AppData/$AppID/transcode:/transcode
+      - /DATA/AppData/plex:/config
+      - /DATA/AppData/plex/transcode:/transcode
       - /DATA/Media/Movies:/data/movies
       - /DATA/Media/TV Shows:/data/tvshows
       - /DATA/Media/Music:/data/music
@@ -79,7 +79,7 @@ x-casaos:
   store_app_id: plex
   main: plex
   is_uncontrolled: false
-  webui_port: 80
+  webui_port: 32400
   tips:
     before_install:
       en_us: |
