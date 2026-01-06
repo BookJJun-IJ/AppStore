@@ -22,7 +22,13 @@ services:
         limits:
           memory: 128M
     cpu_shares: 80
-
+    networks:
+      - pcs
+    privileged: true
+    cap_add:
+      - SYS_ADMIN
+      - NET_ADMIN
+  
   plex:
     image: lscr.io/linuxserver/plex:1.42.2
     container_name: plex
@@ -48,6 +54,16 @@ services:
       resources:
         limits:
           memory: 1G
+    privileged: true
+    networks:
+      - pcs
+    cap_add:
+      - SYS_ADMIN
+      - NET_ADMIN
+
+networks:
+  pcs:
+    external: true
 
 x-casaos:
   architectures:
