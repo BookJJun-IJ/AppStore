@@ -5,6 +5,7 @@ services:
     image: ghcr.io/yundera/nginx-hash-lock:latest
     container_name: plex-nginxhashlock
     restart: unless-stopped
+    user: "root"
     environment:
       AUTH_HASH: $AUTH_HASH
       BACKEND_HOST: "plex"
