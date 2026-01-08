@@ -1,29 +1,5 @@
 name: spliit
 services:
-  spliit:
-    image: ghcr.io/yundera/nginx-hash-lock:latest
-    container_name: spliit
-    environment:
-      AUTH_HASH: $AUTH_HASH
-      BACKEND_HOST: "spliit-backend"
-      BACKEND_PORT: "3000"
-      LISTEN_PORT: "80"
-    expose:
-      - 80
-    depends_on:
-      spliit-backend:
-        condition: service_started
-      db:
-        condition: service_healthy
-    restart: unless-stopped
-    networks:
-      - spliit_network
-    deploy:
-      resources:
-        limits:
-          memory: 128M
-      cpu_shares: 80
-
   db:
     image: postgres:16-alpine
     container_name: spliit-db
@@ -49,15 +25,16 @@ services:
       resources:
         limits:
           memory: 512M
-      cpu_shares: 50
 
-  spliit-backend:
+  spliit:
     image: ghcr.io/crazy-max/spliit:1.18.0
-    container_name: spliit-backend
+    container_name: spliit-app
     user: 0:0
     depends_on:
       db:
         condition: service_healthy
+    expose:
+      - 3000
     environment:
       PUID: $PUID
       PGID: $PGID
@@ -81,7 +58,6 @@ services:
       resources:
         limits:
           memory: 1G
-      cpu_shares: 70
 
 networks:
   spliit_network:
@@ -92,17 +68,16 @@ x-casaos:
     - amd64
     - arm64
   main: spliit
-  webui_port: 80
-  index: /?hash=$AUTH_HASH
-  author: Yundera Team
+  webui_port: 3000
+  author: CasaOS Team
   category: Finance
   developer: Spliit Team
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Spliit/icon.png
+  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Spliit/icon.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Spliit/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Spliit/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Spliit/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Spliit/thumbnail.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Spliit/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Spliit/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Spliit/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Spliit/thumbnail.png
   title:
     en_us: Spliit
   tagline:
@@ -125,114 +100,52 @@ x-casaos:
       • See optimized settlements (who pays whom)
       • Works on any device
       • Complete privacy - data stays on your server
-      • **NEW in 1.18.0:** Specify currency per transaction
       
       **Perfect for:** Roommates splitting rent, friends sharing vacation costs, couples managing household expenses, group dinners, or any shared activity.
-      
-      **Security:** This app is protected by hash-based authentication. The Dashboard button includes your secure access link automatically.
     ko_kr: |
       친구와 비용 분할 - 가입 없이, 번거로움 없이. Spliit은 비용을 공유하는 가장 간단한 방법입니다. 저녁 식사비, 휴가 비용, 가계 지출 등 누가 얼마를 빚졌는지 즉시 확인할 수 있습니다.
-      
-      **주요 기능:**
-      • 몇 초 만에 비용 그룹 생성
-      • 이름만으로 참가자 추가
-      • 백분율, 지분 또는 정확한 금액으로 분할
-      • 최적화된 정산 확인
-      • 모든 기기에서 작동
-      • 완벽한 개인정보 보호
-      • **1.18.0 신규:** 거래별 통화 지정
-      
-      **보안:** 이 앱은 해시 기반 인증으로 보호됩니다. 대시보드 버튼에 보안 액세스 링크가 자동으로 포함됩니다.
     zh_cn: |
       与朋友分摊费用 - 无需注册，没有麻烦。Spliit 是分摊费用最简单的方式。无论是分摊晚餐账单、度假费用还是家庭开支，每个人都能立即看到谁欠谁多少。
-      
-      **主要功能:**
-      • 几秒钟内创建费用组
-      • 仅通过姓名添加参与者
-      • 按百分比、份额或确切金额分摊
-      • 查看优化的结算方案
-      • 适用于任何设备
-      • 完全隐私保护
-      • **1.18.0 新功能:** 按交易指定货币
-      
-      **安全性:** 此应用受哈希认证保护。仪表板按钮自动包含您的安全访问链接。
     es_es: |
       Divide gastos con amigos - sin registro, sin complicaciones. Spliit es la forma más simple de compartir gastos. Ya sea dividiendo cuentas de cena, costos de vacaciones o gastos del hogar.
-      
-      **Características principales:**
-      • Crea grupos de gastos en segundos
-      • Añade participantes solo por nombre
-      • Divide por porcentaje, partes o cantidades exactas
-      • Ve liquidaciones optimizadas
-      • Funciona en cualquier dispositivo
-      • Privacidad completa
-      • **NUEVO en 1.18.0:** Especifica moneda por transacción
-      
-      **Seguridad:** Esta aplicación está protegida con autenticación basada en hash. El botón del Panel incluye tu enlace de acceso seguro automáticamente.
     fr_fr: |
       Partagez les dépenses avec vos amis - sans inscription, sans tracas. Spliit est le moyen le plus simple de partager les dépenses. Qu'il s'agisse de diviser l'addition du dîner, les frais de vacances ou les dépenses du foyer.
-      
-      **Caractéristiques principales:**
-      • Créez des groupes de dépenses en quelques secondes
-      • Ajoutez des participants par nom uniquement
-      • Divisez par pourcentage, parts ou montants exacts
-      • Voyez les règlements optimisés
-      • Fonctionne sur tout appareil
-      • Confidentialité complète
-      • **NOUVEAU dans 1.18.0:** Spécifiez la devise par transaction
-      
-      **Sécurité:** Cette application est protégée par authentification basée sur hash. Le bouton Tableau de bord inclut automatiquement votre lien d'accès sécurisé.
   tips:
     before_install:
       en_us: |
         **How to use:**
-        1. Click the Dashboard button (secure access via hash authentication)
-        2. Click "Create a group"
-        3. Name it (e.g., "Beach Trip 2024")
-        4. Add people (just their names)
-        5. Start adding expenses
-        6. Check "Balances" to see who owes whom
-        
-        **NEW in 1.18.0:** You can now specify different currencies for each transaction!
+        1. Click "Create a group"
+        2. Name it (e.g., "Beach Trip 2024")
+        3. Add people (just their names)
+        4. Start adding expenses
+        5. Check "Balances" to see who owes whom
         
         Share the group link with friends - no signup needed!
       ko_kr: |
         **사용 방법:**
-        1. 대시보드 버튼 클릭 (해시 인증으로 보안 액세스)
-        2. "그룹 만들기" 클릭
-        3. 이름 지정 (예: "제주도 여행 2024")
-        4. 사람 추가 (이름만)
-        5. 비용 추가 시작
-        6. "잔액"을 확인하여 누가 누구에게 빚졌는지 확인
-        
-        **1.18.0 신규:** 이제 각 거래마다 다른 통화를 지정할 수 있습니다!
+        1. "그룹 만들기" 클릭
+        2. 이름 지정 (예: "제주도 여행 2024")
+        3. 사람 추가 (이름만)
+        4. 비용 추가 시작
+        5. "잔액"을 확인하여 누가 누구에게 빚졌는지 확인
       zh_cn: |
-        **使用方法:**
-        1. 点击仪表板按钮（通过哈希认证安全访问）
-        2. 点击"创建群组"
-        3. 命名（例如："2024海滩之旅"）
-        4. 添加人员（只需姓名）
-        5. 开始添加费用
-        6. 查看"余额"了解谁欠谁
-        
-        **1.18.0 新功能:** 现在可以为每笔交易指定不同的货币！
+        **使用方法：**
+        1. 点击"创建群组"
+        2. 命名（例如："2024海滩之旅"）
+        3. 添加人员（只需姓名）
+        4. 开始添加费用
+        5. 查看"余额"了解谁欠谁
       es_es: |
         **Cómo usar:**
-        1. Haz clic en el botón del Panel (acceso seguro mediante autenticación hash)
-        2. Haz clic en "Crear un grupo"
-        3. Nómbralo (ej: "Viaje Playa 2024")
-        4. Añade personas (solo nombres)
-        5. Empieza a añadir gastos
-        6. Revisa "Saldos" para ver quién debe a quién
-        
-        **NUEVO en 1.18.0:** ¡Ahora puedes especificar diferentes monedas para cada transacción!
+        1. Haz clic en "Crear un grupo"
+        2. Nómbralo (ej: "Viaje Playa 2024")
+        3. Añade personas (solo nombres)
+        4. Empieza a añadir gastos
+        5. Revisa "Saldos" para ver quién debe a quién
       fr_fr: |
         **Comment utiliser:**
-        1. Cliquez sur le bouton Tableau de bord (accès sécurisé via authentification hash)
-        2. Cliquez sur "Créer un groupe"
-        3. Nommez-le (ex: "Voyage Plage 2024")
-        4. Ajoutez des personnes (juste les noms)
-        5. Commencez à ajouter des dépenses
-        6. Vérifiez "Soldes" pour voir qui doit à qui
-        
-        **NOUVEAU dans 1.18.0:** Vous pouvez maintenant spécifier différentes devises pour chaque transaction!
+        1. Cliquez sur "Créer un groupe"
+        2. Nommez-le (ex: "Voyage Plage 2024")
+        3. Ajoutez des personnes (juste les noms)
+        4. Commencez à ajouter des dépenses
+        5. Vérifiez "Soldes" pour voir qui doit à qui
