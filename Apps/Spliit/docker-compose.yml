@@ -27,7 +27,7 @@ services:
           memory: 512M
 
   spliit:
-    image: ghcr.io/crazy-max/spliit:1.18.0
+    image: ghcr.io/crazy-max/spliit:1.17.0
     container_name: spliit-app
     user: 0:0
     depends_on:
