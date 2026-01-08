@@ -27,7 +27,7 @@ services:
           memory: 512M
 
   spliit:
-    image: crazy-max/spliit:1.18.0
+    image: ghcr.io/crazy-max/spliit:1.17.0
     container_name: spliit-app
     user: 0:0
     depends_on:
@@ -113,39 +113,48 @@ x-casaos:
   tips:
     before_install:
       en_us: |
+        -----------------------------
         **How to use:**
         1. Click "Create a group"
         2. Name it (e.g., "Beach Trip 2024")
         3. Add people (just their names)
         4. Start adding expenses
         5. Check "Balances" to see who owes whom
-        
+        -----------------------------        
         Share the group link with friends - no signup needed!
       ko_kr: |
+        -----------------------------
         **사용 방법:**
         1. "그룹 만들기" 클릭
         2. 이름 지정 (예: "제주도 여행 2024")
         3. 사람 추가 (이름만)
         4. 비용 추가 시작
         5. "잔액"을 확인하여 누가 누구에게 빚졌는지 확인
+        -----------------------------
       zh_cn: |
+        -----------------------------
         **使用方法：**
         1. 点击"创建群组"
         2. 命名（例如："2024海滩之旅"）
         3. 添加人员（只需姓名）
         4. 开始添加费用
         5. 查看"余额"了解谁欠谁
+        -----------------------------
       es_es: |
+        -----------------------------
         **Cómo usar:**
         1. Haz clic en "Crear un grupo"
         2. Nómbralo (ej: "Viaje Playa 2024")
         3. Añade personas (solo nombres)
         4. Empieza a añadir gastos
         5. Revisa "Saldos" para ver quién debe a quién
+        -----------------------------
       fr_fr: |
+        -----------------------------
         **Comment utiliser:**
         1. Cliquez sur "Créer un groupe"
         2. Nommez-le (ex: "Voyage Plage 2024")
         3. Ajoutez des personnes (juste les noms)
         4. Commencez à ajouter des dépenses
         5. Vérifiez "Soldes" pour voir qui doit à qui
+        -----------------------------
