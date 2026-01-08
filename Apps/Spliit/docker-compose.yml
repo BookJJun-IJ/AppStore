@@ -52,7 +52,7 @@ services:
       cpu_shares: 50
 
   spliit-backend:
-    image: crazy-max/spliit:1.18.0
+    image: ghcr.io/crazy-max/spliit:1.17.0
     container_name: spliit-backend
     user: 0:0
     depends_on:
