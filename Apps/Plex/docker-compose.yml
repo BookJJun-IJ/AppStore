@@ -12,6 +12,7 @@ services:
       BACKEND_PORT: "32400"
       LISTEN_PORT: "80"
       ALLOWED_EXTENSIONS: "js,css,png,jpg,jpeg,gif,svg,ico,woff,woff2,ttf,eot"
+      ALLOWED_PATHS: "web/index.html"
     expose:
       - 80
     depends_on:
@@ -100,7 +101,7 @@ x-casaos:
     - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Plex/screenshot-2.png
     - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Plex/screenshot-3.png
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Plex/thumbnail.png
-  index: /web/index.html/?hash=$AUTH_HASH
+  index: /?hash=$AUTH_HASH
   tagline:
     en_us: Your personal streaming service for all your media
     zh_cn: 您的个人媒体流媒体服务
