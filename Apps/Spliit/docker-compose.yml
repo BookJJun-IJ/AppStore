@@ -1,5 +1,28 @@
 name: spliit
 services:
+  spliit:
+    image: ghcr.io/yundera/nginx-hash-lock:latest
+    container_name: spliit
+    user: 0:0
+    depends_on:
+      - spliit-backend
+      - db
+    expose:
+      - 80
+    environment:
+      AUTH_HASH: $AUTH_HASH
+      BACKEND_HOST: spliit-backend
+      BACKEND_PORT: "3000"
+      LISTEN_PORT: "80"
+    restart: unless-stopped
+    networks:
+      - spliit_network
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+      cpu_shares: 80
+
   db:
     image: postgres:16-alpine
     container_name: spliit-db
@@ -7,7 +30,7 @@ services:
     environment:
       POSTGRES_DB: spliit
       POSTGRES_USER: spliit
-      POSTGRES_PASSWORD: $default_pwd
+      POSTGRES_PASSWORD: $PCS_DEFAULT_PASSWORD
       POSTGRES_INITDB_ARGS: '--data-checksums'
       TZ: UTC
     volumes:
@@ -25,16 +48,15 @@ services:
       resources:
         limits:
           memory: 512M
+      cpu_shares: 70
 
-  spliit:
-    image: ghcr.io/crazy-max/spliit:1.14.1
-    container_name: spliit-app
+  spliit-backend:
+    image: ghcr.io/crazy-max/spliit:edge
+    container_name: spliit-backend
     user: 0:0
     depends_on:
       db:
         condition: service_healthy
-    expose:
-      - 3000
     environment:
       PUID: $PUID
       PGID: $PGID
@@ -43,10 +65,10 @@ services:
       POSTGRES_PORT: 5432
       POSTGRES_DB: spliit
       POSTGRES_USER: spliit
-      POSTGRES_PASSWORD: $default_pwd
+      POSTGRES_PASSWORD: $PCS_DEFAULT_PASSWORD
       POSTGRES_TIMEOUT: 60
-      NEXT_PUBLIC_BASE_URL: https://$domain
-      DATABASE_URL: postgresql://spliit:$default_pwd@db:5432/spliit
+      NEXT_PUBLIC_BASE_URL: https://$PCS_DOMAIN
+      DATABASE_URL: postgresql://spliit:$PCS_DEFAULT_PASSWORD@db:5432/spliit
       NODE_ENV: production
     volumes:
       - /DATA/AppData/$AppID/data:/data
@@ -58,6 +80,7 @@ services:
       resources:
         limits:
           memory: 1G
+      cpu_shares: 70
 
 networks:
   spliit_network:
@@ -68,16 +91,17 @@ x-casaos:
     - amd64
     - arm64
   main: spliit
-  webui_port: 3000
-  author: CasaOS Team
+  webui_port: 80
+  index: /?hash=$AUTH_HASH
+  author: Yundera Team
   category: Finance
   developer: Spliit Team
-  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Spliit/icon.png
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Spliit/icon.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Spliit/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Spliit/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Spliit/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Spliit/thumbnail.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Spliit/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Spliit/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Spliit/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Spliit/thumbnail.png
   title:
     en_us: Spliit
   tagline:
@@ -87,11 +111,13 @@ x-casaos:
     es_es: Aplicación Gratuita para Compartir Gastos
     fr_fr: Application Gratuite de Partage de Dépenses
   pre_install_cmd: |
-    mkdir -p /DATA/AppData/$AppID/pgdata /DATA/AppData/$AppID/data /DATA/AppData/$AppID/cache && 
-    chown -R 999:999 /DATA/AppData/$AppID/pgdata
+    docker run --rm -v /DATA/AppData/$AppID:/data ubuntu:22.04 sh -c "
+      mkdir -p /data/pgdata /data/data /data/cache &&
+      chown -R 999:999 /data/pgdata
+    "
   description:
     en_us: |
-      Split expenses with friends - no signup, no hassle. Spliit is the simplest way to share expenses. Whether splitting dinner bills, vacation costs, or household expenses, everyone can see who owes what instantly. No accounts needed - just create a group and share the link.
+      Split expenses with friends - no signup, no hassle. Spliit is the simplest way to share expenses. Whether splitting dinner bills, vacation costs, or household expenses, everyone can see who owes what instantly. Protected by hash-based authentication for privacy.
       
       **Key features:**
       • Create expense groups in seconds
@@ -100,19 +126,59 @@ x-casaos:
       • See optimized settlements (who pays whom)
       • Works on any device
       • Complete privacy - data stays on your server
+      • Hash-based authentication for secure access
       
       **Perfect for:** Roommates splitting rent, friends sharing vacation costs, couples managing household expenses, group dinners, or any shared activity.
     ko_kr: |
-      친구와 비용 분할 - 가입 없이, 번거로움 없이. Spliit은 비용을 공유하는 가장 간단한 방법입니다. 저녁 식사비, 휴가 비용, 가계 지출 등 누가 얼마를 빚졌는지 즉시 확인할 수 있습니다.
+      친구와 비용 분할 - 가입 없이, 번거로움 없이. Spliit은 비용을 공유하는 가장 간단한 방법입니다. 저녁 식사비, 휴가 비용, 가계 지출 등 누가 얼마를 빚졌는지 즉시 확인할 수 있습니다. 해시 기반 인증으로 개인정보를 보호합니다.
+      
+      **주요 기능:**
+      • 몇 초 만에 비용 그룹 생성
+      • 이름만으로 참가자 추가
+      • 백분율, 지분 또는 정확한 금액으로 분할
+      • 최적화된 정산 확인 (누가 누구에게 지불)
+      • 모든 기기에서 작동
+      • 완전한 개인정보 보호 - 데이터는 서버에 보관
+      • 안전한 액세스를 위한 해시 기반 인증
     zh_cn: |
-      与朋友分摊费用 - 无需注册，没有麻烦。Spliit 是分摊费用最简单的方式。无论是分摊晚餐账单、度假费用还是家庭开支，每个人都能立即看到谁欠谁多少。
+      与朋友分摊费用 - 无需注册,没有麻烦。Spliit是分摊费用最简单的方式。无论是分摊晚餐账单、度假费用还是家庭开支,每个人都能立即看到谁欠谁多少。基于哈希的身份验证保护隐私。
+      
+      **主要功能:**
+      • 几秒钟创建费用群组
+      • 仅通过姓名添加参与者
+      • 按百分比、份额或确切金额分摊
+      • 查看优化的结算(谁付给谁)
+      • 适用于任何设备
+      • 完全隐私 - 数据保留在您的服务器上
+      • 基于哈希的身份验证确保安全访问
     es_es: |
-      Divide gastos con amigos - sin registro, sin complicaciones. Spliit es la forma más simple de compartir gastos. Ya sea dividiendo cuentas de cena, costos de vacaciones o gastos del hogar.
+      Divide gastos con amigos - sin registro, sin complicaciones. Spliit es la forma más simple de compartir gastos. Ya sea dividiendo cuentas de cena, costos de vacaciones o gastos del hogar. Protegido por autenticación basada en hash para privacidad.
+      
+      **Características principales:**
+      • Crea grupos de gastos en segundos
+      • Añade participantes solo por nombre
+      • Divide por porcentaje, acciones o cantidades exactas
+      • Ve liquidaciones optimizadas (quién paga a quién)
+      • Funciona en cualquier dispositivo
+      • Privacidad completa - los datos permanecen en tu servidor
+      • Autenticación basada en hash para acceso seguro
     fr_fr: |
-      Partagez les dépenses avec vos amis - sans inscription, sans tracas. Spliit est le moyen le plus simple de partager les dépenses. Qu'il s'agisse de diviser l'addition du dîner, les frais de vacances ou les dépenses du foyer.
+      Partagez les dépenses avec vos amis - sans inscription, sans tracas. Spliit est le moyen le plus simple de partager les dépenses. Qu'il s'agisse de diviser l'addition du dîner, les frais de vacances ou les dépenses du foyer. Protégé par authentification basée sur le hachage pour la confidentialité.
+      
+      **Fonctionnalités principales:**
+      • Créez des groupes de dépenses en quelques secondes
+      • Ajoutez des participants uniquement par nom
+      • Divisez par pourcentage, parts ou montants exacts
+      • Voyez les règlements optimisés (qui paie qui)
+      • Fonctionne sur n'importe quel appareil
+      • Confidentialité complète - les données restent sur votre serveur
+      • Authentification basée sur le hachage pour un accès sécurisé
   tips:
     before_install:
       en_us: |
+        **Access Information:**
+        Click the dashboard icon to open Spliit with automatic authentication.
+        
         **How to use:**
         1. Click "Create a group"
         2. Name it (e.g., "Beach Trip 2024")
@@ -122,30 +188,50 @@ x-casaos:
         
         Share the group link with friends - no signup needed!
       ko_kr: |
+        **접근 정보:**
+        대시보드 아이콘을 클릭하면 자동 인증으로 Spliit이 열립니다.
+        
         **사용 방법:**
         1. "그룹 만들기" 클릭
         2. 이름 지정 (예: "제주도 여행 2024")
         3. 사람 추가 (이름만)
         4. 비용 추가 시작
         5. "잔액"을 확인하여 누가 누구에게 빚졌는지 확인
+        
+        친구들과 그룹 링크를 공유하세요 - 가입이 필요 없습니다!
       zh_cn: |
-        **使用方法：**
+        **访问信息:**
+        点击仪表板图标以自动身份验证打开Spliit。
+        
+        **使用方法:**
         1. 点击"创建群组"
-        2. 命名（例如："2024海滩之旅"）
-        3. 添加人员（只需姓名）
+        2. 命名(例如:"2024海滩之旅")
+        3. 添加人员(只需姓名)
         4. 开始添加费用
         5. 查看"余额"了解谁欠谁
+        
+        与朋友分享群组链接 - 无需注册!
       es_es: |
+        **Información de acceso:**
+        Haz clic en el icono del panel para abrir Spliit con autenticación automática.
+        
         **Cómo usar:**
         1. Haz clic en "Crear un grupo"
         2. Nómbralo (ej: "Viaje Playa 2024")
         3. Añade personas (solo nombres)
         4. Empieza a añadir gastos
         5. Revisa "Saldos" para ver quién debe a quién
+        
+        Comparte el enlace del grupo con amigos - ¡no se necesita registro!
       fr_fr: |
+        **Informations d'accès:**
+        Cliquez sur l'icône du tableau de bord pour ouvrir Spliit avec authentification automatique.
+        
         **Comment utiliser:**
         1. Cliquez sur "Créer un groupe"
         2. Nommez-le (ex: "Voyage Plage 2024")
         3. Ajoutez des personnes (juste les noms)
         4. Commencez à ajouter des dépenses
         5. Vérifiez "Soldes" pour voir qui doit à qui
+        
+        Partagez le lien du groupe avec des amis - aucune inscription nécessaire!
