@@ -34,7 +34,7 @@ services:
       POSTGRES_INITDB_ARGS: '--data-checksums'
       TZ: UTC
     volumes:
-      - /DATA/AppData/$AppID/pgdata:/var/lib/postgresql/data
+      - /DATA/AppData/spliit/pgdata:/var/lib/postgresql/data
     restart: unless-stopped
     networks:
       - spliit_network
@@ -71,8 +71,8 @@ services:
       DATABASE_URL: postgresql://spliit:$PCS_DEFAULT_PASSWORD@db:5432/spliit
       NODE_ENV: production
     volumes:
-      - /DATA/AppData/$AppID/data:/data
-      - /DATA/AppData/$AppID/cache:/usr/app/.next/cache
+      - /DATA/AppData/spliit/data:/data
+      - /DATA/AppData/spliit/cache:/usr/app/.next/cache
     restart: unless-stopped
     networks:
       - spliit_network
@@ -91,8 +91,6 @@ x-casaos:
     - amd64
     - arm64
   main: spliit
-  webui_port: 80
-  index: /?hash=$AUTH_HASH
   author: Yundera Team
   category: Finance
   developer: Spliit Team
@@ -110,11 +108,9 @@ x-casaos:
     zh_cn: 免费开源费用分摊应用
     es_es: Aplicación Gratuita para Compartir Gastos
     fr_fr: Application Gratuite de Partage de Dépenses
-  pre_install_cmd: |
-    docker run --rm -v /DATA/AppData/$AppID:/data ubuntu:22.04 sh -c "
-      mkdir -p /data/pgdata /data/data /data/cache &&
-      chown -R 999:999 /data/pgdata
-    "
+  index: /?hash=$AUTH_HASH
+  webui_port: 80
+  pre_install_cmd: docker run --rm -v /DATA/AppData/$AppID:/appdata ubuntu:22.04 sh -c 'mkdir -p /appdata/pgdata /appdata/data /appdata/cache && chown -R 999:999 /appdata/pgdata'
   description:
     en_us: |
       Split expenses with friends - no signup, no hassle. Spliit is the simplest way to share expenses. Whether splitting dinner bills, vacation costs, or household expenses, everyone can see who owes what instantly. Protected by hash-based authentication for privacy.
