@@ -34,7 +34,7 @@ services:
       db:
         condition: service_healthy
     expose:
-      - 3000
+      - 80
     environment:
       PUID: $PUID
       PGID: $PGID
@@ -68,7 +68,7 @@ x-casaos:
     - amd64
     - arm64
   main: spliit
-  webui_port: 3000
+  webui_port: 80
   author: CasaOS Team
   category: Finance
   developer: Spliit Team
