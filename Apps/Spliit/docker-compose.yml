@@ -35,7 +35,7 @@ services:
       POSTGRES_INITDB_ARGS: '--data-checksums'
       TZ: UTC
     volumes:
-      - /DATA/AppData/spliit/pgdata:/var/lib/postgresql/data
+      - /DATA/AppData/$AppID/pgdata:/var/lib/postgresql/data
     restart: unless-stopped
     networks:
       - spliit_network
@@ -72,8 +72,8 @@ services:
       DATABASE_URL: postgresql://spliit:$default_pwd@db:5432/spliit
       NODE_ENV: production
     volumes:
-      - /DATA/AppData/spliit/data:/data
-      - /DATA/AppData/spliit/cache:/usr/app/.next/cache
+      - /DATA/AppData/$AppID/data:/data
+      - /DATA/AppData/$AppID/cache:/usr/app/.next/cache
     restart: unless-stopped
     networks:
       - spliit_network
@@ -112,8 +112,8 @@ x-casaos:
     es_es: Aplicación Gratuita para Compartir Gastos
     fr_fr: Application Gratuite de Partage de Dépenses
   pre_install_cmd: |
-    mkdir -p /DATA/AppData/spliit/pgdata /DATA/AppData/spliit/data /DATA/AppData/spliit/cache && 
-    chown -R 999:999 /DATA/AppData/spliit/pgdata
+    mkdir -p /DATA/AppData/$AppID/pgdata /DATA/AppData/$AppID/data /DATA/AppData/$AppID/cache && 
+    chown -R 999:999 /DATA/AppData/$AppID/pgdata
   description:
     en_us: |
       Split expenses with friends - no signup, no hassle. Spliit is the simplest way to share expenses. Whether splitting dinner bills, vacation costs, or household expenses, everyone can see who owes what instantly. No accounts needed - just create a group and share the link.
