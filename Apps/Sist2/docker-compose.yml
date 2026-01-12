@@ -313,7 +313,7 @@ x-casaos:
         - Sist2 对 /DATA 具有只读访问权限以进行索引
         - 永远不会修改文件,只收集元数据
         - 所有配置都隔离到 AppData 目录
-  index: /
+  index: /?hash=$AUTH_HASH
   webui_port: 80
   scheme: https
   store_app_id: sist2
