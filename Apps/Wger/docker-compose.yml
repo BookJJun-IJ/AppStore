@@ -56,7 +56,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 120s
+      start_period: 180s
 
   celery-worker:
     image: wger/server:latest
@@ -99,7 +99,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 30s
+      start_period: 60s
 
   celery-beat:
     image: wger/server:latest
@@ -151,11 +151,11 @@ services:
           memory: 512M
     cpu_shares: 50
     healthcheck:
-      test: pg_isready -U wger || exit 1
+      test: ["CMD-SHELL", "pg_isready -U wger -d wger || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 10s
+      start_period: 30s
 
   redis:
     image: redis:7-alpine
@@ -174,11 +174,11 @@ services:
           memory: 256M
     cpu_shares: 30
     healthcheck:
-      test: redis-cli ping || exit 1
+      test: ["CMD-SHELL", "redis-cli ping || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 5s
+      start_period: 10s
 
 networks:
   wger-network:
