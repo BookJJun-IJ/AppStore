@@ -22,6 +22,8 @@ services:
       resources:
         limits:
           memory: 128M
+    networks:
+      - pcs
 
   sist2-admin:
     image: sist2app/sist2:x64-linux
@@ -46,6 +48,12 @@ services:
           memory: 2048M
           cpus: '1.0'
     restart: unless-stopped
+    networks:
+      - pcs
+    privileged: true
+    cap_add:
+      - SYS_ADMIN
+      - NET_ADMIN
 
   # ========================================
   # Search Interface (검색 UI)
@@ -68,6 +76,8 @@ services:
       resources:
         limits:
           memory: 128M
+    networks:
+      - pcs
 
   sist2-web:
     image: sist2app/sist2:x64-linux
@@ -100,6 +110,16 @@ services:
           memory: 1024M
           cpus: '0.5'
     restart: unless-stopped
+    networks:
+      - pcs
+    privileged: true
+    cap_add:
+      - SYS_ADMIN
+      - NET_ADMIN
+
+networks:
+  pcs:
+    external: true
 
 x-casaos:
   architectures:
