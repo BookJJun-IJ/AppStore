@@ -1,7 +1,32 @@
 name: sist2
 
 services:
-  sist2-admin:
+  nginxhashlock:
+    image: ghcr.io/yundera/nginx-hash-lock:latest
+    container_name: sist2-nginxhashlock
+    restart: unless-stopped
+    user: "root"
+    environment:
+      AUTH_HASH: $AUTH_HASH
+      BACKEND_HOST: "sist2"
+      BACKEND_PORT: "8080"
+      LISTEN_PORT: "80"
+    expose:
+      - 80
+    depends_on:
+      - sist2
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    cpu_shares: 80
+    networks:
+      - pcs
+    privileged: true
+    cap_add:
+      - SYS_ADMIN
+      - NET_ADMIN
+  sist2:
     image: sist2app/sist2:x64-linux
     user: 0:0
     environment:
@@ -12,10 +37,6 @@ services:
       - /DATA/AppData/$AppID/admin-data:/sist2-admin
       - /DATA/AppData/$AppID/indices:/indices
       - /DATA:/host:ro
-    expose:
-      - 8080
-    ports:
-      - "4090:4090"
     working_dir: /root/sist2-admin/
     entrypoint: python3
     command:
@@ -26,12 +47,22 @@ services:
           memory: 2048M
           cpus: '1.0'
     restart: unless-stopped
+    networks:
+      - pcs
+    privileged: true
+    cap_add:
+      - SYS_ADMIN
+      - NET_ADMIN
+
+networks:
+  pcs:
+    external: true
 
 x-casaos:
   architectures:
     - amd64
     - arm64
-  main: sist2-admin
+  main: nginxhashlock
   author: CasaOS Team
   category: Utilities
   pre-install-cmd: |
@@ -283,6 +314,6 @@ x-casaos:
         - 永远不会修改文件,只收集元数据
         - 所有配置都隔离到 AppData 目录
   index: /
-  webui_port: 8080
+  webui_port: 80
   scheme: https
   store_app_id: sist2
