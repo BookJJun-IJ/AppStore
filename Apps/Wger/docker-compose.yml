@@ -142,7 +142,6 @@ services:
     networks:
       - wger-network
     environment:
-      - TZ=$TZ
       - POSTGRES_USER=wger
       - POSTGRES_PASSWORD=$PCS_DEFAULT_PASSWORD
       - POSTGRES_DB=wger
@@ -167,8 +166,6 @@ services:
       - wger-redis-data:/data
     networks:
       - wger-network
-    environment:
-      - TZ=$TZ
     command: redis-server --save 60 1 --loglevel warning
     deploy:
       resources:
