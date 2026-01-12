@@ -135,9 +135,10 @@ services:
   postgres:
     image: postgres:15-alpine
     container_name: wger-postgres
+    user: "0:0"  # Must run as root - PostgreSQL will switch to postgres user internally
     restart: unless-stopped
     volumes:
-      - /DATA/AppData/wger/postgres:/var/lib/postgresql/data
+      - wger-postgres-data:/var/lib/postgresql/data
     networks:
       - wger-network
     environment:
@@ -160,9 +161,10 @@ services:
   redis:
     image: redis:7-alpine
     container_name: wger-redis
+    user: "0:0"  # Must run as root - Redis will switch to redis user internally
     restart: unless-stopped
     volumes:
-      - /DATA/AppData/wger/redis:/data
+      - wger-redis-data:/data
     networks:
       - wger-network
     environment:
@@ -183,6 +185,12 @@ services:
 networks:
   wger-network:
     driver: bridge
+
+volumes:
+  wger-postgres-data:
+    driver: local
+  wger-redis-data:
+    driver: local
 
 x-casaos:
   architectures:
