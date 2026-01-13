@@ -1,36 +1,33 @@
 name: convertx
 
 services:
-  convertx-backend:
-    image: ghcr.io/c4illin/convertx:v0.16.1
-    container_name: convertx-backend
+  convertx:
+    image: ghcr.io/c4illin/convertx:v0.14.1
+    container_name: convertx
     restart: unless-stopped
-    expose:
-      - 3000
-    user: "0:0"  # Root user required for SQLite access - see rationale.md
+    user: "root"  # Root user required for SQLite access - see rationale.md
     deploy:
       resources:
         limits:
           memory: 2G
           cpus: '1.0'
+    expose:
+      - 3000
     environment:
-      - PUID=0
-      - PGID=0
       - JWT_SECRET=$default_pwd
       - ACCOUNT_REGISTRATION=false
       - HTTP_ALLOWED=true
       - ALLOW_UNAUTHENTICATED=false
       - AUTO_DELETE_EVERY_N_HOURS=24
     volumes:
-      - /DATA/AppData/$AppID/data/:/app/data
-    cpu_shares: 70
+      - /DATA/AppData/$AppID/data:/app/data
 
 x-casaos:
   architectures:
     - amd64
     - arm64
-  main: convertx-backend
-  author: Yundera Team
+  main: convertx
+  author: CasaOS Team
   category: Utilities
   developer: C4illin
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ConvertX/icon.png
