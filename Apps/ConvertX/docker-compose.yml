@@ -2,7 +2,7 @@ name: convertx
 
 services:
   convertx-backend:
-    image: ghcr.io/c4illin/convertx:v0.15.1
+    image: ghcr.io/c4illin/convertx:v0.16.1
     container_name: convertx-backend
     restart: unless-stopped
     expose:
