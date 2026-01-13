@@ -27,7 +27,7 @@ x-casaos:
   architectures:
     - amd64
     - arm64
-  main: convertx
+  main: convertx-backend
   author: Yundera Team
   category: Utilities
   developer: C4illin
