@@ -38,11 +38,10 @@ services:
       - HTTP_ALLOWED=true
       - ALLOW_UNAUTHENTICATED=false
       - AUTO_DELETE_EVERY_N_HOURS=24
-      - DATA_DIR=/app/data  
     volumes:
-      - /DATA/AppData/$AppID/data:/app/data
-      - /DATA/Downloads:/downloads:ro
-      - /DATA/Documents:/documents:ro
+      - /DATA/AppData/$AppID/data/:/app/data
+      - /DATA/Downloads/:/downloads:ro
+      - /DATA/Documents/:/documents:ro
     networks:
       - pcs
     privileged: true
