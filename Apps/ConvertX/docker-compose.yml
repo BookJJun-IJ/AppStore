@@ -2,7 +2,7 @@ name: convertx
 
 services:
   convertx:
-    image: ghcr.io/c4illin/convertx:v0.14.1
+    image: ghcr.io/c4illin/convertx:v0.16.1
     container_name: convertx
     restart: unless-stopped
     user: "root"  # Root user required for SQLite access - see rationale.md
