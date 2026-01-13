@@ -7,13 +7,15 @@ services:
     restart: unless-stopped
     expose:
       - 3000
-    user: "root"  # Root user required for SQLite access - see rationale.md
+    user: "0:0"  # Root user required for SQLite access - see rationale.md
     deploy:
       resources:
         limits:
           memory: 2G
           cpus: '1.0'
     environment:
+      - PUID=0
+      - PGID=0
       - JWT_SECRET=$default_pwd
       - ACCOUNT_REGISTRATION=false
       - HTTP_ALLOWED=true
