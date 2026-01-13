@@ -26,15 +26,13 @@ services:
     image: ghcr.io/c4illin/convertx:v0.15.1
     container_name: convertx-backend
     restart: unless-stopped
-    user: "0:0"  # Root user required for SQLite access - see rationale.md
+    user: "root"  # Root user required for SQLite access - see rationale.md
     deploy:
       resources:
         limits:
           memory: 2G
           cpus: '1.0'
     environment:
-      - PUID=$PUID
-      - PGID=$PGID
       - JWT_SECRET=$default_pwd
       - ACCOUNT_REGISTRATION=false
       - HTTP_ALLOWED=true
@@ -59,6 +57,10 @@ x-casaos:
     - amd64
     - arm64
   main: convertx
+  pre-install-cmd: |
+    mkdir -p /DATA/AppData/$AppID/data &&
+    chmod -R 777 /DATA/AppData/$AppID/data &&
+    echo "ConvertX data directory prepared with full permissions"
   author: Yundera Team
   category: Utilities
   developer: C4illin
