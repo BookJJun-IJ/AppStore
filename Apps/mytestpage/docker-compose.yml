@@ -1,0 +1,35 @@
+name: mytestpage
+
+services:
+  web:
+    image: nginx:1.27-alpine
+    container_name: my-test-page
+    user: "root"
+    volumes:
+      # 호스트 디렉토리:컨테이너 디렉토리:읽기전용
+      - /DATA/AppData/mytestpage:/usr/share/nginx/html:ro
+    expose:
+      - 80
+    restart: unless-stopped
+    cpu_shares: 80
+
+x-casaos:
+  main: web
+  webui_port: 80
+  architectures:
+    - amd64
+    - arm64
+  author: Yundera Team
+  category: Portfolio
+  description:
+    ko_kr: Volume Mount 방식 테스트 페이지
+    en_us: Volume Mount test page
+  tagline:
+    ko_kr: 서버 파일을 직접 서빙하는 방식
+    en_us: Directly serving files from server
+  developer: 학생이름
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nginx/icon.png
+  title:
+    ko_kr: 테스트 페이지 (Volume)
+    en_us: Test Page (Volume)
+  index: /
