@@ -34,19 +34,13 @@ services:
     environment:
       POSTGRES_DB: spliit
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: $PCS_DEFAULT_PASSWORD
+      POSTGRES_PASSWORD: $default_pwd
       TZ: UTC
     volumes:
       - /DATA/AppData/$AppID/pgdata/:/var/lib/postgresql/data
     restart: unless-stopped
     networks:
       - pcs
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d spliit"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-      start_period: 30s
     deploy:
       resources:
         limits:
@@ -58,14 +52,8 @@ services:
     restart: unless-stopped
     environment:
       TZ: $TZ
-      POSTGRES_PRISMA_URL: postgresql://postgres:$PCS_DEFAULT_PASSWORD@db:5432/spliit
-      POSTGRES_URL_NON_POOLING: postgresql://postgres:$PCS_DEFAULT_PASSWORD@db:5432/spliit
-    healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:3000 || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 60s
+      POSTGRES_PRISMA_URL: postgresql://postgres:$default_pwd@db:5432/spliit
+      POSTGRES_URL_NON_POOLING: postgresql://postgres:$default_pwd@db:5432/spliit
     networks:
       - pcs
     cap_add:

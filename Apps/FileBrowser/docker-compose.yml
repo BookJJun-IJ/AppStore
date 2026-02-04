@@ -11,8 +11,8 @@ services:
       FB_ROOT: /srv
       FB_PORT: 80
     volumes:
-      - /DATA/AppData/$AppID/db/:/database
-      - /DATA/AppData/$AppID/config/:/config
+      - /DATA/AppData/filebrowser/db/:/database
+      - /DATA/AppData/filebrowser/config/:/config
       - /DATA/:/srv
     expose:
       - 80
@@ -106,6 +106,6 @@ x-casaos:
   store_app_id: filebrowser
   webui_port: 80
   pre-install-cmd: |
-    mkdir -p /DATA/AppData/$AppID/db /DATA/AppData/$AppID/config &&
-    docker run --rm -v /DATA/AppData/$AppID/db:/database filebrowser/filebrowser:v2.32.0 config init --database /database/filebrowser.db &&
-    docker run --rm -v /DATA/AppData/$AppID/db:/database filebrowser/filebrowser:v2.32.0 users add admin $PCS_DEFAULT_PASSWORD --perm.admin --database /database/filebrowser.db
+    mkdir -p /DATA/AppData/filebrowser/db /DATA/AppData/filebrowser/config &&
+    docker run --rm -v /DATA/AppData/filebrowser/db:/database filebrowser/filebrowser:v2.32.0 config init --database /database/filebrowser.db &&
+    docker run --rm -v /DATA/AppData/filebrowser/db:/database filebrowser/filebrowser:v2.32.0 users add admin $default_pwd --perm.admin --database /database/filebrowser.db

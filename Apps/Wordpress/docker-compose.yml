@@ -13,12 +13,9 @@ services:
     environment:
       WORDPRESS_DB_HOST: db:3306
       WORDPRESS_DB_USER: wordpress
-      WORDPRESS_DB_PASSWORD: $PCS_DEFAULT_PASSWORD
+      WORDPRESS_DB_PASSWORD: $default_pwd
       WORDPRESS_DB_NAME: wordpress
       WORDPRESS_CONFIG_EXTRA: |
-        /* Force HTTPS for NSL Router environment */
-        $$_SERVER['HTTPS'] = 'on';
-        
         /* Dynamic Site URLs with HTTPS */
         define('WP_HOME', 'https://' . getenv('DOMAIN'));
         define('WP_SITEURL', 'https://' . getenv('DOMAIN'));
@@ -51,10 +48,10 @@ services:
     volumes:
       - /DATA/AppData/$AppID/db/:/var/lib/mysql   # Database files storage
     environment:
-      MYSQL_ROOT_PASSWORD: $PCS_DEFAULT_PASSWORD  # MySQL root password (auto-generated)
+      MYSQL_ROOT_PASSWORD: $default_pwd  # MySQL root password (auto-generated)
       MYSQL_DATABASE: wordpress          # Database to create on startup
       MYSQL_USER: wordpress              # MySQL user to create
-      MYSQL_PASSWORD: $PCS_DEFAULT_PASSWORD       # Password for MySQL user
+      MYSQL_PASSWORD: $default_pwd       # Password for MySQL user
       MARIADB_AUTO_UPGRADE: 1            # Enable automatic database upgrades
       MARIADB_DISABLE_UPGRADE_BACKUP: 1  # Disable backup during upgrades
     deploy:
