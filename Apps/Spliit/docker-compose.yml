@@ -13,8 +13,8 @@ services:
     expose:
       - 80
     depends_on:
-      - spliit
-      - db
+      spliit:
+        condition: service_healthy
     deploy:
       resources:
         limits:
@@ -60,6 +60,12 @@ services:
       TZ: $TZ
       POSTGRES_PRISMA_URL: postgresql://postgres:$PCS_DEFAULT_PASSWORD@db:5432/spliit
       POSTGRES_URL_NON_POOLING: postgresql://postgres:$PCS_DEFAULT_PASSWORD@db:5432/spliit
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3000 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
     depends_on:
       db:
         condition: service_healthy
@@ -99,8 +105,6 @@ x-casaos:
     zh_cn: 免费开源费用分摊应用
     es_es: Aplicación Gratuita para Compartir Gastos
     fr_fr: Application Gratuite de Partage de Dépenses
-  pre-install-cmd: |
-    mkdir -p /DATA/AppData/$AppID/pgdata
   description:
     en_us: |
       Split expenses with friends - no signup, no hassle. Spliit is the simplest way to share expenses. Whether splitting dinner bills, vacation costs, or household expenses, everyone can see who owes what instantly. No accounts needed - just create a group and share the link.
