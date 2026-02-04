@@ -27,7 +27,8 @@ services:
         define('WP_MEMORY_LIMIT', '256M');
       DOMAIN: wordpress-$domain
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     deploy:
       resources:
         limits:
@@ -40,7 +41,13 @@ services:
     restart: unless-stopped
     user: 0:0
     volumes:
-      - /DATA/AppData/$AppID/db/:/var/lib/mysql   # Database files storage
+      - /DATA/AppData/$AppID/db/:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     environment:
       MYSQL_ROOT_PASSWORD: $PCS_DEFAULT_PASSWORD  # MySQL root password (auto-generated)
       MYSQL_DATABASE: wordpress          # Database to create on startup
