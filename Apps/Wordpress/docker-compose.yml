@@ -1,26 +1,6 @@
 name: wordpress
 
 services:
-  db:
-    image: mariadb:11.8
-    container_name: wordpress_db
-    restart: unless-stopped
-    user: 0:0
-    volumes:
-      - /DATA/AppData/$AppID/db/:/var/lib/mysql   # Database files storage
-    environment:
-      MYSQL_ROOT_PASSWORD: $PCS_DEFAULT_PASSWORD  # MySQL root password (auto-generated)
-      MYSQL_DATABASE: wordpress          # Database to create on startup
-      MYSQL_USER: wordpress              # MySQL user to create
-      MYSQL_PASSWORD: $PCS_DEFAULT_PASSWORD       # Password for MySQL user
-      MARIADB_AUTO_UPGRADE: 1            # Enable automatic database upgrades
-      MARIADB_DISABLE_UPGRADE_BACKUP: 1  # Disable backup during upgrades
-    deploy:
-      resources:
-        limits:
-          memory: 1G                    # Memory limit for database
-    cpu_shares: 50
-
   wordpress:
     image: wordpress:6.9.0-apache
     container_name: wordpress_app
@@ -33,26 +13,59 @@ services:
     environment:
       WORDPRESS_DB_HOST: db:3306
       WORDPRESS_DB_USER: wordpress
-      WORDPRESS_DB_PASSWORD: $PCS_DEFAULT_PASSWORD
+      WORDPRESS_DB_PASSWORD: $default_pwd
       WORDPRESS_DB_NAME: wordpress
       WORDPRESS_CONFIG_EXTRA: |
         /* Dynamic Site URLs with HTTPS */
         define('WP_HOME', 'https://' . getenv('DOMAIN'));
         define('WP_SITEURL', 'https://' . getenv('DOMAIN'));
+        
         /* Force SSL for Admin Panel */
         define('FORCE_SSL_ADMIN', true);
+        
         /* File System Method for Updates */
         define('FS_METHOD', 'direct');
+        
         /* Memory Limit */
         define('WP_MEMORY_LIMIT', '256M');
+        
+        /* Allow file editing from dashboard */
+        define('DISALLOW_FILE_EDIT', false);
       DOMAIN: wordpress-$domain
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     deploy:
       resources:
         limits:
           memory: 1G                    # Memory limit for WordPress
-    cpu_shares: 70  
+    cpu_shares: 70
+
+  db:
+    image: mariadb:11.8
+    container_name: wordpress_db
+    restart: unless-stopped
+    user: 0:0
+    volumes:
+      - /DATA/AppData/$AppID/db/:/var/lib/mysql   # Database files storage
+    environment:
+      MYSQL_ROOT_PASSWORD: $default_pwd  # MySQL root password (auto-generated)
+      MYSQL_DATABASE: wordpress          # Database to create on startup
+      MYSQL_USER: wordpress              # MySQL user to create
+      MYSQL_PASSWORD: $default_pwd       # Password for MySQL user
+      MARIADB_AUTO_UPGRADE: 1            # Enable automatic database upgrades
+      MARIADB_DISABLE_UPGRADE_BACKUP: 1  # Disable backup during upgrades
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 1G                    # Memory limit for database
+    cpu_shares: 50
 
 x-casaos:
   architectures:
