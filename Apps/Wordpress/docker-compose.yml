@@ -16,24 +16,15 @@ services:
       WORDPRESS_DB_PASSWORD: $PCS_DEFAULT_PASSWORD
       WORDPRESS_DB_NAME: wordpress
       WORDPRESS_CONFIG_EXTRA: |
-        /* Force HTTPS for NSL Router environment */
-        $$_SERVER['HTTPS'] = 'on';
-        
         /* Dynamic Site URLs with HTTPS */
         define('WP_HOME', 'https://' . getenv('DOMAIN'));
         define('WP_SITEURL', 'https://' . getenv('DOMAIN'));
-        
         /* Force SSL for Admin Panel */
         define('FORCE_SSL_ADMIN', true);
-        
         /* File System Method for Updates */
         define('FS_METHOD', 'direct');
-        
         /* Memory Limit */
         define('WP_MEMORY_LIMIT', '256M');
-        
-        /* Allow file editing from dashboard */
-        define('DISALLOW_FILE_EDIT', false);
       DOMAIN: wordpress-$domain
     depends_on:
       - db
