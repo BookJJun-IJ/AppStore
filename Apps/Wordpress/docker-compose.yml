@@ -9,16 +9,12 @@ services:
     expose:
       - 80                              # Web UI port for NSL router
     volumes:
-      - /DATA/AppData/$AppID/html:/var/www/html  # WordPress files and uploads 
+      - /DATA/AppData/$AppID/html/:/var/www/html  # WordPress files and uploads 
     environment:
-      PUID: $PUID
-      PGID: $PGID
       WORDPRESS_DB_HOST: db:3306
       WORDPRESS_DB_USER: wordpress
-      WORDPRESS_DB_PASSWORD: $default_pwd
+      WORDPRESS_DB_PASSWORD: $PCS_DEFAULT_PASSWORD
       WORDPRESS_DB_NAME: wordpress
-      APACHE_HTTP_PORT_NUMBER: 80
-      APACHE_HTTPS_PORT_NUMBER: 443
       WORDPRESS_CONFIG_EXTRA: |
         /* Force HTTPS for NSL Router environment */
         $$_SERVER['HTTPS'] = 'on';
@@ -53,7 +49,7 @@ services:
     restart: unless-stopped
     user: 0:0
     volumes:
-      - /DATA/AppData/$AppID/db:/var/lib/mysql   # Database files storage
+      - /DATA/AppData/$AppID/db/:/var/lib/mysql   # Database files storage
     environment:
       MYSQL_ROOT_PASSWORD: $PCS_DEFAULT_PASSWORD  # MySQL root password (auto-generated)
       MYSQL_DATABASE: wordpress          # Database to create on startup
@@ -92,13 +88,6 @@ x-casaos:
   store_app_id: wordpress
   main: wordpress
   webui_port: 80
-  pre-install-cmd: |
-    docker run --rm -v /DATA/AppData/$AppID:/fix-permissions ubuntu:22.04 sh -c "
-    mkdir -p /fix-permissions/html /fix-permissions/db &&
-    chown -R $PUID:$PGID /fix-permissions &&
-    chmod -R 755 /fix-permissions/html &&
-    chmod -R 777 /fix-permissions/db
-    "
   description:
     en_us: |
       **The world's #1 website builder - from blogs to online stores**
