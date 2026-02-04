@@ -93,11 +93,9 @@ x-casaos:
   main: wordpress
   webui_port: 80
   pre-install-cmd: |
-    docker run --rm -v /DATA/AppData/$AppID:/fix-permissions --user $PUID:$PGID ubuntu:22.04 sh -c "
-    mkdir -p /fix-permissions/html /fix-permissions/db &&
-    chown -R $PUID:$PGID /fix-permissions
-    " &&
     docker run --rm -v /DATA/AppData/$AppID:/fix-permissions ubuntu:22.04 sh -c "
+    mkdir -p /fix-permissions/html /fix-permissions/db &&
+    chown -R $PUID:$PGID /fix-permissions &&
     chmod -R 755 /fix-permissions/html &&
     chmod -R 777 /fix-permissions/db
     "
