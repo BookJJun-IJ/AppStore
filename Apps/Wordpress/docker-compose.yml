@@ -1,6 +1,26 @@
 name: wordpress
 
 services:
+  db:
+    image: mariadb:11.8
+    container_name: wordpress_db
+    restart: unless-stopped
+    user: 0:0
+    volumes:
+      - /DATA/AppData/$AppID/db/:/var/lib/mysql   # Database files storage
+    environment:
+      MYSQL_ROOT_PASSWORD: $PCS_DEFAULT_PASSWORD  # MySQL root password (auto-generated)
+      MYSQL_DATABASE: wordpress          # Database to create on startup
+      MYSQL_USER: wordpress              # MySQL user to create
+      MYSQL_PASSWORD: $PCS_DEFAULT_PASSWORD       # Password for MySQL user
+      MARIADB_AUTO_UPGRADE: 1            # Enable automatic database upgrades
+      MARIADB_DISABLE_UPGRADE_BACKUP: 1  # Disable backup during upgrades
+    deploy:
+      resources:
+        limits:
+          memory: 1G                    # Memory limit for database
+    cpu_shares: 50
+
   wordpress:
     image: wordpress:6.9.0-apache
     container_name: wordpress_app
@@ -32,27 +52,7 @@ services:
       resources:
         limits:
           memory: 1G                    # Memory limit for WordPress
-    cpu_shares: 70
-
-  db:
-    image: mariadb:11.8
-    container_name: wordpress_db
-    restart: unless-stopped
-    user: 0:0
-    volumes:
-      - /DATA/AppData/$AppID/db/:/var/lib/mysql   # Database files storage
-    environment:
-      MYSQL_ROOT_PASSWORD: $PCS_DEFAULT_PASSWORD  # MySQL root password (auto-generated)
-      MYSQL_DATABASE: wordpress          # Database to create on startup
-      MYSQL_USER: wordpress              # MySQL user to create
-      MYSQL_PASSWORD: $PCS_DEFAULT_PASSWORD       # Password for MySQL user
-      MARIADB_AUTO_UPGRADE: 1            # Enable automatic database upgrades
-      MARIADB_DISABLE_UPGRADE_BACKUP: 1  # Disable backup during upgrades
-    deploy:
-      resources:
-        limits:
-          memory: 1G                    # Memory limit for database
-    cpu_shares: 50
+    cpu_shares: 70  
 
 x-casaos:
   architectures:
