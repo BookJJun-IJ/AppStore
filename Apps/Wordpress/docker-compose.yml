@@ -33,8 +33,7 @@ services:
         define('DISALLOW_FILE_EDIT', false);
       DOMAIN: wordpress-$domain
     depends_on:
-      db:
-        condition: service_healthy
+      - db
     deploy:
       resources:
         limits:
@@ -55,12 +54,6 @@ services:
       MYSQL_PASSWORD: $default_pwd       # Password for MySQL user
       MARIADB_AUTO_UPGRADE: 1            # Enable automatic database upgrades
       MARIADB_DISABLE_UPGRADE_BACKUP: 1  # Disable backup during upgrades
-    healthcheck:
-      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 60s
     deploy:
       resources:
         limits:
