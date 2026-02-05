@@ -12,13 +12,22 @@ services:
       - 80                              # Web UI port for NSL router
     volumes:
       - /DATA/AppData/$AppID/html/:/var/www/html  # WordPress files and uploads
+    command: >
+      bash -c '
+      echo "Waiting for database connection..."
+      while ! php -r "try { new PDO(\"mysql:host=db;port=3306;dbname=wordpress\", \"wordpress\", getenv(\"WORDPRESS_DB_PASSWORD\")); echo \"connected\"; exit(0); } catch(Exception \$$e) { exit(1); }" 2>/dev/null; do
+        sleep 3
+      done
+      echo "Database connected! Starting WordPress..."
+      docker-entrypoint.sh apache2-foreground
+      '
     environment:
       WORDPRESS_DB_HOST: db:3306
       WORDPRESS_DB_USER: wordpress
       WORDPRESS_DB_PASSWORD: $default_pwd
       WORDPRESS_DB_NAME: wordpress
       WORDPRESS_CONFIG_EXTRA: |
-      
+
         /* Dynamic Site URLs with HTTPS */
         define('WP_HOME', 'https://' . getenv('DOMAIN'));
         define('WP_SITEURL', 'https://' . getenv('DOMAIN'));
