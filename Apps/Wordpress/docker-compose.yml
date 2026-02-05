@@ -12,19 +12,6 @@ services:
       - 80                              # Web UI port for NSL router
     volumes:
       - /DATA/AppData/$AppID/html/:/var/www/html  # WordPress files and uploads
-    command:
-      - bash
-      - -c
-      - |
-        echo "Waiting for database connection..."
-        until php -r '@mysqli_connect("db", "wordpress", getenv("WORDPRESS_DB_PASSWORD")) or exit(1);' 2>/dev/null; do
-          echo "Still waiting..."
-          sleep 3
-        done
-        echo "Database connected! Starting WordPress..."
-        a2enmod setenvif
-        echo 'SetEnvIf X-Forwarded-Proto "https" HTTPS=on' > /etc/apache2/conf-enabled/https-proxy.conf
-        exec docker-entrypoint.sh apache2-foreground
     environment:
       WORDPRESS_DB_HOST: db:3306
       WORDPRESS_DB_USER: wordpress
