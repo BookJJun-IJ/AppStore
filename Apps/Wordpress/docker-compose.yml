@@ -22,23 +22,14 @@ services:
           sleep 3
         done
         echo "Database connected! Starting WordPress..."
+        a2enmod setenvif
+        echo 'SetEnvIf X-Forwarded-Proto "https" HTTPS=on' > /etc/apache2/conf-enabled/https-proxy.conf
         exec docker-entrypoint.sh apache2-foreground
     environment:
       WORDPRESS_DB_HOST: db:3306
       WORDPRESS_DB_USER: wordpress
       WORDPRESS_DB_PASSWORD: $default_pwd
       WORDPRESS_DB_NAME: wordpress
-      WORDPRESS_CONFIG_EXTRA: |
-        /* Dynamic Site URLs with HTTPS */
-        define('WP_HOME', 'https://' . getenv('DOMAIN'));
-        define('WP_SITEURL', 'https://' . getenv('DOMAIN'));
-
-        /* File System Method for Updates */
-        define('FS_METHOD', 'direct');
-
-        /* Memory Limit */
-        define('WP_MEMORY_LIMIT', '256M');
-      DOMAIN: wordpress-$domain
     depends_on:
       - db
     deploy:
