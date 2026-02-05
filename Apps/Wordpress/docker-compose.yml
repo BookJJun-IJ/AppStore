@@ -18,11 +18,20 @@ services:
       WORDPRESS_DB_PASSWORD: $default_pwd
       WORDPRESS_DB_NAME: wordpress
       WORDPRESS_CONFIG_EXTRA: |
+      
+        /* Dynamic Site URLs with HTTPS */
+        define('WP_HOME', 'https://' . getenv('DOMAIN'));
+        define('WP_SITEURL', 'https://' . getenv('DOMAIN'));
+
+        /* Force SSL for Admin Panel */
+        define('FORCE_SSL_ADMIN', true);
+
         /* File System Method for Updates */
         define('FS_METHOD', 'direct');
 
         /* Memory Limit */
         define('WP_MEMORY_LIMIT', '256M');
+      DOMAIN: wordpress-$domain
     depends_on:
       - db
     deploy:
