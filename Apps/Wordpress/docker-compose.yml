@@ -24,7 +24,7 @@ services:
     command: >
       bash -c '
         echo "Waiting for database..." &&
-        while ! php -r "try { new PDO(\"mysql:host=db;port=3306\", \"$$WORDPRESS_DB_USER\", \"$$WORDPRESS_DB_PASSWORD\"); exit(0); } catch(Exception $$e) { exit(1); }" 2>/dev/null; do
+        until php -r "new PDO(\"mysql:host=db;port=3306\", getenv(\"WORDPRESS_DB_USER\"), getenv(\"WORDPRESS_DB_PASSWORD\"));" 2>/dev/null; do
           sleep 2
         done &&
         echo "Database is ready!" &&
