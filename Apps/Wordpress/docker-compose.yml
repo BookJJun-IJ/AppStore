@@ -29,11 +29,6 @@ services:
       WORDPRESS_DB_PASSWORD: $default_pwd
       WORDPRESS_DB_NAME: wordpress
       WORDPRESS_CONFIG_EXTRA: |
-        /* Handle HTTPS behind reverse proxy */
-        if (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
-            $_SERVER['HTTPS'] = 'on';
-        }
-
         /* Dynamic Site URLs with HTTPS */
         define('WP_HOME', 'https://' . getenv('DOMAIN'));
         define('WP_SITEURL', 'https://' . getenv('DOMAIN'));
@@ -247,5 +242,23 @@ x-casaos:
         • Choisir un thème (Apparence → Thèmes)
         • Créer votre première page ou article
         • Installer des plugins utiles comme Yoast SEO ou Contact Form 7
-        
+
         La base de données est déjà configurée automatiquement.
+  pre-install-cmd: |
+    mkdir -p /DATA/AppData/$AppID/html &&
+    cat > /DATA/AppData/$AppID/html/.htaccess << 'EOF'
+    # Handle HTTPS behind reverse proxy
+    SetEnvIf X-Forwarded-Proto "https" HTTPS=on
+
+    # BEGIN WordPress
+    <IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+    RewriteBase /
+    RewriteRule ^index\.php$ - [L]
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule . /index.php [L]
+    </IfModule>
+    # END WordPress
+    EOF
