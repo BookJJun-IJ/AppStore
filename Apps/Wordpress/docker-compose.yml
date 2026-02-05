@@ -21,15 +21,6 @@ services:
 
         /* Memory Limit */
         define('WP_MEMORY_LIMIT', '256M');
-    command: >
-      bash -c '
-        echo "Waiting for database..." &&
-        until php -r "new PDO(\"mysql:host=db;port=3306\", getenv(\"WORDPRESS_DB_USER\"), getenv(\"WORDPRESS_DB_PASSWORD\"));" 2>/dev/null; do
-          sleep 2
-        done &&
-        echo "Database is ready!" &&
-        exec docker-entrypoint.sh apache2-foreground
-      '
     depends_on:
       - db
     deploy:
