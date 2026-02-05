@@ -33,9 +33,6 @@ services:
         define('WP_HOME', 'https://' . getenv('DOMAIN'));
         define('WP_SITEURL', 'https://' . getenv('DOMAIN'));
 
-        /* Force SSL for Admin Panel */
-        define('FORCE_SSL_ADMIN', true);
-
         /* File System Method for Updates */
         define('FS_METHOD', 'direct');
 
