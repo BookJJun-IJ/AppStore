@@ -17,7 +17,8 @@ services:
       - -c
       - |
         echo "Waiting for database connection..."
-        until php -r 'try { new PDO("mysql:host=db;port=3306", "wordpress", getenv("WORDPRESS_DB_PASSWORD")); exit(0); } catch(Exception $e) { exit(1); }' 2>/dev/null; do
+        until php -r '@mysqli_connect("db", "wordpress", getenv("WORDPRESS_DB_PASSWORD")) or exit(1);' 2>/dev/null; do
+          echo "Still waiting..."
           sleep 3
         done
         echo "Database connected! Starting WordPress..."
