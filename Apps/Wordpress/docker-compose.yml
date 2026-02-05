@@ -6,10 +6,12 @@ services:
     container_name: wordpress_app
     restart: unless-stopped
     user: 0:0
+    networks:
+      - wordpress_net
     expose:
       - 80                              # Web UI port for NSL router
     volumes:
-      - /DATA/AppData/$AppID/html/:/var/www/html  # WordPress files and uploads 
+      - /DATA/AppData/$AppID/html/:/var/www/html  # WordPress files and uploads
     environment:
       WORDPRESS_DB_HOST: db:3306
       WORDPRESS_DB_USER: wordpress
@@ -34,6 +36,8 @@ services:
     container_name: wordpress_db
     restart: unless-stopped
     user: 0:0
+    networks:
+      - wordpress_net
     volumes:
       - /DATA/AppData/$AppID/db/:/var/lib/mysql   # Database files storage
     environment:
@@ -48,6 +52,10 @@ services:
         limits:
           memory: 1G                    # Memory limit for database
     cpu_shares: 50
+
+networks:
+  wordpress_net:
+    driver: bridge
 
 x-casaos:
   architectures:
