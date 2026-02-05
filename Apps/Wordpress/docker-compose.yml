@@ -219,21 +219,3 @@ x-casaos:
         • Installer des plugins utiles comme Yoast SEO ou Contact Form 7
 
         La base de données est déjà configurée automatiquement.
-  pre-install-cmd: |
-    mkdir -p /DATA/AppData/$AppID/html &&
-    cat > /DATA/AppData/$AppID/html/.htaccess << 'EOF'
-    # Handle HTTPS behind reverse proxy
-    SetEnvIf X-Forwarded-Proto "https" HTTPS=on
-
-    # BEGIN WordPress
-    <IfModule mod_rewrite.c>
-    RewriteEngine On
-    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
-    RewriteBase /
-    RewriteRule ^index\.php$ - [L]
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule . /index.php [L]
-    </IfModule>
-    # END WordPress
-    EOF
