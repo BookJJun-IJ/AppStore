@@ -64,7 +64,7 @@ x-casaos:
     - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Wordpress/screenshot-2.png
     - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Wordpress/screenshot-3.png
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Wordpress/thumbnail.png
-  index: /
+  index: /wp-admin
   tagline:
     en_us: Create beautiful websites with ease
     zh_cn: 轻松创建精美网站
