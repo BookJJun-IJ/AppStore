@@ -5,6 +5,7 @@ services:
     image: ghcr.io/yundera/nginx-hash-lock:latest
     container_name: wordpress
     restart: unless-stopped
+    user: "root"
     networks:
       - pcs
     expose:
@@ -21,6 +22,7 @@ services:
       resources:
         limits:
           memory: 128M
+    privileged: true
     cap_add:
       - SYS_ADMIN
       - NET_ADMIN
