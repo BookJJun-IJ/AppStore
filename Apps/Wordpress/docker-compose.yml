@@ -19,8 +19,8 @@ services:
       WORDPRESS_DB_NAME: wordpress
       DOMAIN: wordpress-$domain
       WORDPRESS_CONFIG_EXTRA: |
-        $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
-        if (is_string($ua) && strpos($ua, 'go-resty') !== false) {
+        $$ua = $$_SERVER['HTTP_USER_AGENT'] ?? '';
+        if (is_string($$ua) && strpos($$ua, 'go-resty') !== false) {
             http_response_code(200);
             echo 'OK';
             exit;
