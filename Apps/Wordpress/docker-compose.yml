@@ -2,28 +2,51 @@ name: wordpress
 
 services:
   wordpress:
+    image: ghcr.io/yundera/nginx-hash-lock:latest
+    container_name: wordpress
+    restart: unless-stopped
+    networks:
+      - pcs
+    expose:
+      - 80
+    environment:
+      BACKEND_HOST: wordpress-backend
+      BACKEND_PORT: "80"
+      LISTEN_PORT: "80"
+      DOMAIN: wordpress-$domain
+    depends_on:
+      - wordpress-backend
+      - db
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    cap_add:
+      - SYS_ADMIN
+      - NET_ADMIN
+
+  wordpress-backend:
     image: wordpress:6.9.0-apache
-    container_name: wordpress_app
+    container_name: wordpress-backend
     restart: unless-stopped
     user: 0:0
     networks:
       - pcs
-    expose:
-      - 80                              # Web UI port for NSL router
     volumes:
-      - /DATA/AppData/$AppID/html/:/var/www/html  # WordPress files and uploads
+      - /DATA/AppData/$AppID/html/:/var/www/html
     environment:
       WORDPRESS_DB_HOST: db:3306
       WORDPRESS_DB_USER: wordpress
       WORDPRESS_DB_PASSWORD: $default_pwd
       WORDPRESS_DB_NAME: wordpress
-    depends_on:
-      - db
     deploy:
       resources:
         limits:
-          memory: 1G                    # Memory limit for WordPress
+          memory: 1G
     cpu_shares: 70
+    cap_add:
+      - SYS_ADMIN
+      - NET_ADMIN
 
   db:
     image: mariadb:11.8
@@ -41,7 +64,6 @@ services:
       MYSQL_PASSWORD: $default_pwd       # Password for MySQL user
       MARIADB_AUTO_UPGRADE: 1            # Enable automatic database upgrades
       MARIADB_DISABLE_UPGRADE_BACKUP: 1  # Disable backup during upgrades
-      DOMAIN: wordpress-$domain
     deploy:
       resources:
         limits:
