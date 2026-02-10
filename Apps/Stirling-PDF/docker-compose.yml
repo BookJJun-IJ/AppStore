@@ -8,20 +8,22 @@ services:
     expose:
       - 80
     volumes:
-      - /DATA/AppData/$AppID/tessdata:/usr/share/tessdata
-      - /DATA/AppData/$AppID/configs:/configs
-      - /DATA/AppData/$AppID/logs:/logs
-      - /DATA/AppData/$AppID/customFiles:/customFiles
-      - /DATA/AppData/$AppID/pipeline:/pipeline
-      - /DATA/Downloads:/downloads
-      - /DATA/AppData/$AppID/tmp:/tmp
+      - /DATA/AppData/$AppID/tessdata/:/usr/share/tessdata
+      - /DATA/AppData/$AppID/configs/:/configs
+      - /DATA/AppData/$AppID/logs/:/logs
+      - /DATA/AppData/$AppID/customFiles/:/customFiles
+      - /DATA/AppData/$AppID/pipeline/:/pipeline
+      - /DATA/Downloads/:/downloads
+      - /DATA/AppData/$AppID/tmp/:/tmp
     user: "0:0"  # Root user required for Java runtime and PDF tools - see rationale.md
     environment:
       PGID: 0
       PUID: 0
       TZ: $TZ
-      DOCKER_ENABLE_SECURITY: false
-      SECURITY_ENABLELOGIN: false
+      DOCKER_ENABLE_SECURITY: true
+      SECURITY_ENABLELOGIN: true
+      SECURITY_INITIALLOGIN_USERNAME: admin
+      SECURITY_INITIALLOGIN_PASSWORD: $default_pwd
       DISABLE_ADDITIONAL_FEATURES: true
       SYSTEM_DEFAULTLOCALE: en_US
       INSTALL_BOOK_AND_ADVANCED_HTML_OPS: false
@@ -47,12 +49,6 @@ x-casaos:
   author: Yundera Team
   category: Office
   developer: Stirling Tools
-  pre-install-cmd: |
-    docker run --rm -v /DATA/AppData/$AppID:/data ubuntu:22.04 sh -c '
-      mkdir -p /data/tessdata /data/configs /data/logs /data/customFiles /data/pipeline /data/tmp &&
-      chmod -R 777 /data &&
-      echo "Directories created and permissions set successfully"
-    '
   description:
     en_us: |
       **Your complete PDF toolkit - everything you need to work with PDF files, right from your web browser.**
