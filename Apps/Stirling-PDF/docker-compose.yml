@@ -1,10 +1,36 @@
 name: stirlingpdf
 
 services:
+  nginx:
+    image: nginx:alpine
+    container_name: stirling-nginx
+    restart: unless-stopped
+    expose:
+      - 80
+    networks:
+      - pcs
+    environment:
+      BASIC_AUTH_USERNAME: admin
+      BASIC_AUTH_PASSWORD: $default_pwd
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./entrypoint.sh:/entrypoint.sh:ro
+      - /DATA/AppData/$AppID/auth/:/etc/nginx/auth
+    depends_on:
+      - stirlingpdf
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+    cpu_shares: 80
+
   stirlingpdf:
     image: docker.stirlingpdf.com/stirlingtools/stirling-pdf:2.4.3
     container_name: stirling-pdf
     restart: unless-stopped
+    networks:
+      - pcs
     expose:
       - 80
     volumes:
@@ -20,10 +46,7 @@ services:
       PGID: 0
       PUID: 0
       TZ: $TZ
-      DOCKER_ENABLE_SECURITY: true
-      SECURITY_ENABLELOGIN: true
-      SECURITY_INITIALLOGIN_USERNAME: admin
-      SECURITY_INITIALLOGIN_PASSWORD: $default_pwd
+      DOCKER_ENABLE_SECURITY: false
       DISABLE_ADDITIONAL_FEATURES: true
       SYSTEM_DEFAULTLOCALE: en_US
       INSTALL_BOOK_AND_ADVANCED_HTML_OPS: false
@@ -40,11 +63,15 @@ services:
           memory: 2G  # Reserve minimum memory
     cpu_shares: 50  # Standard application priority
 
+networks:
+  pcs:
+    external: true
+
 x-casaos:
   architectures:
     - amd64
     - arm64
-  main: stirlingpdf
+  main: nginx
   webui_port: 80
   author: Yundera Team
   category: Office
@@ -180,8 +207,10 @@ x-casaos:
         **⏰ Setup Time:**
         This app takes about 5-10 minutes to set up after installation. Please be patient and wait before trying to access it.
 
-        **🔓 No Login Required:**
-        This app is configured without authentication for easier access. All PDF processing happens locally on your server. (See rationale.md for security justification)
+        **🔒 Login Required:**
+        This app is protected with basic authentication for security.
+        • Username: `admin`
+        • Password: Auto-generated (same as $default_pwd)
 
         **✨ Features Available:**
         • Split, merge, and organize PDFs
@@ -208,8 +237,10 @@ x-casaos:
         **⏰ 설정 시간:**
         이 앱은 설치 후 설정이 완료되기까지 약 5-10분이 걸립니다. 인내심을 갖고 접속하기 전에 기다려 주세요.
 
-        **🔓 로그인 필요 없음:**
-        이 앱은 쉬운 접근을 위해 인증 없이 구성되었습니다. 모든 PDF 처리는 로컬 서버에서 이루어집니다. (보안 정당성은 rationale.md 참조)
+        **🔒 로그인 필요:**
+        이 앱은 보안을 위해 기본 인증으로 보호됩니다.
+        • 사용자명: `admin`
+        • 비밀번호: 자동 생성됨 ($default_pwd와 동일)
 
         **✨ 사용 가능한 기능:**
         • PDF 분할, 병합, 정리
@@ -236,8 +267,10 @@ x-casaos:
         **⏰ 设置时间:**
         此应用在安装后需要约5-10分钟来完成设置。请耐心等待,在尝试访问之前请等待。
 
-        **🔓 无需登录:**
-        此应用配置为无身份验证,以便于访问。所有PDF处理都在本地服务器上进行。(安全性理由见rationale.md)
+        **🔒 需要登录:**
+        此应用使用基本身份验证保护以确保安全。
+        • 用户名：`admin`
+        • 密码：自动生成（与$default_pwd相同）
 
         **✨ 可用功能:**
         • PDF拆分、合并和整理
@@ -264,8 +297,10 @@ x-casaos:
         **⏰ Temps d'installation :**
         Cette application prend environ 5-10 minutes pour s'installer après l'installation. Veuillez être patient et attendre avant d'essayer d'y accéder.
 
-        **🔓 Aucune connexion requise :**
-        Cette application est configurée sans authentification pour un accès plus facile. Tout le traitement PDF se fait localement sur votre serveur. (Voir rationale.md pour la justification de sécurité)
+        **🔒 Connexion requise :**
+        Cette application est protégée par une authentification de base pour la sécurité.
+        • Nom d'utilisateur : `admin`
+        • Mot de passe : Généré automatiquement (identique à $default_pwd)
 
         **✨ Fonctionnalités disponibles :**
         • Diviser, fusionner et organiser les PDF
@@ -292,8 +327,10 @@ x-casaos:
         **⏰ Tiempo de configuración:**
         Esta aplicación toma aproximadamente 5-10 minutos para configurarse después de la instalación. Por favor ten paciencia y espera antes de intentar acceder.
 
-        **🔓 Sin inicio de sesión requerido:**
-        Esta aplicación está configurada sin autenticación para un acceso más fácil. Todo el procesamiento de PDF ocurre localmente en tu servidor. (Ver rationale.md para justificación de seguridad)
+        **🔒 Inicio de sesión requerido:**
+        Esta aplicación está protegida con autenticación básica por seguridad.
+        • Usuario: `admin`
+        • Contraseña: Generada automáticamente (igual que $default_pwd)
 
         **✨ Características disponibles:**
         • Dividir, combinar y organizar PDFs
@@ -316,4 +353,4 @@ x-casaos:
 
         **Cómo usar:**
         ¡Sube archivos PDF a través de tu navegador web y comienza a editarlos de inmediato!
-  index: /
+  index: /login
