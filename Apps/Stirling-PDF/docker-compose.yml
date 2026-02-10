@@ -1,30 +1,6 @@
 name: stirlingpdf
 
 services:
-  nginx:
-    image: nginx:alpine
-    container_name: stirling-nginx
-    restart: unless-stopped
-    expose:
-      - 80
-    networks:
-      - pcs
-    environment:
-      BASIC_AUTH_USERNAME: admin
-      BASIC_AUTH_PASSWORD: $default_pwd
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./entrypoint.sh:/entrypoint.sh:ro
-      - /DATA/AppData/$AppID/auth/:/etc/nginx/auth
-    depends_on:
-      - stirlingpdf
-    entrypoint: ["/bin/sh", "/entrypoint.sh"]
-    deploy:
-      resources:
-        limits:
-          memory: 64M
-    cpu_shares: 80
-
   stirlingpdf:
     image: docker.stirlingpdf.com/stirlingtools/stirling-pdf:2.4.3
     container_name: stirling-pdf
@@ -46,7 +22,10 @@ services:
       PGID: 0
       PUID: 0
       TZ: $TZ
-      DOCKER_ENABLE_SECURITY: false
+      DOCKER_ENABLE_SECURITY: true
+      SECURITY_ENABLELOGIN: true
+      SECURITY_INITIALLOGIN_USERNAME: admin
+      SECURITY_INITIALLOGIN_PASSWORD: $default_pwd
       DISABLE_ADDITIONAL_FEATURES: true
       SYSTEM_DEFAULTLOCALE: en_US
       INSTALL_BOOK_AND_ADVANCED_HTML_OPS: false
@@ -71,7 +50,7 @@ x-casaos:
   architectures:
     - amd64
     - arm64
-  main: nginx
+  main: stirlingpdf
   webui_port: 80
   author: Yundera Team
   category: Office
@@ -208,9 +187,11 @@ x-casaos:
         This app takes about 5-10 minutes to set up after installation. Please be patient and wait before trying to access it.
 
         **🔒 Login Required:**
-        This app is protected with basic authentication for security.
+        This app has built-in login protection for security.
         • Username: `admin`
         • Password: Auto-generated (same as $default_pwd)
+
+        After installation, visit the app and log in with the credentials above.
 
         **✨ Features Available:**
         • Split, merge, and organize PDFs
@@ -238,9 +219,11 @@ x-casaos:
         이 앱은 설치 후 설정이 완료되기까지 약 5-10분이 걸립니다. 인내심을 갖고 접속하기 전에 기다려 주세요.
 
         **🔒 로그인 필요:**
-        이 앱은 보안을 위해 기본 인증으로 보호됩니다.
+        이 앱은 보안을 위해 내장 로그인으로 보호됩니다.
         • 사용자명: `admin`
         • 비밀번호: 자동 생성됨 ($default_pwd와 동일)
+
+        설치 후 앱을 방문하여 위 자격 증명으로 로그인하세요.
 
         **✨ 사용 가능한 기능:**
         • PDF 분할, 병합, 정리
@@ -268,9 +251,11 @@ x-casaos:
         此应用在安装后需要约5-10分钟来完成设置。请耐心等待,在尝试访问之前请等待。
 
         **🔒 需要登录:**
-        此应用使用基本身份验证保护以确保安全。
+        此应用具有内置登录保护以确保安全。
         • 用户名：`admin`
         • 密码：自动生成（与$default_pwd相同）
+
+        安装后，访问应用并使用上述凭据登录。
 
         **✨ 可用功能:**
         • PDF拆分、合并和整理
@@ -298,9 +283,11 @@ x-casaos:
         Cette application prend environ 5-10 minutes pour s'installer après l'installation. Veuillez être patient et attendre avant d'essayer d'y accéder.
 
         **🔒 Connexion requise :**
-        Cette application est protégée par une authentification de base pour la sécurité.
+        Cette application dispose d'une protection de connexion intégrée pour la sécurité.
         • Nom d'utilisateur : `admin`
         • Mot de passe : Généré automatiquement (identique à $default_pwd)
+
+        Après l'installation, visitez l'application et connectez-vous avec les identifiants ci-dessus.
 
         **✨ Fonctionnalités disponibles :**
         • Diviser, fusionner et organiser les PDF
@@ -328,9 +315,11 @@ x-casaos:
         Esta aplicación toma aproximadamente 5-10 minutos para configurarse después de la instalación. Por favor ten paciencia y espera antes de intentar acceder.
 
         **🔒 Inicio de sesión requerido:**
-        Esta aplicación está protegida con autenticación básica por seguridad.
+        Esta aplicación tiene protección de inicio de sesión integrada por seguridad.
         • Usuario: `admin`
         • Contraseña: Generada automáticamente (igual que $default_pwd)
+
+        Después de la instalación, visita la aplicación e inicia sesión con las credenciales anteriores.
 
         **✨ Características disponibles:**
         • Dividir, combinar y organizar PDFs
