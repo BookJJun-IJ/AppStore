@@ -11,7 +11,7 @@ services:
     expose:
       - 80
     volumes:
-      - /DATA/AppData/$AppID/data:/home/node/.n8n
+      - /DATA/AppData/$AppID/data/:/home/node/.n8n
     environment:
       PUID: $PUID
       PGID: $PGID
@@ -45,7 +45,7 @@ services:
     networks:
       - pcs
     volumes:
-      - /DATA/AppData/$AppID/pgdata:/var/lib/postgresql/data
+      - /DATA/AppData/$AppID/pgdata/:/var/lib/postgresql/data
     environment:
       POSTGRES_DB: n8n
       POSTGRES_USER: n8n
