@@ -179,10 +179,10 @@ x-casaos:
       Perfecto para desarrolladores, equipos de IT y usuarios avanzados que quieren automatizar sus flujos de trabajo digitales sin depender de costosos servicios en la nube.
   icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/n8n/icon.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/n8n/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/n8n/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/n8n/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/n8n/thumbnail.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/n8n/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/n8n/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/n8n/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/n8n/thumbnail.png
   tagline:
     en_us: Workflow automation for technical people
     ko_kr: 기술 전문가를 위한 워크플로우 자동화
