@@ -28,12 +28,6 @@ services:
           memory: 512M
     volumes:
       - /DATA/AppData/mealie/data/:/app/data
-    healthcheck:
-      test: ["CMD", "timeout", "5", "bash", "-c", "cat < /dev/null > /dev/tcp/localhost/80"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
 
 networks:
   pcs:
