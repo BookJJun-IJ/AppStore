@@ -74,8 +74,8 @@ services:
       - "caddy=plausible-${APP_DOMAIN}"
       - "caddy.reverse_proxy={{upstreams 80}}"
     environment:
-      SECRET_KEY_BASE: ${PLAUSIBLE_SECRET_KEY_BASE:-pleasechangethissecretkey}
-      TOTP_VAULT_KEY: ${PLAUSIBLE_TOTP_VAULT_KEY:-pleasechangethistotpkey}
+      SECRET_KEY_BASE: ${PLAUSIBLE_SECRET_KEY_BASE:-changeme-this-is-not-secure-please-change-this-secret-key-base-immediately}
+      TOTP_VAULT_KEY: ${PLAUSIBLE_TOTP_VAULT_KEY:-changeme-this-is-not-secure-totp-vault-key}
       BASE_URL: https://plausible-${APP_DOMAIN}
       DATABASE_URL: postgres://postgres:$PCS_DEFAULT_PASSWORD@plausible-db:5432/plausible
       CLICKHOUSE_DATABASE_URL: http://plausible-events-db:8123/plausible_events_db
