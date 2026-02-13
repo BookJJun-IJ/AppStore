@@ -73,11 +73,11 @@ services:
     labels:
       - "caddy=plausible-${APP_DOMAIN}"
       - "caddy.reverse_proxy={{upstreams 80}}"
-    env_file:
-      - /DATA/AppData/plausible/secrets/env
     volumes:
       - /DATA/AppData/plausible/secrets/:/secrets
     environment:
+      SECRET_KEY_BASE_FILE: /secrets/secret_key_base
+      TOTP_VAULT_KEY_FILE: /secrets/totp_vault_key
       BASE_URL: https://plausible-${APP_DOMAIN}
       DATABASE_URL: postgres://postgres:$PCS_DEFAULT_PASSWORD@plausible-db:5432/plausible
       CLICKHOUSE_DATABASE_URL: http://plausible-events-db:8123/plausible_events_db
@@ -309,4 +309,4 @@ x-casaos:
   store_app_id: plausible
   pre-install-cmd: |
     mkdir -p /DATA/AppData/$AppID/db /DATA/AppData/$AppID/event-data /DATA/AppData/$AppID/event-logs /DATA/AppData/$AppID/secrets &&
-    test -f /DATA/AppData/$AppID/secrets/env || docker run --rm -v /DATA/AppData/$AppID/secrets/:/secrets/ alpine:3.21 sh -c 'SKB=$(head -c 64 /dev/urandom | base64 | tr -d "\n"); TVK=$(head -c 32 /dev/urandom | base64 | tr -d "\n"); printf "SECRET_KEY_BASE=%s\nTOTP_VAULT_KEY=%s\n" "$SKB" "$TVK" > /secrets/env'
+    test -f /DATA/AppData/$AppID/secrets/secret_key_base || docker run --rm -v /DATA/AppData/$AppID/secrets/:/secrets/ alpine:3.21 sh -c 'head -c 64 /dev/urandom | base64 | tr -d "\n" > /secrets/secret_key_base && head -c 32 /dev/urandom | base64 | tr -d "\n" > /secrets/totp_vault_key'
