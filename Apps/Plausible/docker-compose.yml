@@ -73,11 +73,9 @@ services:
     labels:
       - "caddy=plausible-${APP_DOMAIN}"
       - "caddy.reverse_proxy={{upstreams 80}}"
-    env_file:
-      - /DATA/AppData/$AppID/.env
     environment:
-      SECRET_KEY_BASE: ${PLAUSIBLE_SECRET_KEY_BASE}
-      TOTP_VAULT_KEY: ${PLAUSIBLE_TOTP_VAULT_KEY}
+      SECRET_KEY_BASE: ${PLAUSIBLE_SECRET_KEY_BASE:-pleasechangethissecretkey}
+      TOTP_VAULT_KEY: ${PLAUSIBLE_TOTP_VAULT_KEY:-pleasechangethistotpkey}
       BASE_URL: https://plausible-${APP_DOMAIN}
       DATABASE_URL: postgres://postgres:$PCS_DEFAULT_PASSWORD@plausible-db:5432/plausible
       CLICKHOUSE_DATABASE_URL: http://plausible-events-db:8123/plausible_events_db
@@ -309,5 +307,5 @@ x-casaos:
   store_app_id: plausible
   pre-install-cmd: |
     mkdir -p /DATA/AppData/$AppID/db /DATA/AppData/$AppID/event-data /DATA/AppData/$AppID/event-logs &&
-    echo "PLAUSIBLE_SECRET_KEY_BASE=$(openssl rand -base64 64 | tr -d '\n')" > /DATA/AppData/$AppID/.env &&
-    echo "PLAUSIBLE_TOTP_VAULT_KEY=$(openssl rand -base64 32 | tr -d '\n')" >> /DATA/AppData/$AppID/.env
+    grep -q "PLAUSIBLE_SECRET_KEY_BASE" /etc/casaos/env 2>/dev/null || echo "PLAUSIBLE_SECRET_KEY_BASE=$(openssl rand -base64 64 | tr -d '\n')" >> /etc/casaos/env &&
+    grep -q "PLAUSIBLE_TOTP_VAULT_KEY" /etc/casaos/env 2>/dev/null || echo "PLAUSIBLE_TOTP_VAULT_KEY=$(openssl rand -base64 32 | tr -d '\n')" >> /etc/casaos/env
