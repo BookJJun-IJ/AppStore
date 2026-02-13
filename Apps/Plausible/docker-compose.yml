@@ -7,11 +7,11 @@ services:
     restart: unless-stopped
     user: "0:0"
     volumes:
-      - /DATA/AppData/$AppID/db:/var/lib/postgresql/data
+      - /DATA/AppData/plausible/db/:/var/lib/postgresql/data
     environment:
       POSTGRES_DB: plausible
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: $PCS_DEFAULT_PASSWORD
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d plausible"]
       interval: 30s
@@ -32,8 +32,8 @@ services:
     restart: unless-stopped
     user: "0:0"
     volumes:
-      - /DATA/AppData/$AppID/event-data:/var/lib/clickhouse
-      - /DATA/AppData/$AppID/event-logs:/var/log/clickhouse-server
+      - /DATA/AppData/plausible/event-data/:/var/lib/clickhouse
+      - /DATA/AppData/plausible/event-logs/:/var/log/clickhouse-server
     ulimits:
       nofile:
         soft: 262144
@@ -55,54 +55,11 @@ services:
     cpu_shares: 50
 
   plausible:
-    image: ghcr.io/plausible/community-edition:v3.1.0
+    image: ghcr.io/plausible/community-edition:v3.2.0
     container_name: plausible
     restart: unless-stopped
     user: "0:0"
-    command: >
-      sh -c '
-        echo "=== Plausible Starting ===" &&
-        
-        echo "Checking secrets directory..." &&
-        mkdir -p /secrets &&
-        
-        if [ ! -f /secrets/secret_key_base.txt ]; then
-          echo "Generating SECRET_KEY_BASE..." &&
-          cat /dev/urandom | head -c 64 | base64 | tr -d "\n" > /secrets/secret_key_base.txt &&
-          echo "SECRET_KEY_BASE generated"
-        else
-          echo "SECRET_KEY_BASE already exists"
-        fi &&
-        
-        if [ ! -f /secrets/totp_vault_key.txt ]; then
-          echo "Generating TOTP_VAULT_KEY..." &&
-          cat /dev/urandom | head -c 32 | base64 | tr -d "\n" > /secrets/totp_vault_key.txt &&
-          echo "TOTP_VAULT_KEY generated"
-        else
-          echo "TOTP_VAULT_KEY already exists"
-        fi &&
-        
-        echo "Reading secrets..." &&
-        export SECRET_KEY_BASE=$$(cat /secrets/secret_key_base.txt) &&
-        export TOTP_VAULT_KEY=$$(cat /secrets/totp_vault_key.txt) &&
-        echo "SECRET_KEY_BASE length: $${#SECRET_KEY_BASE}" &&
-        echo "TOTP_VAULT_KEY length: $${#TOTP_VAULT_KEY}" &&
-        
-        if [ $${#SECRET_KEY_BASE} -lt 32 ]; then
-          echo "ERROR: SECRET_KEY_BASE too short" &&
-          exit 1
-        fi &&
-        if [ $${#TOTP_VAULT_KEY} -lt 32 ]; then
-          echo "ERROR: TOTP_VAULT_KEY too short" &&
-          exit 1
-        fi &&
-        
-        echo "Starting database initialization..." &&
-        /entrypoint.sh db createdb &&
-        /entrypoint.sh db migrate &&
-        echo "Starting Plausible application..." &&
-        exec /entrypoint.sh run
-      '
+    command: sh -c "/entrypoint.sh db createdb && /entrypoint.sh db migrate && /entrypoint.sh run"
     depends_on:
       plausible-db:
         condition: service_healthy
@@ -110,11 +67,16 @@ services:
         condition: service_healthy
     expose:
       - "80"
+    labels:
+      - "caddy=plausible-${APP_DOMAIN}"
+      - "caddy.reverse_proxy={{upstreams 80}}"
+    env_file:
+      - /DATA/AppData/plausible/secrets/env
     volumes:
-      - /DATA/AppData/$AppID/secrets:/secrets
+      - /DATA/AppData/plausible/secrets/:/secrets
     environment:
-      BASE_URL: https://plausible-$PCS_DOMAIN
-      DATABASE_URL: postgres://postgres:postgres@plausible-db:5432/plausible
+      BASE_URL: https://plausible-${APP_DOMAIN}
+      DATABASE_URL: postgres://postgres:$PCS_DEFAULT_PASSWORD@plausible-db:5432/plausible
       CLICKHOUSE_DATABASE_URL: http://plausible-events-db:8123/plausible_events_db
       DISABLE_REGISTRATION: invite_only
       LISTEN_IP: 0.0.0.0
@@ -272,4 +234,5 @@ x-casaos:
   webui_port: 80
   store_app_id: plausible
   pre-install-cmd: |
-    mkdir -p /DATA/AppData/$AppID/db /DATA/AppData/$AppID/event-data /DATA/AppData/$AppID/event-logs /DATA/AppData/$AppID/secrets
+    mkdir -p /DATA/AppData/$AppID/db /DATA/AppData/$AppID/event-data /DATA/AppData/$AppID/event-logs /DATA/AppData/$AppID/secrets &&
+    test -f /DATA/AppData/$AppID/secrets/env || docker run --rm -v /DATA/AppData/$AppID/secrets/:/secrets/ alpine:3.21 sh -c 'SKB=$(head -c 64 /dev/urandom | base64 | tr -d "\n"); TVK=$(head -c 32 /dev/urandom | base64 | tr -d "\n"); printf "SECRET_KEY_BASE=%s\nTOTP_VAULT_KEY=%s\n" "$SKB" "$TVK" > /secrets/env'
