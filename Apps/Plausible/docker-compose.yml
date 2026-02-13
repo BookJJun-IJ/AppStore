@@ -59,7 +59,10 @@ services:
     container_name: plausible
     restart: unless-stopped
     user: "0:0"
-    command: sh -c "/entrypoint.sh db createdb && /entrypoint.sh db migrate && /entrypoint.sh run"
+    command:
+      - sh
+      - -c
+      - "/entrypoint.sh db createdb && /entrypoint.sh db migrate && /entrypoint.sh run"
     depends_on:
       plausible-db:
         condition: service_healthy
