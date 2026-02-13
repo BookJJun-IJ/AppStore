@@ -9,6 +9,9 @@ services:
       - pcs
     expose:
       - 80
+    labels:
+      - "caddy=stirlingpdf-${APP_DOMAIN}"
+      - "caddy.reverse_proxy={{upstreams 80}}"
     volumes:
       - /DATA/AppData/$AppID/tessdata/:/usr/share/tessdata
       - /DATA/AppData/$AppID/configs/:/configs
@@ -19,13 +22,13 @@ services:
       - /DATA/AppData/$AppID/tmp/:/tmp
     user: "0:0"  # Root user required for Java runtime and PDF tools - see rationale.md
     environment:
-      PGID: 0
-      PUID: 0
+      PGID: $PGID
+      PUID: $PUID
       TZ: $TZ
       DOCKER_ENABLE_SECURITY: true
       SECURITY_ENABLELOGIN: true
       SECURITY_INITIALLOGIN_USERNAME: admin
-      SECURITY_INITIALLOGIN_PASSWORD: $default_pwd
+      SECURITY_INITIALLOGIN_PASSWORD: $PCS_DEFAULT_PASSWORD
       DISABLE_ADDITIONAL_FEATURES: true
       SYSTEM_DEFAULTLOCALE: en_US
       INSTALL_BOOK_AND_ADVANCED_HTML_OPS: false
@@ -40,7 +43,7 @@ services:
           cpus: '1.0'  # Increased from 1.0 for better performance
         reservations:
           memory: 2G  # Reserve minimum memory
-    cpu_shares: 50  # Standard application priority
+    cpu_shares: 70  # Interactive + Heavy Tasks (PDF conversion, OCR, compression)
 
 networks:
   pcs:
@@ -51,6 +54,7 @@ x-casaos:
     - amd64
     - arm64
   main: stirlingpdf
+  store_app_id: stirlingpdf
   webui_port: 80
   author: Yundera Team
   category: Office
@@ -189,7 +193,7 @@ x-casaos:
         **🔒 Login Required:**
         This app has built-in login protection for security.
         • Username: `admin`
-        • Password: Auto-generated (same as $default_pwd)
+        • Password: Auto-generated (same as $PCS_DEFAULT_PASSWORD)
 
         After installation, visit the app and log in with the credentials above.
 
@@ -221,7 +225,7 @@ x-casaos:
         **🔒 로그인 필요:**
         이 앱은 보안을 위해 내장 로그인으로 보호됩니다.
         • 사용자명: `admin`
-        • 비밀번호: 자동 생성됨 ($default_pwd와 동일)
+        • 비밀번호: 자동 생성됨 ($PCS_DEFAULT_PASSWORD와 동일)
 
         설치 후 앱을 방문하여 위 자격 증명으로 로그인하세요.
 
@@ -253,7 +257,7 @@ x-casaos:
         **🔒 需要登录:**
         此应用具有内置登录保护以确保安全。
         • 用户名：`admin`
-        • 密码：自动生成（与$default_pwd相同）
+        • 密码：自动生成（与$PCS_DEFAULT_PASSWORD相同）
 
         安装后，访问应用并使用上述凭据登录。
 
@@ -285,7 +289,7 @@ x-casaos:
         **🔒 Connexion requise :**
         Cette application dispose d'une protection de connexion intégrée pour la sécurité.
         • Nom d'utilisateur : `admin`
-        • Mot de passe : Généré automatiquement (identique à $default_pwd)
+        • Mot de passe : Généré automatiquement (identique à $PCS_DEFAULT_PASSWORD)
 
         Après l'installation, visitez l'application et connectez-vous avec les identifiants ci-dessus.
 
@@ -317,7 +321,7 @@ x-casaos:
         **🔒 Inicio de sesión requerido:**
         Esta aplicación tiene protección de inicio de sesión integrada por seguridad.
         • Usuario: `admin`
-        • Contraseña: Generada automáticamente (igual que $default_pwd)
+        • Contraseña: Generada automáticamente (igual que $PCS_DEFAULT_PASSWORD)
 
         Después de la instalación, visita la aplicación e inicia sesión con las credenciales anteriores.
 
