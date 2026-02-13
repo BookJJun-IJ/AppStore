@@ -306,6 +306,6 @@ x-casaos:
   webui_port: 80
   store_app_id: plausible
   pre-install-cmd: |
-    mkdir -p /DATA/AppData/$AppID/db/ /DATA/AppData/$AppID/event-data/ /DATA/AppData/$AppID/event-logs/ &&
+    mkdir -p /DATA/AppData/plausible/db/ /DATA/AppData/plausible/event-data/ /DATA/AppData/plausible/event-logs/ &&
     grep -q "PLAUSIBLE_SECRET_KEY_BASE" /etc/casaos/env 2>/dev/null || echo "PLAUSIBLE_SECRET_KEY_BASE=$(openssl rand -base64 64 | tr -d '\n')" >> /etc/casaos/env &&
     grep -q "PLAUSIBLE_TOTP_VAULT_KEY" /etc/casaos/env 2>/dev/null || echo "PLAUSIBLE_TOTP_VAULT_KEY=$(openssl rand -base64 32 | tr -d '\n')" >> /etc/casaos/env
