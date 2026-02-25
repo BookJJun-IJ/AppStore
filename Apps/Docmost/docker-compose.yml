@@ -51,13 +51,6 @@ services:
     image: docmost/docmost:0.25.3
     container_name: docmost
     restart: unless-stopped
-    command:
-      - sh
-      - -c
-      - |
-        test -f /app/data/storage/.app_secret || (head -c 32 /dev/urandom | od -A n -t x1 | tr -d ' \n' > /app/data/storage/.app_secret)
-        export APP_SECRET=$(cat /app/data/storage/.app_secret)
-        node dist/src/main
     depends_on:
       docmost-db:
         condition: service_healthy
@@ -72,7 +65,7 @@ services:
       - /DATA/AppData/$AppID/storage/:/app/data/storage
     environment:
       APP_URL: https://docmost-${APP_DOMAIN}
-      APP_SECRET: placeholder
+      APP_SECRET: $PCS_DEFAULT_PASSWORD
       PORT: 80
       DATABASE_URL: postgresql://docmost:$PCS_DEFAULT_PASSWORD@docmost-db:5432/docmost?schema=public
       REDIS_URL: redis://docmost-redis:6379
