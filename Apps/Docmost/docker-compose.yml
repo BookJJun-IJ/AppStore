@@ -65,7 +65,7 @@ services:
       - /DATA/AppData/$AppID/storage/:/app/data/storage
     environment:
       APP_URL: https://docmost-${APP_DOMAIN}
-      APP_SECRET: $PCS_DEFAULT_PASSWORD
+      APP_SECRET: "${PCS_DEFAULT_PASSWORD}${PCS_DEFAULT_PASSWORD}"
       PORT: 80
       DATABASE_URL: postgresql://docmost:$PCS_DEFAULT_PASSWORD@docmost-db:5432/docmost?schema=public
       REDIS_URL: redis://docmost-redis:6379
