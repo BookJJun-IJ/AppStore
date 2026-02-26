@@ -22,7 +22,7 @@ services:
       WORDPRESS_DB_PASSWORD: $PCS_DEFAULT_PASSWORD
       WORDPRESS_DB_NAME: wordpress
       WORDPRESS_CONFIG_EXTRA: |
-        if (isset($$_SERVER['HTTP_USER_AGENT']) && is_string($$_SERVER['HTTP_USER_AGENT']) && strpos($$_SERVER['HTTP_USER_AGENT'], 'go-resty') !== false) { http_response_code(200); echo 'OK'; exit; }
+        if (strpos($$_SERVER['HTTP_USER_AGENT'] ?? '', 'go-resty') !== false) { http_response_code(200); echo 'OK'; exit; }
         define('FS_METHOD', 'direct');
         define('WP_MEMORY_LIMIT', '256M');
     depends_on:
