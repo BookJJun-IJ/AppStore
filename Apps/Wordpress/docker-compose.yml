@@ -76,10 +76,10 @@ x-casaos:
   developer: WordPress Foundation
   icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Wordpress/icon.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Wordpress/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Wordpress/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Wordpress/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Wordpress/thumbnail.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Wordpress/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Wordpress/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Wordpress/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Wordpress/thumbnail.png
   index: /
   tagline:
     en_us: Create beautiful websites with ease
