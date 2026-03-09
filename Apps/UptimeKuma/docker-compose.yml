@@ -13,7 +13,7 @@ services:
     labels:
       - "caddy=uptimekuma-${APP_DOMAIN}"
       - "caddy.reverse_proxy={{upstreams 80}}"
-      - "caddy.header.-Content-Security-Policy="
+      - "caddy.header.Content-Security-Policy=default-src * 'unsafe-inline' 'unsafe-eval' data: blob: ws: wss:;"
     volumes:
       - /DATA/AppData/$AppID/data/:/app/data
     environment:
