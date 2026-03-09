@@ -1,9 +1,9 @@
-name: uptime-kuma
+name: uptimekuma
 
 services:
-  uptime-kuma:
+  uptimekuma:
     image: louislam/uptime-kuma:2.2.0
-    container_name: uptime-kuma
+    container_name: uptimekuma
     restart: unless-stopped
     user: "0:0"
     networks:
@@ -11,7 +11,7 @@ services:
     expose:
       - "80"
     labels:
-      - "caddy=uptime-kuma-${APP_DOMAIN}"
+      - "caddy=uptimekuma-${APP_DOMAIN}"
       - "caddy.reverse_proxy={{upstreams 80}}"
     volumes:
       - /DATA/AppData/$AppID/data/:/app/data
@@ -38,12 +38,12 @@ x-casaos:
   architectures:
     - amd64
     - arm64
-  main: uptime-kuma
+  main: uptimekuma
   webui_port: 80
   author: Yundera Team
   category: Utilities
   developer: Louis Lam
-  store_app_id: uptime-kuma
+  store_app_id: uptimekuma
   icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/UptimeKuma/icon.png
   screenshot_link:
     - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/UptimeKuma/screenshot-1.png
