@@ -1,47 +1,29 @@
 name: gatus
 
+configs:
+  gatus-config:
+    content: |
+      web:
+        port: 8080
+      storage:
+        type: sqlite
+        path: /data/data.db
+      endpoints:
+        - name: Example
+          url: "https://example.com"
+          interval: 5m
+          conditions:
+            - "[STATUS] == 200"
+
 services:
-  gatus-init:
-    image: alpine:3.21
-    container_name: gatus-init
-    user: "0:0"
-    restart: "no"
-    volumes:
-      - /DATA/AppData/$AppID/config/:/config
-      - /DATA/AppData/$AppID/data/:/data
-    entrypoint: ["/bin/sh", "-c"]
-    command:
-      - |
-        mkdir -p /config /data
-        if [ ! -f /config/config.yaml ]; then
-        cat > /config/config.yaml << 'ENDOFCONFIG'
-        web:
-          port: 8080
-
-        storage:
-          type: sqlite
-          path: /data/data.db
-
-        endpoints:
-          - name: Example
-            url: "https://example.com"
-            interval: 5m
-            conditions:
-              - "[STATUS] == 200"
-        ENDOFCONFIG
-        echo "Default config created."
-        else
-        echo "Config already exists."
-        fi
-
   gatus:
     image: twinproduction/gatus:v5.35.0
     container_name: gatus
     restart: unless-stopped
     user: "0:0"
-    depends_on:
-      gatus-init:
-        condition: service_completed_successfully
+    configs:
+      - source: gatus-config
+        target: /config/config.yaml
     networks:
       - pcs
     expose:
@@ -50,7 +32,6 @@ services:
       - "caddy=gatus-${APP_DOMAIN}"
       - "caddy.reverse_proxy={{upstreams 8080}}"
     volumes:
-      - /DATA/AppData/$AppID/config/:/config
       - /DATA/AppData/$AppID/data/:/data
     environment:
       TZ: $TZ
