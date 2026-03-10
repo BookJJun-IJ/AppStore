@@ -1,0 +1,245 @@
+name: gatus
+
+services:
+  gatus:
+    image: twinproduction/gatus:v5.35.0
+    container_name: gatus
+    restart: unless-stopped
+    user: "0:0"
+    networks:
+      - pcs
+    expose:
+      - "8080"
+    labels:
+      - "caddy=gatus-${APP_DOMAIN}"
+      - "caddy.reverse_proxy={{upstreams 8080}}"
+    volumes:
+      - /DATA/AppData/$AppID/config/:/config
+      - /DATA/AppData/$AppID/data/:/data
+    environment:
+      TZ: $TZ
+      GATUS_CONFIG_PATH: /config/config.yaml
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/health"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    cpu_shares: 90
+
+networks:
+  pcs:
+    external: true
+
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  main: gatus
+  webui_port: 8080
+  author: Yundera Team
+  category: Utilities
+  developer: TwiN
+  store_app_id: gatus
+  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Gatus/icon.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Gatus/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Gatus/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Gatus/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Gatus/screenshot-1.png
+  description:
+    en_us: |
+      **Automated service monitoring with beautiful status pages**
+
+      Gatus is a developer-oriented health dashboard that monitors your services using HTTP, TCP, ICMP, DNS, and more. Get alerted when something goes wrong and share beautiful status pages with your team.
+
+      **Key Features:**
+      - HTTP(s), TCP, ICMP, DNS, WebSocket, SSH monitoring
+      - Customizable conditions (status code, response time, body, certificate expiry)
+      - Alerting via Slack, Discord, Telegram, PagerDuty, Email, and more
+      - Beautiful status page with incident support
+      - Lightweight and fast (built with Go)
+      - YAML-based configuration
+
+      **Perfect for:** Developers and teams who want a lightweight, configuration-driven monitoring solution with public status pages.
+    ko_kr: |
+      **아름다운 상태 페이지와 함께하는 자동 서비스 모니터링**
+
+      Gatus는 HTTP, TCP, ICMP, DNS 등을 사용하여 서비스를 모니터링하는 개발자 지향 헬스 대시보드입니다. 문제가 발생하면 알림을 받고, 아름다운 상태 페이지를 팀과 공유하세요.
+
+      **주요 기능:**
+      - HTTP(s), TCP, ICMP, DNS, WebSocket, SSH 모니터링
+      - 맞춤형 조건 (상태 코드, 응답 시간, 본문, 인증서 만료)
+      - Slack, Discord, Telegram, PagerDuty, 이메일 등으로 알림
+      - 인시던트 지원이 있는 아름다운 상태 페이지
+      - 가볍고 빠름 (Go로 제작)
+      - YAML 기반 설정
+
+      **이런 분께 완벽해요:** 가벼운 설정 기반 모니터링 솔루션과 공개 상태 페이지를 원하는 개발자와 팀.
+    zh_cn: |
+      **带有精美状态页面的自动化服务监控**
+
+      Gatus 是一个面向开发者的健康仪表板，使用 HTTP、TCP、ICMP、DNS 等监控您的服务。当出现问题时获取警报，并与团队共享精美的状态页面。
+
+      **主要功能：**
+      - HTTP(s)、TCP、ICMP、DNS、WebSocket、SSH 监控
+      - 可自定义条件（状态码、响应时间、正文、证书到期）
+      - 通过 Slack、Discord、Telegram、PagerDuty、邮件等发送警报
+      - 带有事件支持的精美状态页面
+      - 轻量且快速（使用 Go 构建）
+      - 基于 YAML 的配置
+
+      **非常适合：** 需要轻量级、配置驱动的监控解决方案和公开状态页面的开发者和团队。
+    fr_fr: |
+      **Surveillance automatisée des services avec de belles pages de statut**
+
+      Gatus est un tableau de bord de santé orienté développeurs qui surveille vos services via HTTP, TCP, ICMP, DNS et plus encore. Recevez des alertes en cas de problème et partagez de belles pages de statut avec votre équipe.
+
+      **Fonctionnalités principales :**
+      - Surveillance HTTP(s), TCP, ICMP, DNS, WebSocket, SSH
+      - Conditions personnalisables (code de statut, temps de réponse, corps, expiration du certificat)
+      - Alertes via Slack, Discord, Telegram, PagerDuty, e-mail et plus
+      - Belle page de statut avec support des incidents
+      - Léger et rapide (construit en Go)
+      - Configuration basée sur YAML
+
+      **Parfait pour :** Les développeurs et équipes recherchant une solution de surveillance légère et configurable avec des pages de statut publiques.
+    es_es: |
+      **Monitoreo automatizado de servicios con hermosas páginas de estado**
+
+      Gatus es un panel de salud orientado a desarrolladores que monitorea sus servicios usando HTTP, TCP, ICMP, DNS y más. Reciba alertas cuando algo falle y comparta hermosas páginas de estado con su equipo.
+
+      **Características principales:**
+      - Monitoreo HTTP(s), TCP, ICMP, DNS, WebSocket, SSH
+      - Condiciones personalizables (código de estado, tiempo de respuesta, cuerpo, expiración de certificado)
+      - Alertas vía Slack, Discord, Telegram, PagerDuty, correo y más
+      - Hermosa página de estado con soporte de incidentes
+      - Ligero y rápido (construido con Go)
+      - Configuración basada en YAML
+
+      **Perfecto para:** Desarrolladores y equipos que buscan una solución de monitoreo ligera y configurable con páginas de estado públicas.
+  tagline:
+    en_us: Automated service health monitoring with status pages
+    ko_kr: 상태 페이지를 갖춘 자동 서비스 헬스 모니터링
+    zh_cn: 带有状态页面的自动化服务健康监控
+    fr_fr: Surveillance automatisée de la santé des services avec pages de statut
+    es_es: Monitoreo automatizado de salud de servicios con páginas de estado
+  title:
+    en_us: Gatus
+  tips:
+    before_install:
+      en_us: |
+        **Getting Started:**
+
+        After installation, create a config file at `/DATA/AppData/gatus/config/config.yaml`:
+
+        ```yaml
+        storage:
+          type: sqlite
+          path: /data/data.db
+
+        endpoints:
+          - name: Website
+            group: core
+            url: "https://yundera.com"
+            interval: 5m
+            conditions:
+              - "[STATUS] == 200"
+              - "[RESPONSE_TIME] < 5000"
+        ```
+
+        **Monitor Types:** HTTP(s), TCP, ICMP, DNS, WebSocket, SSH, TLS
+        **Alerting:** Slack, Discord, Telegram, PagerDuty, Email, and more
+      ko_kr: |
+        **시작하기:**
+
+        설치 후, `/DATA/AppData/gatus/config/config.yaml` 파일을 생성하세요:
+
+        ```yaml
+        storage:
+          type: sqlite
+          path: /data/data.db
+
+        endpoints:
+          - name: Website
+            group: core
+            url: "https://yundera.com"
+            interval: 5m
+            conditions:
+              - "[STATUS] == 200"
+              - "[RESPONSE_TIME] < 5000"
+        ```
+
+        **모니터 유형:** HTTP(s), TCP, ICMP, DNS, WebSocket, SSH, TLS
+        **알림:** Slack, Discord, Telegram, PagerDuty, 이메일 등
+      zh_cn: |
+        **开始使用：**
+
+        安装后，在 `/DATA/AppData/gatus/config/config.yaml` 创建配置文件：
+
+        ```yaml
+        storage:
+          type: sqlite
+          path: /data/data.db
+
+        endpoints:
+          - name: Website
+            group: core
+            url: "https://yundera.com"
+            interval: 5m
+            conditions:
+              - "[STATUS] == 200"
+              - "[RESPONSE_TIME] < 5000"
+        ```
+
+        **监控类型：** HTTP(s)、TCP、ICMP、DNS、WebSocket、SSH、TLS
+        **警报：** Slack、Discord、Telegram、PagerDuty、邮件等
+      fr_fr: |
+        **Commencer :**
+
+        Après l'installation, créez un fichier de configuration à `/DATA/AppData/gatus/config/config.yaml` :
+
+        ```yaml
+        storage:
+          type: sqlite
+          path: /data/data.db
+
+        endpoints:
+          - name: Website
+            group: core
+            url: "https://yundera.com"
+            interval: 5m
+            conditions:
+              - "[STATUS] == 200"
+              - "[RESPONSE_TIME] < 5000"
+        ```
+
+        **Types de moniteurs :** HTTP(s), TCP, ICMP, DNS, WebSocket, SSH, TLS
+        **Alertes :** Slack, Discord, Telegram, PagerDuty, e-mail et plus
+      es_es: |
+        **Comenzar:**
+
+        Después de la instalación, cree un archivo de configuración en `/DATA/AppData/gatus/config/config.yaml`:
+
+        ```yaml
+        storage:
+          type: sqlite
+          path: /data/data.db
+
+        endpoints:
+          - name: Website
+            group: core
+            url: "https://yundera.com"
+            interval: 5m
+            conditions:
+              - "[STATUS] == 200"
+              - "[RESPONSE_TIME] < 5000"
+        ```
+
+        **Tipos de monitor:** HTTP(s), TCP, ICMP, DNS, WebSocket, SSH, TLS
+        **Alertas:** Slack, Discord, Telegram, PagerDuty, correo y más
+  index: /
