@@ -1,18 +1,14 @@
 name: gatus
 
 services:
-  gatus:
-    image: twinproduction/gatus:v5.35.0
-    container_name: gatus
-    restart: unless-stopped
+  gatus-init:
+    image: alpine:3.21
+    container_name: gatus-init
     user: "0:0"
-    networks:
-      - pcs
-    expose:
-      - "8080"
-    labels:
-      - "caddy=gatus-${APP_DOMAIN}"
-      - "caddy.reverse_proxy={{upstreams 8080}}"
+    restart: "no"
+    volumes:
+      - /DATA/AppData/$AppID/config/:/config
+      - /DATA/AppData/$AppID/data/:/data
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
@@ -33,8 +29,26 @@ services:
             conditions:
               - "[STATUS] == 200"
         ENDOFCONFIG
+        echo "Default config created."
+        else
+        echo "Config already exists."
         fi
-        exec /gatus
+
+  gatus:
+    image: twinproduction/gatus:v5.35.0
+    container_name: gatus
+    restart: unless-stopped
+    user: "0:0"
+    depends_on:
+      gatus-init:
+        condition: service_completed_successfully
+    networks:
+      - pcs
+    expose:
+      - "8080"
+    labels:
+      - "caddy=gatus-${APP_DOMAIN}"
+      - "caddy.reverse_proxy={{upstreams 8080}}"
     volumes:
       - /DATA/AppData/$AppID/config/:/config
       - /DATA/AppData/$AppID/data/:/data
