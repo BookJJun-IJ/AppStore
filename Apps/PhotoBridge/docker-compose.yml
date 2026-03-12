@@ -6,10 +6,8 @@ services:
     container_name: photobridge
     restart: unless-stopped
     user: "0:0"
-    ports:
-      - target: 80
-        published: "80"
-        protocol: tcp
+    expose:
+      - "80"
     volumes:
       - /DATA/Gallery/Import:/import:ro
     environment:
