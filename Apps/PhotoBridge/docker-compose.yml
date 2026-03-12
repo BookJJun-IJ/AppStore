@@ -2,17 +2,17 @@ name: photobridge
 
 services:
   photobridge:
-    image: ghcr.io/bookjjun-ij/photobridge:0.1.2
+    image: ghcr.io/bookjjun-ij/photobridge:0.1.3
     container_name: photobridge
     restart: unless-stopped
     user: "0:0"
     networks:
       - pcs
     expose:
-      - "5000"
+      - "80"
     labels:
       - "caddy=photobridge-${APP_DOMAIN}"
-      - "caddy.reverse_proxy={{upstreams 5000}}"
+      - "caddy.reverse_proxy={{upstreams 80}}"
     volumes:
       - /DATA/Gallery/Import:/import:ro
     environment:
@@ -20,7 +20,7 @@ services:
       IMMICH_URL: http://immich:3000
       IMPORT_PATH: /import
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/"]
+      test: ["CMD", "curl", "-f", "http://localhost:80/"]
       interval: 60s
       timeout: 5s
       retries: 3
@@ -40,7 +40,7 @@ x-casaos:
     - amd64
     - arm64
   main: photobridge
-  webui_port: 5000
+  webui_port: 80
   author: Yundera Team
   category: Utilities
   developer: Yundera
