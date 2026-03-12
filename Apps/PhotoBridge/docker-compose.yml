@@ -12,6 +12,7 @@ services:
       - "80"
     labels:
       - "caddy=photobridge-${APP_DOMAIN}"
+      - "caddy.import=gateway_tls"
       - "caddy.reverse_proxy={{upstreams 80}}"
     volumes:
       - /DATA/Gallery/Import:/import:ro
