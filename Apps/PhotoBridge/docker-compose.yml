@@ -2,9 +2,10 @@ name: photobridge
 
 services:
   photobridge:
-    image: nginx:alpine
+    image: ghcr.io/bookjjun-ij/photobridge:0.1.3
     container_name: photobridge
     restart: unless-stopped
+    user: "0:0"
     networks:
       - pcs
     expose:
