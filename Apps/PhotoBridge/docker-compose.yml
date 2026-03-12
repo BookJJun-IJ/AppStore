@@ -10,6 +10,7 @@ services:
       - pcs
     expose:
       - "80"
+    command: ["python", "-m", "http.server", "80"]
     labels:
       - "caddy=photobridge-${APP_DOMAIN}"
       - "caddy.reverse_proxy={{upstreams 80}}"
