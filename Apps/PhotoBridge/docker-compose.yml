@@ -2,15 +2,13 @@ name: photobridge
 
 services:
   photobridge:
-    image: ghcr.io/bookjjun-ij/photobridge:0.1.3
+    image: nginx:alpine
     container_name: photobridge
     restart: unless-stopped
-    user: "0:0"
     networks:
       - pcs
     expose:
       - "80"
-    command: ["python", "-m", "http.server", "80"]
     labels:
       - "caddy=photobridge-${APP_DOMAIN}"
       - "caddy.reverse_proxy={{upstreams 80}}"
