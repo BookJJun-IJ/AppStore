@@ -6,13 +6,10 @@ services:
     container_name: photobridge
     restart: unless-stopped
     user: "0:0"
-    networks:
-      - pcs
-    expose:
-      - "80"
-    labels:
-      - "caddy=photobridge-${APP_DOMAIN}"
-      - "caddy.reverse_proxy={{upstreams 80}}"
+    ports:
+      - target: 80
+        published: "80"
+        protocol: tcp
     volumes:
       - /DATA/Gallery/Import:/import:ro
     environment:
@@ -30,10 +27,6 @@ services:
         limits:
           memory: 512M
     cpu_shares: 50
-
-networks:
-  pcs:
-    external: true
 
 x-casaos:
   architectures:
