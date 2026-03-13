@@ -2,7 +2,7 @@ name: photobridge
 
 services:
   photobridge:
-    image: ghcr.io/bookjjun-ij/photobridge:0.1.4
+    image: ghcr.io/bookjjun-ij/photobridge:0.1.5
     container_name: photobridge
     restart: unless-stopped
     user: "0:0"
@@ -18,7 +18,7 @@ services:
       - /DATA/Gallery/Import:/import:ro
     environment:
       TZ: $TZ
-      IMMICH_URL: http://immich:3000
+      IMMICH_URL: http://immich:2283
       IMPORT_PATH: /import
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:80/"]
