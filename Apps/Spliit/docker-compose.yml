@@ -64,7 +64,7 @@ services:
     environment:
       TZ: $TZ
       POSTGRES_PRISMA_URL: postgresql://postgres:$default_pwd@db:5432/spliit
-      POSTGRES_URL_NON_POOLING: postgresql://postg111111111111111res:$default_pwd@db:5432/spliit
+      POSTGRES_URL_NON_POOLING: postgresql://postgres:$default_pwd@db:5432/spliit
     networks:
       - pcs
     cap_add:
