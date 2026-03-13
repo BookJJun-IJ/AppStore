@@ -6,8 +6,8 @@ services:
     restart: unless-stopped
     user: "root"
     environment:
-      USER: $USER
-      PASSWORD: $PASSWORD
+      USER: "admin"
+      PASSWORD: $default_pwd
       SESSION_DURATION_HOURSE: "168"
       BACKEND_HOST: "spliit"
       BACKEND_PORT: "3000"
@@ -129,6 +129,9 @@ x-casaos:
     before_install:
       en_us: |
         -----------------------------
+        ID : admin
+        Password : $default_pwd
+        -----------------------------
         **How to use:**
         1. Click "Create a group"
         2. Name it (e.g., "Beach Trip 2024")
@@ -136,8 +139,11 @@ x-casaos:
         4. Start adding expenses
         5. Check "Balances" to see who owes whom
         -----------------------------        
-        Share the group link with friends - no signup needed!
+        Share the group link with friends - no signup needed!   
       ko_kr: |
+        -----------------------------
+        ID : admin
+        Password : $default_pwd
         -----------------------------
         **사용 방법:**
         1. "그룹 만들기" 클릭
@@ -148,6 +154,9 @@ x-casaos:
         -----------------------------
       zh_cn: |
         -----------------------------
+        ID : admin
+        Password : $default_pwd
+        -----------------------------
         **使用方法：**
         1. 点击"创建群组"
         2. 命名（例如："2024海滩之旅"）
@@ -157,6 +166,9 @@ x-casaos:
         -----------------------------
       es_es: |
         -----------------------------
+        ID : admin
+        Password : $default_pwd
+        -----------------------------
         **Cómo usar:**
         1. Haz clic en "Crear un grupo"
         2. Nómbralo (ej: "Viaje Playa 2024")
@@ -165,6 +177,9 @@ x-casaos:
         5. Revisa "Saldos" para ver quién debe a quién
         -----------------------------
       fr_fr: |
+        -----------------------------
+        ID : admin
+        Password : $default_pwd
         -----------------------------
         **Comment utiliser:**
         1. Cliquez sur "Créer un groupe"
