@@ -6,7 +6,9 @@ services:
     restart: unless-stopped
     user: "root"
     environment:
-      AUTH_HASH: $AUTH_HASH
+      USER: $USER
+      PASSWORD: $PASSWORD
+      SESSION_DURATION_HOURSE: "168"
       BACKEND_HOST: "spliit"
       BACKEND_PORT: "3000"
       LISTEN_PORT: "80"
@@ -53,7 +55,7 @@ services:
     environment:
       TZ: $TZ
       POSTGRES_PRISMA_URL: postgresql://postgres:$default_pwd@db:5432/spliit
-      POSTGRES_URL_NON_POOLING: postgresql://postgres:$default_pwd@db:5432/spliit
+      POSTGRES_URL_NON_POOLING: postgresql://postg111111111111111res:$default_pwd@db:5432/spliit
     networks:
       - pcs
     cap_add:
@@ -83,7 +85,7 @@ x-casaos:
     - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Spliit/screenshot-2.png
     - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Spliit/screenshot-3.png
   thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Spliit/thumbnail.png
-  index: /?hash=$AUTH_HASH  
+  index: /
   store_app_id: Spliit
   title:
     en_us: Spliit
