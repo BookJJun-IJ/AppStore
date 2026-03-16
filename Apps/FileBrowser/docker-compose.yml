@@ -5,6 +5,8 @@ services:
     container_name: filebrowser
     restart: unless-stopped
     user: 0:0
+    networks:
+      - pcs
     environment:
       TZ: $TZ
       FB_DATABASE: /database/filebrowser.db
@@ -16,12 +18,25 @@ services:
       - /DATA/:/srv
     expose:
       - 80
+    labels:
+      caddy_0: filebrowser-${APP_DOMAIN}
+      caddy_0.import: gateway_tls
+      caddy_0.reverse_proxy: "{{upstreams 80}}"
+      caddy_1: filebrowser-${APP_PUBLIC_IP_DASH}.nip.io
+      caddy_1.import: gateway_tls
+      caddy_1.reverse_proxy: "{{upstreams 80}}"
+      caddy_2: filebrowser-${APP_PUBLIC_IP_DASH}.sslip.io
+      caddy_2.reverse_proxy: "{{upstreams 80}}"
     deploy:
       resources:
         limits:
           memory: 256M
     cpu_shares: 80
-    
+
+networks:
+  pcs:
+    external: true
+
 x-casaos:
   architectures:
     - amd64

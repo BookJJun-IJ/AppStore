@@ -23,7 +23,7 @@ services:
       - /DATA/Gallery/Import:/import:ro
     environment:
       TZ: $TZ
-      IMMICH_URL: http://immich:2283
+      IMMICH_URL: http://immich:80
       IMPORT_PATH: /import
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:80/"]
