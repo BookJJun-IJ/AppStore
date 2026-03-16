@@ -2,8 +2,29 @@ name: convertx
 
 services:
   convertx:
-    image: ghcr.io/c4illin/convertx:v0.16.1
+    image: ghcr.io/yundera/nginx-hash-lock:latest
     container_name: convertx
+    restart: unless-stopped
+    expose:
+      - 80
+    user: "root"
+    environment:
+      AUTH_HASH: $AUTH_HASH
+      BACKEND_HOST: "convertx-backend"
+      BACKEND_PORT: "3000"
+      LISTEN_PORT: "80"
+    depends_on:
+      - convertx-backend
+    networks:
+      - pcs
+    privileged: true
+    cap_add:
+      - SYS_ADMIN
+      - NET_ADMIN
+
+  convertx-backend:
+    image: ghcr.io/c4illin/convertx:v0.16.1
+    container_name: convertx-backend
     restart: unless-stopped
     user: "root"  # Root user required for SQLite access - see rationale.md
     deploy:
@@ -11,8 +32,6 @@ services:
         limits:
           memory: 2G
           cpus: '1.0'
-    expose:
-      - 3000
     environment:
       - JWT_SECRET=$default_pwd
       - ACCOUNT_REGISTRATION=false
@@ -20,14 +39,25 @@ services:
       - ALLOW_UNAUTHENTICATED=false
       - AUTO_DELETE_EVERY_N_HOURS=24
     volumes:
-      - /DATA/AppData/$AppID/data:/app/data
+      - /DATA/AppData/$AppID/data/:/app/data
+    networks:
+      - pcs
+    privileged: true
+    cap_add:
+      - SYS_ADMIN
+      - NET_ADMIN
+    cpu_shares: 70
+
+networks:
+  pcs:
+    external: true
 
 x-casaos:
   architectures:
     - amd64
     - arm64
   main: convertx
-  author: CasaOS Team
+  author: Yundera Team
   category: Utilities
   developer: C4illin
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/ConvertX/icon.png
@@ -71,5 +101,5 @@ x-casaos:
         Access via: `https://convertx-[username].nsl.sh`
         
         **Note**: This app requires root permissions to function properly with SQLite database.
-  index: /
-  webui_port: 3000
+  index: /?hash=$AUTH_HASH
+  webui_port: 80

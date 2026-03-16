@@ -108,4 +108,5 @@ x-casaos:
   pre-install-cmd: |
     mkdir -p /DATA/AppData/filebrowser/db /DATA/AppData/filebrowser/config &&
     docker run --rm -v /DATA/AppData/filebrowser/db:/database filebrowser/filebrowser:v2.32.0 config init --database /database/filebrowser.db &&
-    docker run --rm -v /DATA/AppData/filebrowser/db:/database filebrowser/filebrowser:v2.32.0 users add admin $default_pwd --perm.admin --database /database/filebrowser.db
+    docker run --rm -v /DATA/AppData/filebrowser/db:/database filebrowser/filebrowser:v2.32.0 users add admin $default_pwd --perm.admin --database /database/filebrowser.db &&
+    docker run --rm -v /DATA/AppData/filebrowser/db:/database filebrowser/filebrowser:v2.32.0 users update admin --password $default_pwd --database /database/filebrowser.db
