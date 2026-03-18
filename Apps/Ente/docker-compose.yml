@@ -114,6 +114,12 @@ services:
     restart: unless-stopped
     networks:
       - pcs
+    labels:
+      caddy_0: ente-s3-${APP_DOMAIN}
+      caddy_0.import: gateway_tls
+      caddy_0.reverse_proxy: "{{upstreams 3200}}"
+    expose:
+      - "3200"
     environment:
       MINIO_ROOT_USER: ente_minio
       MINIO_ROOT_PASSWORD: $PCS_DEFAULT_PASSWORD
@@ -140,10 +146,12 @@ services:
       until mc alias set h0 http://ente-minio:3200 "$MINIO_USER" "$MINIO_PASS" 2>/dev/null; do
         sleep 1;
       done;
-      mc mb -p h0/b2-eu-cen;
-      mc mb -p h0/wasabi-eu-central-2-v3;
-      mc mb -p h0/scw-eu-fr-v3;
+      sleep 5;
+      until mc mb -p h0/b2-eu-cen 2>/dev/null; do sleep 2; done;
+      until mc mb -p h0/wasabi-eu-central-2-v3 2>/dev/null; do sleep 2; done;
+      until mc mb -p h0/scw-eu-fr-v3 2>/dev/null; do sleep 2; done;
       echo "Buckets created successfully";
+      tail -f /dev/null;
       '
     environment:
       MINIO_USER: ente_minio
@@ -318,20 +326,20 @@ x-casaos:
       b2-eu-cen:
         key: ente_minio
         secret: __PCS_PWD__
-        endpoint: ente-minio:3200
+        endpoint: ente-s3-__APP_DOMAIN__
         region: eu-central-2
         bucket: b2-eu-cen
       wasabi-eu-central-2-v3:
         key: ente_minio
         secret: __PCS_PWD__
-        endpoint: ente-minio:3200
+        endpoint: ente-s3-__APP_DOMAIN__
         region: eu-central-2
         bucket: wasabi-eu-central-2-v3
         compliance: false
       scw-eu-fr-v3:
         key: ente_minio
         secret: __PCS_PWD__
-        endpoint: ente-minio:3200
+        endpoint: ente-s3-__APP_DOMAIN__
         region: eu-central-2
         bucket: scw-eu-fr-v3
 
