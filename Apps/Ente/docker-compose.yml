@@ -129,6 +129,7 @@ services:
   minio-init:
     image: minio/mc:RELEASE.2025-02-21T16-00-46Z
     container_name: ente-minio-init
+    user: "0:0"
     depends_on:
       - minio
     networks:
@@ -162,7 +163,7 @@ x-casaos:
     - amd64
     - arm64
   main: web
-  webui_port: 3000
+  webui_port: 80
   author: Yundera Team
   category: Cloud
   developer: Ente
