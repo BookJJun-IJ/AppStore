@@ -56,6 +56,7 @@ services:
     image: ghcr.io/ente-io/web
     container_name: ente-web
     restart: unless-stopped
+    user: "0:0"
     networks:
       - pcs
     expose:
@@ -107,7 +108,6 @@ services:
       POSTGRES_USER: pguser
       POSTGRES_PASSWORD: $PCS_DEFAULT_PASSWORD
       POSTGRES_DB: ente_db
-      TZ: $TZ
     volumes:
       - /DATA/AppData/$AppID/pgdata:/var/lib/postgresql/data
     healthcheck:
