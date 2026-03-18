@@ -303,9 +303,9 @@ x-casaos:
   pre-install-cmd: |
     mkdir -p /DATA/AppData/ente/config /DATA/AppData/ente/data /DATA/AppData/ente/pgdata /DATA/AppData/ente/minio &&
     if [ ! -f /DATA/AppData/ente/config/museum.yaml ]; then
-      ENC_KEY=$(openssl rand -base64 32 | tr -d '\n') &&
-      HASH_KEY=$(openssl rand -base64 64 | tr -d '\n') &&
-      JWT_SECRET=$(openssl rand -base64 32 | tr -d '\n') &&
+      ENC_KEY=$$(openssl rand -base64 32 | tr -d '\n') &&
+      HASH_KEY=$$(openssl rand -base64 64 | tr -d '\n') &&
+      JWT_SECRET=$$(openssl rand -base64 32 | tr -d '\n') &&
       cat > /DATA/AppData/ente/config/museum.yaml << ENDOFFILE
     db:
       host: ente-postgres
@@ -338,11 +338,11 @@ x-casaos:
         bucket: scw-eu-fr-v3
 
     key:
-      encryption: ${ENC_KEY}
-      hash: ${HASH_KEY}
+      encryption: $${ENC_KEY}
+      hash: $${HASH_KEY}
 
     jwt:
-      secret: ${JWT_SECRET}
+      secret: $${JWT_SECRET}
 
     apps:
       public-albums: https://ente-albums-${APP_DOMAIN}
