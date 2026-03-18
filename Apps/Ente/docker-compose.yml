@@ -303,50 +303,53 @@ x-casaos:
   pre-install-cmd: |
     mkdir -p /DATA/AppData/ente/config /DATA/AppData/ente/data /DATA/AppData/ente/pgdata /DATA/AppData/ente/minio &&
     if [ ! -f /DATA/AppData/ente/config/museum.yaml ]; then
-      ENC_KEY=$$(openssl rand -base64 32 | tr -d '\n') &&
-      HASH_KEY=$$(openssl rand -base64 64 | tr -d '\n') &&
-      JWT_SECRET=$$(openssl rand -base64 32 | tr -d '\n') &&
-      cat > /DATA/AppData/ente/config/museum.yaml << ENDOFFILE
+      cat > /DATA/AppData/ente/config/museum.yaml << 'ENDOFFILE'
     db:
       host: ente-postgres
       port: 5432
       name: ente_db
       user: pguser
-      password: $PCS_DEFAULT_PASSWORD
+      password: __PCS_PWD__
 
     s3:
       are_local_buckets: true
       use_path_style_urls: true
       b2-eu-cen:
         key: ente_minio
-        secret: $PCS_DEFAULT_PASSWORD
+        secret: __PCS_PWD__
         endpoint: ente-minio:3200
         region: eu-central-2
         bucket: b2-eu-cen
       wasabi-eu-central-2-v3:
         key: ente_minio
-        secret: $PCS_DEFAULT_PASSWORD
+        secret: __PCS_PWD__
         endpoint: ente-minio:3200
         region: eu-central-2
         bucket: wasabi-eu-central-2-v3
         compliance: false
       scw-eu-fr-v3:
         key: ente_minio
-        secret: $PCS_DEFAULT_PASSWORD
+        secret: __PCS_PWD__
         endpoint: ente-minio:3200
         region: eu-central-2
         bucket: scw-eu-fr-v3
 
     key:
-      encryption: $${ENC_KEY}
-      hash: $${HASH_KEY}
+      encryption: __ENC_KEY__
+      hash: __HASH_KEY__
 
     jwt:
-      secret: $${JWT_SECRET}
+      secret: __JWT_SECRET__
 
     apps:
-      public-albums: https://ente-albums-${APP_DOMAIN}
-      cast: https://ente-${APP_DOMAIN}/cast
-      accounts: https://ente-accounts-${APP_DOMAIN}
+      public-albums: https://ente-albums-__APP_DOMAIN__
+      cast: https://ente-__APP_DOMAIN__/cast
+      accounts: https://ente-accounts-__APP_DOMAIN__
     ENDOFFILE
+      F=/DATA/AppData/ente/config/museum.yaml &&
+      sed -i "s|__PCS_PWD__|$PCS_DEFAULT_PASSWORD|g" $F &&
+      sed -i "s|__APP_DOMAIN__|$APP_DOMAIN|g" $F &&
+      sed -i "s|__ENC_KEY__|$(openssl rand -base64 32 | tr -d '\n')|" $F &&
+      sed -i "s|__HASH_KEY__|$(openssl rand -base64 64 | tr -d '\n')|" $F &&
+      sed -i "s|__JWT_SECRET__|$(openssl rand -base64 32 | tr -d '\n')|" $F
     fi
