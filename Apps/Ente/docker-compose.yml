@@ -342,6 +342,11 @@ x-casaos:
     jwt:
       secret: __JWT_SECRET__
 
+    smtp:
+      host: __SMTP_HOST__
+      port: __SMTP_PORT__
+      email: __PCS_EMAIL__
+
     apps:
       public-albums: https://ente-albums-__APP_DOMAIN__
       cast: https://ente-__APP_DOMAIN__/cast
@@ -350,6 +355,9 @@ x-casaos:
       F=/DATA/AppData/ente/config/museum.yaml &&
       sed -i "s|__PCS_PWD__|$PCS_DEFAULT_PASSWORD|g" $F &&
       sed -i "s|__APP_DOMAIN__|$APP_DOMAIN|g" $F &&
+      sed -i "s|__SMTP_HOST__|$SMTP_HOST|" $F &&
+      sed -i "s|__SMTP_PORT__|$SMTP_PORT|" $F &&
+      sed -i "s|__PCS_EMAIL__|$PCS_EMAIL|" $F &&
       sed -i "s|__ENC_KEY__|$(openssl rand -base64 32 | tr -d '\n')|" $F &&
       sed -i "s|__HASH_KEY__|$(openssl rand -base64 64 | tr -d '\n')|" $F &&
       sed -i "s|__JWT_SECRET__|$(openssl rand -base64 32 | tr -d '\n' | tr '+/' '-_')|" $F
