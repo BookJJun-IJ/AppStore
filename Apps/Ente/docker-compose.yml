@@ -1,0 +1,365 @@
+name: ente
+
+services:
+  museum:
+    image: ghcr.io/ente-io/server
+    container_name: ente-museum
+    restart: unless-stopped
+    networks:
+      - pcs
+    expose:
+      - "8080"
+    labels:
+      caddy_0: ente-api-${APP_DOMAIN}
+      caddy_0.import: gateway_tls
+      caddy_0.reverse_proxy: "{{upstreams 8080}}"
+      caddy_1: ente-api-${APP_PUBLIC_IP_DASH}.nip.io
+      caddy_1.import: gateway_tls
+      caddy_1.reverse_proxy: "{{upstreams 8080}}"
+      caddy_2: ente-api-${APP_PUBLIC_IP_DASH}.sslip.io
+      caddy_2.reverse_proxy: "{{upstreams 8080}}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - /DATA/AppData/$AppID/config/museum.yaml:/museum.yaml:ro
+      - /DATA/AppData/$AppID/data:/data:ro
+    environment:
+      TZ: $TZ
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/ping"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 120s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    cpu_shares: 70
+
+  socat:
+    image: alpine/socat:1.8.0.1
+    container_name: ente-socat
+    restart: unless-stopped
+    network_mode: service:museum
+    depends_on:
+      - museum
+    command: "TCP-LISTEN:3200,fork,reuseaddr TCP:minio:3200"
+    deploy:
+      resources:
+        limits:
+          memory: 32M
+    cpu_shares: 30
+
+  web:
+    image: ghcr.io/ente-io/web
+    container_name: ente-web
+    restart: unless-stopped
+    networks:
+      - pcs
+    expose:
+      - "3000"
+      - "3001"
+      - "3002"
+      - "3003"
+    labels:
+      caddy_0: ente-${APP_DOMAIN}
+      caddy_0.import: gateway_tls
+      caddy_0.reverse_proxy: "{{upstreams 3000}}"
+      caddy_1: ente-${APP_PUBLIC_IP_DASH}.nip.io
+      caddy_1.import: gateway_tls
+      caddy_1.reverse_proxy: "{{upstreams 3000}}"
+      caddy_2: ente-${APP_PUBLIC_IP_DASH}.sslip.io
+      caddy_2.reverse_proxy: "{{upstreams 3000}}"
+      caddy_3: ente-auth-${APP_DOMAIN}
+      caddy_3.import: gateway_tls
+      caddy_3.reverse_proxy: "{{upstreams 3003}}"
+      caddy_4: ente-auth-${APP_PUBLIC_IP_DASH}.nip.io
+      caddy_4.import: gateway_tls
+      caddy_4.reverse_proxy: "{{upstreams 3003}}"
+      caddy_5: ente-auth-${APP_PUBLIC_IP_DASH}.sslip.io
+      caddy_5.reverse_proxy: "{{upstreams 3003}}"
+      caddy_6: ente-accounts-${APP_DOMAIN}
+      caddy_6.import: gateway_tls
+      caddy_6.reverse_proxy: "{{upstreams 3001}}"
+      caddy_7: ente-albums-${APP_DOMAIN}
+      caddy_7.import: gateway_tls
+      caddy_7.reverse_proxy: "{{upstreams 3002}}"
+    environment:
+      ENTE_API_ORIGIN: https://ente-api-${APP_DOMAIN}
+      ENTE_ALBUMS_ORIGIN: https://ente-albums-${APP_DOMAIN}
+      ENTE_PHOTOS_ORIGIN: https://ente-${APP_DOMAIN}
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    cpu_shares: 80
+
+  postgres:
+    image: postgres:15
+    container_name: ente-postgres
+    restart: unless-stopped
+    user: "0:0"
+    networks:
+      - pcs
+    environment:
+      POSTGRES_USER: pguser
+      POSTGRES_PASSWORD: $PCS_DEFAULT_PASSWORD
+      POSTGRES_DB: ente_db
+      TZ: $TZ
+    volumes:
+      - /DATA/AppData/$AppID/pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-q", "-d", "ente_db", "-U", "pguser"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    cpu_shares: 50
+
+  minio:
+    image: minio/minio:RELEASE.2025-02-28T09-55-16Z
+    container_name: ente-minio
+    restart: unless-stopped
+    networks:
+      - pcs
+    environment:
+      MINIO_ROOT_USER: ente_minio
+      MINIO_ROOT_PASSWORD: $PCS_DEFAULT_PASSWORD
+    command: server /data --address ":3200" --console-address ":3201"
+    volumes:
+      - /DATA/AppData/$AppID/minio:/data
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    cpu_shares: 50
+
+  minio-init:
+    image: minio/mc:RELEASE.2025-02-21T16-00-46Z
+    container_name: ente-minio-init
+    depends_on:
+      - minio
+    networks:
+      - pcs
+    entrypoint: >
+      sh -c '
+      echo "Waiting for MinIO...";
+      until mc alias set h0 http://minio:3200 ente_minio $$PCS_DEFAULT_PASSWORD 2>/dev/null; do
+        sleep 1;
+      done;
+      mc mb -p h0/b2-eu-cen;
+      mc mb -p h0/wasabi-eu-central-2-v3;
+      mc mb -p h0/scw-eu-fr-v3;
+      echo "Buckets created successfully";
+      '
+    environment:
+      PCS_DEFAULT_PASSWORD: $PCS_DEFAULT_PASSWORD
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    cpu_shares: 30
+
+networks:
+  pcs:
+    external: true
+
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  main: web
+  webui_port: 3000
+  author: Yundera Team
+  category: Cloud
+  developer: Ente
+  store_app_id: ente
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Ente/icon.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Ente/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Ente/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Ente/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Ente/screenshot-1.png
+  description:
+    en_us: |
+      **Ente — End-to-End Encrypted Cloud Platform**
+
+      A fully open-source, privacy-focused alternative to Google Photos, Authy, and more. All your data is end-to-end encrypted.
+
+      **Includes 3 Products:**
+      - **Ente Photos** — Private photo storage with face detection, semantic search, collaborative albums, and sharing
+      - **Ente Auth** — Free 2FA authenticator (Authy alternative) with cross-device sync
+      - **Ente Locker** — Encrypted document, credential, and note storage
+
+      **Key Features:**
+      - End-to-end encryption for all data
+      - 3x data replication for durability
+      - Cross-platform (Web, iOS, Android, Desktop)
+      - Face recognition and semantic search
+      - Collaborative albums and sharing
+      - Private link sharing for albums
+
+      **Self-hosted:** Full control over your data with MinIO-based object storage.
+    ko_kr: |
+      **Ente — 엔드투엔드 암호화 클라우드 플랫폼**
+
+      완전 오픈소스, 프라이버시 중심의 Google Photos, Authy 대안입니다. 모든 데이터가 엔드투엔드 암호화됩니다.
+
+      **3개 제품 포함:**
+      - **Ente Photos** — 얼굴 인식, 시맨틱 검색, 협업 앨범을 갖춘 프라이빗 사진 저장소
+      - **Ente Auth** — 무료 2FA 인증 앱 (Authy 대안), 기기 간 동기화
+      - **Ente Locker** — 암호화된 문서, 자격증명, 메모 저장소
+
+      **주요 기능:**
+      - 모든 데이터 엔드투엔드 암호화
+      - 3중 데이터 복제로 내구성 확보
+      - 크로스 플랫폼 (웹, iOS, Android, 데스크톱)
+      - 얼굴 인식 및 시맨틱 검색
+      - 협업 앨범 및 공유
+      - 앨범 비공개 링크 공유
+
+      **셀프 호스팅:** MinIO 기반 오브젝트 스토리지로 데이터를 완전히 제어합니다.
+    zh_cn: |
+      **Ente — 端到端加密云平台**
+
+      完全开源、注重隐私的 Google Photos、Authy 替代方案。所有数据都经过端到端加密。
+
+      **包含 3 个产品：**
+      - **Ente Photos** — 具备人脸检测、语义搜索、协作相册的私密照片存储
+      - **Ente Auth** — 免费 2FA 认证器（Authy 替代），跨设备同步
+      - **Ente Locker** — 加密文档、凭据和笔记存储
+
+      **主要功能：**
+      - 所有数据端到端加密
+      - 3 倍数据复制确保持久性
+      - 跨平台（Web、iOS、Android、桌面）
+      - 人脸识别和语义搜索
+      - 协作相册和分享
+      - 相册私密链接分享
+    fr_fr: |
+      **Ente — Plateforme Cloud Chiffrée de Bout en Bout**
+
+      Alternative entièrement open source et axée sur la confidentialité à Google Photos et Authy.
+
+      **Comprend 3 produits :**
+      - **Ente Photos** — Stockage photo privé avec détection faciale et albums collaboratifs
+      - **Ente Auth** — Authentificateur 2FA gratuit avec synchronisation multi-appareils
+      - **Ente Locker** — Stockage chiffré de documents et notes
+
+      **Fonctionnalités principales :**
+      - Chiffrement de bout en bout
+      - Réplication des données 3x
+      - Multi-plateforme (Web, iOS, Android, Bureau)
+      - Reconnaissance faciale et recherche sémantique
+    es_es: |
+      **Ente — Plataforma Cloud con Cifrado de Extremo a Extremo**
+
+      Alternativa completamente de código abierto y centrada en la privacidad a Google Photos y Authy.
+
+      **Incluye 3 productos:**
+      - **Ente Photos** — Almacenamiento de fotos privado con detección facial y álbumes colaborativos
+      - **Ente Auth** — Autenticador 2FA gratuito con sincronización entre dispositivos
+      - **Ente Locker** — Almacenamiento cifrado de documentos y notas
+
+      **Características principales:**
+      - Cifrado de extremo a extremo
+      - Replicación de datos 3x
+      - Multiplataforma (Web, iOS, Android, Escritorio)
+      - Reconocimiento facial y búsqueda semántica
+  tagline:
+    en_us: End-to-end encrypted photos, 2FA, and secure storage
+    ko_kr: 엔드투엔드 암호화 사진, 2FA, 보안 저장소
+    zh_cn: 端到端加密照片、2FA 和安全存储
+    fr_fr: Photos chiffrées, 2FA et stockage sécurisé de bout en bout
+    es_es: Fotos cifradas, 2FA y almacenamiento seguro de extremo a extremo
+  title:
+    en_us: Ente
+  tips:
+    before_install:
+      en_us: |
+        **Important Setup Information:**
+
+        1. After installation, open Ente Photos web UI
+        2. Create your first account (email + password)
+        3. If SMTP is not configured, check server logs for verification code:
+           `docker logs ente-museum`
+        4. For mobile app: Use the custom server option and enter:
+           `https://ente-api-{your-domain}`
+
+        **Web Apps:**
+        - Photos: `https://ente-{your-domain}`
+        - Auth: `https://ente-auth-{your-domain}`
+
+        **Note:** First registered user should be set as admin in museum.yaml.
+      ko_kr: |
+        **중요 설정 정보:**
+
+        1. 설치 후 Ente Photos 웹 UI를 엽니다
+        2. 첫 번째 계정을 생성합니다 (이메일 + 비밀번호)
+        3. SMTP가 설정되지 않은 경우 서버 로그에서 인증 코드를 확인하세요:
+           `docker logs ente-museum`
+        4. 모바일 앱: 커스텀 서버 옵션에서 다음을 입력:
+           `https://ente-api-{your-domain}`
+
+        **웹 앱:**
+        - Photos: `https://ente-{your-domain}`
+        - Auth: `https://ente-auth-{your-domain}`
+
+        **참고:** 첫 번째 등록 사용자를 museum.yaml에서 관리자로 설정해야 합니다.
+  index: /
+  pre-install-cmd: |
+    mkdir -p /DATA/AppData/ente/config /DATA/AppData/ente/data /DATA/AppData/ente/pgdata /DATA/AppData/ente/minio &&
+    if [ ! -f /DATA/AppData/ente/config/museum.yaml ]; then
+      ENC_KEY=$(openssl rand -base64 32) &&
+      HASH_KEY=$(openssl rand -base64 64) &&
+      JWT_SECRET=$(openssl rand -base64 32) &&
+      cat > /DATA/AppData/ente/config/museum.yaml << ENDOFFILE
+    db:
+      host: ente-postgres
+      port: 5432
+      name: ente_db
+      user: pguser
+      password: $PCS_DEFAULT_PASSWORD
+
+    s3:
+      are_local_buckets: true
+      use_path_style_urls: true
+      b2-eu-cen:
+        key: ente_minio
+        secret: $PCS_DEFAULT_PASSWORD
+        endpoint: localhost:3200
+        region: eu-central-2
+        bucket: b2-eu-cen
+      wasabi-eu-central-2-v3:
+        key: ente_minio
+        secret: $PCS_DEFAULT_PASSWORD
+        endpoint: localhost:3200
+        region: eu-central-2
+        bucket: wasabi-eu-central-2-v3
+        compliance: false
+      scw-eu-fr-v3:
+        key: ente_minio
+        secret: $PCS_DEFAULT_PASSWORD
+        endpoint: localhost:3200
+        region: eu-central-2
+        bucket: scw-eu-fr-v3
+
+    key:
+      encryption: ${ENC_KEY}
+      hash: ${HASH_KEY}
+
+    jwt:
+      secret: ${JWT_SECRET}
+
+    apps:
+      public-albums: https://ente-albums-${APP_DOMAIN}
+      cast: https://ente-${APP_DOMAIN}/cast
+      accounts: https://ente-accounts-${APP_DOMAIN}
+    ENDOFFILE
+    fi
