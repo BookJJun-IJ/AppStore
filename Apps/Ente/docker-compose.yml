@@ -18,6 +18,8 @@ services:
       caddy_1.reverse_proxy: "{{upstreams 8080}}"
       caddy_2: ente-api-${APP_PUBLIC_IP_DASH}.sslip.io
       caddy_2.reverse_proxy: "{{upstreams 8080}}"
+    extra_hosts:
+      - "ente-s3-${APP_DOMAIN}:host-gateway"
     depends_on:
       postgres:
         condition: service_healthy
