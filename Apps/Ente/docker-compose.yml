@@ -26,6 +26,7 @@ services:
     volumes:
       - /DATA/AppData/$AppID/config/museum.yaml:/museum.yaml:ro
       - /DATA/AppData/$AppID/data:/data:ro
+      - /etc/ssl/certs:/etc/ssl/certs:ro
     environment:
       TZ: $TZ
     healthcheck:
