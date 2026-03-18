@@ -38,20 +38,6 @@ services:
           memory: 512M
     cpu_shares: 70
 
-  socat:
-    image: alpine/socat:1.8.0.1
-    container_name: ente-socat
-    restart: unless-stopped
-    network_mode: service:museum
-    depends_on:
-      - museum
-    command: "TCP-LISTEN:3200,fork,reuseaddr TCP:minio:3200"
-    deploy:
-      resources:
-        limits:
-          memory: 32M
-    cpu_shares: 30
-
   web:
     image: ghcr.io/ente-io/web
     container_name: ente-web
@@ -150,7 +136,7 @@ services:
     entrypoint: >
       sh -c '
       echo "Waiting for MinIO...";
-      until mc alias set h0 http://minio:3200 ente_minio $$PCS_DEFAULT_PASSWORD 2>/dev/null; do
+      until mc alias set h0 http://ente-minio:3200 "$MINIO_USER" "$MINIO_PASS" 2>/dev/null; do
         sleep 1;
       done;
       mc mb -p h0/b2-eu-cen;
@@ -159,7 +145,8 @@ services:
       echo "Buckets created successfully";
       '
     environment:
-      PCS_DEFAULT_PASSWORD: $PCS_DEFAULT_PASSWORD
+      MINIO_USER: ente_minio
+      MINIO_PASS: $PCS_DEFAULT_PASSWORD
     deploy:
       resources:
         limits:
@@ -333,20 +320,20 @@ x-casaos:
       b2-eu-cen:
         key: ente_minio
         secret: $PCS_DEFAULT_PASSWORD
-        endpoint: localhost:3200
+        endpoint: ente-minio:3200
         region: eu-central-2
         bucket: b2-eu-cen
       wasabi-eu-central-2-v3:
         key: ente_minio
         secret: $PCS_DEFAULT_PASSWORD
-        endpoint: localhost:3200
+        endpoint: ente-minio:3200
         region: eu-central-2
         bucket: wasabi-eu-central-2-v3
         compliance: false
       scw-eu-fr-v3:
         key: ente_minio
         secret: $PCS_DEFAULT_PASSWORD
-        endpoint: localhost:3200
+        endpoint: ente-minio:3200
         region: eu-central-2
         bucket: scw-eu-fr-v3
 
