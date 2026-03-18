@@ -26,7 +26,7 @@ services:
     volumes:
       - /DATA/AppData/$AppID/config/museum.yaml:/museum.yaml:ro
       - /DATA/AppData/$AppID/data:/data:ro
-      - /etc/ssl/certs:/etc/ssl/certs:ro
+      - /DATA/AppData/$AppID/config/ca-bundle.crt:/etc/ssl/certs/ca-certificates.crt:ro
     environment:
       TZ: $TZ
     healthcheck:
@@ -314,6 +314,12 @@ x-casaos:
   index: /
   pre-install-cmd: |
     mkdir -p /DATA/AppData/ente/config /DATA/AppData/ente/data /DATA/AppData/ente/pgdata /DATA/AppData/ente/minio &&
+    CADDY_CA=$(find /DATA -name "root.crt" -path "*/caddy/pki/authorities/local/*" 2>/dev/null | head -1) &&
+    if [ -n "$CADDY_CA" ]; then
+      cat /etc/ssl/certs/ca-certificates.crt "$CADDY_CA" > /DATA/AppData/ente/config/ca-bundle.crt
+    else
+      cp /etc/ssl/certs/ca-certificates.crt /DATA/AppData/ente/config/ca-bundle.crt
+    fi &&
     if [ ! -f /DATA/AppData/ente/config/museum.yaml ]; then
       cat > /DATA/AppData/ente/config/museum.yaml << 'ENDOFFILE'
     db:
