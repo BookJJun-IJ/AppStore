@@ -351,5 +351,5 @@ x-casaos:
       sed -i "s|__APP_DOMAIN__|$APP_DOMAIN|g" $F &&
       sed -i "s|__ENC_KEY__|$(openssl rand -base64 32 | tr -d '\n')|" $F &&
       sed -i "s|__HASH_KEY__|$(openssl rand -base64 64 | tr -d '\n')|" $F &&
-      sed -i "s|__JWT_SECRET__|$(openssl rand -base64 32 | tr -d '\n')|" $F
+      sed -i "s|__JWT_SECRET__|$(openssl rand -base64 32 | tr -d '\n' | tr '+/' '-_')|" $F
     fi
