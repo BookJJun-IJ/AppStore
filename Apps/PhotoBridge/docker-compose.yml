@@ -2,7 +2,7 @@ name: photobridge
 
 services:
   photobridge:
-    image: ghcr.io/bookjjun-ij/photobridge:0.2.4
+    image: ghcr.io/bookjjun-ij/photobridge:0.2.5
     container_name: photobridge
     restart: unless-stopped
     user: "0:0"
