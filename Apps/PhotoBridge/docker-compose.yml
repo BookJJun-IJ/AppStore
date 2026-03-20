@@ -20,7 +20,7 @@ services:
       caddy_2: photobridge-${APP_PUBLIC_IP_DASH}.sslip.io
       caddy_2.reverse_proxy: "{{upstreams 80}}"
     volumes:
-      - /DATA/Gallery/Import:/import:ro
+      - /DATA/Gallery/Import:/import
     environment:
       TZ: $TZ
       IMMICH_URL: http://immich:80
