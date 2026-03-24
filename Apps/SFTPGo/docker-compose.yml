@@ -11,25 +11,25 @@ services:
     environment:
       SFTPGO_DEFAULT_ADMIN_USERNAME: admin
       SFTPGO_DEFAULT_ADMIN_PASSWORD: $PCS_DEFAULT_PASSWORD
-      SFTPGO_HTTPD__BINDINGS__0__PORT: 8080
+      SFTPGO_HTTPD__BINDINGS__0__PORT: 80
       SFTPGO_SFTPD__BINDINGS__0__PORT: 2022
       TZ: $TZ
     volumes:
       - /DATA/AppData/sftpgo:/var/lib/sftpgo
       - /DATA/:/data
     expose:
-      - 8080
+      - 80
     ports:
       - "2022:2022"
     labels:
       caddy_0: sftpgo-${APP_DOMAIN}
       caddy_0.import: gateway_tls
-      caddy_0.reverse_proxy: "{{upstreams 8080}}"
+      caddy_0.reverse_proxy: "{{upstreams 80}}"
       caddy_1: sftpgo-\${APP_PUBLIC_IP_DASH}.nip.io
       caddy_1.import: gateway_tls
-      caddy_1.reverse_proxy: "{{upstreams 8080}}"
+      caddy_1.reverse_proxy: "{{upstreams 80}}"
       caddy_2: sftpgo-\${APP_PUBLIC_IP_DASH}.sslip.io
-      caddy_2.reverse_proxy: "{{upstreams 8080}}"
+      caddy_2.reverse_proxy: "{{upstreams 80}}"
     deploy:
       resources:
         limits:
@@ -91,7 +91,7 @@ x-casaos:
   index: /web/admin
   store_app_id: sftpgo
   is_uncontrolled: false
-  webui_port: 8080
+  webui_port: 80
   tips:
     before_install:
       en_us: |
