@@ -1,0 +1,165 @@
+name: sftpgo
+
+services:
+  sftpgo:
+    image: drakkan/sftpgo:v2.7.0
+    container_name: sftpgo
+    restart: unless-stopped
+    user: "0:0"
+    networks:
+      - pcs
+    environment:
+      SFTPGO_DEFAULT_ADMIN_USERNAME: admin
+      SFTPGO_DEFAULT_ADMIN_PASSWORD: $PCS_DEFAULT_PASSWORD
+      SFTPGO_HTTPD__BINDINGS__0__PORT: 8080
+      SFTPGO_SFTPD__BINDINGS__0__PORT: 2022
+      TZ: $TZ
+    volumes:
+      - /DATA/AppData/sftpgo:/var/lib/sftpgo
+      - /DATA/:/data
+    expose:
+      - 8080
+    ports:
+      - "2022:2022"
+    labels:
+      caddy_0: sftpgo-${APP_DOMAIN}
+      caddy_0.import: gateway_tls
+      caddy_0.reverse_proxy: "{{upstreams 8080}}"
+      caddy_1: sftpgo-\${APP_PUBLIC_IP_DASH}.nip.io
+      caddy_1.import: gateway_tls
+      caddy_1.reverse_proxy: "{{upstreams 8080}}"
+      caddy_2: sftpgo-\${APP_PUBLIC_IP_DASH}.sslip.io
+      caddy_2.reverse_proxy: "{{upstreams 8080}}"
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    cpu_shares: 80
+
+networks:
+  pcs:
+    external: true
+
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  main: sftpgo
+  author: Yundera Team
+  category: Utilities
+  developer: Nicola Murino
+  description:
+    en_us: |
+      **Manage your files via web browser or connect with FileZilla (SFTP).**
+      SFTPGo is a full-featured, open-source file transfer server supporting SFTP, HTTP/S, FTP/S, and WebDAV. It includes a modern web interface for file management and an admin panel for user management.
+      **Key Features:** • Web-based file manager — upload, download, and organize files from any browser • SFTP server — connect with FileZilla or any SFTP client on your local network (port 2022) • Multi-user support with per-user permissions and quotas • Virtual folders and storage backends • Two-factor authentication support
+      **How to connect with FileZilla:** Open FileZilla, set Protocol to SFTP, Host to your PCS local IP, Port to 2022, and enter the credentials you created in SFTPGo web admin.
+    zh_cn: |
+      **通过网页浏览器管理文件或使用FileZilla (SFTP)连接。**
+      SFTPGo是一个功能齐全的开源文件传输服务器，支持SFTP、HTTP/S、FTP/S和WebDAV。它包含现代化的网页文件管理界面和用户管理面板。
+      **主要功能：** • 基于网页的文件管理器 — 从任何浏览器上传、下载和整理文件 • SFTP服务器 — 在局域网使用FileZilla或任何SFTP客户端连接（端口2022） • 多用户支持，每用户权限和配额 • 虚拟文件夹和存储后端 • 双因素认证支持
+      **如何使用FileZilla连接：** 打开FileZilla，将协议设置为SFTP，主机设置为您的PCS本地IP，端口设置为2022，并输入在SFTPGo网页管理中创建的凭据。
+    ko_kr: |
+      **웹 브라우저로 파일을 관리하거나 FileZilla (SFTP)로 연결하세요.**
+      SFTPGo는 SFTP, HTTP/S, FTP/S, WebDAV를 지원하는 오픈소스 파일 전송 서버입니다. 웹 기반 파일 관리 인터페이스와 사용자 관리 패널을 제공합니다.
+      **주요 기능:** • 웹 기반 파일 관리자 — 브라우저에서 파일 업로드, 다운로드 및 정리 • SFTP 서버 — 로컬 네트워크에서 FileZilla 또는 SFTP 클라이언트로 연결 (포트 2022) • 사용자별 권한 및 할당량을 가진 다중 사용자 지원 • 가상 폴더 및 스토리지 백엔드 • 이중 인증 지원
+      **FileZilla 연결 방법:** FileZilla를 열고, 프로토콜을 SFTP로, 호스트를 PCS 로컬 IP로, 포트를 2022로 설정한 후 SFTPGo 웹 관리에서 생성한 자격 증명을 입력하세요.
+    fr_fr: |
+      **Gerez vos fichiers via navigateur web ou connectez-vous avec FileZilla (SFTP).**
+      SFTPGo est un serveur de transfert de fichiers open-source complet supportant SFTP, HTTP/S, FTP/S et WebDAV. Il comprend une interface web moderne pour la gestion des fichiers et un panneau d'administration des utilisateurs.
+      **Fonctionnalites principales :** • Gestionnaire de fichiers web — telechargez, televersez et organisez vos fichiers depuis n'importe quel navigateur • Serveur SFTP — connectez-vous avec FileZilla ou tout client SFTP sur votre reseau local (port 2022) • Support multi-utilisateurs avec permissions et quotas par utilisateur • Dossiers virtuels et backends de stockage • Support de l'authentification a deux facteurs
+      **Comment se connecter avec FileZilla :** Ouvrez FileZilla, definissez le protocole sur SFTP, l'hote sur l'IP locale de votre PCS, le port sur 2022, et entrez les identifiants crees dans l'administration web SFTPGo.
+    es_es: |
+      **Gestiona tus archivos desde el navegador o conectate con FileZilla (SFTP).**
+      SFTPGo es un servidor de transferencia de archivos de codigo abierto que soporta SFTP, HTTP/S, FTP/S y WebDAV. Incluye una interfaz web moderna para gestion de archivos y un panel de administracion de usuarios.
+      **Caracteristicas principales:** • Gestor de archivos web — sube, descarga y organiza archivos desde cualquier navegador • Servidor SFTP — conectate con FileZilla o cualquier cliente SFTP en tu red local (puerto 2022) • Soporte multiusuario con permisos y cuotas por usuario • Carpetas virtuales y backends de almacenamiento • Soporte de autenticacion de dos factores
+      **Como conectar con FileZilla:** Abre FileZilla, configura el protocolo como SFTP, el host como la IP local de tu PCS, el puerto como 2022, e ingresa las credenciales creadas en la administracion web de SFTPGo.
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/SFTPGo/icon.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/SFTPGo/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/SFTPGo/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/SFTPGo/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/SFTPGo/thumbnail.png
+  tagline:
+    en_us: Manage files via web or connect with FileZilla (SFTP)
+    zh_cn: 通过网页管理文件或使用FileZilla (SFTP)连接
+    ko_kr: 웹으로 파일 관리하거나 FileZilla (SFTP)로 연결
+    fr_fr: Gerez vos fichiers via le web ou connectez-vous avec FileZilla (SFTP)
+    es_es: Gestiona archivos por web o conectate con FileZilla (SFTP)
+  title:
+    en_us: SFTPGo
+  index: /web/admin
+  store_app_id: sftpgo
+  is_uncontrolled: false
+  webui_port: 8080
+  tips:
+    before_install:
+      en_us: |
+        Default Admin Account
+
+        | Username | Password |
+        | -------- | -------- |
+        | `admin`  | `$PCS_DEFAULT_PASSWORD` |
+
+        **Web Access:** Use the web interface to manage files from anywhere.
+
+        **FileZilla (SFTP) Access:**
+        1. Open SFTPGo web admin and create an SFTP user
+        2. Open FileZilla → Protocol: SFTP → Host: your PCS local IP → Port: 2022
+        3. Enter the SFTP user credentials you created
+
+      zh_cn: |
+        默认管理员账户
+
+        | 用户名 | 密码 |
+        | -------- | -------- |
+        | `admin`  | `$PCS_DEFAULT_PASSWORD` |
+
+        **网页访问：** 使用网页界面从任何地方管理文件。
+
+        **FileZilla (SFTP) 访问：**
+        1. 打开SFTPGo网页管理并创建SFTP用户
+        2. 打开FileZilla → 协议: SFTP → 主机: 您的PCS本地IP → 端口: 2022
+        3. 输入您创建的SFTP用户凭据
+
+      ko_kr: |
+        기본 관리자 계정
+
+        | 사용자명 | 비밀번호 |
+        | -------- | -------- |
+        | `admin`  | `$PCS_DEFAULT_PASSWORD` |
+
+        **웹 접속:** 웹 인터페이스로 어디서나 파일을 관리하세요.
+
+        **FileZilla (SFTP) 접속:**
+        1. SFTPGo 웹 관리에서 SFTP 사용자를 생성하세요
+        2. FileZilla 열기 → 프로토콜: SFTP → 호스트: PCS 로컬 IP → 포트: 2022
+        3. 생성한 SFTP 사용자 자격 증명 입력
+
+      fr_fr: |
+        Compte administrateur par defaut
+
+        | Nom d'utilisateur | Mot de passe |
+        | -------- | -------- |
+        | `admin`  | `$PCS_DEFAULT_PASSWORD` |
+
+        **Acces web :** Utilisez l'interface web pour gerer vos fichiers depuis n'importe ou.
+
+        **Acces FileZilla (SFTP) :**
+        1. Ouvrez l'administration web SFTPGo et creez un utilisateur SFTP
+        2. Ouvrez FileZilla → Protocole: SFTP → Hote: IP locale de votre PCS → Port: 2022
+        3. Entrez les identifiants de l'utilisateur SFTP que vous avez cree
+
+      es_es: |
+        Cuenta de administrador predeterminada
+
+        | Usuario | Contraseña |
+        | -------- | -------- |
+        | `admin`  | `$PCS_DEFAULT_PASSWORD` |
+
+        **Acceso web:** Usa la interfaz web para gestionar archivos desde cualquier lugar.
+
+        **Acceso FileZilla (SFTP):**
+        1. Abre la administracion web de SFTPGo y crea un usuario SFTP
+        2. Abre FileZilla → Protocolo: SFTP → Host: IP local de tu PCS → Puerto: 2022
+        3. Ingresa las credenciales del usuario SFTP que creaste
