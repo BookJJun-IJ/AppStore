@@ -118,17 +118,16 @@ x-casaos:
         | -------- | -------- |
         | `admin`  | `$APP_DEFAULT_PASSWORD` |
 
-        **Web Access:** Use the web interface to manage files from anywhere.
+        **Step 1 — Create a user in SFTPGo:**
+        1. Open SFTPGo web admin → Users → Add
+        2. Enter username and password
+        3. Set **Root Directory** to `/data` (must be lowercase)
+        4. Save
 
-        **Remote Access (WebDAV) — Cyberduck / WinSCP:**
-        1. Open SFTPGo web admin and create a user
-        2. Open Cyberduck or WinSCP → Protocol: WebDAV (HTTPS)
-        3. Server: `sftpgo-dav-{your-domain}` → Enter user credentials
-
-        **Local Network (SFTP) — FileZilla:**
-        1. Open SFTPGo web admin and create a user
-        2. Open FileZilla → Protocol: SFTP → Host: your PCS local IP → Port: 2022
-        3. Enter user credentials
+        **Step 2 — Connect with WebDAV (Cyberduck / WinSCP / FileZilla Pro):**
+        1. Open Cyberduck, WinSCP, or FileZilla Pro
+        2. Protocol: **WebDAV (HTTPS)** → Server: `sftpgo-dav-{your-domain}` → Port: `443`
+        3. Enter the user credentials you created in Step 1
 
       zh_cn: |
         默认管理员账户
@@ -137,17 +136,16 @@ x-casaos:
         | -------- | -------- |
         | `admin`  | `$APP_DEFAULT_PASSWORD` |
 
-        **网页访问：** 使用网页界面从任何地方管理文件。
+        **第一步 — 在SFTPGo中创建用户：**
+        1. 打开SFTPGo网页管理 → Users → Add
+        2. 输入用户名和密码
+        3. 将 **Root Directory** 设为 `/data`（必须小写）
+        4. 保存
 
-        **远程访问（WebDAV）— Cyberduck / WinSCP：**
-        1. 打开SFTPGo网页管理并创建用户
-        2. 打开Cyberduck或WinSCP → 协议: WebDAV (HTTPS)
-        3. 服务器: `sftpgo-dav-{您的域名}` → 输入用户凭据
-
-        **局域网访问（SFTP）— FileZilla：**
-        1. 打开SFTPGo网页管理并创建用户
-        2. 打开FileZilla → 协议: SFTP → 主机: 您的PCS本地IP → 端口: 2022
-        3. 输入用户凭据
+        **第二步 — 使用WebDAV连接（Cyberduck / WinSCP / FileZilla Pro）：**
+        1. 打开Cyberduck、WinSCP或FileZilla Pro
+        2. 协议: **WebDAV (HTTPS)** → 服务器: `sftpgo-dav-{您的域名}` → 端口: `443`
+        3. 输入第一步中创建的用户凭据
 
       ko_kr: |
         기본 관리자 계정
@@ -156,17 +154,16 @@ x-casaos:
         | -------- | -------- |
         | `admin`  | `$APP_DEFAULT_PASSWORD` |
 
-        **웹 접속:** 웹 인터페이스로 어디서나 파일을 관리하세요.
+        **1단계 — SFTPGo에서 사용자 생성:**
+        1. SFTPGo 웹 관리자 → Users → Add
+        2. 사용자명과 비밀번호 입력
+        3. **Root Directory**에 `/data` 입력 (반드시 소문자)
+        4. 저장
 
-        **원격 접속 (WebDAV) — Cyberduck / WinSCP:**
-        1. SFTPGo 웹 관리에서 사용자를 생성하세요
-        2. Cyberduck 또는 WinSCP 열기 → 프로토콜: WebDAV (HTTPS)
-        3. 서버: `sftpgo-dav-{도메인}` → 사용자 자격 증명 입력
-
-        **로컬 네트워크 (SFTP) — FileZilla:**
-        1. SFTPGo 웹 관리에서 사용자를 생성하세요
-        2. FileZilla 열기 → 프로토콜: SFTP → 호스트: PCS 로컬 IP → 포트: 2022
-        3. 사용자 자격 증명 입력
+        **2단계 — WebDAV로 연결 (Cyberduck / WinSCP / FileZilla Pro):**
+        1. Cyberduck, WinSCP 또는 FileZilla Pro 열기
+        2. 프로토콜: **WebDAV (HTTPS)** → 서버: `sftpgo-dav-{도메인}` → 포트: `443`
+        3. 1단계에서 생성한 사용자 자격 증명 입력
 
       fr_fr: |
         Compte administrateur par defaut
@@ -175,17 +172,16 @@ x-casaos:
         | -------- | -------- |
         | `admin`  | `$APP_DEFAULT_PASSWORD` |
 
-        **Acces web :** Utilisez l'interface web pour gerer vos fichiers depuis n'importe ou.
+        **Etape 1 — Creer un utilisateur dans SFTPGo :**
+        1. Ouvrez l'administration web SFTPGo → Users → Add
+        2. Definissez le nom d'utilisateur et le mot de passe
+        3. Definissez **Root Directory** sur `/data` (obligatoirement en minuscules)
+        4. Enregistrez
 
-        **Acces a distance (WebDAV) — Cyberduck / WinSCP :**
-        1. Ouvrez l'administration web SFTPGo et creez un utilisateur
-        2. Ouvrez Cyberduck ou WinSCP → Protocole: WebDAV (HTTPS)
-        3. Serveur: `sftpgo-dav-{votre-domaine}` → Entrez les identifiants
-
-        **Reseau local (SFTP) — FileZilla :**
-        1. Ouvrez l'administration web SFTPGo et creez un utilisateur
-        2. Ouvrez FileZilla → Protocole: SFTP → Hote: IP locale de votre PCS → Port: 2022
-        3. Entrez les identifiants
+        **Etape 2 — Se connecter avec WebDAV (Cyberduck / WinSCP / FileZilla Pro) :**
+        1. Ouvrez Cyberduck, WinSCP ou FileZilla Pro
+        2. Protocole: **WebDAV (HTTPS)** → Serveur: `sftpgo-dav-{votre-domaine}` → Port: `443`
+        3. Entrez les identifiants crees a l'etape 1
 
       es_es: |
         Cuenta de administrador predeterminada
@@ -194,14 +190,13 @@ x-casaos:
         | -------- | -------- |
         | `admin`  | `$APP_DEFAULT_PASSWORD` |
 
-        **Acceso web:** Usa la interfaz web para gestionar archivos desde cualquier lugar.
+        **Paso 1 — Crear un usuario en SFTPGo:**
+        1. Abre la administracion web de SFTPGo → Users → Add
+        2. Introduce nombre de usuario y contraseña
+        3. Establece **Root Directory** en `/data` (debe ser en minusculas)
+        4. Guarda
 
-        **Acceso remoto (WebDAV) — Cyberduck / WinSCP:**
-        1. Abre la administracion web de SFTPGo y crea un usuario
-        2. Abre Cyberduck o WinSCP → Protocolo: WebDAV (HTTPS)
-        3. Servidor: `sftpgo-dav-{tu-dominio}` → Ingresa las credenciales
-
-        **Red local (SFTP) — FileZilla:**
-        1. Abre la administracion web de SFTPGo y crea un usuario
-        2. Abre FileZilla → Protocolo: SFTP → Host: IP local de tu PCS → Puerto: 2022
-        3. Ingresa las credenciales
+        **Paso 2 — Conectar con WebDAV (Cyberduck / WinSCP / FileZilla Pro):**
+        1. Abre Cyberduck, WinSCP o FileZilla Pro
+        2. Protocolo: **WebDAV (HTTPS)** → Servidor: `sftpgo-dav-{tu-dominio}` → Puerto: `443`
+        3. Ingresa las credenciales creadas en el Paso 1
