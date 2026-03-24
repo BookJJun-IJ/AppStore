@@ -11,7 +11,9 @@ services:
     environment:
       SFTPGO_DEFAULT_ADMIN_USERNAME: admin
       SFTPGO_DEFAULT_ADMIN_PASSWORD: $APP_DEFAULT_PASSWORD
+      SFTPGO_DATA_PROVIDER__CREATE_DEFAULT_ADMIN: "true"
       SFTPGO_HTTPD__BINDINGS__0__PORT: 80
+      SFTPGO_HTTPD__BINDINGS__0__PROXY_ALLOWED: "*"
       SFTPGO_SFTPD__BINDINGS__0__PORT: 2022
       TZ: $TZ
     volumes:
@@ -19,8 +21,6 @@ services:
       - /DATA/:/data
     expose:
       - 80
-    ports:
-      - "2022:2022"
     labels:
       caddy_0: sftpgo-${APP_DOMAIN}
       caddy_0.import: gateway_tls
