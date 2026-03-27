@@ -17,7 +17,6 @@ services:
       caddy_1: n8n-${APP_PUBLIC_IP_DASH}.nip.io
       caddy_1.import: gateway_tls
       caddy_1.reverse_proxy: "{{upstreams 80}}"
-      caddy_1.reverse_proxy.header_up: "Host n8n-${APP_DOMAIN}"
       caddy_2: n8n-${APP_PUBLIC_IP_DASH}.sslip.io
       caddy_2.reverse_proxy: "{{upstreams 80}}"
     volumes:
@@ -37,7 +36,7 @@ services:
       DB_POSTGRESDB_PORT: 5432
       DB_POSTGRESDB_DATABASE: n8n
       DB_POSTGRESDB_USER: n8n
-      DB_POSTGRESDB_PASSWORD: $PCS_DEFAULT_PASSWORD
+      DB_POSTGRESDB_PASSWORD: $APP_DEFAULT_PASSWORD
     depends_on:
       - postgres
     deploy:
@@ -63,7 +62,7 @@ services:
       PGID: $PGID
       POSTGRES_DB: n8n
       POSTGRES_USER: n8n
-      POSTGRES_PASSWORD: $PCS_DEFAULT_PASSWORD
+      POSTGRES_PASSWORD: $APP_DEFAULT_PASSWORD
       POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
     deploy:
       resources:
