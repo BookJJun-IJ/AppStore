@@ -1,35 +1,43 @@
 name: jellyfin
 
 services:
+  jellyfin-proxy:
+    image: ghcr.io/yundera/nginx-hash-lock:latest
+    restart: unless-stopped
+    expose:
+      - 80
+    labels:
+      caddy_0: jellyfin-${APP_DOMAIN}
+      caddy_0.import: gateway_tls
+      caddy_0.reverse_proxy: "{{upstreams 80}}"
+      caddy_1: jellyfin-${APP_PUBLIC_IP_DASH}.nip.io
+      caddy_1.import: gateway_tls
+      caddy_1.reverse_proxy: "{{upstreams 80}}"
+      caddy_2: jellyfin-${APP_PUBLIC_IP_DASH}.sslip.io
+      caddy_2.reverse_proxy: "{{upstreams 80}}"
+    user: "root"
+    cpu_shares: 80
+    environment:
+      BACKEND_HOST: jellyfin
+      BACKEND_PORT: "8096"
+      LISTEN_PORT: "80"
+      AUTH_DISABLED: "true"
+    depends_on:
+      - jellyfin
+    networks:
+      - pcs
+
   jellyfin:
     image: jellyfin/jellyfin:10.11.6
     container_name: jellyfin
     restart: unless-stopped
-    #ports:
-    # Port mappings can be uncommented when the ip feature is available
-    #  - "8920:8920"
-    #  - "7359:7359/udp"
-    #  - "1900:1900/udp"
-    expose:
-      - 8096
-    labels:
-      caddy_0: jellyfin-${APP_DOMAIN}
-      caddy_0.import: gateway_tls
-      caddy_0.reverse_proxy: "{{upstreams 8096}}"
-      caddy_1: jellyfin-${APP_PUBLIC_IP_DASH}.nip.io
-      caddy_1.import: gateway_tls
-      caddy_1.reverse_proxy: "{{upstreams 8096}}"
-      caddy_2: jellyfin-${APP_PUBLIC_IP_DASH}.sslip.io
-      caddy_2.reverse_proxy: "{{upstreams 8096}}"
-    networks:
-      - pcs
     volumes:
-      - /DATA/AppData/jellyfin/config:/config
-      - /DATA/AppData/jellyfin/cache:/cache
-      - /DATA/Media/Movies:/media/movies
-      - /DATA/Media/TV Shows:/media/tvshows
-      - /DATA/Media/Music:/media/music
-      - /DATA/Downloads:/media/downloads
+      - /DATA/AppData/jellyfin/config/:/config
+      - /DATA/AppData/jellyfin/cache/:/cache
+      - /DATA/Media/Movies/:/media/movies
+      - /DATA/Media/TV Shows/:/media/tvshows
+      - /DATA/Media/Music/:/media/music
+      - /DATA/Downloads/:/media/downloads
     user: $PUID:$PGID
     environment:
       PGID: $PGID
@@ -40,6 +48,8 @@ services:
       resources:
         limits:
           memory: 1024M
+    networks:
+      - pcs
 
 networks:
   pcs:
@@ -75,6 +85,6 @@ x-casaos:
   title:
     en_us: Jellyfin
   store_app_id: jellyfin
-  main: jellyfin
+  main: jellyfin-proxy
   is_uncontrolled: false
-  webui_port: 8096
+  webui_port: 80
