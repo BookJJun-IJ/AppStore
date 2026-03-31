@@ -316,7 +316,8 @@ x-casaos:
         "controlUi": {
           "enabled": true,
           "allowInsecureAuth": true,
-          "dangerouslyDisableDeviceAuth": true
+          "dangerouslyDisableDeviceAuth": true,
+          "dangerouslyAllowHostHeaderOriginFallback": true
         }
       }
     }
