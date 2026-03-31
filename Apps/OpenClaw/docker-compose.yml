@@ -39,8 +39,8 @@ services:
       test: ["CMD", "sh", "-c", "wget -q --spider http://127.0.0.1:8080/ || exit 1"]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 60s
+      retries: 5
+      start_period: 180s
     environment:
       TZ: $TZ
       NODE_ENV: production
