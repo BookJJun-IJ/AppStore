@@ -30,11 +30,10 @@ services:
 
   openclaw:
     image: alpine/openclaw:2026.3.28
-    user: $PUID:$PGID
     deploy:
       resources:
         limits:
-          memory: 2048M
+          memory: 4096M
     cpu_shares: 90
     healthcheck:
       test: ["CMD", "sh", "-c", "wget -q --spider http://127.0.0.1:8080/ || exit 1"]
@@ -45,6 +44,7 @@ services:
     environment:
       TZ: $TZ
       NODE_ENV: production
+      NODE_OPTIONS: "--max-old-space-size=3072"
       # AI Provider API Keys (configure at least one)
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
