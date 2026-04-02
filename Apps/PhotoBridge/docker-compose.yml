@@ -2,7 +2,7 @@ name: photobridge
 
 services:
   photobridge:
-    image: ghcr.io/bookjjun-ij/photobridge:0.1.1-rc1
+    image: ghcr.io/bookjjun-ij/photobridge:0.2.0-rc1
     container_name: photobridge
     restart: unless-stopped
     user: "0:0"
@@ -69,17 +69,20 @@ x-casaos:
       **Key Features:**
       - Google Photos Takeout ZIP import (no extraction needed)
       - iCloud Photos export import
-      - Export validation before importing
+      - Direct upload of photos, videos, or ZIP files from your browser
+      - File validation before importing
       - Album and metadata preservation (dates, locations, descriptions)
       - Dry-run mode to preview before importing
       - Real-time import progress logs
       - Automatic duplicate detection
 
       **How to use:**
-      1. Export your photos from Google Takeout or iCloud
-      2. Upload ZIP files to /DATA/Gallery/Import/ via Files app
-      3. Open PhotoBridge and enter your Immich API key
-      4. Select files, validate, and start import
+      1. Transfer your photos to your PCS:
+         - **Google Photos:** Export from [Google Takeout](https://takeout.google.com/), then upload ZIPs to `/DATA/Gallery/Import/` via the Files app
+         - **iCloud:** Download from [icloud.com](https://www.icloud.com/), then upload to `/DATA/Gallery/Import/` via the Files app
+         - **Direct Upload:** Skip this step — you can upload files directly through PhotoBridge
+      2. Open PhotoBridge and enter your Immich API key
+      3. Select files, validate, and start import
     ko_kr: |
       **PhotoBridge for Immich — Google Photos & iCloud 가져오기 도구**
 
@@ -88,17 +91,20 @@ x-casaos:
       **주요 기능:**
       - Google Photos Takeout ZIP 가져오기 (압축 해제 불필요)
       - iCloud Photos 내보내기 가져오기
-      - 가져오기 전 내보내기 검증
+      - 브라우저에서 사진, 동영상 또는 ZIP 파일 직접 업로드
+      - 가져오기 전 파일 검증
       - 앨범 및 메타데이터 보존 (날짜, 위치, 설명)
       - 드라이런 모드로 미리보기
       - 실시간 가져오기 진행 로그
       - 자동 중복 감지
 
       **사용 방법:**
-      1. Google Takeout 또는 iCloud에서 사진을 내보내기
-      2. Files 앱을 통해 /DATA/Gallery/Import/에 ZIP 파일 업로드
-      3. PhotoBridge를 열고 Immich API 키 입력
-      4. 파일 선택, 검증 후 가져오기 시작
+      1. 사진을 PCS로 전송하세요:
+         - **Google Photos:** [Google Takeout](https://takeout.google.com/)에서 내보내기 후, Files 앱으로 `/DATA/Gallery/Import/`에 ZIP 업로드
+         - **iCloud:** [icloud.com](https://www.icloud.com/)에서 다운로드 후, Files 앱으로 `/DATA/Gallery/Import/`에 업로드
+         - **직접 업로드:** 이 단계를 건너뛰세요 — PhotoBridge에서 직접 업로드할 수 있습니다
+      2. PhotoBridge를 열고 Immich API 키 입력
+      3. 파일 선택, 검증 후 가져오기 시작
     zh_cn: |
       **PhotoBridge for Immich — Google Photos 和 iCloud 导入工具**
 
@@ -107,17 +113,20 @@ x-casaos:
       **主要功能：**
       - Google Photos Takeout ZIP 导入（无需解压）
       - iCloud Photos 导出导入
-      - 导入前导出验证
+      - 通过浏览器直接上传照片、视频或 ZIP 文件
+      - 导入前文件验证
       - 相册和元数据保留（日期、位置、描述）
       - 试运行模式预览
       - 实时导入进度日志
       - 自动重复检测
 
       **使用方法：**
-      1. 从 Google Takeout 或 iCloud 导出照片
-      2. 通过 Files 应用将 ZIP 文件上传到 /DATA/Gallery/Import/
-      3. 打开 PhotoBridge 并输入 Immich API 密钥
-      4. 选择文件、验证并开始导入
+      1. 将照片传输到您的 PCS：
+         - **Google Photos：**从 [Google Takeout](https://takeout.google.com/) 导出，然后通过 Files 应用上传到 `/DATA/Gallery/Import/`
+         - **iCloud：**从 [icloud.com](https://www.icloud.com/) 下载，然后通过 Files 应用上传到 `/DATA/Gallery/Import/`
+         - **直接上传：**跳过此步骤 — 您可以直接通过 PhotoBridge 上传
+      2. 打开 PhotoBridge 并输入 Immich API 密钥
+      3. 选择文件、验证并开始导入
     fr_fr: |
       **PhotoBridge for Immich — Importateur Google Photos et iCloud**
 
@@ -126,17 +135,20 @@ x-casaos:
       **Fonctionnalites principales :**
       - Import de ZIP Google Photos Takeout (pas d'extraction necessaire)
       - Import d'export iCloud Photos
-      - Validation de l'export avant import
+      - Upload direct de photos, videos ou fichiers ZIP depuis votre navigateur
+      - Validation des fichiers avant import
       - Preservation des albums et metadonnees (dates, lieux, descriptions)
       - Mode simulation pour previsualiser
       - Logs de progression en temps reel
       - Detection automatique des doublons
 
       **Comment utiliser :**
-      1. Exportez vos photos depuis Google Takeout ou iCloud
-      2. Uploadez les fichiers ZIP dans /DATA/Gallery/Import/ via l'app Fichiers
-      3. Ouvrez PhotoBridge et entrez votre cle API Immich
-      4. Selectionnez les fichiers, validez et lancez l'import
+      1. Transferez vos photos vers votre PCS :
+         - **Google Photos :** Exportez depuis [Google Takeout](https://takeout.google.com/), puis uploadez les ZIP dans `/DATA/Gallery/Import/` via l'app Fichiers
+         - **iCloud :** Telechargez depuis [icloud.com](https://www.icloud.com/), puis uploadez dans `/DATA/Gallery/Import/` via l'app Fichiers
+         - **Upload direct :** Passez cette etape — vous pouvez uploader directement via PhotoBridge
+      2. Ouvrez PhotoBridge et entrez votre cle API Immich
+      3. Selectionnez les fichiers, validez et lancez l'import
     es_es: |
       **PhotoBridge for Immich — Importador de Google Photos e iCloud**
 
@@ -145,17 +157,20 @@ x-casaos:
       **Caracteristicas principales:**
       - Importacion de ZIP de Google Photos Takeout (sin necesidad de extraer)
       - Importacion de exportacion de iCloud Photos
-      - Validacion de exportacion antes de importar
+      - Carga directa de fotos, videos o archivos ZIP desde su navegador
+      - Validacion de archivos antes de importar
       - Preservacion de albumes y metadatos (fechas, ubicaciones, descripciones)
       - Modo de prueba para previsualizar
       - Registros de progreso en tiempo real
       - Deteccion automatica de duplicados
 
       **Como usar:**
-      1. Exporte sus fotos desde Google Takeout o iCloud
-      2. Suba los archivos ZIP a /DATA/Gallery/Import/ a traves de la app Archivos
-      3. Abra PhotoBridge e ingrese su clave API de Immich
-      4. Seleccione archivos, valide e inicie la importacion
+      1. Transfiera sus fotos a su PCS:
+         - **Google Photos:** Exporte desde [Google Takeout](https://takeout.google.com/), luego suba los ZIP a `/DATA/Gallery/Import/` via la app Archivos
+         - **iCloud:** Descargue desde [icloud.com](https://www.icloud.com/), luego suba a `/DATA/Gallery/Import/` via la app Archivos
+         - **Carga directa:** Omita este paso — puede subir archivos directamente a traves de PhotoBridge
+      2. Abra PhotoBridge e ingrese su clave API de Immich
+      3. Seleccione archivos, valide e inicie la importacion
   tagline:
     en_us: Import Google Photos & iCloud archives into Immich
     ko_kr: Google Photos 및 iCloud 아카이브를 Immich로 가져오기
@@ -170,22 +185,22 @@ x-casaos:
         **Before you start:**
 
         1. Make sure **Immich** is installed and running on your PCS
-        2. Generate an API key in Immich (Account Settings -> API Keys)
-        3. Export your photos:
-           - **Google Photos:** [Google Takeout](https://takeout.google.com/) -> Select only Google Photos -> Download as ZIP
-           - **iCloud:** [icloud.com](https://www.icloud.com/) -> Photos -> Select All -> Download
-        4. Upload the ZIP files to `/DATA/Gallery/Import/` using the **Files** app
+        2. Generate an API key in Immich (Account Settings -> API Keys -> grant **all permissions**)
+        3. Transfer your photos to your PCS:
+           - **Google Photos:** [Google Takeout](https://takeout.google.com/) -> Select only Google Photos -> Download as ZIP, then upload to `/DATA/Gallery/Import/` via the **Files** app
+           - **iCloud:** [icloud.com](https://www.icloud.com/) -> Photos -> Select All -> Download, then upload to `/DATA/Gallery/Import/` via the **Files** app
+           - **Direct Upload:** Skip this step — you can upload files directly through PhotoBridge
 
-        PhotoBridge will validate your export and upload everything to Immich with preserved albums and metadata.
+        PhotoBridge will validate your files and upload everything to Immich with preserved albums and metadata.
       ko_kr: |
         **시작하기 전:**
 
         1. PCS에 **Immich**가 설치되어 실행 중인지 확인하세요
-        2. Immich에서 API 키를 생성하세요 (계정 설정 -> API 키)
-        3. 사진을 내보내세요:
-           - **Google Photos:** [Google Takeout](https://takeout.google.com/) -> Google Photos만 선택 -> ZIP으로 다운로드
-           - **iCloud:** [icloud.com](https://www.icloud.com/) -> 사진 -> 전체 선택 -> 다운로드
-        4. **Files** 앱을 사용하여 `/DATA/Gallery/Import/`에 ZIP 파일을 업로드하세요
+        2. Immich에서 API 키를 생성하세요 (계정 설정 -> API 키 -> **모든 권한** 부여)
+        3. 사진을 PCS로 전송하세요:
+           - **Google Photos:** [Google Takeout](https://takeout.google.com/) -> Google Photos만 선택 -> ZIP으로 다운로드 후, **Files** 앱으로 `/DATA/Gallery/Import/`에 업로드
+           - **iCloud:** [icloud.com](https://www.icloud.com/) -> 사진 -> 전체 선택 -> 다운로드 후, **Files** 앱으로 `/DATA/Gallery/Import/`에 업로드
+           - **직접 업로드:** 이 단계를 건너뛰세요 — PhotoBridge에서 직접 업로드할 수 있습니다
 
         PhotoBridge가 내보내기를 검증하고 앨범과 메타데이터를 보존하며 모든 것을 Immich에 업로드합니다.
   index: /
