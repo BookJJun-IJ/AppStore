@@ -6,7 +6,7 @@ services:
     image: ghcr.io/mealie-recipes/mealie:v3.14.0
     container_name: mealie
     restart: unless-stopped
-    user: $PUID:$PGID
+    user: "0:0"
     expose:
       - 80                    # Default port for Mealie v3
     labels:
@@ -25,7 +25,6 @@ services:
       LOG_LEVEL: warning
       API_PORT: 80
       BASE_URL: https://mealie-${APP_DOMAIN}  # Set base URL for proper routing
-
     networks:
       - pcs
     cpu_shares: 70
@@ -48,14 +47,12 @@ x-casaos:
   store_app_id: mealie
   webui_port: 80
   index: /
-
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mealie/icon.png
   screenshot_link:
     - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mealie/screenshot-1.png
     - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mealie/screenshot-2.png
     - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mealie/screenshot-3.png
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mealie/screenshot-1.png
-
   architectures:
     - amd64
     - arm64
