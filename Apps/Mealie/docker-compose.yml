@@ -7,8 +7,6 @@ services:
     container_name: mealie
     restart: unless-stopped
     user: "0:0"
-    healthcheck:
-      disable: true
     expose:
       - 80                    # Default port for Mealie v3
     labels:
