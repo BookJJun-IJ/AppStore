@@ -2,7 +2,7 @@ name: wordpress
 
 services:
   wordpress:
-    image: wordpress:6.9.1-apache
+    image: wordpress:6.9.4-apache
     container_name: wordpress_app
     restart: unless-stopped
     user: "0:0"
@@ -71,6 +71,7 @@ networks:
   wordpress-network:
     driver: bridge
   pcs:
+    name: pcs
     external: true
 
 x-casaos:
@@ -80,12 +81,12 @@ x-casaos:
   author: Yundera Team
   category: Web
   developer: WordPress Foundation
-  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Wordpress/icon.png
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Wordpress/icon.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Wordpress/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Wordpress/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Wordpress/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Wordpress/thumbnail.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Wordpress/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Wordpress/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Wordpress/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Wordpress/thumbnail.png
   index: /
   tagline:
     en_us: Create beautiful websites with ease

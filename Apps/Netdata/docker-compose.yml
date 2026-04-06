@@ -13,6 +13,15 @@ services:
       LISTEN_PORT: "80"
     expose:
       - 80
+    labels:
+      caddy_0: netdata-${APP_DOMAIN}
+      caddy_0.import: gateway_tls
+      caddy_0.reverse_proxy: "{{upstreams 80}}"
+      caddy_1: netdata-${APP_PUBLIC_IP_DASH}.nip.io
+      caddy_1.import: gateway_tls
+      caddy_1.reverse_proxy: "{{upstreams 80}}"
+      caddy_2: netdata-${APP_PUBLIC_IP_DASH}.sslip.io
+      caddy_2.reverse_proxy: "{{upstreams 80}}"
     depends_on:
       - netdata
     deploy:
@@ -27,7 +36,7 @@ services:
       - SYS_ADMIN
       - NET_ADMIN
   netdata:
-    image: netdata/netdata:v2.8.4
+    image: netdata/netdata:v2.9.0
     hostname: netdata
     user: 0:0
     environment:
@@ -50,6 +59,7 @@ services:
       - /var/log:/host/var/log/:ro
       - /var/run/docker.sock:/var/run/docker.sock/:ro
     restart: unless-stopped
+    cpu_shares: 90
     deploy:
       resources:
         limits:
@@ -65,6 +75,7 @@ services:
 
 networks:
   pcs:
+    name: pcs
     external: true
 
 x-casaos:
@@ -108,7 +119,7 @@ x-casaos:
         - Docker containers
         - System processes
         
-        **Access**: After installation, access at `https://19999-netdata-username.nsl.sh`
+        **Access**: After installation, access at `https://netdata-username.nsl.sh`
         
         **Note**: Netdata requires elevated privileges to monitor system resources.
       ko_kr: |
@@ -122,7 +133,7 @@ x-casaos:
         - Docker 컨테이너
         - 시스템 프로세스
         
-        **접속**: 설치 후 `https://19999-netdata-username.nsl.sh`에서 접속하세요
+        **접속**: 설치 후 `https://netdata-username.nsl.sh`에서 접속하세요
         
         **참고**: Netdata는 시스템 리소스 모니터링을 위해 상승된 권한이 필요합니다.
   index: /?hash=$AUTH_HASH

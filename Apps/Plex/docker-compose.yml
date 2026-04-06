@@ -65,6 +65,7 @@ services:
 
 networks:
   pcs:
+    name: pcs
     external: true
 
 x-casaos:

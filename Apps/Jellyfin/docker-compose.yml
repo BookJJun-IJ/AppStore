@@ -28,7 +28,7 @@ services:
       - pcs
 
   jellyfin:
-    image: jellyfin/jellyfin:10.11.6
+    image: jellyfin/jellyfin:10.11.8
     container_name: jellyfin
     restart: unless-stopped
     volumes:
