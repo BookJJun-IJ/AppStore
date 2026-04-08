@@ -1,0 +1,176 @@
+name: ollama
+
+services:
+  ollama:
+    image: ghcr.io/open-webui/open-webui:v0.8.12
+    container_name: ollama
+    restart: unless-stopped
+    user: 0:0
+    depends_on:
+      - ollama-api
+    expose:
+      - 8080
+    labels:
+      caddy_0: ollama-${APP_DOMAIN}
+      caddy_0.import: gateway_tls
+      caddy_0.reverse_proxy: "{{upstreams 8080}}"
+      caddy_1: ollama-${APP_PUBLIC_IP_DASH}.nip.io
+      caddy_1.import: gateway_tls
+      caddy_1.reverse_proxy: "{{upstreams 8080}}"
+      caddy_2: ollama-${APP_PUBLIC_IP_DASH}.sslip.io
+      caddy_2.reverse_proxy: "{{upstreams 8080}}"
+    environment:
+      OLLAMA_BASE_URL: http://ollama-api:11434
+      WEBUI_AUTH: "false"
+    volumes:
+      - /DATA/AppData/$AppID/webui/:/app/backend/data
+    networks:
+      - pcs
+    cpu_shares: 50
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  ollama-api:
+    image: ollama/ollama:0.20.3
+    container_name: ollama-api
+    restart: unless-stopped
+    user: 0:0
+    expose:
+      - 11434
+    environment:
+      OLLAMA_HOST: 0.0.0.0:11434
+    volumes:
+      - /DATA/AppData/$AppID/data/:/root/.ollama
+    networks:
+      - pcs
+    cpu_shares: 80
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+
+networks:
+  pcs:
+    name: pcs
+    external: true
+
+x-casaos:
+  main: ollama
+  store_app_id: ollama
+  webui_port: 8080
+  index: /
+  pre-install-cmd: |
+    mkdir -p /DATA/AppData/ollama/data &&
+    mkdir -p /DATA/AppData/ollama/webui
+  architectures:
+    - amd64
+    - arm64
+  author: Yundera Team
+  category: AI
+  developer: Ollama & Open WebUI
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Ollama/icon.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Ollama/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Ollama/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Ollama/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Ollama/thumbnail.png
+  title:
+    en_us: Ollama
+  tagline:
+    en_us: Run AI models locally with a beautiful chat interface
+    ko_kr: 로컬에서 AI 모델을 실행하고 대화하세요
+    zh_cn: 在本地运行AI模型并进行对话
+    fr_fr: Exécutez des modèles IA localement avec une belle interface de chat
+    es_es: Ejecuta modelos de IA localmente con una hermosa interfaz de chat
+  description:
+    en_us: |
+      Run powerful AI models directly on your server with no cloud dependency. Ollama with Open WebUI gives you a ChatGPT-like experience, completely private and under your control.
+
+      **Key features:**
+      • Run models like Llama 3, Mistral, Gemma, and more
+      • Beautiful chat interface similar to ChatGPT
+      • Download and switch between models easily
+      • Conversation history saved locally
+      • No API keys or subscriptions needed
+
+      **Perfect for:** Anyone who wants to use AI chatbots with complete privacy, developers testing AI models, or teams needing a private AI assistant.
+    ko_kr: |
+      클라우드 없이 서버에서 직접 강력한 AI 모델을 실행하세요. Ollama와 Open WebUI는 완전히 비공개로 제어할 수 있는 ChatGPT 같은 경험을 제공합니다.
+
+      **주요 기능:**
+      • Llama 3, Mistral, Gemma 등 다양한 모델 실행
+      • ChatGPT와 유사한 아름다운 채팅 인터페이스
+      • 모델을 쉽게 다운로드하고 전환
+      • 대화 기록이 로컬에 저장
+      • API 키나 구독 불필요
+
+      **이런 분께 완벽해요:** 완전한 프라이버시로 AI 챗봇을 사용하고 싶은 분, AI 모델을 테스트하는 개발자, 비공개 AI 어시스턴트가 필요한 팀.
+    zh_cn: |
+      无需依赖云端，直接在服务器上运行强大的AI模型。Ollama搭配Open WebUI为您提供类似ChatGPT的体验，完全私密且由您掌控。
+
+      **主要功能：**
+      • 运行Llama 3、Mistral、Gemma等模型
+      • 类似ChatGPT的精美聊天界面
+      • 轻松下载和切换模型
+      • 对话记录本地保存
+      • 无需API密钥或订阅
+    fr_fr: |
+      Exécutez des modèles IA puissants directement sur votre serveur sans dépendance cloud. Ollama avec Open WebUI vous offre une expérience similaire à ChatGPT, entièrement privée et sous votre contrôle.
+
+      **Fonctionnalités clés :**
+      • Exécutez des modèles comme Llama 3, Mistral, Gemma et plus
+      • Belle interface de chat similaire à ChatGPT
+      • Téléchargez et changez de modèle facilement
+      • Historique des conversations sauvegardé localement
+      • Aucune clé API ou abonnement nécessaire
+    es_es: |
+      Ejecuta modelos de IA potentes directamente en tu servidor sin depender de la nube. Ollama con Open WebUI te ofrece una experiencia similar a ChatGPT, completamente privada y bajo tu control.
+
+      **Características clave:**
+      • Ejecuta modelos como Llama 3, Mistral, Gemma y más
+      • Hermosa interfaz de chat similar a ChatGPT
+      • Descarga y cambia entre modelos fácilmente
+      • Historial de conversaciones guardado localmente
+      • Sin necesidad de claves API ni suscripciones
+  tips:
+    before_install:
+      en_us: |
+        **Getting Started**
+
+        No login required — the app is ready to use immediately.
+
+        **How to use:**
+        1. Open the app
+        2. Click the model selector and download a model (e.g. `llama3.2`)
+        3. Start chatting!
+
+        **Recommended models:**
+        | Model | Size | Best for |
+        | ----- | ---- | -------- |
+        | `llama3.2` | 2GB | Fast, general chat |
+        | `llama3.1:8b` | 4.7GB | Smarter responses |
+        | `mistral` | 4.1GB | Good balance |
+        | `gemma2:2b` | 1.6GB | Lightweight |
+
+        **Note:** First model download may take a few minutes depending on your internet speed. Models require available RAM to run.
+      ko_kr: |
+        **시작하기**
+
+        로그인 불필요 — 바로 사용할 수 있습니다.
+
+        **사용 방법:**
+        1. 앱 열기
+        2. 모델 선택기를 클릭하고 모델 다운로드 (예: `llama3.2`)
+        3. 대화 시작!
+
+        **추천 모델:**
+        | 모델 | 크기 | 용도 |
+        | ---- | ---- | ---- |
+        | `llama3.2` | 2GB | 빠른 일반 대화 |
+        | `llama3.1:8b` | 4.7GB | 더 똑똑한 응답 |
+        | `mistral` | 4.1GB | 좋은 균형 |
+        | `gemma2:2b` | 1.6GB | 가벼운 모델 |
+
+        **참고:** 첫 모델 다운로드는 인터넷 속도에 따라 몇 분 걸릴 수 있습니다. 모델 실행에는 충분한 RAM이 필요합니다.
