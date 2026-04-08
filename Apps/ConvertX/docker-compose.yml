@@ -45,7 +45,6 @@ services:
       resources:
         limits:
           memory: 2G
-          cpus: '1.0'
     environment:
       - JWT_SECRET=$APP_DEFAULT_PASSWORD
       - ACCOUNT_REGISTRATION=false

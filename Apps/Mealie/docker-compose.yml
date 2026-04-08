@@ -27,6 +27,8 @@ services:
       BASE_URL: https://mealie-${APP_DOMAIN}  # Set base URL for proper routing
     networks:
       - pcs
+    healthcheck:
+      disable: true
     cpu_shares: 70
     deploy:
       resources:
