@@ -9,20 +9,19 @@ services:
     depends_on:
       - ollama-api
     expose:
-      - 80
+      - 8080
     labels:
       caddy_0: ollama-${APP_DOMAIN}
       caddy_0.import: gateway_tls
-      caddy_0.reverse_proxy: "{{upstreams 80}}"
+      caddy_0.reverse_proxy: "{{upstreams 8080}}"
       caddy_1: ollama-${APP_PUBLIC_IP_DASH}.nip.io
       caddy_1.import: gateway_tls
-      caddy_1.reverse_proxy: "{{upstreams 80}}"
+      caddy_1.reverse_proxy: "{{upstreams 8080}}"
       caddy_2: ollama-${APP_PUBLIC_IP_DASH}.sslip.io
-      caddy_2.reverse_proxy: "{{upstreams 80}}"
+      caddy_2.reverse_proxy: "{{upstreams 8080}}"
     environment:
       OLLAMA_BASE_URL: http://ollama-api:11434
       WEBUI_AUTH: "false"
-      PORT: "80"
     volumes:
       - /DATA/AppData/$AppID/webui/:/app/backend/data
     networks:
@@ -60,7 +59,7 @@ networks:
 x-casaos:
   main: ollama
   store_app_id: ollama
-  webui_port: 80
+  webui_port: 8080
   index: /
   pre-install-cmd: |
     mkdir -p /DATA/AppData/ollama/data &&
