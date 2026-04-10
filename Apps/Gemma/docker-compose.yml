@@ -1,0 +1,168 @@
+name: gemma
+
+services:
+  gemma:
+    image: ghcr.io/ggml-org/llama.cpp:server
+    container_name: gemma
+    restart: unless-stopped
+    user: 0:0
+    expose:
+      - 8080
+    labels:
+      caddy_0: gemma-${APP_DOMAIN}
+      caddy_0.import: gateway_tls
+      caddy_0.reverse_proxy: "{{upstreams 8080}}"
+      caddy_1: gemma-${APP_PUBLIC_IP_DASH}.nip.io
+      caddy_1.import: gateway_tls
+      caddy_1.reverse_proxy: "{{upstreams 8080}}"
+      caddy_2: gemma-${APP_PUBLIC_IP_DASH}.sslip.io
+      caddy_2.reverse_proxy: "{{upstreams 8080}}"
+    environment:
+      LLAMA_CACHE: /data/cache
+    command: >-
+      -hf unsloth/gemma-4-E2B-it-GGUF
+      --hf-file gemma-4-E2B-it-Q4_K_M.gguf
+      --port 8080
+      --host 0.0.0.0
+      -c 4096
+    volumes:
+      - /DATA/AppData/$AppID/data:/data
+    networks:
+      - pcs
+    cpu_shares: 90
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+
+networks:
+  pcs:
+    name: pcs
+    external: true
+
+x-casaos:
+  main: gemma
+  store_app_id: gemma
+  webui_port: 8080
+  index: /
+  pre-install-cmd: |
+    mkdir -p /DATA/AppData/gemma/data/cache
+  architectures:
+    - amd64
+    - arm64
+  author: Yundera Team
+  category: AI
+  developer: Google DeepMind
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Gemma/icon.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Gemma/screenshot-1.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Gemma/thumbnail.png
+  title:
+    en_us: Gemma
+  tagline:
+    en_us: Ultra-light Google AI chatbot running locally
+    ko_kr: 초경량 Google AI 챗봇을 로컬에서 실행
+    zh_cn: 超轻量Google AI聊天机器人本地运行
+    fr_fr: Chatbot IA Google ultra-leger en local
+    es_es: Chatbot IA de Google ultraligero en local
+  description:
+    en_us: |
+      Run Google Gemma 4 E2B directly on your server with a single lightweight container. No cloud, no API keys, completely private.
+
+      **Why Gemma instead of Ollama?**
+      • Single container (~200MB image) vs Ollama's two containers (~4GB+ images)
+      • Powered by llama.cpp — blazing fast C++ inference engine
+      • Built-in chat web UI — no separate frontend needed
+      • Model stored on DATA partition, not OS partition
+
+      **Gemma 4 E2B features:**
+      • 2B parameter model by Google DeepMind
+      • Multimodal — text and image input
+      • 140+ languages supported
+      • Only ~3GB model download, ~4GB RAM needed
+    ko_kr: |
+      단일 경량 컨테이너로 Google Gemma 4 E2B를 서버에서 직접 실행하세요. 클라우드 없이, API 키 없이, 완전히 비공개.
+
+      **왜 Ollama 대신 Gemma?**
+      • 단일 컨테이너 (~200MB 이미지) vs Ollama 두 컨테이너 (~4GB+ 이미지)
+      • llama.cpp 기반 — 초고속 C++ 추론 엔진
+      • 내장 채팅 웹 UI — 별도 프론트엔드 불필요
+      • 모델은 DATA 파티션에 저장, OS 파티션 부담 없음
+
+      **Gemma 4 E2B 특징:**
+      • Google DeepMind의 2B 파라미터 모델
+      • 멀티모달 — 텍스트와 이미지 입력
+      • 140개 이상 언어 지원
+      • 모델 다운로드 ~3GB, RAM ~4GB 필요
+    zh_cn: |
+      使用单个轻量级容器直接在服务器上运行Google Gemma 4 E2B。无需云端、无需API密钥，完全私密。
+
+      **为什么选Gemma而不是Ollama？**
+      • 单容器（~200MB镜像）vs Ollama双容器（~4GB+镜像）
+      • 基于llama.cpp — 极速C++推理引擎
+      • 内置聊天Web UI — 无需单独前端
+      • 模型存储在DATA分区，不占用OS分区
+
+      **Gemma 4 E2B特点：**
+      • Google DeepMind 2B参数模型
+      • 多模态 — 文本和图像输入
+      • 支持140+种语言
+      • 模型下载~3GB，需要~4GB RAM
+    fr_fr: |
+      Executez Google Gemma 4 E2B directement sur votre serveur avec un seul conteneur leger. Sans cloud, sans cles API, entierement prive.
+
+      **Pourquoi Gemma au lieu d'Ollama ?**
+      • Un seul conteneur (~200Mo) vs deux conteneurs Ollama (~4Go+)
+      • Base llama.cpp — moteur d'inference C++ ultra-rapide
+      • Interface web de chat integree
+      • Modele stocke sur la partition DATA, pas OS
+
+      **Gemma 4 E2B :**
+      • Modele 2B parametres de Google DeepMind
+      • Multimodal — texte et images
+      • 140+ langues supportees
+      • ~3Go de telechargement, ~4Go de RAM necessaires
+    es_es: |
+      Ejecuta Google Gemma 4 E2B directamente en tu servidor con un unico contenedor ligero. Sin nube, sin claves API, completamente privado.
+
+      **Por que Gemma en lugar de Ollama?**
+      • Un solo contenedor (~200MB) vs dos contenedores Ollama (~4GB+)
+      • Basado en llama.cpp — motor de inferencia C++ ultrarapido
+      • Interfaz web de chat integrada
+      • Modelo almacenado en particion DATA, no OS
+
+      **Gemma 4 E2B:**
+      • Modelo de 2B parametros de Google DeepMind
+      • Multimodal — texto e imagenes
+      • 140+ idiomas soportados
+      • ~3GB de descarga, ~4GB de RAM necesarios
+  tips:
+    before_install:
+      en_us: |
+        **First Launch**
+
+        The Gemma 4 E2B model (~3GB) will be automatically downloaded on first start.
+        This may take a few minutes depending on your internet speed.
+        After the initial download, the app starts instantly.
+
+        **Usage**
+
+        1. Open the app — the chat interface is ready immediately
+        2. Type your message and press Enter
+        3. The AI responds locally, no internet needed after setup
+
+        **Note:** This runs the Q4_K_M quantized model (best quality/size balance). Responses are generated on CPU, so expect a few seconds per reply.
+      ko_kr: |
+        **첫 실행**
+
+        Gemma 4 E2B 모델 (~3GB)이 첫 시작 시 자동으로 다운로드됩니다.
+        인터넷 속도에 따라 몇 분 걸릴 수 있습니다.
+        초기 다운로드 후에는 즉시 시작됩니다.
+
+        **사용법**
+
+        1. 앱 열기 — 채팅 인터페이스가 바로 준비됨
+        2. 메시지를 입력하고 Enter
+        3. AI가 로컬에서 응답, 설정 후 인터넷 불필요
+
+        **참고:** Q4_K_M 양자화 모델을 사용합니다 (품질/크기 최적 균형). CPU에서 추론하므로 응답에 몇 초 걸릴 수 있습니다.
