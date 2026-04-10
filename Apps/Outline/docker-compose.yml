@@ -412,9 +412,46 @@ x-casaos:
 
         **Documentacion:** [https://docs.getoutline.com](https://docs.getoutline.com)
   pre-install-cmd: |
-    mkdir -p /DATA/AppData/outline /DATA/AppData/casaos/apps/outline &&
-    chown -R ${PUID:-1000}:${PGID:-1000} /DATA/AppData/outline || true &&
-    chown -R ${PUID:-1000}:${PGID:-1000} /DATA/AppData/casaos/apps/outline || true &&
-    wget -O /DATA/AppData/outline/pre-install.sh https://raw.githubusercontent.com/BookJJun-IJ/AppStore/create/Apps/Outline/install/pre-install.sh &&
-    chmod +x /DATA/AppData/outline/pre-install.sh &&
-    bash /DATA/AppData/outline/pre-install.sh
+    mkdir -p /DATA/AppData/$AppID/{data,pgdata,redis,dex} /DATA/AppData/casaos/apps/$AppID &&
+    chown -R ${PUID:-1000}:${PGID:-1000} /DATA/AppData/$AppID || true &&
+    ENV_FILE="/DATA/AppData/casaos/apps/$AppID/.env" &&
+    if [ ! -s "$ENV_FILE" ]; then
+      OUTLINE_SECRET_KEY=$(openssl rand -hex 32) &&
+      OUTLINE_UTILS_SECRET=$(openssl rand -hex 32) &&
+      OUTLINE_OIDC_SECRET=$(openssl rand -hex 32) &&
+      printf 'OUTLINE_SECRET_KEY=%s\nOUTLINE_UTILS_SECRET=%s\nOUTLINE_OIDC_SECRET=%s\n' \
+        "$OUTLINE_SECRET_KEY" "$OUTLINE_UTILS_SECRET" "$OUTLINE_OIDC_SECRET" > "$ENV_FILE"
+    fi &&
+    . "$ENV_FILE" &&
+    DEX_CONFIG="/DATA/AppData/$AppID/dex/config.yaml" &&
+    if [ ! -f "$DEX_CONFIG" ]; then
+      BCRYPT_HASH=$(docker run --rm ghcr.io/dexidp/dex:v2.45.1 dex hash "$PCS_DEFAULT_PASSWORD" 2>/dev/null || true) &&
+      if [ -z "$BCRYPT_HASH" ]; then
+        BCRYPT_HASH=$(docker run --rm python:3.12-alpine sh -c "pip install -q bcrypt && python3 -c \"import bcrypt; print(bcrypt.hashpw(b'$PCS_DEFAULT_PASSWORD', bcrypt.gensalt(10)).decode())\"" 2>/dev/null)
+      fi &&
+      PCS_EMAIL="${PCS_EMAIL:-admin@${PCS_DOMAIN}}" &&
+      cat > "$DEX_CONFIG" << 'DEXEOF'
+    issuer: https://outline-auth-__APP_DOMAIN__
+    storage:
+      type: sqlite3
+      config:
+        file: /data/dex.db
+    web:
+      http: 0.0.0.0:5556
+    staticClients:
+      - id: outline
+        secret: __OIDC_SECRET__
+        name: Outline
+        redirectURIs:
+          - https://outline-__APP_DOMAIN__/auth/oidc.callback
+    enablePasswordDB: true
+    staticPasswords:
+      - email: "__PCS_EMAIL__"
+        hash: "__BCRYPT_HASH__"
+        username: admin
+    DEXEOF
+      sed -i "s|__APP_DOMAIN__|${APP_DOMAIN}|g" "$DEX_CONFIG" &&
+      sed -i "s|__OIDC_SECRET__|${OUTLINE_OIDC_SECRET}|g" "$DEX_CONFIG" &&
+      sed -i "s|__PCS_EMAIL__|${PCS_EMAIL}|g" "$DEX_CONFIG" &&
+      sed -i "s|__BCRYPT_HASH__|${BCRYPT_HASH}|g" "$DEX_CONFIG"
+    fi
