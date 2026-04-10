@@ -19,12 +19,14 @@ services:
       caddy_2.reverse_proxy: "{{upstreams 8080}}"
     environment:
       LLAMA_CACHE: /data/cache
-    command: >-
-      -hf unsloth/gemma-4-E2B-it-GGUF
-      --hf-file gemma-4-E2B-it-Q4_K_M.gguf
-      --port 8080
-      --host 0.0.0.0
-      -c 4096
+    command:
+      [
+        "-hf", "unsloth/gemma-4-E2B-it-GGUF",
+        "--hf-file", "gemma-4-E2B-it-Q4_K_M.gguf",
+        "--port", "8080",
+        "--host", "0.0.0.0",
+        "-c", "2048",
+      ]
     volumes:
       - /DATA/AppData/$AppID/data:/data
     networks:
@@ -33,7 +35,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 4G
+          memory: 6G
 
 networks:
   pcs:
