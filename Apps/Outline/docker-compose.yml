@@ -415,6 +415,6 @@ x-casaos:
     mkdir -p /DATA/AppData/outline /DATA/AppData/casaos/apps/outline &&
     chown -R ${PUID:-1000}:${PGID:-1000} /DATA/AppData/outline || true &&
     chown -R ${PUID:-1000}:${PGID:-1000} /DATA/AppData/casaos/apps/outline || true &&
-    wget -O /DATA/AppData/outline/pre-install.sh https://raw.githubusercontent.com/Yundera/AppStoreLab/main/Apps/Outline/install/pre-install.sh &&
+    wget -O /DATA/AppData/outline/pre-install.sh https://raw.githubusercontent.com/Yundera/AppStore/create/Apps/Outline/install/pre-install.sh &&
     chmod +x /DATA/AppData/outline/pre-install.sh &&
     bash /DATA/AppData/outline/pre-install.sh
