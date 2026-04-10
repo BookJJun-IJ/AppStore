@@ -79,59 +79,59 @@ x-casaos:
   title:
     en_us: Ollama
   tagline:
-    en_us: Run AI models locally with a beautiful chat interface
-    ko_kr: 로컬에서 AI 모델을 실행하고 대화하세요
-    zh_cn: 在本地运行AI模型并进行对话
-    fr_fr: Exécutez des modèles IA localement avec une belle interface de chat
-    es_es: Ejecuta modelos de IA localmente con una hermosa interfaz de chat
+    en_us: Run Google Gemma 4 AI models locally with a chat interface
+    ko_kr: Google Gemma 4 AI 모델을 로컬에서 실행하세요
+    zh_cn: 在本地运行Google Gemma 4 AI模型
+    fr_fr: Exécutez les modèles IA Google Gemma 4 localement
+    es_es: Ejecuta modelos de IA Google Gemma 4 localmente
   description:
     en_us: |
       Run powerful AI models directly on your server with no cloud dependency. Ollama with Open WebUI gives you a ChatGPT-like experience, completely private and under your control.
 
       **Key features:**
-      • Run models like Llama 3, Mistral, Gemma, and more
+      • Run Google Gemma 4 models locally — from ultra-light E2B (4GB) to powerful 26B MoE
       • Beautiful chat interface similar to ChatGPT
-      • Download and switch between models easily
+      • Multimodal support — chat with text and images
       • Conversation history saved locally
       • No API keys or subscriptions needed
 
-      **Perfect for:** Anyone who wants to use AI chatbots with complete privacy, developers testing AI models, or teams needing a private AI assistant.
+      **Perfect for:** Anyone who wants to use AI chatbots with complete privacy on low-resource devices.
     ko_kr: |
       클라우드 없이 서버에서 직접 강력한 AI 모델을 실행하세요. Ollama와 Open WebUI는 완전히 비공개로 제어할 수 있는 ChatGPT 같은 경험을 제공합니다.
 
       **주요 기능:**
-      • Llama 3, Mistral, Gemma 등 다양한 모델 실행
+      • Google Gemma 4 모델을 로컬에서 실행 — 초경량 E2B(4GB)부터 강력한 26B MoE까지
       • ChatGPT와 유사한 아름다운 채팅 인터페이스
-      • 모델을 쉽게 다운로드하고 전환
+      • 멀티모달 지원 — 텍스트와 이미지로 대화
       • 대화 기록이 로컬에 저장
       • API 키나 구독 불필요
 
-      **이런 분께 완벽해요:** 완전한 프라이버시로 AI 챗봇을 사용하고 싶은 분, AI 모델을 테스트하는 개발자, 비공개 AI 어시스턴트가 필요한 팀.
+      **이런 분께 완벽해요:** 저사양 기기에서 완전한 프라이버시로 AI 챗봇을 사용하고 싶은 분.
     zh_cn: |
       无需依赖云端，直接在服务器上运行强大的AI模型。Ollama搭配Open WebUI为您提供类似ChatGPT的体验，完全私密且由您掌控。
 
       **主要功能：**
-      • 运行Llama 3、Mistral、Gemma等模型
+      • 本地运行Google Gemma 4模型 — 从超轻量E2B(4GB)到强大的26B MoE
       • 类似ChatGPT的精美聊天界面
-      • 轻松下载和切换模型
+      • 多模态支持 — 文本和图像对话
       • 对话记录本地保存
       • 无需API密钥或订阅
     fr_fr: |
       Exécutez des modèles IA puissants directement sur votre serveur sans dépendance cloud. Ollama avec Open WebUI vous offre une expérience similaire à ChatGPT, entièrement privée et sous votre contrôle.
 
       **Fonctionnalités clés :**
-      • Exécutez des modèles comme Llama 3, Mistral, Gemma et plus
+      • Exécutez les modèles Google Gemma 4 localement — de l'ultra-léger E2B (4Go) au puissant 26B MoE
       • Belle interface de chat similaire à ChatGPT
-      • Téléchargez et changez de modèle facilement
+      • Support multimodal — discutez avec du texte et des images
       • Historique des conversations sauvegardé localement
       • Aucune clé API ou abonnement nécessaire
     es_es: |
       Ejecuta modelos de IA potentes directamente en tu servidor sin depender de la nube. Ollama con Open WebUI te ofrece una experiencia similar a ChatGPT, completamente privada y bajo tu control.
 
       **Características clave:**
-      • Ejecuta modelos como Llama 3, Mistral, Gemma y más
+      • Ejecuta modelos Google Gemma 4 localmente — desde el ultraligero E2B (4GB) hasta el potente 26B MoE
       • Hermosa interfaz de chat similar a ChatGPT
-      • Descarga y cambia entre modelos fácilmente
+      • Soporte multimodal — chatea con texto e imágenes
       • Historial de conversaciones guardado localmente
       • Sin necesidad de claves API ni suscripciones
   tips:
@@ -146,15 +146,14 @@ x-casaos:
         2. Click the model selector and download a model (e.g. `llama3.2`)
         3. Start chatting!
 
-        **Recommended models:**
-        | Model | Size | Best for |
-        | ----- | ---- | -------- |
-        | `llama3.2` | 2GB | Fast, general chat |
-        | `llama3.1:8b` | 4.7GB | Smarter responses |
-        | `mistral` | 4.1GB | Good balance |
-        | `gemma2:2b` | 1.6GB | Lightweight |
+        **Recommended Gemma 4 models:**
+        | Model | Size | RAM | Best for |
+        | ----- | ---- | --- | -------- |
+        | `gemma4:e2b` | ~1.5GB | 4GB | Ultra-light, fast chat |
+        | `gemma4:e4b` | ~2.5GB | 6GB | Better quality, multimodal |
+        | `gemma4:26b-a4b` | ~15GB | 18GB | Advanced reasoning (MoE) |
 
-        **Note:** First model download may take a few minutes depending on your internet speed. Models require available RAM to run.
+        **Note:** We recommend starting with `gemma4:e2b` for low-resource devices. First model download may take a few minutes.
       ko_kr: |
         **시작하기**
 
@@ -165,12 +164,11 @@ x-casaos:
         2. 모델 선택기를 클릭하고 모델 다운로드 (예: `llama3.2`)
         3. 대화 시작!
 
-        **추천 모델:**
-        | 모델 | 크기 | 용도 |
-        | ---- | ---- | ---- |
-        | `llama3.2` | 2GB | 빠른 일반 대화 |
-        | `llama3.1:8b` | 4.7GB | 더 똑똑한 응답 |
-        | `mistral` | 4.1GB | 좋은 균형 |
-        | `gemma2:2b` | 1.6GB | 가벼운 모델 |
+        **추천 Gemma 4 모델:**
+        | 모델 | 크기 | RAM | 용도 |
+        | ---- | ---- | --- | ---- |
+        | `gemma4:e2b` | ~1.5GB | 4GB | 초경량, 빠른 대화 |
+        | `gemma4:e4b` | ~2.5GB | 6GB | 더 좋은 품질, 멀티모달 |
+        | `gemma4:26b-a4b` | ~15GB | 18GB | 고급 추론 (MoE) |
 
-        **참고:** 첫 모델 다운로드는 인터넷 속도에 따라 몇 분 걸릴 수 있습니다. 모델 실행에는 충분한 RAM이 필요합니다.
+        **참고:** 저사양 기기에서는 `gemma4:e2b`를 추천합니다. 첫 모델 다운로드는 몇 분 걸릴 수 있습니다.
