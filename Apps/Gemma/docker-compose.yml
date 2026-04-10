@@ -7,32 +7,33 @@ services:
     restart: unless-stopped
     user: 0:0
     expose:
-      - 8080
+      - 80
     labels:
       caddy_0: gemma-${APP_DOMAIN}
       caddy_0.import: gateway_tls
-      caddy_0.reverse_proxy: "{{upstreams 8080}}"
+      caddy_0.reverse_proxy: "{{upstreams 80}}"
       caddy_1: gemma-${APP_PUBLIC_IP_DASH}.nip.io
       caddy_1.import: gateway_tls
-      caddy_1.reverse_proxy: "{{upstreams 8080}}"
+      caddy_1.reverse_proxy: "{{upstreams 80}}"
       caddy_2: gemma-${APP_PUBLIC_IP_DASH}.sslip.io
-      caddy_2.reverse_proxy: "{{upstreams 8080}}"
+      caddy_2.reverse_proxy: "{{upstreams 80}}"
     environment:
       LLAMA_CACHE: /data/cache
     command:
       [
         "-hf", "unsloth/gemma-4-E2B-it-GGUF",
-        "--hf-file", "gemma-4-E2B-it-Q4_K_M.gguf",
-        "--port", "8080",
+        "--hf-file", "gemma-4-E2B-it-UD-IQ2_M.gguf",
+        "--port", "80",
         "--host", "0.0.0.0",
-        "-c", "2048",
+        "-c", "512",
+        "-np", "1",
       ]
     volumes:
       - /DATA/AppData/$AppID/data:/data
     networks:
       - pcs
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8080/health || exit 1"]
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:80/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -51,7 +52,7 @@ networks:
 x-casaos:
   main: gemma
   store_app_id: gemma
-  webui_port: 8080
+  webui_port: 80
   index: /
   pre-install-cmd: |
     mkdir -p /DATA/AppData/gemma/data/cache
