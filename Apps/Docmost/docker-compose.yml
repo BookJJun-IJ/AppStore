@@ -49,7 +49,7 @@ services:
     cpu_shares: 30
 
   docmost:
-    image: docmost/docmost:0.25.3
+    image: docmost/docmost:0.70.3
     container_name: docmost
     restart: unless-stopped
     user: "0:0"
