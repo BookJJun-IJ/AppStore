@@ -4,13 +4,26 @@ services:
   # Obscura: Stealth headless browser (CDP server)
   # - Fingerprint randomization, anti-detection, tracker blocking
   obscura:
-    build:
-      context: .
-      dockerfile: Dockerfile.obscura
+    image: debian:bookworm-20250317-slim
     container_name: obscura
     restart: unless-stopped
     user: "0:0"
     cpu_shares: 20
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        if [ ! -f /opt/obscura/obscura ]; then
+          apt-get update && apt-get install -y --no-install-recommends wget ca-certificates &&
+          rm -rf /var/lib/apt/lists/* &&
+          mkdir -p /opt/obscura &&
+          wget -q -O /tmp/obscura.tar.gz https://github.com/h4ckf0r0day/obscura/releases/download/v0.1.0/obscura-x86_64-linux.tar.gz &&
+          tar -xzf /tmp/obscura.tar.gz -C /opt/obscura/ &&
+          chmod +x /opt/obscura/obscura &&
+          rm /tmp/obscura.tar.gz
+        fi &&
+        /opt/obscura/obscura serve --port 9222 --stealth
+    volumes:
+      - /DATA/AppData/$AppID/obscura:/opt/obscura
     expose:
       - 9222
     networks:
