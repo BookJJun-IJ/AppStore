@@ -1,6 +1,26 @@
 name: browsermcp
 
 services:
+  # Obscura: Stealth headless browser (CDP server)
+  # - Fingerprint randomization, anti-detection, tracker blocking
+  obscura:
+    build:
+      context: .
+      dockerfile: Dockerfile.obscura
+    container_name: obscura
+    restart: unless-stopped
+    user: "0:0"
+    cpu_shares: 20
+    expose:
+      - 9222
+    networks:
+      - pcs
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+
+  # Playwright MCP: MCP protocol interface → connects to Obscura's CDP
   browsermcp:
     image: mcr.microsoft.com/playwright/mcp:v0.0.32
     container_name: browsermcp
@@ -9,18 +29,14 @@ services:
     cpu_shares: 30
     entrypoint: ["node", "cli.js"]
     command:
-      - "--headless"
-      - "--browser"
-      - "chromium"
-      - "--no-sandbox"
+      - "--cdp-endpoint"
+      - "ws://obscura:9222"
       - "--port"
       - "8931"
       - "--host"
       - "0.0.0.0"
-      - "--user-data-dir"
-      - "/data/browser-profile"
-    volumes:
-      - /DATA/AppData/$AppID/data:/data
+    depends_on:
+      - obscura
     expose:
       - 8931
     labels:
@@ -37,7 +53,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 2048M
+          memory: 512M
 
 networks:
   pcs:
@@ -51,99 +67,73 @@ x-casaos:
   store_app_id: browsermcp
   author: Yundera Team
   category: Utilities
-  developer: Microsoft
+  developer: Microsoft / Obscura
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/BrowserMCP/icon.png
   thumbnail: ""
   screenshot_link: []
   title:
     en_us: Browser MCP
   tagline:
-    en_us: Headless browser automation for AI agents via MCP
-    zh_cn: 通过MCP为AI代理提供无头浏览器自动化
-    fr_fr: Automatisation de navigateur headless pour agents IA via MCP
-    ko_kr: MCP를 통한 AI 에이전트용 헤드리스 브라우저 자동화
-    es_es: Automatizacion de navegador headless para agentes IA via MCP
+    en_us: Stealth headless browser automation for AI agents via MCP
+    zh_cn: 通过MCP为AI代理提供隐身无头浏览器自动化
+    fr_fr: Automatisation de navigateur headless furtif pour agents IA via MCP
+    ko_kr: MCP를 통한 AI 에이전트용 스텔스 헤드리스 브라우저 자동화
+    es_es: Automatizacion de navegador headless sigiloso para agentes IA via MCP
   description:
     en_us: |
-      **Browser MCP** is a Playwright-based MCP server that enables AI agents (Claude Code, OpenClaw) to control a headless Chromium browser.
+      **Browser MCP** combines Playwright MCP with Obscura stealth browser for undetectable headless browser automation.
+
+      **Architecture:**
+
+      - **Obscura** (CDP server): Rust-based stealth browser with fingerprint randomization, anti-detection, and 3,520+ tracker domains blocked
+      - **Playwright MCP** (MCP server): Provides MCP protocol interface for AI agents
 
       **Features:**
 
       - Navigate web pages, click, type, and interact with elements
-      - Read page content via accessibility tree
-      - Take screenshots of pages
-      - Persistent browser sessions (login sessions survive restarts)
-      - Runs headless on server — no GUI required
-
-      **Use Cases:**
-
-      - Reddit automation (browse, read posts, write comments)
-      - Social media management
-      - Web scraping and data collection
-      - Form filling and web interactions
+      - Stealth mode: randomized GPU, screen, canvas fingerprints
+      - Anti-webdriver detection and automation flag masking
+      - Tracker and analytics blocking
 
       **MCP Endpoints:**
 
       - SSE: `http://browsermcp:8931/sse`
       - Streamable HTTP: `http://browsermcp:8931/mcp`
     zh_cn: |
-      **Browser MCP** 是基于Playwright的MCP服务器，使AI代理能够控制无头Chromium浏览器。
-
-      **功能：**
-
-      - 导航网页、点击、输入、与元素交互
-      - 通过无障碍树读取页面内容
-      - 页面截图
-      - 持久浏览器会话（登录会话在重启后保持）
+      **Browser MCP** 结合Playwright MCP和Obscura隐身浏览器，实现无法检测的无头浏览器自动化。
 
       **MCP端点：**
 
       - SSE: `http://browsermcp:8931/sse`
       - Streamable HTTP: `http://browsermcp:8931/mcp`
     fr_fr: |
-      **Browser MCP** est un serveur MCP base sur Playwright qui permet aux agents IA de controler un navigateur Chromium headless.
-
-      **Fonctionnalites :**
-
-      - Naviguer sur les pages web, cliquer, taper et interagir avec les elements
-      - Lire le contenu des pages via l'arbre d'accessibilite
-      - Prendre des captures d'ecran
-      - Sessions de navigateur persistantes
+      **Browser MCP** combine Playwright MCP avec le navigateur furtif Obscura pour une automatisation de navigateur headless indetectable.
 
       **Points de terminaison MCP :**
 
       - SSE : `http://browsermcp:8931/sse`
       - HTTP Streamable : `http://browsermcp:8931/mcp`
     ko_kr: |
-      **Browser MCP**는 Playwright 기반 MCP 서버로, AI 에이전트(Claude Code, OpenClaw)가 헤드리스 Chromium 브라우저를 제어할 수 있게 합니다.
+      **Browser MCP**는 Playwright MCP와 Obscura 스텔스 브라우저를 결합하여 탐지 불가능한 헤드리스 브라우저 자동화를 제공합니다.
+
+      **아키텍처:**
+
+      - **Obscura** (CDP 서버): Rust 기반 스텔스 브라우저 — 핑거프린트 랜덤화, 자동화 감지 우회, 3,520+ 트래커 도메인 차단
+      - **Playwright MCP** (MCP 서버): AI 에이전트를 위한 MCP 프로토콜 인터페이스
 
       **기능:**
 
       - 웹 페이지 탐색, 클릭, 입력, 요소 상호작용
-      - 접근성 트리를 통한 페이지 콘텐츠 읽기
-      - 페이지 스크린샷
-      - 영구 브라우저 세션 (로그인 세션이 재시작 후에도 유지)
-      - 서버에서 헤드리스 실행 — GUI 불필요
-
-      **사용 사례:**
-
-      - Reddit 자동화 (탐색, 글 읽기, 댓글 작성)
-      - 소셜 미디어 관리
-      - 웹 스크래핑 및 데이터 수집
+      - 스텔스 모드: GPU, 화면, 캔버스 핑거프린트 랜덤화
+      - 웹드라이버 감지 우회 및 자동화 플래그 마스킹
+      - 트래커 및 분석 차단
 
       **MCP 엔드포인트:**
 
       - SSE: `http://browsermcp:8931/sse`
       - Streamable HTTP: `http://browsermcp:8931/mcp`
     es_es: |
-      **Browser MCP** es un servidor MCP basado en Playwright que permite a los agentes de IA controlar un navegador Chromium headless.
-
-      **Caracteristicas:**
-
-      - Navegar paginas web, hacer clic, escribir e interactuar con elementos
-      - Leer contenido de paginas via arbol de accesibilidad
-      - Capturas de pantalla de paginas
-      - Sesiones de navegador persistentes
+      **Browser MCP** combina Playwright MCP con el navegador sigiloso Obscura para automatizacion de navegador headless indetectable.
 
       **Endpoints MCP:**
 
@@ -164,21 +154,9 @@ x-casaos:
         | SSE | `http://browsermcp:8931/sse` |
         | Streamable HTTP | `http://browsermcp:8931/mcp` |
 
-        **Browser Profile:**
-        Login sessions are persisted in `/DATA/AppData/browsermcp/data/browser-profile/`.
-        Reddit login will survive container restarts.
-      fr_fr: |
-        **Connexion MCP**
-
-        Connectez depuis Claude Code sur le meme PCS :
-        ```
-        claude mcp add browsermcp --transport sse http://browsermcp:8931/sse
-        ```
-
-        | Protocole | URL interne |
-        |-----------|------------|
-        | SSE | `http://browsermcp:8931/sse` |
-        | HTTP Streamable | `http://browsermcp:8931/mcp` |
+        **Stealth Features:**
+        Obscura provides fingerprint randomization and anti-detection.
+        3,520+ tracker domains are blocked automatically.
       ko_kr: |
         **MCP 연결**
 
@@ -192,9 +170,16 @@ x-casaos:
         | SSE | `http://browsermcp:8931/sse` |
         | Streamable HTTP | `http://browsermcp:8931/mcp` |
 
-        **브라우저 프로필:**
-        로그인 세션이 `/DATA/AppData/browsermcp/data/browser-profile/`에 저장됩니다.
-        Reddit 로그인이 컨테이너 재시작 후에도 유지됩니다.
+        **스텔스 기능:**
+        Obscura가 핑거프린트 랜덤화 및 자동화 감지 우회를 제공합니다.
+        3,520+ 트래커 도메인이 자동으로 차단됩니다.
+      fr_fr: |
+        **Connexion MCP**
+
+        Connectez depuis Claude Code sur le meme PCS :
+        ```
+        claude mcp add browsermcp --transport sse http://browsermcp:8931/sse
+        ```
       zh_cn: |
         **MCP连接**
 
@@ -202,11 +187,6 @@ x-casaos:
         ```
         claude mcp add browsermcp --transport sse http://browsermcp:8931/sse
         ```
-
-        | 协议 | 内部URL |
-        |------|--------|
-        | SSE | `http://browsermcp:8931/sse` |
-        | Streamable HTTP | `http://browsermcp:8931/mcp` |
       es_es: |
         **Conexion MCP**
 
@@ -214,10 +194,5 @@ x-casaos:
         ```
         claude mcp add browsermcp --transport sse http://browsermcp:8931/sse
         ```
-
-        | Protocolo | URL interna |
-        |-----------|------------|
-        | SSE | `http://browsermcp:8931/sse` |
-        | HTTP Streamable | `http://browsermcp:8931/mcp` |
   pre-install-cmd: |
-    mkdir -p /DATA/AppData/browsermcp/data/browser-profile 2>/dev/null || true
+    mkdir -p /DATA/AppData/browsermcp/data 2>/dev/null || true
