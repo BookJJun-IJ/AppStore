@@ -4,7 +4,7 @@ services:
   # Obscura: Stealth headless browser (CDP server)
   # - Fingerprint randomization, anti-detection, tracker blocking
   obscura:
-    image: debian:bookworm-20250317-slim
+    image: debian:trixie-20250407-slim
     container_name: obscura
     restart: unless-stopped
     user: "0:0"
