@@ -1,72 +1,37 @@
 name: browsermcp
 
 services:
-  # Obscura: Stealth headless browser (CDP server)
-  # - Fingerprint randomization, anti-detection, tracker blocking
-  obscura:
-    image: debian:trixie-20250407-slim
-    container_name: obscura
-    restart: unless-stopped
-    user: "0:0"
-    cpu_shares: 20
-    entrypoint: ["/bin/sh", "-c"]
-    command:
-      - |
-        if [ ! -f /opt/obscura/obscura ]; then
-          apt-get update && apt-get install -y --no-install-recommends wget ca-certificates &&
-          rm -rf /var/lib/apt/lists/* &&
-          mkdir -p /opt/obscura &&
-          wget -q -O /tmp/obscura.tar.gz https://github.com/h4ckf0r0day/obscura/releases/download/v0.1.0/obscura-x86_64-linux.tar.gz &&
-          tar -xzf /tmp/obscura.tar.gz -C /opt/obscura/ &&
-          chmod +x /opt/obscura/obscura &&
-          rm /tmp/obscura.tar.gz
-        fi &&
-        /opt/obscura/obscura serve --port 9222 --stealth
-    volumes:
-      - /DATA/AppData/$AppID/obscura:/opt/obscura
-    expose:
-      - 9222
-    networks:
-      - pcs
-    deploy:
-      resources:
-        limits:
-          memory: 1024M
-
-  # Playwright MCP: MCP protocol interface → connects to Obscura's CDP
   browsermcp:
-    image: mcr.microsoft.com/playwright/mcp:v0.0.32
+    image: psyb0t/stealthy-auto-browse:v0.22.4
     container_name: browsermcp
     restart: unless-stopped
     user: "0:0"
     cpu_shares: 30
-    entrypoint: ["node", "cli.js"]
-    command:
-      - "--cdp-endpoint"
-      - "ws://obscura:9222"
-      - "--port"
-      - "8931"
-      - "--host"
-      - "0.0.0.0"
-    depends_on:
-      - obscura
+    environment:
+      TZ: $TZ
+      AUTH_TOKEN: $AUTH_HASH
+      PROXY_URL:
+      XVFB_RESOLUTION: "1280x720"
+      LANG: "en_US.UTF-8"
+    volumes:
+      - /DATA/AppData/$AppID/data:/data
     expose:
-      - 8931
+      - 8080
     labels:
       caddy_0: browsermcp-${APP_DOMAIN}
       caddy_0.import: gateway_tls
-      caddy_0.reverse_proxy: "{{upstreams 8931}}"
+      caddy_0.reverse_proxy: "{{upstreams 8080}}"
       caddy_1: browsermcp-${APP_PUBLIC_IP_DASH}.nip.io
       caddy_1.import: gateway_tls
-      caddy_1.reverse_proxy: "{{upstreams 8931}}"
+      caddy_1.reverse_proxy: "{{upstreams 8080}}"
       caddy_2: browsermcp-${APP_PUBLIC_IP_DASH}.sslip.io
-      caddy_2.reverse_proxy: "{{upstreams 8931}}"
+      caddy_2.reverse_proxy: "{{upstreams 8080}}"
     networks:
       - pcs
     deploy:
       resources:
         limits:
-          memory: 512M
+          memory: 2048M
 
 networks:
   pcs:
@@ -78,80 +43,77 @@ x-casaos:
     - amd64
   main: browsermcp
   store_app_id: browsermcp
+  webui_port: 8080
+  index: /
   author: Yundera Team
   category: Utilities
-  developer: Microsoft / Obscura
+  developer: psyb0t
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/BrowserMCP/icon.png
   thumbnail: ""
   screenshot_link: []
   title:
     en_us: Browser MCP
   tagline:
-    en_us: Stealth headless browser automation for AI agents via MCP
-    zh_cn: 通过MCP为AI代理提供隐身无头浏览器自动化
-    fr_fr: Automatisation de navigateur headless furtif pour agents IA via MCP
-    ko_kr: MCP를 통한 AI 에이전트용 스텔스 헤드리스 브라우저 자동화
-    es_es: Automatizacion de navegador headless sigiloso para agentes IA via MCP
+    en_us: Stealth browser automation for AI agents via MCP
+    zh_cn: 通过MCP为AI代理提供隐身浏览器自动化
+    fr_fr: Automatisation de navigateur furtif pour agents IA via MCP
+    ko_kr: AI 에이전트를 위한 스텔스 브라우저 자동화 MCP
+    es_es: Automatizacion de navegador sigiloso para agentes IA via MCP
   description:
     en_us: |
-      **Browser MCP** combines Playwright MCP with Obscura stealth browser for undetectable headless browser automation.
+      **Browser MCP** is a stealth browser automation server powered by Camoufox (Firefox fork) with built-in MCP support.
 
-      **Architecture:**
+      **Stealth Features:**
 
-      - **Obscura** (CDP server): Rust-based stealth browser with fingerprint randomization, anti-detection, and 3,520+ tracker domains blocked
-      - **Playwright MCP** (MCP server): Provides MCP protocol interface for AI agents
+      - Camoufox engine: C++ level fingerprint spoofing
+      - Xvfb virtual display: avoids headless detection entirely
+      - OS-level input via PyAutoGUI: `event.isTrusted` is genuinely true
+      - Pre-installed extensions: uBlock Origin, LocalCDN, ClearURLs
+      - No CDP protocol: nothing to detect
 
-      **Features:**
+      **Capabilities:**
 
-      - Navigate web pages, click, type, and interact with elements
-      - Stealth mode: randomized GPU, screen, canvas fingerprints
-      - Anti-webdriver detection and automation flag masking
-      - Tracker and analytics blocking
+      - Navigate web pages, click, type, and interact
+      - Take screenshots
+      - Execute JavaScript
+      - Cookie management
+      - Residential proxy support
+      - noVNC viewer for debugging
 
-      **MCP Endpoints:**
-
-      - SSE: `http://browsermcp:8931/sse`
-      - Streamable HTTP: `http://browsermcp:8931/mcp`
+      **MCP Endpoint:** `http://browsermcp:8080/mcp/`
     zh_cn: |
-      **Browser MCP** 结合Playwright MCP和Obscura隐身浏览器，实现无法检测的无头浏览器自动化。
+      **Browser MCP** 是基于Camoufox的隐身浏览器自动化服务器，内置MCP支持。
 
-      **MCP端点：**
-
-      - SSE: `http://browsermcp:8931/sse`
-      - Streamable HTTP: `http://browsermcp:8931/mcp`
+      **MCP端点：** `http://browsermcp:8080/mcp/`
     fr_fr: |
-      **Browser MCP** combine Playwright MCP avec le navigateur furtif Obscura pour une automatisation de navigateur headless indetectable.
+      **Browser MCP** est un serveur d'automatisation de navigateur furtif base sur Camoufox avec support MCP integre.
 
-      **Points de terminaison MCP :**
-
-      - SSE : `http://browsermcp:8931/sse`
-      - HTTP Streamable : `http://browsermcp:8931/mcp`
+      **Point de terminaison MCP :** `http://browsermcp:8080/mcp/`
     ko_kr: |
-      **Browser MCP**는 Playwright MCP와 Obscura 스텔스 브라우저를 결합하여 탐지 불가능한 헤드리스 브라우저 자동화를 제공합니다.
+      **Browser MCP**는 Camoufox(Firefox 포크) 기반 스텔스 브라우저 자동화 서버로, MCP가 내장되어 있습니다.
 
-      **아키텍처:**
+      **스텔스 기능:**
 
-      - **Obscura** (CDP 서버): Rust 기반 스텔스 브라우저 — 핑거프린트 랜덤화, 자동화 감지 우회, 3,520+ 트래커 도메인 차단
-      - **Playwright MCP** (MCP 서버): AI 에이전트를 위한 MCP 프로토콜 인터페이스
+      - Camoufox 엔진: C++ 레벨 핑거프린트 스푸핑
+      - Xvfb 가상 디스플레이: 헤드리스 감지 완전 회피
+      - OS 레벨 입력 (PyAutoGUI): `event.isTrusted`가 진짜 true
+      - 사전 설치 확장: uBlock Origin, LocalCDN, ClearURLs
+      - CDP 프로토콜 없음: 감지할 것이 없음
 
       **기능:**
 
-      - 웹 페이지 탐색, 클릭, 입력, 요소 상호작용
-      - 스텔스 모드: GPU, 화면, 캔버스 핑거프린트 랜덤화
-      - 웹드라이버 감지 우회 및 자동화 플래그 마스킹
-      - 트래커 및 분석 차단
+      - 웹 페이지 탐색, 클릭, 입력, 상호작용
+      - 스크린샷
+      - JavaScript 실행
+      - 쿠키 관리
+      - Residential 프록시 지원
+      - noVNC 뷰어 (디버깅용)
 
-      **MCP 엔드포인트:**
-
-      - SSE: `http://browsermcp:8931/sse`
-      - Streamable HTTP: `http://browsermcp:8931/mcp`
+      **MCP 엔드포인트:** `http://browsermcp:8080/mcp/`
     es_es: |
-      **Browser MCP** combina Playwright MCP con el navegador sigiloso Obscura para automatizacion de navegador headless indetectable.
+      **Browser MCP** es un servidor de automatizacion de navegador sigiloso basado en Camoufox con soporte MCP integrado.
 
-      **Endpoints MCP:**
-
-      - SSE: `http://browsermcp:8931/sse`
-      - HTTP Streamable: `http://browsermcp:8931/mcp`
+      **Endpoint MCP:** `http://browsermcp:8080/mcp/`
   tips:
     before_install:
       en_us: |
@@ -159,53 +121,69 @@ x-casaos:
 
         Connect from Claude Code on the same PCS:
         ```
-        claude mcp add browsermcp --transport sse http://browsermcp:8931/sse
+        claude mcp add browsermcp --transport http http://browsermcp:8080/mcp/?auth_token=$AUTH_HASH
         ```
 
-        | Protocol | Internal URL |
-        |----------|-------------|
-        | SSE | `http://browsermcp:8931/sse` |
-        | Streamable HTTP | `http://browsermcp:8931/mcp` |
+        **Proxy (Optional)**
 
-        **Stealth Features:**
-        Obscura provides fingerprint randomization and anti-detection.
-        3,520+ tracker domains are blocked automatically.
+        Set `PROXY_URL` for residential proxy to bypass IP restrictions:
+        ```
+        PROXY_URL=http://user:pass@proxy.webshare.io:port
+        ```
+
+        **noVNC Viewer**
+
+        Access the browser view for debugging at port 5900.
       ko_kr: |
         **MCP 연결**
 
         같은 PCS의 Claude Code에서 연결:
         ```
-        claude mcp add browsermcp --transport sse http://browsermcp:8931/sse
+        claude mcp add browsermcp --transport http http://browsermcp:8080/mcp/?auth_token=$AUTH_HASH
         ```
 
-        | 프로토콜 | 내부 URL |
-        |----------|---------|
-        | SSE | `http://browsermcp:8931/sse` |
-        | Streamable HTTP | `http://browsermcp:8931/mcp` |
+        **프록시 (선택사항)**
 
-        **스텔스 기능:**
-        Obscura가 핑거프린트 랜덤화 및 자동화 감지 우회를 제공합니다.
-        3,520+ 트래커 도메인이 자동으로 차단됩니다.
+        IP 차단 우회를 위해 `PROXY_URL`에 residential 프록시 설정:
+        ```
+        PROXY_URL=http://user:pass@proxy.webshare.io:port
+        ```
+
+        **noVNC 뷰어**
+
+        디버깅용 브라우저 화면을 포트 5900에서 확인 가능.
       fr_fr: |
         **Connexion MCP**
 
         Connectez depuis Claude Code sur le meme PCS :
         ```
-        claude mcp add browsermcp --transport sse http://browsermcp:8931/sse
+        claude mcp add browsermcp --transport http http://browsermcp:8080/mcp/?auth_token=$AUTH_HASH
         ```
+
+        **Proxy (Optionnel)**
+
+        Configurez `PROXY_URL` pour un proxy residentiel.
       zh_cn: |
         **MCP连接**
 
         从同一PCS上的Claude Code连接:
         ```
-        claude mcp add browsermcp --transport sse http://browsermcp:8931/sse
+        claude mcp add browsermcp --transport http http://browsermcp:8080/mcp/?auth_token=$AUTH_HASH
         ```
+
+        **代理（可选）**
+
+        设置 `PROXY_URL` 用于住宅代理。
       es_es: |
         **Conexion MCP**
 
         Conectar desde Claude Code en el mismo PCS:
         ```
-        claude mcp add browsermcp --transport sse http://browsermcp:8931/sse
+        claude mcp add browsermcp --transport http http://browsermcp:8080/mcp/?auth_token=$AUTH_HASH
         ```
+
+        **Proxy (Opcional)**
+
+        Configure `PROXY_URL` con su proxy residencial.
   pre-install-cmd: |
     mkdir -p /DATA/AppData/browsermcp/data 2>/dev/null || true
