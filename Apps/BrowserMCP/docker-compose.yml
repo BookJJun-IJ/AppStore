@@ -17,6 +17,7 @@ services:
       - /DATA/AppData/$AppID/data:/data
     expose:
       - 8080
+      - 5900
     labels:
       caddy_0: browsermcp-${APP_DOMAIN}
       caddy_0.import: gateway_tls
@@ -26,6 +27,9 @@ services:
       caddy_1.reverse_proxy: "{{upstreams 8080}}"
       caddy_2: browsermcp-${APP_PUBLIC_IP_DASH}.sslip.io
       caddy_2.reverse_proxy: "{{upstreams 8080}}"
+      caddy_3: browservnc-${APP_DOMAIN}
+      caddy_3.import: gateway_tls
+      caddy_3.reverse_proxy: "{{upstreams 5900}}"
     networks:
       - pcs
     deploy:
