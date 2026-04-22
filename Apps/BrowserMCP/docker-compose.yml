@@ -1,41 +1,34 @@
 name: browsermcp
-
 services:
+  # Single container — Chromium + MCP server (hash-lock) + noVNC (VNC password)
   browsermcp:
-    image: psyb0t/stealthy-auto-browse:v0.22.4
+    image: ghcr.io/worph/browser-mcp:1.1.2
     container_name: browsermcp
+    hostname: browsermcp
     restart: unless-stopped
-    user: "0:0"
-    cpu_shares: 30
-    environment:
-      TZ: $TZ
-      AUTH_TOKEN: $AUTH_HASH
-      PROXY_URL:
-      XVFB_RESOLUTION: "1280x720"
-      LANG: "en_US.UTF-8"
-    volumes:
-      - /DATA/AppData/$AppID/data:/data
+    shm_size: "2gb"
+    user: 0:0
     expose:
-      - 8080
-      - 5900
+      - 9746
+    environment:
+      - AUTH_HASH=$AUTH_HASH
+      - TZ=$TZ
+      - PROXY_URL=$PROXY_URL
+    volumes:
+      - type: bind
+        source: /DATA/AppData/browser-mcp/
+        target: /app/data
+    networks:
+      - pcs
     labels:
       caddy_0: browsermcp-${APP_DOMAIN}
       caddy_0.import: gateway_tls
-      caddy_0.reverse_proxy: "{{upstreams 8080}}"
+      caddy_0.reverse_proxy: "{{upstreams 9746}}"
       caddy_1: browsermcp-${APP_PUBLIC_IP_DASH}.nip.io
       caddy_1.import: gateway_tls
-      caddy_1.reverse_proxy: "{{upstreams 8080}}"
+      caddy_1.reverse_proxy: "{{upstreams 9746}}"
       caddy_2: browsermcp-${APP_PUBLIC_IP_DASH}.sslip.io
-      caddy_2.reverse_proxy: "{{upstreams 8080}}"
-      caddy_3: browservnc-${APP_DOMAIN}
-      caddy_3.import: gateway_tls
-      caddy_3.reverse_proxy: "{{upstreams 5900}}"
-    networks:
-      - pcs
-    deploy:
-      resources:
-        limits:
-          memory: 2048M
+      caddy_2.reverse_proxy: "{{upstreams 9746}}"
 
 networks:
   pcs:
@@ -46,148 +39,165 @@ x-casaos:
   architectures:
     - amd64
   main: browsermcp
-  store_app_id: browsermcp
-  webui_port: 8080
-  index: /
-  author: Yundera Team
-  category: Utilities
-  developer: psyb0t
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/BrowserMCP/icon.png
-  thumbnail: ""
-  screenshot_link: []
-  title:
-    en_us: Browser MCP
-  tagline:
-    en_us: Stealth browser automation for AI agents via MCP
-    zh_cn: 通过MCP为AI代理提供隐身浏览器自动化
-    fr_fr: Automatisation de navigateur furtif pour agents IA via MCP
-    ko_kr: AI 에이전트를 위한 스텔스 브라우저 자동화 MCP
-    es_es: Automatizacion de navegador sigiloso para agentes IA via MCP
+  author: Worph
+  category: Developer
   description:
     en_us: |
-      **Browser MCP** is a stealth browser automation server powered by Camoufox (Firefox fork) with built-in MCP support.
+      **A headless Chromium browser in the cloud, controlled by AI via MCP**
 
-      **Stealth Features:**
+      Browser MCP bundles a full Chromium browser, Playwright automation, and an MCP (Model Context Protocol) server in a single container. It lets LLMs and AI assistants navigate websites, click elements, fill forms, take screenshots, and extract content programmatically.
 
-      - Camoufox engine: C++ level fingerprint spoofing
-      - Xvfb virtual display: avoids headless detection entirely
-      - OS-level input via PyAutoGUI: `event.isTrusted` is genuinely true
-      - Pre-installed extensions: uBlock Origin, LocalCDN, ClearURLs
-      - No CDP protocol: nothing to detect
+      **What you can do:**
+      - Control a real Chromium browser from any MCP-compatible AI assistant
+      - Navigate websites, click elements, fill forms, and interact with web pages
+      - Take screenshots for visual feedback loops (screenshot → decide → act)
+      - Execute JavaScript in the browser context for advanced automation
+      - View the browser live via the built-in noVNC web viewer
+      - Access the Web UI dashboard for status monitoring
 
-      **Capabilities:**
+      **Think of it like:** A web browser in the cloud that AI can see and control.
 
-      - Navigate web pages, click, type, and interact
-      - Take screenshots
-      - Execute JavaScript
-      - Cookie management
-      - Residential proxy support
-      - noVNC viewer for debugging
-
-      **MCP Endpoint:** `http://browsermcp:8080/mcp/`
+      **Perfect if you:** Want to automate web browsing, scrape websites, test web apps, or give your AI assistant the ability to interact with any website.
     zh_cn: |
-      **Browser MCP** 是基于Camoufox的隐身浏览器自动化服务器，内置MCP支持。
+      **云端无头 Chromium 浏览器，通过 MCP 由 AI 控制**
 
-      **MCP端点：** `http://browsermcp:8080/mcp/`
-    fr_fr: |
-      **Browser MCP** est un serveur d'automatisation de navigateur furtif base sur Camoufox avec support MCP integre.
+      Browser MCP 将完整的 Chromium 浏览器、Playwright 自动化和 MCP（模型上下文协议）服务器整合在一个容器中。它允许 LLM 和 AI 助手浏览网站、点击元素、填写表单、截屏并以编程方式提取内容。
 
-      **Point de terminaison MCP :** `http://browsermcp:8080/mcp/`
-    ko_kr: |
-      **Browser MCP**는 Camoufox(Firefox 포크) 기반 스텔스 브라우저 자동화 서버로, MCP가 내장되어 있습니다.
-
-      **스텔스 기능:**
-
-      - Camoufox 엔진: C++ 레벨 핑거프린트 스푸핑
-      - Xvfb 가상 디스플레이: 헤드리스 감지 완전 회피
-      - OS 레벨 입력 (PyAutoGUI): `event.isTrusted`가 진짜 true
-      - 사전 설치 확장: uBlock Origin, LocalCDN, ClearURLs
-      - CDP 프로토콜 없음: 감지할 것이 없음
-
-      **기능:**
-
-      - 웹 페이지 탐색, 클릭, 입력, 상호작용
-      - 스크린샷
-      - JavaScript 실행
-      - 쿠키 관리
-      - Residential 프록시 지원
-      - noVNC 뷰어 (디버깅용)
-
-      **MCP 엔드포인트:** `http://browsermcp:8080/mcp/`
-    es_es: |
-      **Browser MCP** es un servidor de automatizacion de navegador sigiloso basado en Camoufox con soporte MCP integrado.
-
-      **Endpoint MCP:** `http://browsermcp:8080/mcp/`
+      **功能：**
+      - 从任何兼容 MCP 的 AI 助手控制真实的 Chromium 浏览器
+      - 浏览网站、点击元素、填写表单、与网页交互
+      - 截取屏幕截图用于视觉反馈循环（截图 → 决策 → 操作）
+      - 在浏览器上下文中执行 JavaScript 进行高级自动化
+      - 通过内置 noVNC 网页查看器实时查看浏览器
+      - 访问 Web UI 仪表板进行状态监控
+  developer: Worph
+  icon: https://cdn.jsdelivr.net/gh/Worph/AppStore@main/Apps/BrowserMCP/icon.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/Worph/AppStore@main/Apps/BrowserMCP/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Worph/AppStore@main/Apps/BrowserMCP/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Worph/AppStore@main/Apps/BrowserMCP/screenshot-3.png
+  tagline:
+    en_us: AI-controlled web browser via MCP
+    zh_cn: 通过 MCP 由 AI 控制的网页浏览器
+  thumbnail: https://cdn.jsdelivr.net/gh/Worph/AppStore@main/Apps/BrowserMCP/thumbnail.png
+  title:
+    en_us: Browser MCP
+  index: /?hash=$AUTH_HASH
+  chips:
+    - key: mcp
+      name:
+        en_us: MCP
   tips:
     before_install:
       en_us: |
-        **MCP Connection**
+        **Getting Started**
 
-        Connect from Claude Code on the same PCS:
-        ```
-        claude mcp add browsermcp --transport http http://browsermcp:8080/mcp/?auth_token=$AUTH_HASH
-        ```
+        After installation, Chromium will launch automatically inside a virtual display.
 
-        **Proxy (Optional)**
+        **Web Interface:**
+        - **Main UI** — Dashboard with live noVNC browser view, status, and tool information
 
-        Set `PROXY_URL` for residential proxy to bypass IP restrictions:
-        ```
-        PROXY_URL=http://user:pass@proxy.webshare.io:port
-        ```
+        **MCP Integration (for AI/LLMs):**
 
-        **noVNC Viewer**
+        Connect your AI assistant to control the browser.
 
-        Access the browser view for debugging at port 5900.
-      ko_kr: |
-        **MCP 연결**
-
-        같은 PCS의 Claude Code에서 연결:
-        ```
-        claude mcp add browsermcp --transport http http://browsermcp:8080/mcp/?auth_token=$AUTH_HASH
+        **Option 1: Public URL (with hash auth)**
+        ```json
+        {
+          "mcpServers": {
+            "browser-mcp": {
+              "type": "http",
+              "url": "https://browser-mcp-${APP_DOMAIN}/mcp?hash=${AUTH_HASH}"
+            }
+          }
+        }
         ```
 
-        **프록시 (선택사항)**
-
-        IP 차단 우회를 위해 `PROXY_URL`에 residential 프록시 설정:
+        **Option 2: Local Docker connection (no auth required)**
+        ```json
+        {
+          "mcpServers": {
+            "browser-mcp": {
+              "type": "http",
+              "url": "http://browser-mcp:9746/mcp"
+            }
+          }
+        }
         ```
-        PROXY_URL=http://user:pass@proxy.webshare.io:port
-        ```
+        *Note: Requires the AI assistant to be on the `pcs` Docker network.*
 
-        **noVNC 뷰어**
-
-        디버깅용 브라우저 화면을 포트 5900에서 확인 가능.
-      fr_fr: |
-        **Connexion MCP**
-
-        Connectez depuis Claude Code sur le meme PCS :
-        ```
-        claude mcp add browsermcp --transport http http://browsermcp:8080/mcp/?auth_token=$AUTH_HASH
-        ```
-
-        **Proxy (Optionnel)**
-
-        Configurez `PROXY_URL` pour un proxy residentiel.
+        **Available MCP Tools:**
+        | Tool | Description |
+        |------|-------------|
+        | `navigate` | Navigate the browser to a URL |
+        | `click` | Click on an element by CSS/text selector |
+        | `type` | Type text into an input element |
+        | `screenshot` | Take a screenshot of the current page |
+        | `evaluate` | Execute JavaScript in the browser context |
+        | `get_text` | Get the text content of an element |
+        | `get_page_content` | Get the full HTML of the current page |
+        | `wait_for` | Wait for an element to reach a specific state |
+        | `go_back` | Navigate back in browser history |
+        | `go_forward` | Navigate forward in browser history |
+        | `set_viewport` | Set the browser viewport size |
+        | `get_console_logs` | Get browser console log entries |
+        | `pdf` | Generate a PDF of the current page |
+        | `get_cookies` | Get browser cookies |
+        | `set_cookies` | Set browser cookies |
+        | `clear_cookies` | Clear all browser cookies |
       zh_cn: |
-        **MCP连接**
+        **快速开始**
 
-        从同一PCS上的Claude Code连接:
+        安装后，Chromium 将在虚拟显示中自动启动。
+
+        **Web 界面：**
+        - **主 UI** — 带有实时 noVNC 浏览器视图、状态和工具信息的仪表板
+
+        **MCP 集成（用于 AI/LLM）：**
+
+        连接您的 AI 助手来控制浏览器。
+
+        **选项 1：公共 URL（使用 hash 认证）**
+        ```json
+        {
+          "mcpServers": {
+            "browser-mcp": {
+              "type": "http",
+              "url": "https://browser-mcp-${APP_DOMAIN}/mcp?hash=${AUTH_HASH}"
+            }
+          }
+        }
         ```
-        claude mcp add browsermcp --transport http http://browsermcp:8080/mcp/?auth_token=$AUTH_HASH
+
+        **选项 2：本地 Docker 连接（无需认证）**
+        ```json
+        {
+          "mcpServers": {
+            "browser-mcp": {
+              "type": "http",
+              "url": "http://browser-mcp:9746/mcp"
+            }
+          }
+        }
         ```
+        *注意：需要 AI 助手在 `pcs` Docker 网络上。*
 
-        **代理（可选）**
-
-        设置 `PROXY_URL` 用于住宅代理。
-      es_es: |
-        **Conexion MCP**
-
-        Conectar desde Claude Code en el mismo PCS:
-        ```
-        claude mcp add browsermcp --transport http http://browsermcp:8080/mcp/?auth_token=$AUTH_HASH
-        ```
-
-        **Proxy (Opcional)**
-
-        Configure `PROXY_URL` con su proxy residencial.
-  pre-install-cmd: |
-    mkdir -p /DATA/AppData/browsermcp/data 2>/dev/null || true
+        **可用 MCP 工具：**
+        | 工具 | 描述 |
+        |------|------|
+        | `navigate` | 将浏览器导航到 URL |
+        | `click` | 通过 CSS/文本选择器点击元素 |
+        | `type` | 在输入元素中输入文本 |
+        | `screenshot` | 截取当前页面截图 |
+        | `evaluate` | 在浏览器上下文中执行 JavaScript |
+        | `get_text` | 获取元素的文本内容 |
+        | `get_page_content` | 获取当前页面的完整 HTML |
+        | `wait_for` | 等待元素达到特定状态 |
+        | `go_back` | 在浏览器历史中后退 |
+        | `go_forward` | 在浏览器历史中前进 |
+        | `set_viewport` | 设置浏览器视口大小 |
+        | `get_console_logs` | 获取浏览器控制台日志 |
+        | `pdf` | 生成当前页面的 PDF |
+        | `get_cookies` | 获取浏览器 cookies |
+        | `set_cookies` | 设置浏览器 cookies |
+        | `clear_cookies` | 清除所有浏览器 cookies |
