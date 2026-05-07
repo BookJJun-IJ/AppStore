@@ -1,9 +1,9 @@
 name: browsermcp4
 services:
-  browsermcp-4:
+  browsermcp4:
     image: ghcr.io/worph/browser-mcp:1.1.2
-    container_name: browsermcp-4
-    hostname: browsermcp-4
+    container_name: browsermcp4
+    hostname: browsermcp4
     restart: unless-stopped
     shm_size: "2gb"
     user: 0:0
@@ -16,18 +16,18 @@ services:
       - VNC_RESOLUTION=1920x1080x24
     volumes:
       - type: bind
-        source: /DATA/AppData/browser-mcp-4/
+        source: /DATA/AppData/browsermcp4/
         target: /app/data
     networks:
       - pcs
     labels:
-      caddy_0: browsermcp-4-${APP_DOMAIN}
+      caddy_0: browsermcp4-${APP_DOMAIN}
       caddy_0.import: gateway_tls
       caddy_0.reverse_proxy: "{{upstreams 9746}}"
-      caddy_1: browsermcp-4-${APP_PUBLIC_IP_DASH}.nip.io
+      caddy_1: browsermcp4-${APP_PUBLIC_IP_DASH}.nip.io
       caddy_1.import: gateway_tls
       caddy_1.reverse_proxy: "{{upstreams 9746}}"
-      caddy_2: browsermcp-4-${APP_PUBLIC_IP_DASH}.sslip.io
+      caddy_2: browsermcp4-${APP_PUBLIC_IP_DASH}.sslip.io
       caddy_2.reverse_proxy: "{{upstreams 9746}}"
 
 networks:
@@ -38,7 +38,7 @@ networks:
 x-casaos:
   architectures:
     - amd64
-  main: browsermcp-4
+  main: browsermcp4
   author: Worph
   category: Developer
   description:
@@ -105,9 +105,9 @@ x-casaos:
         ```json
         {
           "mcpServers": {
-            "browser-mcp-4": {
+            "browsermcp4": {
               "type": "http",
-              "url": "https://browsermcp-4-${APP_DOMAIN}/mcp?hash=${AUTH_HASH}"
+              "url": "https://browsermcp4-${APP_DOMAIN}/mcp?hash=${AUTH_HASH}"
             }
           }
         }
@@ -117,9 +117,9 @@ x-casaos:
         ```json
         {
           "mcpServers": {
-            "browser-mcp-4": {
+            "browsermcp4": {
               "type": "http",
-              "url": "http://browsermcp-4:9746/mcp"
+              "url": "http://browsermcp4:9746/mcp"
             }
           }
         }
@@ -141,9 +141,9 @@ x-casaos:
         ```json
         {
           "mcpServers": {
-            "browser-mcp-4": {
+            "browsermcp4": {
               "type": "http",
-              "url": "https://browsermcp-4-${APP_DOMAIN}/mcp?hash=${AUTH_HASH}"
+              "url": "https://browsermcp4-${APP_DOMAIN}/mcp?hash=${AUTH_HASH}"
             }
           }
         }
@@ -153,9 +153,9 @@ x-casaos:
         ```json
         {
           "mcpServers": {
-            "browser-mcp-4": {
+            "browsermcp4": {
               "type": "http",
-              "url": "http://browsermcp-4:9746/mcp"
+              "url": "http://browsermcp4:9746/mcp"
             }
           }
         }
