@@ -1,0 +1,44 @@
+name: browsermcp2
+services:
+  browsermcp-2:
+    image: ghcr.io/worph/browser-mcp:1.1.2
+    container_name: browsermcp-2
+    hostname: browsermcp-2
+    restart: unless-stopped
+    shm_size: "1gb"
+    user: 0:0
+    expose:
+      - 9746
+    environment:
+      - AUTH_HASH=$AUTH_HASH
+      - TZ=Asia/Seoul
+      - PROXY_URL=$PROXY_URL
+      - VNC_RESOLUTION=1920x1080x24
+    volumes:
+      - type: bind
+        source: /DATA/AppData/browser-mcp-2/
+        target: /app/data
+    networks:
+      - pcs
+
+networks:
+  pcs:
+    name: pcs
+    external: true
+
+x-casaos:
+  architectures:
+    - amd64
+  main: browsermcp-2
+  author: Worph
+  category: Developer
+  description:
+    en_us: "Browser MCP instance 2"
+  developer: Worph
+  icon: https://cdn.jsdelivr.net/gh/Worph/AppStore@main/Apps/BrowserMCP/icon.png
+  tagline:
+    en_us: Browser MCP #2
+  thumbnail: https://cdn.jsdelivr.net/gh/Worph/AppStore@main/Apps/BrowserMCP/thumbnail.png
+  title:
+    en_us: Browser MCP 2
+  index: /?hash=$AUTH_HASH

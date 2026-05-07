@@ -1,0 +1,44 @@
+name: browsermcp3
+services:
+  browsermcp-3:
+    image: ghcr.io/worph/browser-mcp:1.1.2
+    container_name: browsermcp-3
+    hostname: browsermcp-3
+    restart: unless-stopped
+    shm_size: "1gb"
+    user: 0:0
+    expose:
+      - 9746
+    environment:
+      - AUTH_HASH=$AUTH_HASH
+      - TZ=Asia/Seoul
+      - PROXY_URL=$PROXY_URL
+      - VNC_RESOLUTION=1920x1080x24
+    volumes:
+      - type: bind
+        source: /DATA/AppData/browser-mcp-3/
+        target: /app/data
+    networks:
+      - pcs
+
+networks:
+  pcs:
+    name: pcs
+    external: true
+
+x-casaos:
+  architectures:
+    - amd64
+  main: browsermcp-3
+  author: Worph
+  category: Developer
+  description:
+    en_us: "Browser MCP instance 3"
+  developer: Worph
+  icon: https://cdn.jsdelivr.net/gh/Worph/AppStore@main/Apps/BrowserMCP/icon.png
+  tagline:
+    en_us: Browser MCP #3
+  thumbnail: https://cdn.jsdelivr.net/gh/Worph/AppStore@main/Apps/BrowserMCP/thumbnail.png
+  title:
+    en_us: Browser MCP 3
+  index: /?hash=$AUTH_HASH

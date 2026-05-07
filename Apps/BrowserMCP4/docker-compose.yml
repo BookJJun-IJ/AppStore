@@ -1,0 +1,44 @@
+name: browsermcp4
+services:
+  browsermcp-4:
+    image: ghcr.io/worph/browser-mcp:1.1.2
+    container_name: browsermcp-4
+    hostname: browsermcp-4
+    restart: unless-stopped
+    shm_size: "1gb"
+    user: 0:0
+    expose:
+      - 9746
+    environment:
+      - AUTH_HASH=$AUTH_HASH
+      - TZ=Asia/Seoul
+      - PROXY_URL=$PROXY_URL
+      - VNC_RESOLUTION=1920x1080x24
+    volumes:
+      - type: bind
+        source: /DATA/AppData/browser-mcp-4/
+        target: /app/data
+    networks:
+      - pcs
+
+networks:
+  pcs:
+    name: pcs
+    external: true
+
+x-casaos:
+  architectures:
+    - amd64
+  main: browsermcp-4
+  author: Worph
+  category: Developer
+  description:
+    en_us: "Browser MCP instance 4"
+  developer: Worph
+  icon: https://cdn.jsdelivr.net/gh/Worph/AppStore@main/Apps/BrowserMCP/icon.png
+  tagline:
+    en_us: Browser MCP #4
+  thumbnail: https://cdn.jsdelivr.net/gh/Worph/AppStore@main/Apps/BrowserMCP/thumbnail.png
+  title:
+    en_us: Browser MCP 4
+  index: /?hash=$AUTH_HASH
