@@ -56,7 +56,6 @@ services:
     image: postgres:16.13-alpine
     container_name: n8n-postgres
     restart: unless-stopped
-    user: "0:0"
     networks:
       - pcs
     volumes:
