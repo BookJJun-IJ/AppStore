@@ -1,42 +1,63 @@
 name: dokuwiki
 
 services:
+  nginxhashlock:
+    image: ghcr.io/yundera/nginx-hash-lock:latest
+    container_name: dokuwiki-nginxhashlock
+    restart: unless-stopped
+    user: "root"
+    environment:
+      AUTH_HASH: $AUTH_HASH
+      BACKEND_HOST: "dokuwiki"
+      BACKEND_PORT: "8080"
+      LISTEN_PORT: "80"
+    expose:
+      - 80
+    labels:
+      caddy_0: spliit-${APP_DOMAIN}
+      caddy_0.import: gateway_tls
+      caddy_0.reverse_proxy: "{{upstreams 80}}"
+      caddy_1: spliit-${APP_PUBLIC_IP_DASH}.nip.io
+      caddy_1.import: gateway_tls
+      caddy_1.reverse_proxy: "{{upstreams 80}}"
+      caddy_2: spliit-${APP_PUBLIC_IP_DASH}.sslip.io
+      caddy_2.reverse_proxy: "{{upstreams 80}}"
+    depends_on:
+      - dokuwiki
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    cpu_shares: 80
+    networks:
+      - pcs
+    privileged: true
+    cap_add:
+      - SYS_ADMIN
+      - NET_ADMIN
   dokuwiki:
     image: dokuwiki/dokuwiki:2025-05-14b
     container_name: dokuwiki
     restart: unless-stopped
     user: "0:0"
-    networks:
-      - pcs
-    expose:
-      - "8080"
-    labels:
-      caddy_0: dokuwiki-${APP_DOMAIN}
-      caddy_0.import: gateway_tls
-      caddy_0.reverse_proxy: "{{upstreams 8080}}"
-      caddy_1: dokuwiki-${APP_PUBLIC_IP_DASH}.nip.io
-      caddy_1.import: gateway_tls
-      caddy_1.reverse_proxy: "{{upstreams 8080}}"
-      caddy_2: dokuwiki-${APP_PUBLIC_IP_DASH}.sslip.io
-      caddy_2.reverse_proxy: "{{upstreams 8080}}"
     volumes:
       - /DATA/AppData/$AppID/storage:/storage
     environment:
       PHP_TIMEZONE: ${TZ:-UTC}
       PHP_MEMORYLIMIT: 256M
       PHP_UPLOADLIMIT: 128M
-    healthcheck:
-      test: ["CMD-SHELL", "curl --silent --fail-with-body http://localhost:8080/health.php || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 30s
     deploy:
       resources:
         limits:
           memory: 512M
           cpus: '0.5'
     cpu_shares: 50
+    networks:
+      - pcs
+    privileged: true
+    cap_add:
+      - SYS_ADMIN
+      - NET_ADMIN
 
 networks:
   pcs:
@@ -66,8 +87,8 @@ x-casaos:
   title:
     en_us: DokuWiki
   store_app_id: dokuwiki
-  main: dokuwiki
-  webui_port: 8080
+  main: nginxhashlock
+  webui_port: 80
   description:
     en_us: |
       **A simple, versatile wiki that needs no database**
