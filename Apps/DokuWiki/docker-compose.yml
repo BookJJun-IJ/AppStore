@@ -77,7 +77,7 @@ x-casaos:
     - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/DokuWiki/screenshot-2.png
     - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/DokuWiki/screenshot-3.png
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/DokuWiki/thumbnail.png
-  index: /
+  index: /?hash=$AUTH_HASH  
   tagline:
     en_us: Simple wiki that doesn't require a database
     ko_kr: 데이터베이스가 필요 없는 간단한 위키
