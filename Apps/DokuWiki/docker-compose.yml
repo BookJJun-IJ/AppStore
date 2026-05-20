@@ -7,7 +7,6 @@ services:
     restart: unless-stopped
     user: "root"
     environment:
-      AUTH_HASH: $AUTH_HASH
       BACKEND_HOST: "dokuwiki"
       BACKEND_PORT: "8080"
       LISTEN_PORT: "80"
@@ -41,7 +40,7 @@ services:
     restart: unless-stopped
     user: "0:0"
     volumes:
-      - /DATA/AppData/$AppID/storage:/storage
+      - /DATA/AppData/$AppID/storage/:/storage
     environment:
       PHP_TIMEZONE: ${TZ:-UTC}
       PHP_MEMORYLIMIT: 256M
@@ -77,7 +76,7 @@ x-casaos:
     - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/DokuWiki/screenshot-2.png
     - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/DokuWiki/screenshot-3.png
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/DokuWiki/thumbnail.png
-  index: /?hash=$AUTH_HASH  
+  index: /
   tagline:
     en_us: Simple wiki that doesn't require a database
     ko_kr: 데이터베이스가 필요 없는 간단한 위키
