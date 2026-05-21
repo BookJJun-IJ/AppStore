@@ -18,10 +18,13 @@ services:
     networks:
       - pcs
     environment:
-      PASSWORD: $PCS_DEFAULT_PASSWORD
-      WG_HOST: $PCS_PUBLIC_IP
-      WG_PORT: '51820'
-      WG_DEFAULT_DNS: '9.9.9.9'
+      INSECURE: 'true'
+      INIT_ENABLED: 'true'
+      INIT_USERNAME: admin
+      INIT_PASSWORD: $PCS_DEFAULT_PASSWORD
+      INIT_HOST: $PCS_PUBLIC_IP
+      INIT_PORT: '51820'
+      INIT_DNS: '9.9.9.9'
     expose:
       - 51821
     ports:
@@ -64,11 +67,11 @@ x-casaos:
   title:
     en_us: WireGuard Easy
   tagline:
-    en_us: Simple web UI to manage WireGuard VPN
-    ko_kr: WireGuard VPN을 관리하는 간단한 웹 UI
-    zh_cn: 管理 WireGuard VPN 的简单 Web UI
-    fr_fr: Interface web simple pour gerer WireGuard VPN
-    es_es: Interfaz web simple para gestionar WireGuard VPN
+    en_us: Simple web UI to manage WireGuard VPN (v15)
+    ko_kr: WireGuard VPN을 관리하는 간단한 웹 UI (v15)
+    zh_cn: 管理 WireGuard VPN 的简单 Web UI (v15)
+    fr_fr: Interface web simple pour gerer WireGuard VPN (v15)
+    es_es: Interfaz web simple para gestionar WireGuard VPN (v15)
   description:
     en_us: |
       **The easiest way to install and manage WireGuard on any Linux host**
@@ -135,40 +138,50 @@ x-casaos:
       en_us: |
         # Default Account
 
-        | Password                |
-        | ----------------------- |
-        | `$PCS_DEFAULT_PASSWORD` |
+        | Username | Password                |
+        | -------- | ----------------------- |
+        | `admin`  | `$PCS_DEFAULT_PASSWORD` |
+
+        This is **WireGuard Easy v15**. The admin account is auto-configured. VPN settings can be changed from the web UI after login.
 
         The VPN listens on UDP port 51820. Make sure this port is open on your firewall/router.
       ko_kr: |
         # 기본 계정
 
-        | 비밀번호                |
-        | ----------------------- |
-        | `$PCS_DEFAULT_PASSWORD` |
+        | 사용자명 | 비밀번호                |
+        | -------- | ----------------------- |
+        | `admin`  | `$PCS_DEFAULT_PASSWORD` |
+
+        **WireGuard Easy v15** 버전입니다. 관리자 계정이 자동 설정됩니다. VPN 설정은 로그인 후 웹 UI에서 변경할 수 있습니다.
 
         VPN은 UDP 포트 51820에서 수신합니다. 방화벽/라우터에서 이 포트가 열려있는지 확인하세요.
       zh_cn: |
         # 默认账户
 
-        | 密码                    |
-        | ----------------------- |
-        | `$PCS_DEFAULT_PASSWORD` |
+        | 用户名   | 密码                    |
+        | -------- | ----------------------- |
+        | `admin`  | `$PCS_DEFAULT_PASSWORD` |
+
+        这是 **WireGuard Easy v15** 版本。管理员账户已自动配置。登录后可在 Web UI 中更改 VPN 设置。
 
         VPN 监听 UDP 端口 51820。请确保防火墙/路由器上此端口已开放。
       fr_fr: |
         # Compte par defaut
 
-        | Mot de passe            |
-        | ----------------------- |
-        | `$PCS_DEFAULT_PASSWORD` |
+        | Nom d'utilisateur | Mot de passe            |
+        | ----------------- | ----------------------- |
+        | `admin`           | `$PCS_DEFAULT_PASSWORD` |
+
+        Ceci est **WireGuard Easy v15**. Le compte administrateur est configure automatiquement. Les parametres VPN peuvent etre modifies depuis l'interface web apres connexion.
 
         Le VPN ecoute sur le port UDP 51820. Assurez-vous que ce port est ouvert sur votre pare-feu/routeur.
       es_es: |
         # Cuenta predeterminada
 
-        | Contrasena              |
-        | ----------------------- |
-        | `$PCS_DEFAULT_PASSWORD` |
+        | Usuario  | Contrasena              |
+        | -------- | ----------------------- |
+        | `admin`  | `$PCS_DEFAULT_PASSWORD` |
+
+        Esta es la version **WireGuard Easy v15**. La cuenta de administrador se configura automaticamente. La configuracion VPN se puede cambiar desde la interfaz web despues de iniciar sesion.
 
         La VPN escucha en el puerto UDP 51820. Asegurese de que este puerto este abierto en su firewall/router.
