@@ -19,6 +19,7 @@ services:
       - pcs
     environment:
       INSECURE: 'true'
+      DISABLE_IPV6: 'true'
       INIT_ENABLED: 'true'
       INIT_USERNAME: admin
       INIT_PASSWORD: $PCS_DEFAULT_PASSWORD
