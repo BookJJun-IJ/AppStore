@@ -18,6 +18,7 @@ services:
     networks:
       - pcs
     environment:
+      PORT: '80'
       INSECURE: 'true'
       DISABLE_IPV6: 'true'
       INIT_ENABLED: 'true'
@@ -29,7 +30,7 @@ services:
     expose:
       - 80
     ports:
-      - target: 80
+      - target: 51820
         published: 51820
         protocol: udp
     volumes:
