@@ -220,7 +220,7 @@ x-casaos:
   store_app_id: mailu
   main: front
   webui_port: 80
-  index: /
+  index: /admin
   description:
     en_us: |
       **Full-featured self-hosted email server**
