@@ -27,9 +27,9 @@ services:
       DOLI_DB_HOST: dolibarr-db
       DOLI_DB_NAME: dolibarr
       DOLI_DB_USER: dolibarr
-      DOLI_DB_PASSWORD: $PCS_DEFAULT_PASSWORD
+      DOLI_DB_PASSWORD: $APP_DEFAULT_PASSWORD
       DOLI_ADMIN_LOGIN: admin
-      DOLI_ADMIN_PASSWORD: $PCS_DEFAULT_PASSWORD
+      DOLI_ADMIN_PASSWORD: $APP_DEFAULT_PASSWORD
       DOLI_URL_ROOT: https://dolibarr-${APP_DOMAIN}
       DOLI_INSTALL_AUTO: 1
       DOLI_PROD: 1
@@ -61,10 +61,10 @@ services:
     volumes:
       - /DATA/AppData/$AppID/db:/var/lib/mysql
     environment:
-      MYSQL_ROOT_PASSWORD: $PCS_DEFAULT_PASSWORD
+      MYSQL_ROOT_PASSWORD: $APP_DEFAULT_PASSWORD
       MYSQL_DATABASE: dolibarr
       MYSQL_USER: dolibarr
-      MYSQL_PASSWORD: $PCS_DEFAULT_PASSWORD
+      MYSQL_PASSWORD: $APP_DEFAULT_PASSWORD
       MARIADB_AUTO_UPGRADE: 1
       MARIADB_DISABLE_UPGRADE_BACKUP: 1
     healthcheck:
@@ -189,7 +189,7 @@ x-casaos:
 
         | Username | Password                |
         | -------- | ----------------------- |
-        | `admin`  | `$PCS_DEFAULT_PASSWORD` |
+        | `admin`  | `$APP_DEFAULT_PASSWORD` |
 
         The database and admin account are configured automatically. Just open the app and log in.
       ko_kr: |
@@ -197,7 +197,7 @@ x-casaos:
 
         | 사용자명 | 비밀번호                |
         | -------- | ----------------------- |
-        | `admin`  | `$PCS_DEFAULT_PASSWORD` |
+        | `admin`  | `$APP_DEFAULT_PASSWORD` |
 
         데이터베이스와 관리자 계정은 자동으로 설정됩니다. 앱을 열고 로그인하세요.
       zh_cn: |
@@ -205,7 +205,7 @@ x-casaos:
 
         | 用户名   | 密码                    |
         | -------- | ----------------------- |
-        | `admin`  | `$PCS_DEFAULT_PASSWORD` |
+        | `admin`  | `$APP_DEFAULT_PASSWORD` |
 
         数据库和管理员账户已自动配置。打开应用并登录即可。
       fr_fr: |
@@ -213,7 +213,7 @@ x-casaos:
 
         | Nom d'utilisateur | Mot de passe            |
         | ----------------- | ----------------------- |
-        | `admin`           | `$PCS_DEFAULT_PASSWORD` |
+        | `admin`           | `$APP_DEFAULT_PASSWORD` |
 
         La base de donnees et le compte administrateur sont configures automatiquement. Ouvrez l'application et connectez-vous.
       es_es: |
@@ -221,6 +221,6 @@ x-casaos:
 
         | Usuario  | Contrasena              |
         | -------- | ----------------------- |
-        | `admin`  | `$PCS_DEFAULT_PASSWORD` |
+        | `admin`  | `$APP_DEFAULT_PASSWORD` |
 
         La base de datos y la cuenta de administrador se configuran automaticamente. Abra la aplicacion e inicie sesion.

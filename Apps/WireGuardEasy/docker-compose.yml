@@ -23,7 +23,7 @@ services:
       DISABLE_IPV6: 'true'
       INIT_ENABLED: 'true'
       INIT_USERNAME: admin
-      INIT_PASSWORD: $PCS_DEFAULT_PASSWORD
+      INIT_PASSWORD: $APP_DEFAULT_PASSWORD
       INIT_HOST: $PCS_PUBLIC_IP
       INIT_PORT: '51820'
       INIT_DNS: '9.9.9.9'
@@ -142,7 +142,7 @@ x-casaos:
 
         | Username | Password                |
         | -------- | ----------------------- |
-        | `admin`  | `$PCS_DEFAULT_PASSWORD` |
+        | `admin`  | `$APP_DEFAULT_PASSWORD` |
 
         This is **WireGuard Easy v15**. The admin account is auto-configured. VPN settings can be changed from the web UI after login.
 
@@ -152,7 +152,7 @@ x-casaos:
 
         | 사용자명 | 비밀번호                |
         | -------- | ----------------------- |
-        | `admin`  | `$PCS_DEFAULT_PASSWORD` |
+        | `admin`  | `$APP_DEFAULT_PASSWORD` |
 
         **WireGuard Easy v15** 버전입니다. 관리자 계정이 자동 설정됩니다. VPN 설정은 로그인 후 웹 UI에서 변경할 수 있습니다.
 
@@ -162,7 +162,7 @@ x-casaos:
 
         | 用户名   | 密码                    |
         | -------- | ----------------------- |
-        | `admin`  | `$PCS_DEFAULT_PASSWORD` |
+        | `admin`  | `$APP_DEFAULT_PASSWORD` |
 
         这是 **WireGuard Easy v15** 版本。管理员账户已自动配置。登录后可在 Web UI 中更改 VPN 设置。
 
@@ -172,7 +172,7 @@ x-casaos:
 
         | Nom d'utilisateur | Mot de passe            |
         | ----------------- | ----------------------- |
-        | `admin`           | `$PCS_DEFAULT_PASSWORD` |
+        | `admin`           | `$APP_DEFAULT_PASSWORD` |
 
         Ceci est **WireGuard Easy v15**. Le compte administrateur est configure automatiquement. Les parametres VPN peuvent etre modifies depuis l'interface web apres connexion.
 
@@ -182,7 +182,7 @@ x-casaos:
 
         | Usuario  | Contrasena              |
         | -------- | ----------------------- |
-        | `admin`  | `$PCS_DEFAULT_PASSWORD` |
+        | `admin`  | `$APP_DEFAULT_PASSWORD` |
 
         Esta es la version **WireGuard Easy v15**. La cuenta de administrador se configura automaticamente. La configuracion VPN se puede cambiar desde la interfaz web despues de iniciar sesion.
 
