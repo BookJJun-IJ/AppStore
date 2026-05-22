@@ -2,7 +2,7 @@ name: mailu
 
 x-mailu-env: &mailu-env
   SECRET_KEY: $APP_DEFAULT_PASSWORD
-  DOMAIN: mail.example.com
+  DOMAIN: $APP_DOMAIN
   HOSTNAMES: mailu-${APP_DOMAIN}
   POSTMASTER: admin
   AUTH_RATELIMIT_IP: 60/hour
@@ -98,7 +98,7 @@ services:
     environment:
       <<: *mailu-env
       INITIAL_ADMIN_ACCOUNT: admin
-      INITIAL_ADMIN_DOMAIN: mail.example.com
+      INITIAL_ADMIN_DOMAIN: $APP_DOMAIN
       INITIAL_ADMIN_PW: $APP_DEFAULT_PASSWORD
       INITIAL_ADMIN_MODE: ifmissing
     volumes:
