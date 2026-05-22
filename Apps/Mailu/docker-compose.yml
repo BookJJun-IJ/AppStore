@@ -8,7 +8,7 @@ x-mailu-env: &mailu-env
   AUTH_RATELIMIT_IP: 60/hour
   AUTH_RATELIMIT_USER: 100/day
   DISABLE_STATISTICS: "True"
-  TLS_FLAVOR: mail
+  TLS_FLAVOR: notls
   WEB_ADMIN: /admin
   WEB_WEBMAIL: /webmail
   WEBMAIL: roundcube
@@ -43,6 +43,9 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
+    dns:
+      - 9.9.9.9
+      - 1.1.1.1
     networks:
       - mailu-network
     cpu_shares: 30
@@ -64,6 +67,9 @@ services:
       - "995:995"
     expose:
       - 80
+    dns:
+      - 9.9.9.9
+      - 1.1.1.1
     labels:
       caddy_0: mailu-${APP_DOMAIN}
       caddy_0.import: gateway_tls
@@ -101,6 +107,9 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+    dns:
+      - 9.9.9.9
+      - 1.1.1.1
     networks:
       - mailu-network
     cpu_shares: 50
@@ -117,6 +126,9 @@ services:
       - /DATA/AppData/$AppID/overrides/dovecot:/overrides:ro
     depends_on:
       - front
+    dns:
+      - 9.9.9.9
+      - 1.1.1.1
     networks:
       - mailu-network
     cpu_shares: 50
@@ -133,6 +145,9 @@ services:
       - /DATA/AppData/$AppID/overrides/postfix:/overrides:ro
     depends_on:
       - front
+    dns:
+      - 9.9.9.9
+      - 1.1.1.1
     networks:
       - mailu-network
     cpu_shares: 50
@@ -149,6 +164,10 @@ services:
       - /DATA/AppData/$AppID/overrides/rspamd:/overrides:ro
     depends_on:
       - front
+      - admin
+    dns:
+      - 9.9.9.9
+      - 1.1.1.1
     networks:
       - mailu-network
     cpu_shares: 30
@@ -165,6 +184,9 @@ services:
       - /DATA/AppData/$AppID/overrides/roundcube:/overrides:ro
     depends_on:
       - front
+    dns:
+      - 9.9.9.9
+      - 1.1.1.1
     networks:
       - mailu-network
     cpu_shares: 50
