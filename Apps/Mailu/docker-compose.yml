@@ -1,0 +1,286 @@
+name: mailu
+
+x-mailu-env: &mailu-env
+  SECRET_KEY: $APP_DEFAULT_PASSWORD
+  DOMAIN: mail.example.com
+  HOSTNAMES: mailu-${APP_DOMAIN}
+  POSTMASTER: admin
+  AUTH_RATELIMIT_IP: 60/hour
+  AUTH_RATELIMIT_USER: 100/day
+  DISABLE_STATISTICS: "True"
+  TLS_FLAVOR: mail
+  WEB_ADMIN: /admin
+  WEB_WEBMAIL: /webmail
+  WEBMAIL: roundcube
+  ADMIN: "true"
+  MESSAGE_SIZE_LIMIT: "50000000"
+  RECIPIENT_DELIMITER: "+"
+  DMARC_RUA: admin
+  DMARC_RUF: admin
+  FRONT_ADDRESS: mailu-front
+  ADMIN_ADDRESS: mailu-admin
+  IMAP_ADDRESS: mailu-imap
+  SMTP_ADDRESS: mailu-smtp
+  ANTISPAM_ADDRESS: mailu-antispam
+  WEBMAIL_ADDRESS: mailu-webmail
+  REDIS_ADDRESS: mailu-redis
+  SUBNET: 192.168.203.0/24
+  REAL_IP_HEADER: X-Forwarded-For
+  REAL_IP_FROM: 0.0.0.0/0
+  LOG_LEVEL: WARNING
+  PASSWORD_SCHEME: PBKDF2
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: mailu-redis
+    restart: unless-stopped
+    user: "0:0"
+    volumes:
+      - /DATA/AppData/$AppID/redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - mailu-network
+    cpu_shares: 30
+
+  front:
+    image: ghcr.io/mailu/nginx:2024.06
+    container_name: mailu-front
+    restart: unless-stopped
+    user: "0:0"
+    environment:
+      <<: *mailu-env
+    ports:
+      - "25:25"
+      - "465:465"
+      - "587:587"
+      - "110:110"
+      - "143:143"
+      - "993:993"
+      - "995:995"
+    expose:
+      - 80
+    labels:
+      caddy_0: mailu-${APP_DOMAIN}
+      caddy_0.import: gateway_tls
+      caddy_0.reverse_proxy: "{{upstreams 80}}"
+      caddy_1: mailu-${APP_PUBLIC_IP_DASH}.nip.io
+      caddy_1.import: gateway_tls
+      caddy_1.reverse_proxy: "{{upstreams 80}}"
+      caddy_2: mailu-${APP_PUBLIC_IP_DASH}.sslip.io
+      caddy_2.reverse_proxy: "{{upstreams 80}}"
+    volumes:
+      - /DATA/AppData/$AppID/certs:/certs
+      - /DATA/AppData/$AppID/overrides/nginx:/overrides:ro
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - mailu-network
+      - pcs
+    cpu_shares: 80
+
+  admin:
+    image: ghcr.io/mailu/admin:2024.06
+    container_name: mailu-admin
+    restart: unless-stopped
+    user: "0:0"
+    environment:
+      <<: *mailu-env
+      INITIAL_ADMIN_ACCOUNT: admin
+      INITIAL_ADMIN_DOMAIN: mail.example.com
+      INITIAL_ADMIN_PW: $APP_DEFAULT_PASSWORD
+      INITIAL_ADMIN_MODE: ifmissing
+    volumes:
+      - /DATA/AppData/$AppID/data:/data
+      - /DATA/AppData/$AppID/dkim:/dkim
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - mailu-network
+    cpu_shares: 50
+
+  imap:
+    image: ghcr.io/mailu/dovecot:2024.06
+    container_name: mailu-imap
+    restart: unless-stopped
+    user: "0:0"
+    environment:
+      <<: *mailu-env
+    volumes:
+      - /DATA/AppData/$AppID/mail:/mail
+      - /DATA/AppData/$AppID/overrides/dovecot:/overrides:ro
+    depends_on:
+      - front
+    networks:
+      - mailu-network
+    cpu_shares: 50
+
+  smtp:
+    image: ghcr.io/mailu/postfix:2024.06
+    container_name: mailu-smtp
+    restart: unless-stopped
+    user: "0:0"
+    environment:
+      <<: *mailu-env
+    volumes:
+      - /DATA/AppData/$AppID/mailqueue:/queue
+      - /DATA/AppData/$AppID/overrides/postfix:/overrides:ro
+    depends_on:
+      - front
+    networks:
+      - mailu-network
+    cpu_shares: 50
+
+  antispam:
+    image: ghcr.io/mailu/rspamd:2024.06
+    container_name: mailu-antispam
+    restart: unless-stopped
+    user: "0:0"
+    environment:
+      <<: *mailu-env
+    volumes:
+      - /DATA/AppData/$AppID/filter:/var/lib/rspamd
+      - /DATA/AppData/$AppID/overrides/rspamd:/overrides:ro
+    depends_on:
+      - front
+    networks:
+      - mailu-network
+    cpu_shares: 30
+
+  webmail:
+    image: ghcr.io/mailu/webmail:2024.06
+    container_name: mailu-webmail
+    restart: unless-stopped
+    user: "0:0"
+    environment:
+      <<: *mailu-env
+    volumes:
+      - /DATA/AppData/$AppID/webmail:/data
+      - /DATA/AppData/$AppID/overrides/roundcube:/overrides:ro
+    depends_on:
+      - front
+    networks:
+      - mailu-network
+    cpu_shares: 50
+
+networks:
+  mailu-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.203.0/24
+  pcs:
+    name: pcs
+    external: true
+
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  author: Yundera Team
+  category: Communication
+  developer: Mailu
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mailu/icon.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mailu/icon.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Mailu/screenshot-1.png
+  title:
+    en_us: Mailu
+  tagline:
+    en_us: Self-hosted email server with web admin and webmail
+    ko_kr: 웹 관리자와 웹메일을 갖춘 셀프 호스팅 이메일 서버
+  store_app_id: mailu
+  main: front
+  webui_port: 80
+  index: /
+  description:
+    en_us: |
+      **Full-featured self-hosted email server**
+
+      Mailu is a complete mail server suite running in Docker. It includes SMTP, IMAP, webmail, spam filtering, and an admin dashboard — everything you need to run your own email.
+
+      **What you can do:**
+      - Create and manage email accounts via web admin
+      - Send and receive emails with your own domain
+      - Access email through webmail (Roundcube) or any IMAP client
+      - Built-in spam filtering with Rspamd
+    ko_kr: |
+      **완전한 기능의 셀프 호스팅 이메일 서버**
+
+      Mailu는 Docker에서 실행되는 완전한 메일 서버 제품군입니다. SMTP, IMAP, 웹메일, 스팸 필터링, 관리 대시보드를 포함합니다.
+
+      **할 수 있는 것:**
+      - 웹 관리자를 통해 이메일 계정 생성 및 관리
+      - 자체 도메인으로 이메일 송수신
+      - 웹메일(Roundcube) 또는 IMAP 클라이언트로 이메일 접근
+      - Rspamd를 통한 내장 스팸 필터링
+  tips:
+    before_install:
+      en_us: |
+        # Setup Required
+
+        ## 1. Change mail domain
+
+        After installation, you **must** edit the compose file and change `mail.example.com` to your actual domain in these variables:
+        - `DOMAIN`
+        - `INITIAL_ADMIN_DOMAIN`
+
+        ## 2. DNS Records
+
+        Configure these DNS records for your domain:
+
+        | Type | Name | Value |
+        | ---- | ---- | ----- |
+        | MX | `yourdomain.com` | `mail.yourdomain.com` |
+        | A | `mail.yourdomain.com` | `your-server-ip` |
+        | TXT | `yourdomain.com` | `v=spf1 mx -all` |
+
+        PTR (reverse DNS): Set via your VPS provider.
+
+        ## 3. Default Account
+
+        | Username | Password |
+        | -------- | -------- |
+        | `admin@yourdomain.com` | `$APP_DEFAULT_PASSWORD` |
+
+        Ports 25, 465, 587, 993 must be open.
+
+        Admin UI: `https://mailu-yourdomain.nsl.sh/admin`
+        Webmail: `https://mailu-yourdomain.nsl.sh/webmail`
+      ko_kr: |
+        # 설정 필요
+
+        ## 1. 메일 도메인 변경
+
+        설치 후 compose 파일에서 `mail.example.com`을 실제 도메인으로 **반드시** 변경해야 합니다:
+        - `DOMAIN`
+        - `INITIAL_ADMIN_DOMAIN`
+
+        ## 2. DNS 레코드
+
+        도메인에 다음 DNS 레코드를 설정하세요:
+
+        | 유형 | 이름 | 값 |
+        | ---- | ---- | -- |
+        | MX | `yourdomain.com` | `mail.yourdomain.com` |
+        | A | `mail.yourdomain.com` | `서버-IP` |
+        | TXT | `yourdomain.com` | `v=spf1 mx -all` |
+
+        PTR (역방향 DNS): VPS 제공업체에서 설정.
+
+        ## 3. 기본 계정
+
+        | 사용자명 | 비밀번호 |
+        | -------- | -------- |
+        | `admin@yourdomain.com` | `$APP_DEFAULT_PASSWORD` |
+
+        포트 25, 465, 587, 993이 열려 있어야 합니다.
+
+        관리 UI: `https://mailu-yourdomain.nsl.sh/admin`
+        웹메일: `https://mailu-yourdomain.nsl.sh/webmail`
