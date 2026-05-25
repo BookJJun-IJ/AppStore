@@ -7,11 +7,11 @@ services:
     restart: unless-stopped
     user: "0:0"
     volumes:
-      - /DATA/AppData/plausible/db/:/var/lib/postgresql/data
+      - /DATA/AppData/$AppID/db/:/var/lib/postgresql/data
     environment:
       POSTGRES_DB: plausible
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: $PCS_DEFAULT_PASSWORD
+      POSTGRES_PASSWORD: $APP_DEFAULT_PASSWORD
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d plausible"]
       interval: 30s
@@ -32,8 +32,8 @@ services:
     restart: unless-stopped
     user: "0:0"
     volumes:
-      - /DATA/AppData/plausible/event-data/:/var/lib/clickhouse
-      - /DATA/AppData/plausible/event-logs/:/var/log/clickhouse-server
+      - /DATA/AppData/$AppID/event-data/:/var/lib/clickhouse
+      - /DATA/AppData/$AppID/event-logs/:/var/log/clickhouse-server
     ulimits:
       nofile:
         soft: 262144
@@ -65,8 +65,8 @@ services:
       - |
         test -f /secrets/secret_key_base || (head -c 64 /dev/urandom | base64 | tr -d '\n' > /secrets/secret_key_base)
         test -f /secrets/totp_vault_key || (head -c 32 /dev/urandom | base64 | tr -d '\n' > /secrets/totp_vault_key)
-        export SECRET_KEY_BASE=$(cat /secrets/secret_key_base)
-        export TOTP_VAULT_KEY=$(cat /secrets/totp_vault_key)
+        export SECRET_KEY_BASE=$$(cat /secrets/secret_key_base)
+        export TOTP_VAULT_KEY=$$(cat /secrets/totp_vault_key)
         /entrypoint.sh db createdb && /entrypoint.sh db migrate && /entrypoint.sh run
     depends_on:
       plausible-db:
@@ -85,10 +85,10 @@ services:
       caddy_2: plausible-${APP_PUBLIC_IP_DASH}.sslip.io
       caddy_2.reverse_proxy: "{{upstreams 80}}"
     volumes:
-      - /DATA/AppData/plausible/secrets/:/secrets
+      - /DATA/AppData/$AppID/secrets/:/secrets
     environment:
       BASE_URL: https://plausible-${APP_DOMAIN}
-      DATABASE_URL: postgres://postgres:$PCS_DEFAULT_PASSWORD@plausible-db:5432/plausible
+      DATABASE_URL: postgres://postgres:$APP_DEFAULT_PASSWORD@plausible-db:5432/plausible
       CLICKHOUSE_DATABASE_URL: http://plausible-events-db:8123/plausible_events_db
       DISABLE_REGISTRATION: invite_only
       LISTEN_IP: 0.0.0.0
@@ -106,6 +106,7 @@ networks:
   plausible-network:
     driver: bridge
   pcs:
+    name: pcs
     external: true
 
 x-casaos:
@@ -212,18 +213,18 @@ x-casaos:
       **Confidentialité par conception:**
       Plausible Analytics est construit avec la confidentialité comme principe fondamental. Il ne collecte que des données agrégées et ne suit pas les utilisateurs individuels entre les sites web. Toutes les données sont anonymisées et aucune information personnelle n'est collectée.
   developer: Plausible Insights
-  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Plausible/icon.png
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Plausible/icon.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Plausible/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Plausible/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Plausible/screenshot-3.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Plausible/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Plausible/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Plausible/screenshot-3.png
   tagline:
     en_us: Simple, open-source, lightweight and privacy-friendly web analytics
     ko_kr: 간단하고 오픈소스이며 가벼운 프라이버시 친화적 웹 분석
     zh_cn: 简单、开源、轻量级且注重隐私的网络分析
     es_es: Análisis web simple, de código abierto, ligero y respetuoso con la privacidad
     fr_fr: Analyse web simple, open-source, légère et respectueuse de la vie privée
-  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Plausible/thumbnail.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Plausible/thumbnail.png
   title:
     en_us: Plausible
   tips:
