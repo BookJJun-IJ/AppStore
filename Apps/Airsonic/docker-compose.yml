@@ -2,65 +2,187 @@ name: airsonic
 
 services:
   airsonic:
+    container_name: airsonic
     image: lscr.io/linuxserver/airsonic-advanced:11.1.4-ls166
     restart: unless-stopped
     expose:
-      - 80 
+      - 80
+    labels:
+      caddy_0: airsonic-${APP_DOMAIN}
+      caddy_0.import: gateway_tls
+      caddy_0.reverse_proxy: "{{upstreams 80}}"
+      caddy_1: airsonic-${APP_PUBLIC_IP_DASH}.nip.io
+      caddy_1.import: gateway_tls
+      caddy_1.reverse_proxy: "{{upstreams 80}}"
+      caddy_2: airsonic-${APP_PUBLIC_IP_DASH}.sslip.io
+      caddy_2.reverse_proxy: "{{upstreams 80}}"
     environment:
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
-      JAVA_OPTS: "-Dserver.port=80 -Dserver.use-forward-headers=true"    
+      JAVA_OPTS: >-
+        -Dserver.port=80
+        -Dserver.use-forward-headers=true
+        -Dserver.forward-headers-strategy=native
+        -Dserver.tomcat.remoteip.protocol-header=x-forwarded-proto
+        -Dserver.tomcat.remoteip.remote-ip-header=x-forwarded-for
+        -Dserver.tomcat.remoteip.host-header=x-forwarded-host
     volumes:
-      - /DATA/AppData/airsonic/config/:/config
-      - /DATA/AppData/airsonic/data/:/data
+      - /DATA/AppData/$AppID/config/:/config
+      - /DATA/AppData/$AppID/data/:/data
       - /DATA/Media/Music/:/music:ro
-      - /DATA/AppData/airsonic/playlists/:/playlists    
+      - /DATA/AppData/$AppID/playlists/:/playlists
     deploy:
       resources:
         reservations:
-          memory: 256M    
-    cpu_shares: 50    
+          memory: 256M
+    cpu_shares: 50
     networks:
-      - airsonic_network 
+      - pcs
 
 networks:
-  airsonic_network:
-    driver: bridge
+  pcs:
+    name: pcs
+    external: true
 
 x-casaos:
+  pre-install-cmd: |
+    mkdir -p /DATA/AppData/$AppID/config /DATA/AppData/$AppID/data /DATA/AppData/$AppID/playlists /DATA/Media/Music &&
+    chown -R $PUID:$PGID /DATA/AppData/$AppID
   architectures:
     - amd64
     - arm64
   main: airsonic
+  author: Yundera Team
   webui_port: 80
   store_app_id: airsonic
+  index: /login
+  developer: linuxserver.io
+  category: Media
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Airsonic/icon.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Airsonic/icon.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Airsonic/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Airsonic/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Airsonic/screenshot-3.png
   title:
     en_us: Airsonic
   tagline:
-    en_us: Subsonic-compatible music server
+    en_us: Subsonic-compatible music streaming server
+    ko_kr: Subsonic 호환 음악 스트리밍 서버
+    zh_cn: 兼容 Subsonic 的音乐流媒体服务器
+    fr_fr: Serveur de streaming musical compatible Subsonic
+    es_es: Servidor de streaming de musica compatible con Subsonic
   description:
     en_us: |
-      Airsonic-Advanced is a modern, actively maintained fork of Subsonic.
-      Fully compatible with Subsonic mobile and desktop apps.
-  developer: linuxserver.io
-  category: Media
+      **Airsonic-Advanced** is a modern, actively maintained fork of Subsonic — a free, web-based media streamer.
+
+      **Key Features:**
+      - Stream music to any browser, desktop, or mobile app
+      - Fully compatible with Subsonic and Madsonic clients
+      - On-the-fly transcoding to MP3, FLAC, OGG, and more
+      - Podcast receiver and internet radio support
+      - User management with fine-grained access control
+      - Organize music by artist, album, genre, or folder
+
+      **Perfect for:** Anyone who wants a self-hosted Spotify alternative with full control over their music library.
+    ko_kr: |
+      **Airsonic-Advanced**는 무료 웹 기반 미디어 스트리머인 Subsonic의 현대적이고 활발하게 유지 관리되는 포크입니다.
+
+      **주요 기능:**
+      - 모든 브라우저, 데스크톱 또는 모바일 앱으로 음악 스트리밍
+      - Subsonic 및 Madsonic 클라이언트와 완벽 호환
+      - MP3, FLAC, OGG 등으로 실시간 트랜스코딩
+      - 팟캐스트 수신기 및 인터넷 라디오 지원
+      - 세밀한 접근 제어가 가능한 사용자 관리
+      - 아티스트, 앨범, 장르 또는 폴더별 음악 정리
+
+      **이런 분께 완벽해요:** 음악 라이브러리를 완전히 제어할 수 있는 셀프 호스팅 Spotify 대안을 원하는 모든 분.
+    zh_cn: |
+      **Airsonic-Advanced** 是 Subsonic 的现代化、积极维护的分支 - 一个免费的基于网络的媒体流媒体工具。
+
+      **主要功能:**
+      - 将音乐流式传输到任何浏览器、桌面或移动应用
+      - 完全兼容 Subsonic 和 Madsonic 客户端
+      - 实时转码为 MP3、FLAC、OGG 等格式
+      - 播客接收器和网络电台支持
+      - 具有细粒度访问控制的用户管理
+      - 按艺术家、专辑、流派或文件夹组织音乐
+
+      **完美适合:** 任何想要拥有完全控制音乐库的自托管 Spotify 替代方案的人。
+    fr_fr: |
+      **Airsonic-Advanced** est un fork moderne et activement maintenu de Subsonic - un streamer multimedia gratuit base sur le web.
+
+      **Fonctionnalites principales:**
+      - Diffuser de la musique vers n'importe quel navigateur, bureau ou application mobile
+      - Entierement compatible avec les clients Subsonic et Madsonic
+      - Transcodage a la volee en MP3, FLAC, OGG et plus
+      - Recepteur de podcasts et support radio internet
+      - Gestion des utilisateurs avec controle d'acces granulaire
+      - Organiser la musique par artiste, album, genre ou dossier
+
+      **Parfait pour:** Tous ceux qui veulent une alternative Spotify auto-hebergee avec un controle total sur leur bibliotheque musicale.
+    es_es: |
+      **Airsonic-Advanced** es un fork moderno y activamente mantenido de Subsonic - un streamer multimedia gratuito basado en web.
+
+      **Caracteristicas principales:**
+      - Transmitir musica a cualquier navegador, escritorio o aplicacion movil
+      - Totalmente compatible con clientes Subsonic y Madsonic
+      - Transcodificacion en tiempo real a MP3, FLAC, OGG y mas
+      - Receptor de podcasts y soporte de radio por internet
+      - Gestion de usuarios con control de acceso granular
+      - Organizar musica por artista, album, genero o carpeta
+
+      **Perfecto para:** Cualquiera que quiera una alternativa a Spotify auto-alojada con control total sobre su biblioteca musical.
   tips:
     before_install:
       en_us: |
-        Music folder:
-        /DATA/Media/Music
-        Config & data:
-        /DATA/AppData/airsonic
-  pre-install-cmd: |
-    docker run --rm \
-      -v /DATA:/DATA \
-      ubuntu:22.04 sh -c "
-      mkdir -p /DATA/AppData/airsonic/config &&
-      mkdir -p /DATA/AppData/airsonic/data &&
-      mkdir -p /DATA/AppData/airsonic/playlists &&
-      mkdir -p /DATA/Media/Music &&
-      chown -R $PUID:$PGID /DATA/AppData/airsonic /DATA/Media/Music &&
-      chmod -R 755 /DATA/AppData/airsonic /DATA/Media/Music &&
-      echo 'Airsonic Advanced: directories created successfully'
-      "
+        # Default Account
+
+        | Username | Password |
+        | -------- | -------- |
+        | `admin`  | `admin`  |
+
+        **Change the default password immediately after first login.**
+
+        Music files are read from `/DATA/Media/Music` (read-only).
+      ko_kr: |
+        # 기본 계정
+
+        | 사용자명 | 비밀번호 |
+        | -------- | -------- |
+        | `admin`  | `admin`  |
+
+        **첫 로그인 후 즉시 기본 비밀번호를 변경하세요.**
+
+        음악 파일은 `/DATA/Media/Music`에서 읽습니다 (읽기 전용).
+      zh_cn: |
+        # 默认账户
+
+        | 用户名   | 密码     |
+        | -------- | -------- |
+        | `admin`  | `admin`  |
+
+        **首次登录后请立即更改默认密码。**
+
+        音乐文件从 `/DATA/Media/Music` 读取（只读）。
+      fr_fr: |
+        # Compte par defaut
+
+        | Nom d'utilisateur | Mot de passe |
+        | ----------------- | ------------ |
+        | `admin`           | `admin`      |
+
+        **Changez le mot de passe par defaut immediatement apres la premiere connexion.**
+
+        Les fichiers musicaux sont lus depuis `/DATA/Media/Music` (lecture seule).
+      es_es: |
+        # Cuenta predeterminada
+
+        | Usuario  | Contrasena |
+        | -------- | ---------- |
+        | `admin`  | `admin`    |
+
+        **Cambie la contrasena predeterminada inmediatamente despues del primer inicio de sesion.**
+
+        Los archivos de musica se leen desde `/DATA/Media/Music` (solo lectura).

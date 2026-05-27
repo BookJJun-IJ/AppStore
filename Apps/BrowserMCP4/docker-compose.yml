@@ -12,7 +12,7 @@ services:
     environment:
       - AUTH_HASH=$AUTH_HASH
       - TZ=Asia/Seoul
-      - PROXY_URL=$PROXY_URL
+      - PROXY_URL=http://nnlewhnv:t5mqno7b93tm@209.127.138.10:5784
       - VNC_RESOLUTION=1920x1080x24
     volumes:
       - type: bind
