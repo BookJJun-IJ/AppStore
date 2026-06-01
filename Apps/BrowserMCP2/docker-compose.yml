@@ -18,6 +18,10 @@ services:
       - type: bind
         source: /DATA/AppData/browsermcp2/
         target: /app/data
+      - type: bind
+        source: /DATA/AppData/browsermcp-patch/browser-client.js
+        target: /app/dist/browser-client.js
+        read_only: true
     networks:
       - pcs
     labels:
