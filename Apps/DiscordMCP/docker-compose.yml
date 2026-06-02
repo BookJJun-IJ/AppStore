@@ -27,9 +27,10 @@ services:
       caddy_2.reverse_proxy: "{{upstreams 80}}"
 
   discordmcp:
-    image: ghcr.io/bookjjun-ij/discordmcp:latest
+    image: ghcr.io/bookjjun-ij/discordmcp:1.0.0
     container_name: discordmcp
     hostname: discordmcp
+    cpu_shares: 50
     user: $PUID:$PGID
     restart: unless-stopped
     expose:
@@ -62,28 +63,35 @@ x-casaos:
   category: Chat
   description:
     en_us: |
-      Discord MCP is a bridge between Discord and the Model Context Protocol (MCP).
-      It acts as an MCP server exposing Discord tools like send_message, send_embed, and list_channels to LLMs.
+      **Let your AI talk to Discord — send messages, embeds, and more via MCP**
 
-      Features:
-      - Send text messages and rich embeds to Discord channels via MCP tools
-      - List available text channels in a Discord server
-      - Beacon auto-discovery for seamless integration
-      - Web dashboard for runtime configuration (bot token, default channel)
-      - Stateless HTTP transport for MCP connectivity
+      Discord MCP connects your AI assistant to Discord through the Model Context Protocol. Once installed, Beacon discovers it automatically and your AI gains the ability to post messages and rich embeds to any Discord channel.
+
+      **What you can do:**
+      - Send text messages to Discord channels from any MCP-compatible AI
+      - Post rich embeds with titles, descriptions, fields, and colors
+      - List all text channels in your Discord server
+      - Configure everything through a simple web dashboard
+      - Zero-config Beacon discovery — just install and it works
     zh_cn: |
-      Discord MCP 是 Discord 和模型上下文协议 (MCP) 之间的桥梁。
-      它作为 MCP 服务器，向 LLM 公开 send_message、send_embed 和 list_channels 等 Discord 工具。
+      **让 AI 与 Discord 对话 — 通过 MCP 发送消息、嵌入内容等**
+
+      Discord MCP 通过模型上下文协议将 AI 助手连接到 Discord。安装后，Beacon 自动发现它，AI 即可向任何 Discord 频道发送消息和富嵌入内容。
     ko_kr: |
-      Discord MCP는 Discord와 Model Context Protocol(MCP) 사이의 브리지입니다.
-      send_message, send_embed, list_channels 등의 Discord 도구를 LLM에 제공하는 MCP 서버입니다.
+      **AI가 Discord에 메시지를 보낼 수 있게 해주는 MCP 서버**
+
+      Discord MCP는 AI 어시스턴트를 MCP를 통해 Discord에 연결합니다. 설치하면 Beacon이 자동으로 발견하고, AI가 Discord 채널에 메시지와 임베드를 보낼 수 있게 됩니다.
   developer: Yundera Team
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/DiscordMCP/icon.png
+  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/DiscordMCP/icon.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/DiscordMCP/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/DiscordMCP/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/DiscordMCP/screenshot-3.png
   tagline:
-    en_us: Discord MCP bridge for AI-powered bot interactions
-    zh_cn: 用于 AI 驱动的机器人交互的 Discord MCP 桥梁
-    ko_kr: AI 기반 봇 상호작용을 위한 Discord MCP 브리지
-  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/DiscordMCP/icon.png
+    en_us: Let your AI send messages to Discord via MCP
+    zh_cn: 让 AI 通过 MCP 向 Discord 发送消息
+    ko_kr: AI가 MCP를 통해 Discord에 메시지를 보냅니다
+  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/DiscordMCP/icon.png
   title:
     en_us: Discord MCP
   chips:
