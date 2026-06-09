@@ -10,6 +10,12 @@ services:
       FB_DATABASE: /db/database.db
     image: filebrowser/filebrowser:v2.63.1
     restart: unless-stopped
+    command: >
+      sh -c "
+      (/bin/filebrowser config init --database /db/database.db 2>/dev/null || true) &&
+      /bin/filebrowser config set --auth.method=proxy --auth.header=Remote-User --database /db/database.db &&
+      exec /bin/filebrowser --database /db/database.db --port 80
+      "
     volumes:
       - type: bind
         source: /DATA/AppData/$AppID/db/
@@ -40,9 +46,7 @@ services:
       BACKEND_HOST: "filebrowser-app"
       BACKEND_PORT: "80"
       LISTEN_PORT: "80"
-      AUTO_LOGIN_URL: "/api/login"
-      AUTO_LOGIN_BODY: '{"username":"admin","password":"$APP_DEFAULT_PASSWORD"}'
-      AUTO_LOGIN_COOKIE_NAME: "auth"
+      PROXY_AUTH_USERNAME: "admin"
     depends_on:
       - filebrowser-app
     labels:
@@ -64,10 +68,7 @@ networks:
 
 x-casaos:
   pre-install-cmd: |
-    docker run --rm -v /DATA/AppData/$AppID:/data alpine sh -c "mkdir -p /data/db && chown -R $PUID:$PGID /data" &&
-    (docker run --rm --user $PUID:$PGID -v /DATA/AppData/$AppID/db/:/db/ filebrowser/filebrowser:v2.63.1 config init --database /db/database.db || true) &&
-    (docker run --rm --user $PUID:$PGID -v /DATA/AppData/$AppID/db/:/db/ filebrowser/filebrowser:v2.63.1 users rm admin --database /db/database.db || true) &&
-    docker run --rm --user $PUID:$PGID -v /DATA/AppData/$AppID/db/:/db/ filebrowser/filebrowser:v2.63.1 users add admin $APP_DEFAULT_PASSWORD --perm.admin --database /db/database.db
+    docker run --rm -v /DATA/AppData/$AppID:/data alpine sh -c "mkdir -p /data/db && chown -R $PUID:$PGID /data"
   architectures:
     - amd64
     - arm64
