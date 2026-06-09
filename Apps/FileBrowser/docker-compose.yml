@@ -1,7 +1,7 @@
 name: filebrowser
 services:
-  filebrowser:
-    container_name: filebrowser
+  filebrowser-app:
+    container_name: filebrowser-app
     user: $PUID:$PGID
     environment:
       PGID: $PGID
@@ -19,6 +19,29 @@ services:
         target: /srv
     expose:
       - 80
+    networks:
+      - pcs
+    cpu_shares: 10
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  filebrowser:
+    image: ghcr.io/yundera/nginx-hash-lock:1.0.7
+    container_name: filebrowser
+    hostname: filebrowser
+    restart: unless-stopped
+    user: "0:0"
+    expose:
+      - 80
+    environment:
+      OIDC_REGISTRAR_URL: "http://auth-registrar:9092"
+      BACKEND_HOST: "filebrowser-app"
+      BACKEND_PORT: "80"
+      LISTEN_PORT: "80"
+    depends_on:
+      - filebrowser-app
     labels:
       caddy_0: filebrowser-${APP_DOMAIN}
       caddy_0.import: gateway_tls
@@ -30,11 +53,6 @@ services:
       caddy_2.reverse_proxy: "{{upstreams 80}}"
     networks:
       - pcs
-    cpu_shares: 10
-    deploy:
-      resources:
-        limits:
-          memory: 256M
 
 networks:
   pcs:
