@@ -10,12 +10,11 @@ services:
       FB_DATABASE: /db/database.db
     image: filebrowser/filebrowser:v2.63.1
     restart: unless-stopped
+    entrypoint: ["sh", "-c"]
     command: >
-      sh -c "
       (/bin/filebrowser config init --database /db/database.db 2>/dev/null || true) &&
       /bin/filebrowser config set --auth.method=proxy --auth.header=Remote-User --database /db/database.db &&
       exec /bin/filebrowser --database /db/database.db --port 80
-      "
     volumes:
       - type: bind
         source: /DATA/AppData/$AppID/db/
