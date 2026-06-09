@@ -28,7 +28,7 @@ services:
           memory: 256M
 
   filebrowser:
-    image: ghcr.io/yundera/nginx-hash-lock:1.0.7
+    image: ghcr.io/bookjjun-ij/nginx-hash-lock:main
     container_name: filebrowser
     hostname: filebrowser
     restart: unless-stopped
