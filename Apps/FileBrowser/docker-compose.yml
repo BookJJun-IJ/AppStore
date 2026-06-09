@@ -43,6 +43,7 @@ services:
       AUTO_LOGIN_URL: "/api/login"
       AUTO_LOGIN_BODY: '{"username":"admin","password":"$APP_DEFAULT_PASSWORD"}'
       AUTO_LOGIN_COOKIE_NAME: "auth"
+      AUTO_LOGIN_LOCALSTORAGE_KEY: "jwt"
     depends_on:
       - filebrowser-app
     labels:
