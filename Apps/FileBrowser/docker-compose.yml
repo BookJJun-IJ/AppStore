@@ -12,7 +12,7 @@ services:
     restart: unless-stopped
     entrypoint: ["sh", "-c"]
     command:
-      - "(/bin/filebrowser config init --database /db/database.db 2>/dev/null || true) && /bin/filebrowser config set --auth.method=proxy --auth.header=Remote-User --database /db/database.db && exec /bin/filebrowser --database /db/database.db --port 80"
+      - "(/bin/filebrowser config init --database /db/database.db 2>/dev/null || true) && /bin/filebrowser config set --auth.method=proxy --auth.header=Remote-User --database /db/database.db && exec /bin/filebrowser --database /db/database.db --port 80 --address 0.0.0.0"
     volumes:
       - type: bind
         source: /DATA/AppData/$AppID/db/
