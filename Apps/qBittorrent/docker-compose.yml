@@ -73,7 +73,7 @@ x-casaos:
   webui_port: 80
   pre-install-cmd: |
     mkdir -p /DATA/AppData/qbittorrent/config/qBittorrent &&
-    [ -f /DATA/AppData/qbittorrent/config/qBittorrent/qBittorrent.conf ] || printf '[Preferences]\nWebUI\\Port=80\nWebUI\\AuthSubnetWhitelistEnabled=true\nWebUI\\AuthSubnetWhitelist=172.0.0.0/8, 10.0.0.0/8, 192.168.0.0/16\n' > /DATA/AppData/qbittorrent/config/qBittorrent/qBittorrent.conf
+    [ -f /DATA/AppData/qbittorrent/config/qBittorrent/qBittorrent.conf ] || printf '[Preferences]\nWebUI\\Port=80\nWebUI\\AuthSubnetWhitelistEnabled=true\nWebUI\\AuthSubnetWhitelist=172.0.0.0/8, 10.0.0.0/8, 192.168.0.0/16\nWebUI\\HostHeaderValidation=false\nWebUI\\CSRFProtection=false\n' > /DATA/AppData/qbittorrent/config/qBittorrent/qBittorrent.conf
   tips:
     before_install:
       en_us: |
