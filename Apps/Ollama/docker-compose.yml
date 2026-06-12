@@ -40,8 +40,6 @@ services:
     user: 0:0
     depends_on:
       - ollama-api
-    expose:
-      - 8080
     environment:
       OLLAMA_BASE_URL: http://ollama-api:11434
       WEBUI_AUTH: "false"
@@ -112,7 +110,7 @@ networks:
 x-casaos:
   main: ollama-sidecar
   store_app_id: ollama
-  webui_port: 8080
+  webui_port: 80
   index: /
   pre-install-cmd: |
     mkdir -p /DATA/AppData/ollama/data &&
