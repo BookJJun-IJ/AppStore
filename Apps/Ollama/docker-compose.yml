@@ -74,14 +74,6 @@ services:
     volumes:
       - /DATA/AppData/ollama/data:/root/.ollama
     cpu_shares: 20
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities:
-                - gpu
 
 networks:
   default:
