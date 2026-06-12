@@ -67,8 +67,7 @@ x-casaos:
   pre-install-cmd: |
     docker run --rm -v /DATA/AppData/$AppID:/data alpine sh -c "mkdir -p /data/db && chown -R $PUID:$PGID /data"
     docker run --rm -v /DATA/AppData/$AppID/db:/db -e FB_DATABASE=/db/database.db filebrowser/filebrowser:v2.63.1 config init --address 0.0.0.0 --port 80 2>/dev/null || true
-    docker run --rm -v /DATA/AppData/$AppID/db:/db -e FB_DATABASE=/db/database.db filebrowser/filebrowser:v2.63.1 users add admin admin --perm.admin 2>/dev/null ||
-    docker run --rm -v /DATA/AppData/$AppID/db:/db -e FB_DATABASE=/db/database.db filebrowser/filebrowser:v2.63.1 users update admin --password admin 2>/dev/null || true
+    docker run --rm -v /DATA/AppData/$AppID/db:/db -e FB_DATABASE=/db/database.db filebrowser/filebrowser:v2.63.1 config set --auth.method=noauth 2>/dev/null || true
     docker run --rm -v /DATA/AppData/$AppID:/data alpine sh -c "chown -R $PUID:$PGID /data"
   architectures:
     - amd64
