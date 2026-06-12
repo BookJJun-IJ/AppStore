@@ -75,6 +75,18 @@ services:
       - /DATA/AppData/ollama/data:/root/.ollama
     cpu_shares: 20
 
+  ollama-init:
+    image: ollama/ollama:0.30.7
+    container_name: ollama-init
+    restart: "no"
+    entrypoint: ["sh", "-c", "until ollama list >/dev/null 2>&1; do sleep 3; done && ollama pull qwen3:0.6b"]
+    environment:
+      OLLAMA_HOST: "http://ollama-api:11434"
+    networks:
+      - default
+    depends_on:
+      - ollama-api
+
 networks:
   default:
     name: ollama_default
@@ -90,9 +102,6 @@ x-casaos:
   pre-install-cmd: |
     mkdir -p /DATA/AppData/ollama/data &&
     mkdir -p /DATA/AppData/ollama/webui
-  post-install-cmd: |
-    docker exec ollama-api sh -c 'for i in $(seq 1 90); do curl -fsS http://localhost:11434/api/version && break; sleep 2; done' &&
-    docker exec ollama-api ollama pull qwen3:0.6b
   architectures:
     - amd64
     - arm64
