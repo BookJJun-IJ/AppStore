@@ -91,7 +91,7 @@ x-casaos:
     mkdir -p /DATA/AppData/ollama/data &&
     mkdir -p /DATA/AppData/ollama/webui
   post-install-cmd: |
-    docker exec ollama-webui curl -fsS --retry 90 --retry-delay 2 --retry-connrefused http://ollama-api:11434/api/version && docker exec ollama-api ollama pull qwen3:0.6b
+    docker exec ollama-webui curl -fsS --retry 90 --retry-delay 2 --retry-connrefused http://ollama-api:11434/api/version && docker exec ollama-api ollama pull qwen3:0.6b && docker exec ollama-api sh -c 'ollama list | tail -n +2 | awk "{print \$1}" | grep -v "^qwen3:0.6b$" | xargs -r -n1 ollama rm' || true
   architectures:
     - amd64
     - arm64
