@@ -2,7 +2,7 @@ name: ollama
 
 services:
   ollama-sidecar:
-    image: ghcr.io/bookjjun-ij/nginx-hash-lock:main
+    image: ghcr.io/yundera/nginx-hash-lock:main
     container_name: ollama
     hostname: ollama
     restart: unless-stopped
