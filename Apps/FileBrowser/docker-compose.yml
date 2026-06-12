@@ -40,6 +40,14 @@ services:
       BACKEND_HOST: "filebrowser-app"
       BACKEND_PORT: "80"
       LISTEN_PORT: "80"
+      # Auto-setup: login with default admin/admin, then change password
+      AUTO_SETUP_AUTH_URL: "/api/login"
+      AUTO_SETUP_AUTH_BODY: '{"username":"admin","password":"admin"}'
+      AUTO_SETUP_AUTH_HEADER: "X-Auth"
+      AUTO_SETUP_URL: "/api/users/1"
+      AUTO_SETUP_METHOD: "PUT"
+      AUTO_SETUP_BODY: '{"password":"${APP_DEFAULT_PASSWORD}"}'
+      # Auto-login: login with the configured password
       AUTO_LOGIN_URL: "/api/login"
       AUTO_LOGIN_BODY: '{"username":"admin","password":"${APP_DEFAULT_PASSWORD}"}'
       AUTO_LOGIN_COOKIE_NAME: "auth"
@@ -66,9 +74,6 @@ networks:
 x-casaos:
   pre-install-cmd: |
     docker run --rm -v /DATA/AppData/$AppID/:/data alpine sh -c "mkdir -p /data/db && chown -R $PUID:$PGID /data"
-    docker run --rm -v /DATA/AppData/$AppID/db/:/db filebrowser/filebrowser:v2.32.0 config init --database /db/database.db --address 0.0.0.0 --port 80 2>/dev/null || true
-    docker run --rm -v /DATA/AppData/$AppID/db/:/db filebrowser/filebrowser:v2.32.0 users add admin $APP_DEFAULT_PASSWORD --perm.admin --database /db/database.db 2>/dev/null || true
-    docker run --rm -v /DATA/AppData/$AppID/:/data alpine sh -c "chown -R $PUID:$PGID /data"
   architectures:
     - amd64
     - arm64

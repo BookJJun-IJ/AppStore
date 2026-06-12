@@ -12,9 +12,10 @@ services:
       BACKEND_HOST: "qbittorrent-app"
       BACKEND_PORT: "80"
       LISTEN_PORT: "80"
-      AUTO_LOGIN_URL: "/api/v2/auth/login"
-      AUTO_LOGIN_BODY: "username=admin&password=adminadmin"
-      AUTO_LOGIN_CONTENT_TYPE: "application/x-www-form-urlencoded"
+      # Auto-setup: set password (no auth needed - Docker network whitelisted in qBittorrent config)
+      AUTO_SETUP_URL: "/api/v2/app/setPreferences"
+      AUTO_SETUP_BODY: 'json={"web_ui_password":"${APP_DEFAULT_PASSWORD}"}'
+      AUTO_SETUP_CONTENT_TYPE: "application/x-www-form-urlencoded"
     expose:
       - 80
     labels:
@@ -72,11 +73,7 @@ x-casaos:
   webui_port: 80
   pre-install-cmd: |
     mkdir -p /DATA/AppData/qbittorrent/config/qBittorrent &&
-    docker run --rm \
-      -v /DATA/AppData/qbittorrent/config/qBittorrent:/output \
-      -e QB_PASSWORD=adminadmin \
-      -e QB_USERNAME=admin \
-      ghcr.io/worph/qbittorrent-config:1.0.2
+    [ -f /DATA/AppData/qbittorrent/config/qBittorrent/qBittorrent.conf ] || printf '[Preferences]\nWebUI\\Port=80\nWebUI\\AuthSubnetWhitelistEnabled=true\nWebUI\\AuthSubnetWhitelist=172.0.0.0/8, 10.0.0.0/8, 192.168.0.0/16\n' > /DATA/AppData/qbittorrent/config/qBittorrent/qBittorrent.conf
   tips:
     before_install:
       en_us: |
