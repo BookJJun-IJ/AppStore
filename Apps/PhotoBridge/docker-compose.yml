@@ -1,15 +1,19 @@
 name: photobridge
 
 services:
-  photobridge:
-    image: ghcr.io/bookjjun-ij/photobridge:0.2.0-rc5
-    container_name: photobridge
+  photobridge-sidecar:
+    image: ghcr.io/bookjjun-ij/nginx-hash-lock:main
+    container_name: photobridge-sidecar
+    hostname: photobridge-sidecar
     restart: unless-stopped
     user: "0:0"
-    networks:
-      - pcs
+    environment:
+      OIDC_REGISTRAR_URL: "http://auth-registrar:9092"
+      BACKEND_HOST: "photobridge"
+      BACKEND_PORT: "80"
+      LISTEN_PORT: "80"
     expose:
-      - "80"
+      - 80
     labels:
       caddy_0: photobridge-${APP_DOMAIN}
       caddy_0.import: gateway_tls
@@ -22,6 +26,25 @@ services:
       caddy_2: photobridge-${APP_PUBLIC_IP_DASH}.sslip.io
       caddy_2.request_body.max_size: 10G
       caddy_2.reverse_proxy: "{{upstreams 80}}"
+    depends_on:
+      - photobridge
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    cpu_shares: 80
+    networks:
+      - pcs
+
+  photobridge:
+    image: ghcr.io/bookjjun-ij/photobridge:0.2.0-rc5
+    container_name: photobridge
+    restart: unless-stopped
+    user: "0:0"
+    networks:
+      - pcs
+    expose:
+      - "80"
     volumes:
       - /DATA/Gallery/Import:/import
     environment:
@@ -48,7 +71,7 @@ x-casaos:
   architectures:
     - amd64
     - arm64
-  main: photobridge
+  main: photobridge-sidecar
   webui_port: 80
   author: Yundera Team
   category: Utilities

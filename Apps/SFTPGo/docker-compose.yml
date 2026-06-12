@@ -1,6 +1,38 @@
 name: sftpgo
 
 services:
+  sftpgo-sidecar:
+    image: ghcr.io/bookjjun-ij/nginx-hash-lock:main
+    container_name: sftpgo-sidecar
+    hostname: sftpgo-sidecar
+    restart: unless-stopped
+    user: "0:0"
+    environment:
+      OIDC_REGISTRAR_URL: "http://auth-registrar:9092"
+      BACKEND_HOST: "sftpgo"
+      BACKEND_PORT: "80"
+      LISTEN_PORT: "80"
+    expose:
+      - 80
+    labels:
+      caddy_0: sftpgo-${APP_DOMAIN}
+      caddy_0.import: gateway_tls
+      caddy_0.reverse_proxy: "{{upstreams 80}}"
+      caddy_1: sftpgo-${APP_PUBLIC_IP_DASH}.nip.io
+      caddy_1.import: gateway_tls
+      caddy_1.reverse_proxy: "{{upstreams 80}}"
+      caddy_2: sftpgo-${APP_PUBLIC_IP_DASH}.sslip.io
+      caddy_2.reverse_proxy: "{{upstreams 80}}"
+    depends_on:
+      - sftpgo
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    cpu_shares: 80
+    networks:
+      - pcs
+
   sftpgo:
     image: drakkan/sftpgo:v2.7.0
     container_name: sftpgo
@@ -10,7 +42,7 @@ services:
       - pcs
     environment:
       SFTPGO_DEFAULT_ADMIN_USERNAME: admin
-      SFTPGO_DEFAULT_ADMIN_PASSWORD: $APP_DEFAULT_PASSWORD
+      SFTPGO_DEFAULT_ADMIN_PASSWORD: admin
       SFTPGO_DATA_PROVIDER__CREATE_DEFAULT_ADMIN: "true"
       SFTPGO_HTTPD__BINDINGS__0__PORT: 80
       SFTPGO_HTTPD__BINDINGS__0__PROXY_ALLOWED: "0.0.0.0/0"
@@ -26,14 +58,6 @@ services:
     ports:
       - "2022:2022"
     labels:
-      caddy_0: sftpgo-${APP_DOMAIN}
-      caddy_0.import: gateway_tls
-      caddy_0.reverse_proxy: "{{upstreams 80}}"
-      caddy_1: sftpgo-${APP_PUBLIC_IP_DASH}.nip.io
-      caddy_1.import: gateway_tls
-      caddy_1.reverse_proxy: "{{upstreams 80}}"
-      caddy_2: sftpgo-${APP_PUBLIC_IP_DASH}.sslip.io
-      caddy_2.reverse_proxy: "{{upstreams 80}}"
       caddy_3: sftpgo-dav-${APP_DOMAIN}
       caddy_3.import: gateway_tls
       caddy_3.reverse_proxy: "{{upstreams 8080}}"
@@ -61,7 +85,7 @@ x-casaos:
   architectures:
     - amd64
     - arm64
-  main: sftpgo
+  main: sftpgo-sidecar
   author: Yundera Team
   category: Utilities
   developer: Nicola Murino

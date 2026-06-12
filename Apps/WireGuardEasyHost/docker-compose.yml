@@ -1,11 +1,19 @@
 name: wgeasyhost
 
 services:
-  wgeasyhost:
-    image: nginx:1.27-alpine
-    container_name: wgeasyhost
+  wgeasyhost-sidecar:
+    image: ghcr.io/bookjjun-ij/nginx-hash-lock:main
+    container_name: wgeasyhost-sidecar
+    hostname: wgeasyhost-sidecar
     restart: unless-stopped
     user: "0:0"
+    environment:
+      OIDC_REGISTRAR_URL: "http://auth-registrar:9092"
+      BACKEND_HOST: "wgeasyhost"
+      BACKEND_PORT: "80"
+      LISTEN_PORT: "80"
+    expose:
+      - 80
     labels:
       caddy_0: wgeasyhost-${APP_DOMAIN}
       caddy_0.import: gateway_tls
@@ -15,6 +23,21 @@ services:
       caddy_1.reverse_proxy: "{{upstreams 80}}"
       caddy_2: wgeasyhost-${APP_PUBLIC_IP_DASH}.sslip.io
       caddy_2.reverse_proxy: "{{upstreams 80}}"
+    depends_on:
+      - wgeasyhost
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    cpu_shares: 80
+    networks:
+      - pcs
+
+  wgeasyhost:
+    image: nginx:1.27-alpine
+    container_name: wgeasyhost
+    restart: unless-stopped
+    user: "0:0"
     networks:
       - pcs
     expose:
@@ -86,7 +109,7 @@ x-casaos:
     - amd64
     - arm
     - arm64
-  main: wgeasyhost
+  main: wgeasyhost-sidecar
   store_app_id: wgeasyhost
   webui_port: 80
   index: /

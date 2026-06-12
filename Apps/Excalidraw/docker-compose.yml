@@ -1,6 +1,38 @@
 name: excalidraw
 
 services:
+  excalidraw-sidecar:
+    image: ghcr.io/bookjjun-ij/nginx-hash-lock:main
+    container_name: excalidraw-sidecar
+    hostname: excalidraw-sidecar
+    restart: unless-stopped
+    user: "0:0"
+    environment:
+      OIDC_REGISTRAR_URL: "http://auth-registrar:9092"
+      BACKEND_HOST: "excalidraw"
+      BACKEND_PORT: "80"
+      LISTEN_PORT: "80"
+    expose:
+      - 80
+    labels:
+      caddy_0: excalidraw-${APP_DOMAIN}
+      caddy_0.import: gateway_tls
+      caddy_0.reverse_proxy: "{{upstreams 80}}"
+      caddy_1: excalidraw-${APP_PUBLIC_IP_DASH}.nip.io
+      caddy_1.import: gateway_tls
+      caddy_1.reverse_proxy: "{{upstreams 80}}"
+      caddy_2: excalidraw-${APP_PUBLIC_IP_DASH}.sslip.io
+      caddy_2.reverse_proxy: "{{upstreams 80}}"
+    depends_on:
+      - excalidraw
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    cpu_shares: 80
+    networks:
+      - pcs
+
   # Redis - Data storage / Redis - 데이터 저장소
   redis:
     image: redis:7-alpine
@@ -14,6 +46,8 @@ services:
     volumes:
       - /DATA/AppData/$AppID/redis:/data
     command: redis-server --appendonly yes
+    networks:
+      - excalidraw-network
 
   # Storage Backend - Drawing storage and sharing server / Storage Backend - 그림 저장 및 공유 서버
   storage:
@@ -47,6 +81,8 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
+    networks:
+      - excalidraw-network
 
   # Room Server - Real-time collaboration server / Room Server - 실시간 협업 서버
   room:
@@ -67,6 +103,8 @@ services:
       - TZ=$TZ
     expose:
       - 3002
+    networks:
+      - excalidraw-network
 
   # Excalidraw Frontend - Main application / Excalidraw Frontend - 메인 애플리케이션
   excalidraw:
@@ -100,6 +138,9 @@ services:
     depends_on:
       - storage
       - room
+    networks:
+      - excalidraw-network
+      - pcs
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:80/ || exit 1"]
       interval: 30s
@@ -107,11 +148,18 @@ services:
       retries: 5
       start_period: 60s
 
+networks:
+  excalidraw-network:
+    driver: bridge
+  pcs:
+    name: pcs
+    external: true
+
 x-casaos:
   architectures:
     - amd64
     - arm64
-  main: excalidraw
+  main: excalidraw-sidecar
   webui_port: 80
   author: CasaOS Team
   category: Productivity

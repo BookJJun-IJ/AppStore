@@ -1,11 +1,17 @@
 name: suwayomi
 
 services:
-  suwayomi:
-    image: ghcr.io/suwayomi/tachidesk:v2.1.2087
-    user: $PUID:$PGID
-    container_name: suwayomi
+  suwayomi-sidecar:
+    image: ghcr.io/bookjjun-ij/nginx-hash-lock:main
+    container_name: suwayomi-sidecar
+    hostname: suwayomi-sidecar
     restart: unless-stopped
+    user: "0:0"
+    environment:
+      OIDC_REGISTRAR_URL: "http://auth-registrar:9092"
+      BACKEND_HOST: "suwayomi"
+      BACKEND_PORT: "80"
+      LISTEN_PORT: "80"
     expose:
       - 80
     labels:
@@ -17,6 +23,23 @@ services:
       caddy_1.reverse_proxy: "{{upstreams 80}}"
       caddy_2: suwayomi-${APP_PUBLIC_IP_DASH}.sslip.io
       caddy_2.reverse_proxy: "{{upstreams 80}}"
+    depends_on:
+      - suwayomi
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    cpu_shares: 80
+    networks:
+      - pcs
+
+  suwayomi:
+    image: ghcr.io/suwayomi/tachidesk:v2.1.2087
+    user: $PUID:$PGID
+    container_name: suwayomi
+    restart: unless-stopped
+    expose:
+      - 80
     networks:
       - pcs
     environment:
@@ -68,7 +91,7 @@ networks:
     external: true
 
 x-casaos:
-  main: suwayomi
+  main: suwayomi-sidecar
   webui_port: 80
   index: /
   store_app_id: suwayomi

@@ -1,6 +1,38 @@
 name: ollama
 
 services:
+  ollama-sidecar:
+    image: ghcr.io/bookjjun-ij/nginx-hash-lock:main
+    container_name: ollama-sidecar
+    hostname: ollama-sidecar
+    restart: unless-stopped
+    user: "0:0"
+    environment:
+      OIDC_REGISTRAR_URL: "http://auth-registrar:9092"
+      BACKEND_HOST: "ollama"
+      BACKEND_PORT: "8080"
+      LISTEN_PORT: "80"
+    expose:
+      - 80
+    labels:
+      caddy_0: ollama-${APP_DOMAIN}
+      caddy_0.import: gateway_tls
+      caddy_0.reverse_proxy: "{{upstreams 80}}"
+      caddy_1: ollama-${APP_PUBLIC_IP_DASH}.nip.io
+      caddy_1.import: gateway_tls
+      caddy_1.reverse_proxy: "{{upstreams 80}}"
+      caddy_2: ollama-${APP_PUBLIC_IP_DASH}.sslip.io
+      caddy_2.reverse_proxy: "{{upstreams 80}}"
+    depends_on:
+      - ollama
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    cpu_shares: 80
+    networks:
+      - pcs
+
   ollama:
     image: ghcr.io/open-webui/open-webui:v0.8.12
     container_name: ollama
@@ -10,15 +42,6 @@ services:
       - ollama-api
     expose:
       - 8080
-    labels:
-      caddy_0: ollama-${APP_DOMAIN}
-      caddy_0.import: gateway_tls
-      caddy_0.reverse_proxy: "{{upstreams 8080}}"
-      caddy_1: ollama-${APP_PUBLIC_IP_DASH}.nip.io
-      caddy_1.import: gateway_tls
-      caddy_1.reverse_proxy: "{{upstreams 8080}}"
-      caddy_2: ollama-${APP_PUBLIC_IP_DASH}.sslip.io
-      caddy_2.reverse_proxy: "{{upstreams 8080}}"
     environment:
       OLLAMA_BASE_URL: http://ollama-api:11434
       WEBUI_AUTH: "false"
@@ -51,13 +74,38 @@ services:
         limits:
           memory: 8G
 
+  ollama-model-init:
+    image: ollama/ollama:0.20.3
+    container_name: ollama-model-init
+    user: 0:0
+    depends_on:
+      - ollama-api
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        echo "Waiting for Ollama API to be ready..."
+        until curl -sf http://ollama-api:11434/api/tags > /dev/null 2>&1; do
+          sleep 3
+        done
+        echo "Ollama API is ready. Pulling qwen3:0.6b..."
+        OLLAMA_HOST=http://ollama-api:11434 ollama pull qwen3:0.6b
+        echo "Model qwen3:0.6b pulled successfully!"
+        tail -f /dev/null
+    networks:
+      - pcs
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    cpu_shares: 20
+
 networks:
   pcs:
     name: pcs
     external: true
 
 x-casaos:
-  main: ollama
+  main: ollama-sidecar
   store_app_id: ollama
   webui_port: 8080
   index: /
@@ -143,7 +191,7 @@ x-casaos:
 
         **How to use:**
         1. Open the app
-        2. Click the model selector and download a model (e.g. `llama3.2`)
+        2. Select `qwen3:0.6b` from the model selector (auto-downloaded)
         3. Start chatting!
 
         **Recommended Gemma 4 models:**
@@ -161,7 +209,7 @@ x-casaos:
 
         **사용 방법:**
         1. 앱 열기
-        2. 모델 선택기를 클릭하고 모델 다운로드 (예: `llama3.2`)
+        2. 모델 선택기에서 `qwen3:0.6b` 선택 (자동 다운로드됨)
         3. 대화 시작!
 
         **추천 Gemma 4 모델:**

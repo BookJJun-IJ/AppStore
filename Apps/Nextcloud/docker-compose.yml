@@ -1,6 +1,38 @@
 name: nextcloud
 
 services:
+  nextcloud-sidecar:
+    image: ghcr.io/bookjjun-ij/nginx-hash-lock:main
+    container_name: nextcloud-sidecar
+    hostname: nextcloud-sidecar
+    restart: unless-stopped
+    user: "0:0"
+    environment:
+      OIDC_REGISTRAR_URL: "http://auth-registrar:9092"
+      BACKEND_HOST: "nextcloud"
+      BACKEND_PORT: "80"
+      LISTEN_PORT: "80"
+    expose:
+      - 80
+    labels:
+      caddy_0: nextcloud-${APP_DOMAIN}
+      caddy_0.import: gateway_tls
+      caddy_0.reverse_proxy: "{{upstreams 80}}"
+      caddy_1: nextcloud-${APP_PUBLIC_IP_DASH}.nip.io
+      caddy_1.import: gateway_tls
+      caddy_1.reverse_proxy: "{{upstreams 80}}"
+      caddy_2: nextcloud-${APP_PUBLIC_IP_DASH}.sslip.io
+      caddy_2.reverse_proxy: "{{upstreams 80}}"
+    depends_on:
+      - nextcloud
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    cpu_shares: 80
+    networks:
+      - pcs
+
   nextcloud:
     image: nextcloud:31.0.7
     container_name: nextcloud
@@ -39,6 +71,7 @@ services:
     restart: unless-stopped
     networks:
       - nextcloud-network
+      - pcs
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost/status.php"]
       interval: 30s
@@ -103,9 +136,12 @@ services:
 networks:
   nextcloud-network:
     driver: bridge
+  pcs:
+    name: pcs
+    external: true
 
 x-casaos:
-  main: nextcloud
+  main: nextcloud-sidecar
   webui_port: 80
   category: Utilities
   architectures: [amd64, arm64]

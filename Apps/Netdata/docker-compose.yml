@@ -1,13 +1,14 @@
 name: netdata
 
 services:
-  nginxhashlock:
-    image: ghcr.io/yundera/nginx-hash-lock:latest
-    container_name: netdata-nginxhashlock
+  netdata-sidecar:
+    image: ghcr.io/bookjjun-ij/nginx-hash-lock:main
+    container_name: netdata-sidecar
+    hostname: netdata-sidecar
     restart: unless-stopped
-    user: "root"
+    user: "0:0"
     environment:
-      AUTH_HASH: $AUTH_HASH
+      OIDC_REGISTRAR_URL: "http://auth-registrar:9092"
       BACKEND_HOST: "netdata"
       BACKEND_PORT: "19999"
       LISTEN_PORT: "80"
@@ -31,10 +32,6 @@ services:
     cpu_shares: 80
     networks:
       - pcs
-    privileged: true
-    cap_add:
-      - SYS_ADMIN
-      - NET_ADMIN
   netdata:
     image: netdata/netdata:v2.9.0
     hostname: netdata
@@ -82,7 +79,7 @@ x-casaos:
   architectures:
     - amd64
     - arm64
-  main: nginxhashlock
+  main: netdata-sidecar
   author: Yundera Team
   category: Utilities
   description:
@@ -178,7 +175,7 @@ x-casaos:
         **Acceso**: Después de la instalación, accede en `https://netdata-username.nsl.sh`
 
         **Nota**: Netdata requiere privilegios elevados para monitorear recursos del sistema.
-  index: /?hash=$AUTH_HASH
+  index: /
   webui_port: 80
   scheme: https
   store_app_id: netdata

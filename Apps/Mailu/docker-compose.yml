@@ -50,6 +50,38 @@ services:
       - mailu-network
     cpu_shares: 30
 
+  mailu-sidecar:
+    image: ghcr.io/bookjjun-ij/nginx-hash-lock:main
+    container_name: mailu-sidecar
+    hostname: mailu-sidecar
+    restart: unless-stopped
+    user: "0:0"
+    environment:
+      OIDC_REGISTRAR_URL: "http://auth-registrar:9092"
+      BACKEND_HOST: "mailu-front"
+      BACKEND_PORT: "80"
+      LISTEN_PORT: "80"
+    expose:
+      - 80
+    labels:
+      caddy_0: mailu-${APP_DOMAIN}
+      caddy_0.import: gateway_tls
+      caddy_0.reverse_proxy: "{{upstreams 80}}"
+      caddy_1: mailu-${APP_PUBLIC_IP_DASH}.nip.io
+      caddy_1.import: gateway_tls
+      caddy_1.reverse_proxy: "{{upstreams 80}}"
+      caddy_2: mailu-${APP_PUBLIC_IP_DASH}.sslip.io
+      caddy_2.reverse_proxy: "{{upstreams 80}}"
+    depends_on:
+      - front
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    cpu_shares: 80
+    networks:
+      - pcs
+
   front:
     image: ghcr.io/mailu/nginx:2024.06
     container_name: mailu-front
@@ -70,15 +102,6 @@ services:
     dns:
       - 9.9.9.9
       - 1.1.1.1
-    labels:
-      caddy_0: mailu-${APP_DOMAIN}
-      caddy_0.import: gateway_tls
-      caddy_0.reverse_proxy: "{{upstreams 80}}"
-      caddy_1: mailu-${APP_PUBLIC_IP_DASH}.nip.io
-      caddy_1.import: gateway_tls
-      caddy_1.reverse_proxy: "{{upstreams 80}}"
-      caddy_2: mailu-${APP_PUBLIC_IP_DASH}.sslip.io
-      caddy_2.reverse_proxy: "{{upstreams 80}}"
     volumes:
       - /DATA/AppData/$AppID/certs:/certs
       - /DATA/AppData/$AppID/overrides/nginx:/overrides:ro
@@ -218,7 +241,7 @@ x-casaos:
     en_us: Self-hosted email server with web admin and webmail
     ko_kr: 웹 관리자와 웹메일을 갖춘 셀프 호스팅 이메일 서버
   store_app_id: mailu
-  main: front
+  main: mailu-sidecar
   webui_port: 80
   index: /admin
   description:
