@@ -45,6 +45,11 @@ services:
     environment:
       OLLAMA_BASE_URL: http://ollama-api:11434
       WEBUI_AUTH: "false"
+      WEBUI_ADMIN_EMAIL: "admin@localhost"
+      WEBUI_ADMIN_PASSWORD: "admin"
+      WEBUI_ADMIN_NAME: "Admin"
+      ENABLE_SIGNUP: "false"
+      ENABLE_LOGIN_FORM: "true"
     volumes:
       - /DATA/AppData/$AppID/webui/:/app/backend/data
     networks:
