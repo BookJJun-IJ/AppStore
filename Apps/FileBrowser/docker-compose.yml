@@ -9,7 +9,6 @@ services:
       TZ: $TZ
       FB_DATABASE: /db/database.db
     image: filebrowser/filebrowser:v2.63.1
-    command: ["--noauth"]
     restart: unless-stopped
     volumes:
       - type: bind
@@ -41,6 +40,10 @@ services:
       BACKEND_HOST: "filebrowser-app"
       BACKEND_PORT: "80"
       LISTEN_PORT: "80"
+      AUTO_LOGIN_URL: "/api/login"
+      AUTO_LOGIN_BODY: '{"username":"admin","password":"${APP_DEFAULT_PASSWORD}"}'
+      AUTO_LOGIN_COOKIE_NAME: "auth"
+      AUTO_LOGIN_LOCALSTORAGE_KEY: "jwt"
     depends_on:
       - filebrowser-app
     labels:
@@ -63,7 +66,8 @@ networks:
 x-casaos:
   pre-install-cmd: |
     docker run --rm -v /DATA/AppData/$AppID:/data alpine sh -c "mkdir -p /data/db && chown -R $PUID:$PGID /data"
-    docker run --rm -v /DATA/AppData/$AppID/db:/db filebrowser/filebrowser:v2.63.1 config init --database /db/database.db --address 0.0.0.0 --port 80 2>/dev/null || true
+    docker run --rm -v /DATA/AppData/$AppID/db:/db filebrowser/filebrowser:v2.32.0 config init --database /db/database.db --address 0.0.0.0 --port 80 2>/dev/null || true
+    docker run --rm -v /DATA/AppData/$AppID/db:/db filebrowser/filebrowser:v2.32.0 users add admin $APP_DEFAULT_PASSWORD --perm.admin --database /db/database.db 2>/dev/null || true
     docker run --rm -v /DATA/AppData/$AppID:/data alpine sh -c "chown -R $PUID:$PGID /data"
   architectures:
     - amd64
