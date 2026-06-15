@@ -2,7 +2,7 @@ name: nextcloud
 
 services:
   nextcloud-sidecar:
-    image: ghcr.io/bookjjun-ij/nginx-hash-lock:main
+    image: ghcr.io/yundera/nginx-hash-lock:main
     container_name: nextcloud-sidecar
     hostname: nextcloud-sidecar
     restart: unless-stopped

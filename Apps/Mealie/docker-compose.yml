@@ -31,7 +31,7 @@ services:
       - /DATA/AppData/$AppID/data/:/app/data
 
   mealie:
-    image: ghcr.io/bookjjun-ij/nginx-hash-lock:main
+    image: ghcr.io/yundera/nginx-hash-lock:main
     container_name: mealie
     hostname: mealie
     restart: unless-stopped

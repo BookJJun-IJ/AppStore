@@ -51,7 +51,7 @@ services:
     cpu_shares: 30
 
   mailu-sidecar:
-    image: ghcr.io/bookjjun-ij/nginx-hash-lock:main
+    image: ghcr.io/yundera/nginx-hash-lock:main
     container_name: mailu-sidecar
     hostname: mailu-sidecar
     restart: unless-stopped

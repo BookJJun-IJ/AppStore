@@ -2,7 +2,7 @@ name: mattermost
 
 services:
   mattermost-sidecar:
-    image: ghcr.io/bookjjun-ij/nginx-hash-lock:main
+    image: ghcr.io/yundera/nginx-hash-lock:main
     container_name: mattermost-sidecar
     hostname: mattermost-sidecar
     restart: unless-stopped

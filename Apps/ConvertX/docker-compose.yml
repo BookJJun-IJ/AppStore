@@ -2,7 +2,7 @@ name: convertx
 
 services:
   convertx:
-    image: ghcr.io/bookjjun-ij/nginx-hash-lock:main
+    image: ghcr.io/yundera/nginx-hash-lock:main
     container_name: convertx
     hostname: convertx
     restart: unless-stopped

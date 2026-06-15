@@ -2,7 +2,7 @@ name: wgeasy
 
 services:
   wgeasy-sidecar:
-    image: ghcr.io/bookjjun-ij/nginx-hash-lock:main
+    image: ghcr.io/yundera/nginx-hash-lock:main
     container_name: wgeasy-sidecar
     hostname: wgeasy-sidecar
     restart: unless-stopped

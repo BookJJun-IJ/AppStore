@@ -2,7 +2,7 @@ name: suwayomi
 
 services:
   suwayomi-sidecar:
-    image: ghcr.io/bookjjun-ij/nginx-hash-lock:main
+    image: ghcr.io/yundera/nginx-hash-lock:main
     container_name: suwayomi-sidecar
     hostname: suwayomi-sidecar
     restart: unless-stopped
@@ -48,9 +48,7 @@ services:
       TZ: $TZ
       BIND_IP: 0.0.0.0
       BIND_PORT: 80
-      AUTH_MODE: simple_login
-      AUTH_USERNAME: admin
-      AUTH_PASSWORD: $APP_DEFAULT_PASSWORD
+      AUTH_MODE: none
       DOWNLOAD_AS_CBZ: true
       AUTO_DOWNLOAD_CHAPTERS: false
       WEB_UI_CHANNEL: bundled

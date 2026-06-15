@@ -2,7 +2,7 @@ name: rocketchat
 
 services:
   rocketchat-sidecar:
-    image: ghcr.io/bookjjun-ij/nginx-hash-lock:main
+    image: ghcr.io/yundera/nginx-hash-lock:main
     container_name: rocketchat-sidecar
     hostname: rocketchat-sidecar
     restart: unless-stopped

@@ -17,7 +17,7 @@ configs:
 
 services:
   gatus-sidecar:
-    image: ghcr.io/bookjjun-ij/nginx-hash-lock:main
+    image: ghcr.io/yundera/nginx-hash-lock:main
     container_name: gatus-sidecar
     hostname: gatus-sidecar
     restart: unless-stopped

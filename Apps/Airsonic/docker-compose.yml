@@ -2,7 +2,7 @@ name: airsonic
 
 services:
   airsonic-sidecar:
-    image: ghcr.io/bookjjun-ij/nginx-hash-lock:main
+    image: ghcr.io/yundera/nginx-hash-lock:main
     container_name: airsonic-sidecar
     hostname: airsonic-sidecar
     restart: unless-stopped

@@ -2,7 +2,7 @@ name: stirlingpdf
 
 services:
   stirlingpdf-sidecar:
-    image: ghcr.io/bookjjun-ij/nginx-hash-lock:main
+    image: ghcr.io/yundera/nginx-hash-lock:main
     container_name: stirlingpdf-sidecar
     hostname: stirlingpdf-sidecar
     restart: unless-stopped
@@ -12,9 +12,6 @@ services:
       BACKEND_HOST: "stirling-pdf"
       BACKEND_PORT: "80"
       LISTEN_PORT: "80"
-      AUTO_LOGIN_URL: "/login"
-      AUTO_LOGIN_BODY: "username=admin&password=admin"
-      AUTO_LOGIN_CONTENT_TYPE: "application/x-www-form-urlencoded"
     expose:
       - 80
     labels:
@@ -57,8 +54,8 @@ services:
       PGID: 0
       PUID: 0
       TZ: $TZ
-      DOCKER_ENABLE_SECURITY: true
-      SECURITY_ENABLELOGIN: true
+      DOCKER_ENABLE_SECURITY: false
+      SECURITY_ENABLELOGIN: false
       SECURITY_INITIALLOGIN_USERNAME: admin
       SECURITY_INITIALLOGIN_PASSWORD: admin
       DISABLE_ADDITIONAL_FEATURES: true

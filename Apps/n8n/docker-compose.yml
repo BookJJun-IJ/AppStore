@@ -2,7 +2,7 @@ name: n8n
 
 services:
   n8n-sidecar:
-    image: ghcr.io/bookjjun-ij/nginx-hash-lock:main
+    image: ghcr.io/yundera/nginx-hash-lock:main
     container_name: n8n-sidecar
     hostname: n8n-sidecar
     restart: unless-stopped

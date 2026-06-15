@@ -2,7 +2,7 @@ name: notediscovery
 
 services:
   notediscovery-sidecar:
-    image: ghcr.io/bookjjun-ij/nginx-hash-lock:main
+    image: ghcr.io/yundera/nginx-hash-lock:main
     container_name: notediscovery-sidecar
     hostname: notediscovery-sidecar
     restart: unless-stopped
@@ -47,7 +47,7 @@ services:
     environment:
       TZ: $TZ
       PORT: 80
-      AUTHENTICATION_ENABLED: true
+      AUTHENTICATION_ENABLED: false
       AUTHENTICATION_PASSWORD: $APP_DEFAULT_PASSWORD
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:80/health')"]

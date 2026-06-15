@@ -49,7 +49,7 @@ services:
     cpu_shares: 30
 
   docmost-sidecar:
-    image: ghcr.io/bookjjun-ij/nginx-hash-lock:main
+    image: ghcr.io/yundera/nginx-hash-lock:main
     container_name: docmost-sidecar
     hostname: docmost-sidecar
     restart: unless-stopped

@@ -2,7 +2,7 @@ name: sist2
 
 services:
   sist2-sidecar:
-    image: ghcr.io/bookjjun-ij/nginx-hash-lock:main
+    image: ghcr.io/yundera/nginx-hash-lock:main
     container_name: sist2-sidecar
     hostname: sist2-sidecar
     restart: unless-stopped

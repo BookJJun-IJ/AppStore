@@ -1,7 +1,7 @@
 name: flarum
 services:
   flarum-sidecar:
-    image: ghcr.io/bookjjun-ij/nginx-hash-lock:main
+    image: ghcr.io/yundera/nginx-hash-lock:main
     container_name: flarum-sidecar
     hostname: flarum-sidecar
     restart: unless-stopped

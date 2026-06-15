@@ -1,7 +1,7 @@
 name: moodle
 services:
   moodle-sidecar:
-    image: ghcr.io/bookjjun-ij/nginx-hash-lock:main
+    image: ghcr.io/yundera/nginx-hash-lock:main
     container_name: moodle-sidecar
     hostname: moodle-sidecar
     restart: unless-stopped

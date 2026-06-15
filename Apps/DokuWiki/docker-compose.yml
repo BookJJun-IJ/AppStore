@@ -2,7 +2,7 @@ name: dokuwiki
 
 services:
   dokuwiki-sidecar:
-    image: ghcr.io/bookjjun-ij/nginx-hash-lock:main
+    image: ghcr.io/yundera/nginx-hash-lock:main
     container_name: dokuwiki-sidecar
     hostname: dokuwiki-sidecar
     restart: unless-stopped
@@ -58,6 +58,14 @@ networks:
     external: true
 
 x-casaos:
+  pre-install-cmd: |
+    mkdir -p /DATA/AppData/$AppID/storage/conf &&
+    cat > /DATA/AppData/$AppID/storage/conf/local.php << 'EOF'
+    <?php
+    $conf['title'] = 'DokuWiki';
+    $conf['useacl'] = 0;
+    $conf['lang'] = 'en';
+    EOF
   architectures:
     - amd64
     - arm64

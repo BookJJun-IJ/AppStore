@@ -2,7 +2,7 @@ name: openclaw
 
 services:
   openclaw-sidecar:
-    image: ghcr.io/bookjjun-ij/nginx-hash-lock:main
+    image: ghcr.io/yundera/nginx-hash-lock:main
     container_name: openclaw-sidecar
     hostname: openclaw-sidecar
     restart: unless-stopped

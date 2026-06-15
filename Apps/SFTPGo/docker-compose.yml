@@ -2,7 +2,7 @@ name: sftpgo
 
 services:
   sftpgo-sidecar:
-    image: ghcr.io/bookjjun-ij/nginx-hash-lock:main
+    image: ghcr.io/yundera/nginx-hash-lock:main
     container_name: sftpgo-sidecar
     hostname: sftpgo-sidecar
     restart: unless-stopped

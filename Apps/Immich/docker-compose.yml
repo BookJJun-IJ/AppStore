@@ -2,7 +2,7 @@ name: immich
 
 services:
   immich-sidecar:
-    image: ghcr.io/bookjjun-ij/nginx-hash-lock:main
+    image: ghcr.io/yundera/nginx-hash-lock:main
     container_name: immich-sidecar
     hostname: immich-sidecar
     restart: unless-stopped

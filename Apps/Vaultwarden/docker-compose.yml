@@ -2,7 +2,7 @@ name: vaultwarden
 
 services:
   vaultwarden-sidecar:
-    image: ghcr.io/bookjjun-ij/nginx-hash-lock:main
+    image: ghcr.io/yundera/nginx-hash-lock:main
     container_name: vaultwarden-sidecar
     hostname: vaultwarden-sidecar
     restart: unless-stopped

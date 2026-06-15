@@ -2,7 +2,7 @@ name: jellyfin
 
 services:
   jellyfin-proxy:
-    image: ghcr.io/bookjjun-ij/nginx-hash-lock:main
+    image: ghcr.io/yundera/nginx-hash-lock:main
     container_name: jellyfin-proxy
     hostname: jellyfin-proxy
     restart: unless-stopped

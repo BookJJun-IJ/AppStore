@@ -2,7 +2,7 @@ name: outline
 
 services:
   outline-sidecar:
-    image: ghcr.io/bookjjun-ij/nginx-hash-lock:main
+    image: ghcr.io/yundera/nginx-hash-lock:main
     container_name: outline-sidecar
     hostname: outline-sidecar
     restart: unless-stopped

@@ -2,7 +2,7 @@ name: uptimekuma
 
 services:
   uptimekuma-sidecar:
-    image: ghcr.io/bookjjun-ij/nginx-hash-lock:main
+    image: ghcr.io/yundera/nginx-hash-lock:main
     container_name: uptimekuma-sidecar
     hostname: uptimekuma-sidecar
     restart: unless-stopped

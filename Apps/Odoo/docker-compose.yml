@@ -28,7 +28,7 @@ services:
       - odoo-internal
 
   odoo-sidecar:
-    image: ghcr.io/bookjjun-ij/nginx-hash-lock:main
+    image: ghcr.io/yundera/nginx-hash-lock:main
     container_name: odoo-sidecar
     hostname: odoo-sidecar
     restart: unless-stopped
