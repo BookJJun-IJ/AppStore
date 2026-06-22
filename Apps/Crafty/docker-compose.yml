@@ -24,11 +24,11 @@ services:
     environment:
       TZ: $TZ
     volumes:
-      - /DATA/AppData/$AppID/backups:/crafty/backups
-      - /DATA/AppData/$AppID/logs:/crafty/logs
-      - /DATA/AppData/$AppID/servers:/crafty/servers
-      - /DATA/AppData/$AppID/config:/crafty/app/config
-      - /DATA/AppData/$AppID/import:/crafty/import
+      - /DATA/AppData/$AppID/backups/:/crafty/backups
+      - /DATA/AppData/$AppID/logs/:/crafty/logs
+      - /DATA/AppData/$AppID/servers/:/crafty/servers
+      - /DATA/AppData/$AppID/config/:/crafty/app/config
+      - /DATA/AppData/$AppID/import/:/crafty/import
     networks:
       - pcs
 
