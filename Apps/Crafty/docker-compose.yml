@@ -1,26 +1,88 @@
 name: crafty
+
 services:
   crafty:
-    image: registry.gitlab.com/crafty-controller/crafty-4:4.10.3
+    image: ghcr.io/yundera/nginx-hash-lock:1.0.7
     container_name: crafty
-    user: 0:0                          # see rationale.md: Crafty's entrypoint fixes its own perms as root, then drops to its internal non-root user
-    cpu_shares: 50
     restart: unless-stopped
+    user: "0:0"
+    cpu_shares: 80
+    deploy:
+      resources:
+        limits:
+          memory: 128M
     expose:
-      - 8443                           # Crafty's self-signed HTTPS web UI, for Caddy discovery
-    ports:
-      - "25500-25600:25500-25600"      # Minecraft Java server port pool (Crafty's default range for new servers)
-      - "19132:19132/udp"              # Minecraft Bedrock
-      - "8123:8123"                    # Dynmap
+      - "80"
     labels:
       caddy_0: crafty-${APP_DOMAIN}
       caddy_0.import: gateway_tls
-      caddy_0.reverse_proxy: "{{upstreams 8443}}"
-      caddy_1: crafty-${APP_PUBLIC_IP_DASH}.nip.io
+      caddy_0.reverse_proxy: "{{upstreams 80}}"
+      caddy_1: crafty-\${APP_PUBLIC_IP_DASH}.nip.io
       caddy_1.import: gateway_tls
-      caddy_1.reverse_proxy: "{{upstreams 8443}}"
-      caddy_2: crafty-${APP_PUBLIC_IP_DASH}.sslip.io
-      caddy_2.reverse_proxy: "{{upstreams 8443}}"
+      caddy_1.reverse_proxy: "{{upstreams 80}}"
+      caddy_2: crafty-\${APP_PUBLIC_IP_DASH}.sslip.io
+      caddy_2.reverse_proxy: "{{upstreams 80}}"
+    environment:
+      OIDC_REGISTRAR_URL: "http://auth-registrar:9092"
+      BACKEND_HOST: crafty-relay
+      BACKEND_PORT: "80"
+      LISTEN_PORT: "80"
+    depends_on:
+      - crafty-relay
+    networks:
+      - pcs
+
+  crafty-relay:
+    image: nginx:1.27-alpine
+    container_name: crafty-relay
+    restart: unless-stopped
+    user: "0:0"
+    cpu_shares: 80
+    deploy:
+      resources:
+        limits:
+          memory: 32M
+    expose:
+      - "80"
+    command:
+      - sh
+      - -c
+      - |
+        cat > /etc/nginx/nginx.conf << 'EOF'
+        events {}
+        http {
+          server {
+            listen 80;
+            location / {
+              proxy_pass https://crafty-backend:8443;
+              proxy_ssl_verify off;
+              proxy_http_version 1.1;
+              proxy_set_header Upgrade $$http_upgrade;
+              proxy_set_header Connection "upgrade";
+              proxy_set_header Host $$host;
+              proxy_set_header X-Real-IP $$remote_addr;
+            }
+          }
+        }
+        EOF
+        nginx -g "daemon off;"
+    depends_on:
+      - crafty-backend
+    networks:
+      - pcs
+
+  crafty-backend:
+    image: registry.gitlab.com/crafty-controller/crafty-4:4.10.3
+    container_name: crafty-backend
+    restart: unless-stopped
+    user: "0:0"
+    cpu_shares: 50
+    expose:
+      - "8443"
+    ports:
+      - "25500-25600:25500-25600"      # Minecraft Java server port pool
+      - "19132:19132/udp"              # Minecraft Bedrock
+      - "8123:8123"                    # Dynmap
     environment:
       TZ: $TZ
     volumes:
@@ -42,6 +104,8 @@ x-casaos:
     - amd64
     - arm64
   main: crafty
+  store_app_id: crafty
+  webui_port: 80
   index: /
   author: Yundera Team
   developer: Arcadia Technology
@@ -75,28 +139,21 @@ x-casaos:
       생성, 실행, 관리할 수 있는 웹 GUI입니다. 서버 프로세스 실행 및 관리,
       백업 자동화, 일반 로더 기반 서버 생성, 실시간 콘솔 접근, 사용자별 역할
       및 권한을 지원합니다.
+    es_es: |
+      Crafty Controller es una interfaz web para crear, ejecutar y gestionar
+      servidores de Minecraft (Java y Bedrock) desde tu navegador. Lanza y
+      supervisa los procesos del servidor, automatiza las copias de seguridad,
+      crea servidores a partir de loaders comunes, da acceso a la consola en
+      vivo y admite roles y permisos por usuario.
   tips:
     before_install:
       en_us: |
-        After install, open the app and log in.
+        After the SSO login, Crafty will prompt you for its own credentials.
 
-        Default account:
-        | Username | Password                |
-        | -------- | ----------------------- |
-        | `admin`  | `$APP_DEFAULT_PASSWORD` |
+        Crafty generates its own admin password on first boot.
+        Find it in the Files app at:
+        `AppData/crafty/config/default-creds.txt`
 
-        Please change this password immediately after your first login.
-
-        If the preset password does not work, Crafty generated its own on first
-        boot. Open the Files app and read the file at
-        `AppData/crafty/config/default-creds.txt`.
-
-        Note: Minecraft servers you create must use a port in the 25500-25600
-        range (the ports this app publishes). Bedrock servers use UDP 19132.
-  pre-install-cmd: |
-    mkdir -p /DATA/AppData/$AppID/config/ /DATA/AppData/$AppID/servers/ /DATA/AppData/$AppID/backups/ /DATA/AppData/$AppID/logs/ /DATA/AppData/$AppID/import/
-    chown $PUID:$PGID /DATA/AppData/$AppID/
-    if [ ! -f /DATA/AppData/$AppID/.initialized ]; then
-      printf '{"username":"admin","password":"%s"}' "$APP_DEFAULT_PASSWORD" > /DATA/AppData/$AppID/config/default.json
-      touch /DATA/AppData/$AppID/.initialized
-    fi
+        **Minecraft server ports:**
+        Servers you create must use a port in the **25500–25600** range.
+        Bedrock servers use **UDP 19132**.
