@@ -1,57 +1,31 @@
 name: ollama
 
 services:
-  ollama-sidecar:
-    image: ghcr.io/yundera/nginx-hash-lock:main
+  ollama:
+    image: ghcr.io/open-webui/open-webui:v0.8.12
     container_name: ollama
-    hostname: ollama
     restart: unless-stopped
-    user: "0:0"
-    environment:
-      OIDC_REGISTRAR_URL: "http://auth-registrar:9092"
-      BACKEND_HOST: "ollama-webui"
-      BACKEND_PORT: "8080"
-      LISTEN_PORT: "80"
+    user: 0:0
+    depends_on:
+      - ollama-api
     expose:
-      - 80
+      - 8080
     labels:
       caddy_0: ollama-${APP_DOMAIN}
       caddy_0.import: gateway_tls
-      caddy_0.reverse_proxy: "{{upstreams 80}}"
+      caddy_0.reverse_proxy: "{{upstreams 8080}}"
       caddy_1: ollama-${APP_PUBLIC_IP_DASH}.nip.io
       caddy_1.import: gateway_tls
-      caddy_1.reverse_proxy: "{{upstreams 80}}"
+      caddy_1.reverse_proxy: "{{upstreams 8080}}"
       caddy_2: ollama-${APP_PUBLIC_IP_DASH}.sslip.io
-      caddy_2.reverse_proxy: "{{upstreams 80}}"
-    depends_on:
-      - ollama-webui
-    deploy:
-      resources:
-        limits:
-          memory: 128M
-    cpu_shares: 80
-    networks:
-      - pcs
-
-  ollama-webui:
-    image: ghcr.io/open-webui/open-webui:0.9.6
-    user: 0:0
-    container_name: ollama-webui
-    restart: unless-stopped
-    expose:
-      - 8080
-    networks:
-      - default
-      - pcs
+      caddy_2.reverse_proxy: "{{upstreams 8080}}"
     environment:
       OLLAMA_BASE_URL: http://ollama-api:11434
       WEBUI_AUTH: "false"
-      WEBUI_URL: https://ollama-${APP_DOMAIN}
-      WEBUI_SECRET_KEY: $APP_DEFAULT_PASSWORD
     volumes:
-      - /DATA/AppData/ollama/webui:/app/backend/data
-    depends_on:
-      - ollama-api
+      - /DATA/AppData/$AppID/webui/:/app/backend/data
+    networks:
+      - pcs
     cpu_shares: 50
     deploy:
       resources:
@@ -59,46 +33,34 @@ services:
           memory: 1G
 
   ollama-api:
-    image: ollama/ollama:0.30.7
-    user: 0:0
+    image: ollama/ollama:0.20.3
     container_name: ollama-api
     restart: unless-stopped
+    user: 0:0
     expose:
       - 11434
-    networks:
-      - default
     environment:
-      OLLAMA_KEEP_ALIVE: "30m"
-      OLLAMA_NUM_PARALLEL: "1"
-      OLLAMA_MAX_LOADED_MODELS: "1"
+      OLLAMA_HOST: 0.0.0.0:11434
     volumes:
-      - /DATA/AppData/ollama/data:/root/.ollama
-    cpu_shares: 20
-
-  ollama-init:
-    image: ollama/ollama:0.30.7
-    container_name: ollama-init
-    restart: "no"
-    entrypoint: ["sh", "-c", "until ollama list >/dev/null 2>&1; do sleep 3; done && ollama pull qwen3:0.6b"]
-    environment:
-      OLLAMA_HOST: "http://ollama-api:11434"
+      - /DATA/AppData/$AppID/data/:/root/.ollama
     networks:
-      - default
-    depends_on:
-      - ollama-api
+      - pcs
+    cpu_shares: 80
+    deploy:
+      resources:
+        limits:
+          memory: 8G
 
 networks:
-  default:
-    name: ollama_default
   pcs:
     name: pcs
     external: true
 
 x-casaos:
-  main: ollama-sidecar
-  index: /
+  main: ollama
   store_app_id: ollama
-  webui_port: 80
+  webui_port: 8080
+  index: /
   pre-install-cmd: |
     mkdir -p /DATA/AppData/ollama/data &&
     mkdir -p /DATA/AppData/ollama/webui
@@ -106,8 +68,8 @@ x-casaos:
     - amd64
     - arm64
   author: Yundera Team
-  category: Chat
-  developer: Open WebUI
+  category: AI
+  developer: Ollama & Open WebUI
   icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Ollama/icon.png
   screenshot_link:
     - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Ollama/screenshot-1.png
@@ -117,131 +79,96 @@ x-casaos:
   title:
     en_us: Ollama
   tagline:
-    en_us: Run and chat with private AI models on your own server
-    fr_fr: Exécutez et discutez avec des modèles d'IA privés sur votre propre serveur
-    es_es: Ejecuta y chatea con modelos de IA privados en tu propio servidor
-    zh_cn: 在您自己的服务器上运行并与私有AI模型聊天
-    ko_kr: 자체 서버에서 비공개 AI 모델을 실행하고 대화하세요
+    en_us: Run Google Gemma 4 AI models locally with a chat interface
+    ko_kr: Google Gemma 4 AI 모델을 로컬에서 실행하세요
+    zh_cn: 在本地运行Google Gemma 4 AI模型
+    fr_fr: Exécutez les modèles IA Google Gemma 4 localement
+    es_es: Ejecuta modelos de IA Google Gemma 4 localmente
   description:
     en_us: |
-      Ollama with Open WebUI gives you a private, self-hosted ChatGPT-style assistant that runs entirely on your own server — no data leaves your machine.
+      Run powerful AI models directly on your server with no cloud dependency. Ollama with Open WebUI gives you a ChatGPT-like experience, completely private and under your control.
 
       **Key features:**
-      • Chat with open-source models (Qwen, Llama, Gemma, DeepSeek, and more)
-      • Download and manage models from the built-in interface
-      • Multiple conversations with full history, saved locally
-      • Markdown, code highlighting, and document/image chat
-      • Authentication managed via SSO
+      • Run Google Gemma 4 models locally — from ultra-light E2B (4GB) to powerful 26B MoE
+      • Beautiful chat interface similar to ChatGPT
+      • Multimodal support — chat with text and images
+      • Conversation history saved locally
+      • No API keys or subscriptions needed
 
-      **Perfect for:** Anyone who wants a fully private AI chat assistant without sending prompts to a cloud provider.
-
-      **Note:** Runs on CPU by default — start with small models (1–3B). Larger models need more RAM or a GPU.
-    fr_fr: |
-      Ollama avec Open WebUI vous offre un assistant privé de type ChatGPT, auto-hébergé et fonctionnant entièrement sur votre propre serveur — aucune donnée ne quitte votre machine.
-
-      **Fonctionnalités clés :**
-      • Discutez avec des modèles open source (Qwen, Llama, Gemma, DeepSeek, etc.)
-      • Téléchargez et gérez les modèles depuis l'interface intégrée
-      • Plusieurs conversations avec historique complet, enregistrées localement
-      • Markdown, coloration syntaxique et discussion avec documents/images
-      • Authentification gérée via SSO
-
-      **Parfait pour :** Toute personne souhaitant un assistant IA totalement privé sans envoyer ses requêtes à un fournisseur cloud.
-
-      **Remarque :** Fonctionne sur CPU par défaut — commencez par de petits modèles (1–3B). Les modèles plus grands nécessitent plus de RAM ou un GPU.
-    es_es: |
-      Ollama con Open WebUI te ofrece un asistente privado tipo ChatGPT, autoalojado y que funciona completamente en tu propio servidor: ningún dato sale de tu máquina.
-
-      **Características clave:**
-      • Chatea con modelos de código abierto (Qwen, Llama, Gemma, DeepSeek y más)
-      • Descarga y gestiona modelos desde la interfaz integrada
-      • Múltiples conversaciones con historial completo, guardadas localmente
-      • Markdown, resaltado de código y chat con documentos/imágenes
-      • Autenticación gestionada a través de SSO
-
-      **Perfecto para:** Cualquiera que quiera un asistente de IA totalmente privado sin enviar sus mensajes a un proveedor en la nube.
-
-      **Nota:** Funciona en CPU por defecto: empieza con modelos pequeños (1–3B). Los modelos más grandes necesitan más RAM o una GPU.
-    zh_cn: |
-      Ollama 搭配 Open WebUI 为您提供一个私有的、自托管的 ChatGPT 式助手，完全运行在您自己的服务器上——没有任何数据离开您的设备。
-
-      **主要功能：**
-      • 与开源模型聊天（Qwen、Llama、Gemma、DeepSeek 等）
-      • 通过内置界面下载和管理模型
-      • 多个对话，保留完整历史记录，本地保存
-      • 支持 Markdown、代码高亮以及文档/图片对话
-      • 通过 SSO 管理身份验证
-
-      **适合人群：** 任何想要完全私有的 AI 聊天助手、又不愿将提示词发送给云服务商的人。
-
-      **注意：** 默认使用 CPU 运行——请从小模型（1–3B）开始。更大的模型需要更多内存或 GPU。
+      **Perfect for:** Anyone who wants to use AI chatbots with complete privacy on low-resource devices.
     ko_kr: |
-      Open WebUI와 함께하는 Ollama는 전적으로 자체 서버에서 실행되는 비공개 자체 호스팅 ChatGPT형 어시스턴트를 제공합니다 — 어떤 데이터도 기기를 벗어나지 않습니다.
+      클라우드 없이 서버에서 직접 강력한 AI 모델을 실행하세요. Ollama와 Open WebUI는 완전히 비공개로 제어할 수 있는 ChatGPT 같은 경험을 제공합니다.
 
       **주요 기능:**
-      • 오픈소스 모델과 대화 (Qwen, Llama, Gemma, DeepSeek 등)
-      • 내장 인터페이스에서 모델 다운로드 및 관리
-      • 전체 기록이 로컬에 저장되는 다중 대화
-      • 마크다운, 코드 강조, 문서/이미지 대화
-      • SSO를 통한 인증 관리
+      • Google Gemma 4 모델을 로컬에서 실행 — 초경량 E2B(4GB)부터 강력한 26B MoE까지
+      • ChatGPT와 유사한 아름다운 채팅 인터페이스
+      • 멀티모달 지원 — 텍스트와 이미지로 대화
+      • 대화 기록이 로컬에 저장
+      • API 키나 구독 불필요
 
-      **이런 분께 좋습니다:** 프롬프트를 클라우드 제공업체로 보내지 않고 완전히 비공개로 AI 채팅 어시스턴트를 사용하고 싶은 모든 분.
+      **이런 분께 완벽해요:** 저사양 기기에서 완전한 프라이버시로 AI 챗봇을 사용하고 싶은 분.
+    zh_cn: |
+      无需依赖云端，直接在服务器上运行强大的AI模型。Ollama搭配Open WebUI为您提供类似ChatGPT的体验，完全私密且由您掌控。
 
-      **참고:** 기본적으로 CPU에서 실행됩니다 — 작은 모델(1–3B)부터 시작하세요. 더 큰 모델은 더 많은 RAM 또는 GPU가 필요합니다.
+      **主要功能：**
+      • 本地运行Google Gemma 4模型 — 从超轻量E2B(4GB)到强大的26B MoE
+      • 类似ChatGPT的精美聊天界面
+      • 多模态支持 — 文本和图像对话
+      • 对话记录本地保存
+      • 无需API密钥或订阅
+    fr_fr: |
+      Exécutez des modèles IA puissants directement sur votre serveur sans dépendance cloud. Ollama avec Open WebUI vous offre une expérience similaire à ChatGPT, entièrement privée et sous votre contrôle.
+
+      **Fonctionnalités clés :**
+      • Exécutez les modèles Google Gemma 4 localement — de l'ultra-léger E2B (4Go) au puissant 26B MoE
+      • Belle interface de chat similaire à ChatGPT
+      • Support multimodal — discutez avec du texte et des images
+      • Historique des conversations sauvegardé localement
+      • Aucune clé API ou abonnement nécessaire
+    es_es: |
+      Ejecuta modelos de IA potentes directamente en tu servidor sin depender de la nube. Ollama con Open WebUI te ofrece una experiencia similar a ChatGPT, completamente privada y bajo tu control.
+
+      **Características clave:**
+      • Ejecuta modelos Google Gemma 4 localmente — desde el ultraligero E2B (4GB) hasta el potente 26B MoE
+      • Hermosa interfaz de chat similar a ChatGPT
+      • Soporte multimodal — chatea con texto e imágenes
+      • Historial de conversaciones guardado localmente
+      • Sin necesidad de claves API ni suscripciones
   tips:
     before_install:
       en_us: |
         **Getting Started**
 
-        Authentication is managed via SSO — no separate login required.
+        No login required — the app is ready to use immediately.
 
         **How to use:**
         1. Open the app
-        2. Select `qwen3:0.6b` from the model selector (auto-downloaded)
+        2. Click the model selector and download a model (e.g. `llama3.2`)
         3. Start chatting!
 
-        **Note:** Runs on CPU by default; start with small models (1–3B). First model download may take a few minutes.
-      fr_fr: |
-        **Pour commencer**
+        **Recommended Gemma 4 models:**
+        | Model | Size | RAM | Best for |
+        | ----- | ---- | --- | -------- |
+        | `gemma4:e2b` | ~1.5GB | 4GB | Ultra-light, fast chat |
+        | `gemma4:e4b` | ~2.5GB | 6GB | Better quality, multimodal |
+        | `gemma4:26b-a4b` | ~15GB | 18GB | Advanced reasoning (MoE) |
 
-        L'authentification est gérée via SSO — aucune connexion séparée requise.
-
-        **Comment utiliser :**
-        1. Ouvrez l'app
-        2. Sélectionnez `qwen3:0.6b` dans le sélecteur de modèles (téléchargé automatiquement)
-        3. Commencez à discuter !
-
-        **Remarque :** Fonctionne sur CPU par défaut ; commencez par de petits modèles (1–3B). Le premier téléchargement peut prendre quelques minutes.
-      es_es: |
-        **Para empezar**
-
-        La autenticación se gestiona a través de SSO — no se requiere inicio de sesión separado.
-
-        **Cómo usar:**
-        1. Abre la app
-        2. Selecciona `qwen3:0.6b` en el selector de modelos (descargado automáticamente)
-        3. ¡Empieza a chatear!
-
-        **Nota:** Funciona en CPU por defecto; empieza con modelos pequeños (1–3B). La primera descarga puede tardar unos minutos.
-      zh_cn: |
-        **开始使用**
-
-        身份验证通过 SSO 管理——无需单独登录。
-
-        **使用方法：**
-        1. 打开应用
-        2. 在模型选择器中选择 `qwen3:0.6b`（自动下载）
-        3. 开始聊天！
-
-        **注意：** 默认使用 CPU 运行；请从小模型（1–3B）开始。首次模型下载可能需要几分钟。
+        **Note:** We recommend starting with `gemma4:e2b` for low-resource devices. First model download may take a few minutes.
       ko_kr: |
         **시작하기**
 
-        인증은 SSO를 통해 관리됩니다 — 별도 로그인이 필요 없습니다.
+        로그인 불필요 — 바로 사용할 수 있습니다.
 
         **사용 방법:**
         1. 앱 열기
-        2. 모델 선택기에서 `qwen3:0.6b` 선택 (자동 다운로드됨)
+        2. 모델 선택기를 클릭하고 모델 다운로드 (예: `llama3.2`)
         3. 대화 시작!
 
-        **참고:** 기본적으로 CPU에서 실행됩니다. 작은 모델(1–3B)부터 시작하세요. 첫 모델 다운로드는 몇 분 걸릴 수 있습니다.
+        **추천 Gemma 4 모델:**
+        | 모델 | 크기 | RAM | 용도 |
+        | ---- | ---- | --- | ---- |
+        | `gemma4:e2b` | ~1.5GB | 4GB | 초경량, 빠른 대화 |
+        | `gemma4:e4b` | ~2.5GB | 6GB | 더 좋은 품질, 멀티모달 |
+        | `gemma4:26b-a4b` | ~15GB | 18GB | 고급 추론 (MoE) |
+
+        **참고:** 저사양 기기에서는 `gemma4:e2b`를 추천합니다. 첫 모델 다운로드는 몇 분 걸릴 수 있습니다.

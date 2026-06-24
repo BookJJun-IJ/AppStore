@@ -1,37 +1,5 @@
 name: moodle
 services:
-  moodle-sidecar:
-    image: ghcr.io/yundera/nginx-hash-lock:main
-    container_name: moodle-sidecar
-    hostname: moodle-sidecar
-    restart: unless-stopped
-    user: "0:0"
-    environment:
-      OIDC_REGISTRAR_URL: "http://auth-registrar:9092"
-      BACKEND_HOST: "moodle"
-      BACKEND_PORT: "80"
-      LISTEN_PORT: "80"
-    expose:
-      - 80
-    labels:
-      caddy_0: moodle-${APP_DOMAIN}
-      caddy_0.import: gateway_tls
-      caddy_0.reverse_proxy: "{{upstreams 80}}"
-      caddy_1: moodle-${APP_PUBLIC_IP_DASH}.nip.io
-      caddy_1.import: gateway_tls
-      caddy_1.reverse_proxy: "{{upstreams 80}}"
-      caddy_2: moodle-${APP_PUBLIC_IP_DASH}.sslip.io
-      caddy_2.reverse_proxy: "{{upstreams 80}}"
-    depends_on:
-      - moodle
-    deploy:
-      resources:
-        limits:
-          memory: 128M
-    cpu_shares: 80
-    networks:
-      - pcs
-
   mariadb:
     image: mariadb:10.11
     user: "999:999"  # MariaDB standard user
@@ -99,7 +67,6 @@ services:
     restart: unless-stopped
     networks:
       - moodle-network
-      - pcs
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:80/ || exit 1"]
       interval: 30s
@@ -116,15 +83,12 @@ volumes:
 networks:
   moodle-network:
     driver: bridge
-  pcs:
-    name: pcs
-    external: true
 
 x-casaos:
   architectures:
     - amd64
     - arm64
-  main: moodle-sidecar
+  main: moodle
   pre-install-cmd: |
     docker run --rm -v moodle_moodle_data:/data alpine sh -c "chmod -R 777 /data && echo 'Moodle data permissions fixed'"
   webui_port: 80  # Port 80 for clean NSL router URLs

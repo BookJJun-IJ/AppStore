@@ -16,38 +16,6 @@ configs:
             - "[STATUS] == 200"
 
 services:
-  gatus-sidecar:
-    image: ghcr.io/yundera/nginx-hash-lock:main
-    container_name: gatus-sidecar
-    hostname: gatus-sidecar
-    restart: unless-stopped
-    user: "0:0"
-    environment:
-      OIDC_REGISTRAR_URL: "http://auth-registrar:9092"
-      BACKEND_HOST: "gatus"
-      BACKEND_PORT: "8080"
-      LISTEN_PORT: "80"
-    expose:
-      - 80
-    labels:
-      caddy_0: gatus-${APP_DOMAIN}
-      caddy_0.import: gateway_tls
-      caddy_0.reverse_proxy: "{{upstreams 80}}"
-      caddy_1: gatus-${APP_PUBLIC_IP_DASH}.nip.io
-      caddy_1.import: gateway_tls
-      caddy_1.reverse_proxy: "{{upstreams 80}}"
-      caddy_2: gatus-${APP_PUBLIC_IP_DASH}.sslip.io
-      caddy_2.reverse_proxy: "{{upstreams 80}}"
-    depends_on:
-      - gatus
-    deploy:
-      resources:
-        limits:
-          memory: 128M
-    cpu_shares: 80
-    networks:
-      - pcs
-
   gatus:
     image: twinproduction/gatus:v5.35.0
     container_name: gatus
@@ -60,6 +28,15 @@ services:
       - pcs
     expose:
       - "8080"
+    labels:
+      caddy_0: gatus-${APP_DOMAIN}
+      caddy_0.import: gateway_tls
+      caddy_0.reverse_proxy: "{{upstreams 8080}}"
+      caddy_1: gatus-${APP_PUBLIC_IP_DASH}.nip.io
+      caddy_1.import: gateway_tls
+      caddy_1.reverse_proxy: "{{upstreams 8080}}"
+      caddy_2: gatus-${APP_PUBLIC_IP_DASH}.sslip.io
+      caddy_2.reverse_proxy: "{{upstreams 8080}}"
     volumes:
       - /DATA/AppData/$AppID/data/:/data
     environment:
@@ -85,7 +62,7 @@ x-casaos:
   architectures:
     - amd64
     - arm64
-  main: gatus-sidecar
+  main: gatus
   webui_port: 8080
   author: Yundera Team
   category: Utilities

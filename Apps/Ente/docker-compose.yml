@@ -41,38 +41,6 @@ services:
           memory: 512M
     cpu_shares: 70
 
-  ente-sidecar:
-    image: ghcr.io/yundera/nginx-hash-lock:main
-    container_name: ente-sidecar
-    hostname: ente-sidecar
-    restart: unless-stopped
-    user: "0:0"
-    environment:
-      OIDC_REGISTRAR_URL: "http://auth-registrar:9092"
-      BACKEND_HOST: "ente-web"
-      BACKEND_PORT: "3000"
-      LISTEN_PORT: "80"
-    expose:
-      - 80
-    labels:
-      caddy_0: ente-${APP_DOMAIN}
-      caddy_0.import: gateway_tls
-      caddy_0.reverse_proxy: "{{upstreams 80}}"
-      caddy_1: ente-${APP_PUBLIC_IP_DASH}.nip.io
-      caddy_1.import: gateway_tls
-      caddy_1.reverse_proxy: "{{upstreams 80}}"
-      caddy_2: ente-${APP_PUBLIC_IP_DASH}.sslip.io
-      caddy_2.reverse_proxy: "{{upstreams 80}}"
-    depends_on:
-      - web
-    deploy:
-      resources:
-        limits:
-          memory: 128M
-    cpu_shares: 80
-    networks:
-      - pcs
-
   web:
     image: ghcr.io/ente-io/web
     container_name: ente-web
@@ -86,20 +54,28 @@ services:
       - "3002"
       - "3003"
     labels:
-      caddy_0: ente-auth-${APP_DOMAIN}
+      caddy_0: ente-${APP_DOMAIN}
       caddy_0.import: gateway_tls
-      caddy_0.reverse_proxy: "{{upstreams 3003}}"
-      caddy_1: ente-auth-${APP_PUBLIC_IP_DASH}.nip.io
+      caddy_0.reverse_proxy: "{{upstreams 3000}}"
+      caddy_1: ente-${APP_PUBLIC_IP_DASH}.nip.io
       caddy_1.import: gateway_tls
-      caddy_1.reverse_proxy: "{{upstreams 3003}}"
-      caddy_2: ente-auth-${APP_PUBLIC_IP_DASH}.sslip.io
-      caddy_2.reverse_proxy: "{{upstreams 3003}}"
-      caddy_3: ente-accounts-${APP_DOMAIN}
+      caddy_1.reverse_proxy: "{{upstreams 3000}}"
+      caddy_2: ente-${APP_PUBLIC_IP_DASH}.sslip.io
+      caddy_2.reverse_proxy: "{{upstreams 3000}}"
+      caddy_3: ente-auth-${APP_DOMAIN}
       caddy_3.import: gateway_tls
-      caddy_3.reverse_proxy: "{{upstreams 3001}}"
-      caddy_4: ente-albums-${APP_DOMAIN}
+      caddy_3.reverse_proxy: "{{upstreams 3003}}"
+      caddy_4: ente-auth-${APP_PUBLIC_IP_DASH}.nip.io
       caddy_4.import: gateway_tls
-      caddy_4.reverse_proxy: "{{upstreams 3002}}"
+      caddy_4.reverse_proxy: "{{upstreams 3003}}"
+      caddy_5: ente-auth-${APP_PUBLIC_IP_DASH}.sslip.io
+      caddy_5.reverse_proxy: "{{upstreams 3003}}"
+      caddy_6: ente-accounts-${APP_DOMAIN}
+      caddy_6.import: gateway_tls
+      caddy_6.reverse_proxy: "{{upstreams 3001}}"
+      caddy_7: ente-albums-${APP_DOMAIN}
+      caddy_7.import: gateway_tls
+      caddy_7.reverse_proxy: "{{upstreams 3002}}"
     environment:
       ENTE_API_ORIGIN: https://ente-api-${APP_DOMAIN}
       ENTE_ALBUMS_ORIGIN: https://ente-albums-${APP_DOMAIN}
@@ -197,7 +173,7 @@ x-casaos:
   architectures:
     - amd64
     - arm64
-  main: ente-sidecar
+  main: web
   webui_port: 80
   author: Yundera Team
   category: Cloud
