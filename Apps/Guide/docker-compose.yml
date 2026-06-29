@@ -18,6 +18,7 @@ services:
       caddy_2.reverse_proxy: "{{upstreams 80}}"
     volumes:
       - /DATA/AppData/$AppID/html/:/usr/share/nginx/html/:ro
+      - /DATA/AppData/$AppID/nginx.conf:/etc/nginx/conf.d/default.conf:ro
     cpu_shares: 80
     deploy:
       resources:
@@ -70,3 +71,4 @@ x-casaos:
     curl -fsSL "$REPO/src/css/style.css" -o /DATA/AppData/guide/html/css/style.css
     curl -fsSL "$REPO/src/js/app.js" -o /DATA/AppData/guide/html/js/app.js
     curl -fsSL "$REPO/src/js/marked.min.js" -o /DATA/AppData/guide/html/js/marked.min.js
+    curl -fsSL "$REPO/src/nginx.conf" -o /DATA/AppData/guide/nginx.conf
