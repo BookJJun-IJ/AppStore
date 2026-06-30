@@ -48,14 +48,15 @@ x-casaos:
   screenshot_link:
     - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Guide/screenshot-1.png
   title:
-    en_us: Help
+    en_us: Start Here
   tagline:
-    en_us: Find what you need in 3 taps
+    en_us: Pick a goal, get there in 3 taps
   description:
     en_us: |
-      Your personal helper for PCS. Tell it what you want to do —
-      back up photos, stream movies, store files — and get a simple
-      3-step guide. Works for beginners and developers alike.
+      Your starting point for PCS. Pick what you want to do in plain
+      words — back up photos, stream movies, keep passwords safe — and
+      get a simple 3-step guide. Works in EN, FR and KO, for beginners
+      and developers alike.
   tips:
     before_install:
       en_us: |
