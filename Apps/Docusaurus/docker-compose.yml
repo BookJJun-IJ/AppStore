@@ -1,0 +1,70 @@
+name: docusaurus
+
+services:
+  docusaurus:
+    image: node:22-alpine
+    container_name: docusaurus
+    user: "0:0"
+    working_dir: /app
+    command: sh -c "npx serve build -l 3000"
+    expose:
+      - 3000
+    labels:
+      caddy_0: docusaurus-${APP_DOMAIN}
+      caddy_0.import: gateway_tls
+      caddy_0.reverse_proxy: "{{upstreams 3000}}"
+      caddy_1: docusaurus-${APP_PUBLIC_IP_DASH}.nip.io
+      caddy_1.import: gateway_tls
+      caddy_1.reverse_proxy: "{{upstreams 3000}}"
+      caddy_2: docusaurus-${APP_PUBLIC_IP_DASH}.sslip.io
+      caddy_2.reverse_proxy: "{{upstreams 3000}}"
+    volumes:
+      - /DATA/AppData/$AppID/app/:/app/
+    cpu_shares: 256
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    restart: unless-stopped
+    networks:
+      - pcs
+
+networks:
+  pcs:
+    name: pcs
+    external: true
+
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  main: docusaurus
+  webui_port: 3000
+  store_app_id: docusaurus
+  category: Utilities
+  author: Yundera Team
+  developer: Meta (Facebook)
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Docusaurus/icon.png
+  title:
+    en_us: Docusaurus
+  tagline:
+    en_us: Build beautiful documentation websites
+  description:
+    en_us: |
+      Docusaurus is a static site generator by Meta. Build documentation
+      websites with Markdown, versioning, i18n, and search built in.
+      Perfect for project docs, knowledge bases, and blogs.
+  tips:
+    before_install:
+      en_us: |
+        A new Docusaurus project will be created automatically.
+        Edit your docs in /DATA/AppData/docusaurus/app/docs/.
+  index: /
+  scheme: https
+  pre-install-cmd: |
+    mkdir -p /DATA/AppData/docusaurus/app/
+    cd /DATA/AppData/docusaurus/app/
+    if [ ! -f package.json ]; then
+      npx create-docusaurus@latest . classic --javascript
+      npm run build
+    fi
