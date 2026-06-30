@@ -2,7 +2,7 @@ name: docusaurus
 
 services:
   docusaurus:
-    image: ghcr.io/yundera/nginx-hash-lock:main
+    image: ghcr.io/yundera/nginx-hash-lock:1.0.7
     container_name: docusaurus
     restart: unless-stopped
     user: "0:0"
@@ -58,10 +58,10 @@ x-casaos:
   author: Yundera Team
   category: Utilities
   developer: Meta (Facebook)
-  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Docusaurus/icon.png
-  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Docusaurus/thumbnail.png
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Docusaurus/icon.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Docusaurus/thumbnail.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Docusaurus/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Docusaurus/screenshot-1.png
   title:
     en_us: Docusaurus
   tagline:
@@ -74,15 +74,16 @@ x-casaos:
   tips:
     before_install:
       en_us: |
-        A new Docusaurus project will be scaffolded on first install.
-        Edit your docs in the File Manager at /DATA/AppData/docusaurus/app/docs/.
-        After editing, rebuild by restarting the app.
+        A new Docusaurus project will be created on first install.
+        Edit your docs in the File Manager at /DATA/AppData/docusaurus/src/docs/.
+        To rebuild after editing, restart the app.
   pre-install-cmd: |
-    mkdir -p /DATA/AppData/docusaurus/app/ /DATA/AppData/docusaurus/build/
-    if [ ! -f /DATA/AppData/docusaurus/app/package.json ]; then
+    mkdir -p /DATA/AppData/docusaurus/src/ /DATA/AppData/docusaurus/build/
+    if [ ! -f /DATA/AppData/docusaurus/.initialized ]; then
       docker run --rm \
-        -v /DATA/AppData/docusaurus/app/:/app/ \
-        -w /app node:22-alpine \
-        sh -c "npx create-docusaurus@latest . classic --javascript && npm run build"
-      cp -r /DATA/AppData/docusaurus/app/build/* /DATA/AppData/docusaurus/build/
+        -v /DATA/AppData/docusaurus/src/:/app/ \
+        -w /app node:22.16-alpine3.21 \
+        sh -c "npx create-docusaurus@3.7.0 . classic --javascript && npm run build"
+      cp -r /DATA/AppData/docusaurus/src/build/* /DATA/AppData/docusaurus/build/
+      touch /DATA/AppData/docusaurus/.initialized
     fi
