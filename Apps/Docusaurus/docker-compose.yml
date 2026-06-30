@@ -2,30 +2,42 @@ name: docusaurus
 
 services:
   docusaurus:
-    image: node:22-alpine
+    image: ghcr.io/yundera/nginx-hash-lock:main
     container_name: docusaurus
+    restart: unless-stopped
     user: "0:0"
-    working_dir: /app
-    command: sh -c "npx serve build -l 3000"
     expose:
-      - 3000
+      - "80"
     labels:
       caddy_0: docusaurus-${APP_DOMAIN}
       caddy_0.import: gateway_tls
-      caddy_0.reverse_proxy: "{{upstreams 3000}}"
+      caddy_0.reverse_proxy: "{{upstreams 80}}"
       caddy_1: docusaurus-${APP_PUBLIC_IP_DASH}.nip.io
       caddy_1.import: gateway_tls
-      caddy_1.reverse_proxy: "{{upstreams 3000}}"
+      caddy_1.reverse_proxy: "{{upstreams 80}}"
       caddy_2: docusaurus-${APP_PUBLIC_IP_DASH}.sslip.io
-      caddy_2.reverse_proxy: "{{upstreams 3000}}"
-    volumes:
-      - /DATA/AppData/$AppID/app/:/app/
-    cpu_shares: 256
-    deploy:
-      resources:
-        limits:
-          memory: 256M
+      caddy_2.reverse_proxy: "{{upstreams 80}}"
+    environment:
+      OIDC_REGISTRAR_URL: "http://auth-registrar:9092"
+      BACKEND_HOST: "docusaurus-backend"
+      BACKEND_PORT: "80"
+      LISTEN_PORT: "80"
+    depends_on:
+      - docusaurus-backend
+    cpu_shares: 80
+    networks:
+      - pcs
+
+  docusaurus-backend:
+    image: nginx:1.27-alpine
+    container_name: docusaurus-backend
     restart: unless-stopped
+    user: "0:0"
+    expose:
+      - "80"
+    volumes:
+      - /DATA/AppData/$AppID/build/:/usr/share/nginx/html/:ro
+    cpu_shares: 50
     networks:
       - pcs
 
@@ -39,12 +51,17 @@ x-casaos:
     - amd64
     - arm64
   main: docusaurus
-  webui_port: 3000
   store_app_id: docusaurus
-  category: Utilities
+  webui_port: 80
+  index: /
+  scheme: https
   author: Yundera Team
+  category: Utilities
   developer: Meta (Facebook)
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Docusaurus/icon.png
+  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Docusaurus/icon.png
+  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Docusaurus/thumbnail.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Docusaurus/screenshot-1.png
   title:
     en_us: Docusaurus
   tagline:
@@ -57,14 +74,15 @@ x-casaos:
   tips:
     before_install:
       en_us: |
-        A new Docusaurus project will be created automatically.
-        Edit your docs in /DATA/AppData/docusaurus/app/docs/.
-  index: /
-  scheme: https
+        A new Docusaurus project will be scaffolded on first install.
+        Edit your docs in the File Manager at /DATA/AppData/docusaurus/app/docs/.
+        After editing, rebuild by restarting the app.
   pre-install-cmd: |
-    mkdir -p /DATA/AppData/docusaurus/app/
-    cd /DATA/AppData/docusaurus/app/
-    if [ ! -f package.json ]; then
-      npx create-docusaurus@latest . classic --javascript
-      npm run build
+    mkdir -p /DATA/AppData/docusaurus/app/ /DATA/AppData/docusaurus/build/
+    if [ ! -f /DATA/AppData/docusaurus/app/package.json ]; then
+      docker run --rm \
+        -v /DATA/AppData/docusaurus/app/:/app/ \
+        -w /app node:22-alpine \
+        sh -c "npx create-docusaurus@latest . classic --javascript && npm run build"
+      cp -r /DATA/AppData/docusaurus/app/build/* /DATA/AppData/docusaurus/build/
     fi
