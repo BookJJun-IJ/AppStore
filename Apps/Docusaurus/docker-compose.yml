@@ -28,6 +28,31 @@ services:
     networks:
       - pcs
 
+  docusaurus-init:
+    image: node:20-alpine3.20
+    container_name: docusaurus-init
+    restart: "no"
+    user: "0:0"
+    working_dir: /tmp
+    volumes:
+      - /DATA/AppData/$AppID/src/:/output
+      - /DATA/AppData/$AppID/build/:/build-output
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        if [ -f /output/.initialized ]; then
+          echo "Already initialized, skipping."
+          exit 0
+        fi
+        echo "Initializing Docusaurus project..."
+        npx create-docusaurus@3.10.1 site classic --javascript \
+          && cd site \
+          && npm run build \
+          && cp -r ./* /output/ \
+          && cp -r /output/build/* /build-output/ \
+          && touch /output/.initialized \
+          && echo "Done."
+
   docusaurus-backend:
     image: nginx:1.27-alpine
     container_name: docusaurus-backend
@@ -37,6 +62,9 @@ services:
       - "80"
     volumes:
       - /DATA/AppData/$AppID/build/:/usr/share/nginx/html/:ro
+    depends_on:
+      docusaurus-init:
+        condition: service_completed_successfully
     cpu_shares: 50
     networks:
       - pcs
@@ -79,13 +107,3 @@ x-casaos:
         A new Docusaurus project will be created on first install.
         Edit your docs in the File Manager at /DATA/AppData/docusaurus/src/docs/.
         To rebuild after editing, restart the app.
-  pre-install-cmd: |
-    mkdir -p /DATA/AppData/docusaurus/src/ /DATA/AppData/docusaurus/build/
-    if [ ! -f /DATA/AppData/docusaurus/.initialized ]; then
-      docker run --rm \
-        -v /DATA/AppData/docusaurus/src/:/output \
-        -w /tmp node:20.20-alpine3.21 \
-        sh -c "npx create-docusaurus@3.10.1 site classic --javascript && cd site && npm run build && cp -r ./* /output/" \
-        && cp -r /DATA/AppData/docusaurus/src/build/* /DATA/AppData/docusaurus/build/ \
-        && touch /DATA/AppData/docusaurus/.initialized
-    fi
