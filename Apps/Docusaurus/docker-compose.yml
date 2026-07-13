@@ -84,8 +84,8 @@ x-casaos:
     if [ ! -f /DATA/AppData/docusaurus/.initialized ]; then
       docker run --rm \
         -v /DATA/AppData/docusaurus/src/:/output \
-        -w /tmp node:20-alpine \
-        sh -c "npx create-docusaurus@3.7.0 site classic --javascript && cd site && npm run build && cp -r ./* /output/" \
+        -w /tmp node:20.20-alpine3.21 \
+        sh -c "npx create-docusaurus@3.10.1 site classic --javascript && cd site && npm run build && cp -r ./* /output/" \
         && cp -r /DATA/AppData/docusaurus/src/build/* /DATA/AppData/docusaurus/build/ \
         && touch /DATA/AppData/docusaurus/.initialized
     fi
