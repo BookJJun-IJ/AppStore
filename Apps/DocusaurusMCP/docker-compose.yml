@@ -3,11 +3,12 @@ name: docusaurusmcp
 services:
   # MCP server — exposes Docusaurus docs via MCP tools (list, read, write, search, rebuild)
   docusaurusmcp-backend:
-    image: ghcr.io/bookjjun-ij/docusaurus-mcp:1.0.1
+    image: ghcr.io/yundera/docusaurus-mcp:1.0.0
     container_name: docusaurusmcp-backend
     hostname: docusaurusmcp-backend
     user: "0:0"
     restart: unless-stopped
+    cpu_shares: 50
     expose:
       - 9750
     environment:
@@ -56,7 +57,7 @@ services:
     container_name: docusaurusmcp
     hostname: docusaurusmcp
     restart: unless-stopped
-    cpu_shares: 50
+    cpu_shares: 80
     expose:
       - 80
     user: "root"
@@ -92,7 +93,8 @@ x-casaos:
   architectures:
     - amd64
     - arm64
-  main: docusaurusmcp-backend
+  main: docusaurusmcp-proxy
+  store_app_id: docusaurusmcp
   hostname: docusaurusmcp-${APP_DOMAIN}
   scheme: https
   port_map: "443"
@@ -101,12 +103,12 @@ x-casaos:
   category: Developer
   tags: ["developer", "ai"]
   developer: Yundera Team
-  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/DocusaurusMCP/icon.png
-  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/DocusaurusMCP/screenshot-1.png
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/DocusaurusMCP/icon.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/DocusaurusMCP/screenshot-1.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/DocusaurusMCP/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/DocusaurusMCP/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/DocusaurusMCP/screenshot-3.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/DocusaurusMCP/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/DocusaurusMCP/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/DocusaurusMCP/screenshot-3.png
   chips:
     - key: mcp
       name:
