@@ -23,6 +23,8 @@ services:
       - /DATA/AppData/$AppID/data/:/app/data
     environment:
       TZ: $TZ
+      PUID: $PUID
+      PGID: $PGID
       UPTIME_KUMA_PORT: 80
     healthcheck:
       test: ["CMD-SHELL", "node -e \"const http = require('http'); const req = http.request({host:'localhost',port:80,path:'/api/entry-page',timeout:3000}, res => { process.exit(res.statusCode === 200 ? 0 : 1) }); req.on('error', () => process.exit(1)); req.end()\""]
@@ -50,12 +52,13 @@ x-casaos:
   category: Utilities
   developer: Louis Lam
   store_app_id: uptimekuma
-  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/UptimeKuma/icon.png
+  tags: ["monitoring", "uptime", "status"]
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/UptimeKuma/icon.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/UptimeKuma/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/UptimeKuma/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/UptimeKuma/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/UptimeKuma/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/UptimeKuma/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/UptimeKuma/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/UptimeKuma/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/UptimeKuma/thumbnail.png
   description:
     en_us: |
       **Self-hosted monitoring tool for websites, APIs, and services**
@@ -155,6 +158,8 @@ x-casaos:
         3. Add your first monitor (HTTP, Ping, TCP, etc.)
         4. Set up notification channels (Email, Telegram, Discord, etc.)
 
+        🔒 **HTTPS & Let's Encrypt**: Your connection is automatically secured with a Let's Encrypt certificate. After first setup, you may need to wait a few minutes for the certificate to be provisioned. Once issued, HTTPS works automatically.
+
         **Features:**
         - 20+ monitor types supported
         - 90+ notification services
@@ -169,6 +174,8 @@ x-casaos:
         2. 첫 방문 시 관리자 계정을 생성하세요
         3. 첫 번째 모니터를 추가하세요 (HTTP, Ping, TCP 등)
         4. 알림 채널을 설정하세요 (이메일, Telegram, Discord 등)
+
+        🔒 **HTTPS & Let's Encrypt**: Let's Encrypt 인증서로 자동 보안됩니다. 첫 설정 후 인증서가 발급될 때까지 몇 분 정도 기다려야 할 수 있습니다. 발급 완료 후 HTTPS가 자동으로 작동합니다.
 
         **기능:**
         - 20가지 이상의 모니터 유형 지원
@@ -185,6 +192,8 @@ x-casaos:
         3. 添加您的第一个监控（HTTP、Ping、TCP 等）
         4. 设置通知渠道（邮件、Telegram、Discord 等）
 
+        🔒 **HTTPS & Let's Encrypt**：通过 Let's Encrypt 证书自动加密。首次设置后，您可能需要等待几分钟以完成证书签发。签发完成后，HTTPS 将自动生效。
+
         **功能：**
         - 支持 20 多种监控类型
         - 90 多种通知服务
@@ -199,6 +208,8 @@ x-casaos:
         2. Créez votre compte administrateur lors de la première visite
         3. Ajoutez votre premier moniteur (HTTP, Ping, TCP, etc.)
         4. Configurez les canaux de notification (e-mail, Telegram, Discord, etc.)
+
+        🔒 **HTTPS & Let's Encrypt** : Votre connexion est automatiquement sécurisée avec un certificat Let's Encrypt. Après la première installation, vous devrez peut-être attendre quelques minutes pour que le certificat soit provisionné. Une fois émis, HTTPS fonctionne automatiquement.
 
         **Fonctionnalités :**
         - Plus de 20 types de moniteurs supportés
@@ -215,6 +226,8 @@ x-casaos:
         3. Agregue su primer monitor (HTTP, Ping, TCP, etc.)
         4. Configure los canales de notificación (correo, Telegram, Discord, etc.)
 
+        🔒 **HTTPS & Let's Encrypt**: Su conexión se asegura automáticamente con un certificado Let's Encrypt. Después de la primera configuración, es posible que deba esperar unos minutos para que se emita el certificado. Una vez emitido, HTTPS funciona automáticamente.
+
         **Características:**
         - Más de 20 tipos de monitores soportados
         - Más de 90 servicios de notificación
@@ -223,3 +236,6 @@ x-casaos:
 
         **Nota:** El primer usuario en registrarse se convierte en administrador.
   index: /
+
+x-compose-app:
+  webui-host: uptimekuma-${domain}
