@@ -1,62 +1,87 @@
 name: docusaurus
 
 services:
-  docusaurus-init:
-    image: node:20-alpine3.20
-    container_name: docusaurus-init
-    restart: "no"
-    user: "0:0"
-    cpu_shares: 50
-    working_dir: /tmp
-    volumes:
-      - /DATA/AppData/$AppID/src/:/output
-      - /DATA/AppData/$AppID/build/:/build-output
-    entrypoint: ["sh", "-c"]
-    environment:
-      - GIT_REPO=${GIT_REPO:-}
-      - GIT_BRANCH=${GIT_BRANCH:-main}
-    command:
-      - |
-        apk add --no-cache git >/dev/null 2>&1
-        if [ -n "$GIT_REPO" ]; then
-          if [ -d /output/.git ]; then
-            echo "Pulling latest from $GIT_REPO ($GIT_BRANCH)..."
-            cd /output && git pull origin "$GIT_BRANCH"
-          else
-            echo "Cloning $GIT_REPO ($GIT_BRANCH)..."
-            git clone --branch "$GIT_BRANCH" "$GIT_REPO" /tmp/repo \
-              && cp -a /tmp/repo/. /output/ \
-              && rm -rf /tmp/repo
-          fi
-          cd /output && npm install
-        elif [ ! -f /output/.initialized ]; then
-          echo "Initializing Docusaurus project..."
-          npx create-docusaurus@3.10.1 site classic --javascript \
-            && cp -r site/* /output/ \
-            && rm -rf site \
-            && touch /output/.initialized \
-            && echo "Project initialized."
-        fi
-        echo "Building Docusaurus site..."
-        cd /output \
-          && npm run build \
-          && cp -r build/* /build-output/ \
-          && echo "Build complete."
-
   docusaurus:
-    image: nginx:1.27-alpine
+    image: node:20-alpine3.20
     container_name: docusaurus
     hostname: docusaurus
     restart: unless-stopped
     user: "0:0"
+    cpu_shares: 50
+    working_dir: /tmp
     expose:
       - "80"
     volumes:
-      - /DATA/AppData/$AppID/build/:/usr/share/nginx/html/:ro
-    depends_on:
-      docusaurus-init:
-        condition: service_completed_successfully
-    cpu_shares: 50
+      - /DATA/AppData/$AppID/src/:/app/src
+      - /DATA/AppData/$AppID/build/:/usr/share/nginx/html
+      - /DATA/AppData/$AppID/node_modules/:/app/src/node_modules
+    environment:
+      - GIT_REPO=${GIT_REPO:-}
+      - GIT_BRANCH=${GIT_BRANCH:-main}
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        apk add --no-cache nginx git >/dev/null 2>&1
+        NEEDS_BUILD=false
+        SRC=/app/src
+        BUILD=/usr/share/nginx/html
+
+        if [ -n "$GIT_REPO" ]; then
+          if [ -d "$SRC/.git" ]; then
+            CURRENT_REMOTE=$(cd "$SRC" && git remote get-url origin 2>/dev/null || echo "")
+            if [ "$CURRENT_REMOTE" != "$GIT_REPO" ]; then
+              echo "Repo changed, re-cloning $GIT_REPO..."
+              find "$SRC" -mindepth 1 -maxdepth 1 ! -name 'node_modules' -exec rm -rf {} +
+              git clone --branch "${GIT_BRANCH:-main}" "$GIT_REPO" /tmp/repo \
+                && cp -a /tmp/repo/. "$SRC/" \
+                && rm -rf /tmp/repo
+              cd "$SRC" && npm install
+              NEEDS_BUILD=true
+            else
+              echo "Checking for updates from $GIT_REPO..."
+              BEFORE=$(cd "$SRC" && git rev-parse HEAD)
+              cd "$SRC" && git pull origin "${GIT_BRANCH:-main}"
+              AFTER=$(cd "$SRC" && git rev-parse HEAD)
+              if [ "$BEFORE" != "$AFTER" ]; then
+                echo "Changes detected, reinstalling deps..."
+                cd "$SRC" && npm install
+                NEEDS_BUILD=true
+              else
+                echo "No changes."
+              fi
+            fi
+          else
+            echo "Cloning $GIT_REPO..."
+            git clone --branch "${GIT_BRANCH:-main}" "$GIT_REPO" /tmp/repo \
+              && cp -a /tmp/repo/. "$SRC/" \
+              && rm -rf /tmp/repo
+            cd "$SRC" && npm install
+            NEEDS_BUILD=true
+          fi
+        elif [ ! -f "$SRC/.initialized" ]; then
+          echo "Initializing Docusaurus project..."
+          npx create-docusaurus@3.10.1 site classic --javascript \
+            && cp -r site/* "$SRC/" \
+            && rm -rf site \
+            && touch "$SRC/.initialized" \
+            && echo "Project initialized."
+          cd "$SRC" && npm install
+          NEEDS_BUILD=true
+        fi
+
+        if [ "$NEEDS_BUILD" = "true" ] || [ -z "$(ls -A $BUILD 2>/dev/null)" ]; then
+          echo "Building Docusaurus site..."
+          cd "$SRC" \
+            && npm run build \
+            && rm -rf "$BUILD"/* \
+            && cp -r build/* "$BUILD/" \
+            && echo "Build complete."
+        else
+          echo "No changes detected, skipping build."
+        fi
+
+        echo "Starting nginx..."
+        exec nginx -g 'daemon off;'
     labels:
       caddy_0: docusaurus-${APP_DOMAIN}
       caddy_0.import: gateway_tls
@@ -119,15 +144,18 @@ x-casaos:
         A new Docusaurus project will be created on first install.
         Edit your docs in the File Manager at /DATA/AppData/docusaurus/src/docs/.
         To rebuild after editing, restart the app or use DocusaurusMCP's rebuild tool.
+        To connect a Git repository, set the GIT_REPO environment variable to your repo URL.
       fr_fr: |
         **Attention :** Ce site de documentation est public, sans authentification. Toute personne disposant de l'adresse peut lire son contenu. N'ajoutez que du contenu que vous acceptez de partager publiquement, et ne stockez jamais de notes privees, d'identifiants ou de donnees personnelles ici.
 
         Un nouveau projet Docusaurus sera cree lors de la premiere installation.
         Modifiez vos documents dans le gestionnaire de fichiers a /DATA/AppData/docusaurus/src/docs/.
         Pour reconstruire apres modification, redemarrez l'application ou utilisez l'outil rebuild de DocusaurusMCP.
+        Pour connecter un depot Git, definissez la variable d'environnement GIT_REPO avec l'URL de votre depot.
       ko_kr: |
         **경고:** 이 문서 사이트는 로그인이나 인증 없이 공개됩니다. 주소를 아는 누구나 모든 내용을 읽을 수 있습니다. 공개해도 괜찮은 내용만 추가하고, 비공개 메모, 자격 증명, 개인 정보는 절대 저장하지 마세요.
 
         첫 설치 시 새로운 Docusaurus 프로젝트가 생성됩니다.
         /DATA/AppData/docusaurus/src/docs/ 경로에서 파일 매니저를 통해 문서를 편집할 수 있습니다.
         편집 후 반영하려면 앱을 재시작하거나 DocusaurusMCP의 rebuild 도구를 사용하세요.
+        Git 저장소를 연결하려면 GIT_REPO 환경변수에 저장소 URL을 설정하세요.
