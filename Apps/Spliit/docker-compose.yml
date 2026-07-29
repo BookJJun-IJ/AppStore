@@ -90,7 +90,7 @@ x-casaos:
     - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Spliit/screenshot-3.png
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Spliit/thumbnail.png
   index: /?hash=$AUTH_HASH  
-  store_app_id: Spliit
+  store_app_id: spliit
   title:
     en_us: Spliit
   tagline:
