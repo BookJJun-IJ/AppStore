@@ -48,7 +48,7 @@ services:
           memory: 1G
 
   flaresolverr:
-    image: ghcr.io/thephaseless/byparr:v2.1.0
+    image: ghcr.io/thephaseless/byparr:latest@sha256:01a46a2865d9a6db5eb8ead04ec0dd33b8fbe233e8565ae70b50d4cc0af4cfb0
     container_name: suwayomi-bypass
     user: 0:0
     restart: unless-stopped
