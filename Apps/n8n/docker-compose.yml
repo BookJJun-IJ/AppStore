@@ -37,9 +37,9 @@ services:
       DB_POSTGRESDB_DATABASE: n8n
       DB_POSTGRESDB_USER: n8n
       DB_POSTGRESDB_PASSWORD: $APP_DEFAULT_PASSWORD
-      N8N_NODE_FUNCTION_ALLOW_BUILTIN: fs,path
-      NODE_FUNCTION_ALLOW_BUILTIN: fs,path
-      N8N_RUNNERS_ALLOWED_BUILTIN_MODULES: fs,path
+      N8N_NODE_FUNCTION_ALLOW_BUILTIN: fs,path,crypto
+      NODE_FUNCTION_ALLOW_BUILTIN: fs,path,crypto
+      N8N_RUNNERS_ALLOWED_BUILTIN_MODULES: fs,path,crypto
       NODE_OPTIONS: "--max-old-space-size=3072"
     depends_on:
       - postgres
