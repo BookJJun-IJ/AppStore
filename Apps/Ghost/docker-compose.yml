@@ -2,39 +2,9 @@ name: ghost
 
 services:
   ghost:
-    image: ghcr.io/yundera/appshield:2.0.3
+    image: ghost:5.114.1-alpine
     container_name: ghost
     hostname: ghost
-    restart: unless-stopped
-    user: "root"
-    networks:
-      - pcs
-    expose:
-      - "80"
-    labels:
-      caddy_0: ghost-${APP_DOMAIN}
-      caddy_0.import: gateway_tls
-      caddy_0.reverse_proxy: "{{upstreams 80}}"
-      caddy_1: ghost-${APP_PUBLIC_IP_DASH}.nip.io
-      caddy_1.import: gateway_tls
-      caddy_1.reverse_proxy: "{{upstreams 80}}"
-      caddy_2: ghost-${APP_PUBLIC_IP_DASH}.sslip.io
-      caddy_2.reverse_proxy: "{{upstreams 80}}"
-    environment:
-      AUTH_HASH: $AUTH_HASH
-      BACKEND_HOST: ghost-backend
-      BACKEND_PORT: "2368"
-      LISTEN_PORT: "80"
-      OIDC_REGISTRAR_URL: "http://auth-registrar:9092"
-      REDIRECT_HOST_SUFFIXES: "${APP_DOMAIN},${APP_PUBLIC_IP_DASH}.nip.io,${APP_PUBLIC_IP_DASH}.sslip.io"
-      CREDENTIAL_VALIDATE_URL: "http://casaos-oidc-bridge:8090/validate"
-    depends_on:
-      - ghost-backend
-    cpu_shares: 80
-
-  ghost-backend:
-    image: ghost:5.114.1-alpine
-    container_name: ghost-backend
     restart: unless-stopped
     user: "0:0"
     networks:
@@ -42,6 +12,15 @@ services:
       - pcs
     expose:
       - "2368"
+    labels:
+      caddy_0: ghost-${APP_DOMAIN}
+      caddy_0.import: gateway_tls
+      caddy_0.reverse_proxy: "{{upstreams 2368}}"
+      caddy_1: ghost-${APP_PUBLIC_IP_DASH}.nip.io
+      caddy_1.import: gateway_tls
+      caddy_1.reverse_proxy: "{{upstreams 2368}}"
+      caddy_2: ghost-${APP_PUBLIC_IP_DASH}.sslip.io
+      caddy_2.reverse_proxy: "{{upstreams 2368}}"
     volumes:
       - /DATA/AppData/$AppID/content:/var/lib/ghost/content
     environment:
@@ -121,7 +100,7 @@ x-casaos:
     - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Ghost/screenshot-2.png
     - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Ghost/screenshot-3.png
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Ghost/thumbnail.png
-  index: /?hash=$AUTH_HASH
+  index: /
   tagline:
     en_us: Professional publishing platform for newsletters and blogs
     ko_kr: 뉴스레터와 블로그를 위한 프로페셔널 퍼블리싱 플랫폼
@@ -132,7 +111,7 @@ x-casaos:
     en_us: Ghost
   store_app_id: ghost
   main: ghost
-  webui_port: 80
+  webui_port: 2368
   description:
     en_us: |
       **Professional publishing platform for modern creators**
