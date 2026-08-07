@@ -111,7 +111,7 @@ x-casaos:
     en_us: Ghost
   store_app_id: ghost
   main: ghost
-  webui_port: 2368
+  webui_port: 80
   description:
     en_us: |
       **Professional publishing platform for modern creators**
