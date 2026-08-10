@@ -21,6 +21,7 @@ services:
       caddy_1.reverse_proxy: "{{upstreams 2368}}"
       caddy_2: ghost-${APP_PUBLIC_IP_DASH}.sslip.io
       caddy_2.reverse_proxy: "{{upstreams 2368}}"
+    entrypoint: ["sh", "-c", "if [ -f /var/lib/ghost/content/.setup-done ]; then export url=$$(echo $$url | sed s/^http:/https:/); else touch /var/lib/ghost/content/.setup-done; fi; exec docker-entrypoint.sh node current/index.js"]
     volumes:
       - /DATA/AppData/$AppID/content:/var/lib/ghost/content
     environment:
@@ -100,7 +101,7 @@ x-casaos:
     - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Ghost/screenshot-2.png
     - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Ghost/screenshot-3.png
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Ghost/thumbnail.png
-  index: /
+  index: /ghost
   tagline:
     en_us: Professional publishing platform for newsletters and blogs
     ko_kr: 뉴스레터와 블로그를 위한 프로페셔널 퍼블리싱 플랫폼
@@ -188,40 +189,50 @@ x-casaos:
       en_us: |
         # Setup Guide
 
-        After installation, visit the site and go to `/ghost` to create your admin account.
+        After installation, the app opens the **admin page** (`/ghost`) directly.
 
         No default credentials are needed — you'll create your own admin account on first visit.
+
+        **Public site URL:** Your blog is available at `https://ghost-<your-domain>` (without `/ghost` at the end). Share this URL with your readers.
 
         **Email/Newsletter:** To enable newsletter sending, configure your SMTP settings in PCS Settings before installing. Ghost needs an email provider (Mailgun, SendGrid, etc.) for sending newsletters.
       ko_kr: |
         # 설정 가이드
 
-        설치 후 사이트에 접속하여 `/ghost` 경로로 이동하면 관리자 계정을 생성할 수 있습니다.
+        설치 후 앱을 열면 **관리자 페이지** (`/ghost`)로 바로 이동합니다.
 
         기본 비밀번호는 없으며, 첫 방문 시 직접 관리자 계정을 생성합니다.
+
+        **블로그 주소:** 일반 방문자용 블로그는 `https://ghost-<도메인>` 입니다 (뒤에 `/ghost` 없이). 이 주소를 독자에게 공유하세요.
 
         **이메일/뉴스레터:** 뉴스레터 발송을 활성화하려면 설치 전에 PCS 설정에서 SMTP를 구성하세요. Ghost는 뉴스레터 발송을 위해 이메일 프로바이더(Mailgun, SendGrid 등)가 필요합니다.
       zh_cn: |
         # 设置指南
 
-        安装后，访问站点并前往 `/ghost` 创建管理员账户。
+        安装后，应用会直接打开 **管理页面** (`/ghost`)。
 
         无需默认凭据 — 首次访问时创建自己的管理员账户。
+
+        **博客地址:** 访客可通过 `https://ghost-<您的域名>` 访问博客（末尾不带 `/ghost`）。请将此地址分享给读者。
 
         **邮件/新闻通讯:** 要启用新闻通讯发送，请在安装前在 PCS 设置中配置 SMTP。Ghost 需要邮件提供商（Mailgun、SendGrid 等）来发送新闻通讯。
       fr_fr: |
         # Guide de configuration
 
-        Apres l'installation, visitez le site et allez sur `/ghost` pour creer votre compte administrateur.
+        Apres l'installation, l'application ouvre directement la **page d'administration** (`/ghost`).
 
         Aucun identifiant par defaut n'est necessaire — vous creez votre propre compte admin lors de la premiere visite.
+
+        **URL du blog:** Votre blog est accessible a `https://ghost-<votre-domaine>` (sans `/ghost` a la fin). Partagez cette URL avec vos lecteurs.
 
         **Email/Newsletter:** Pour activer l'envoi de newsletters, configurez vos parametres SMTP dans les parametres PCS avant l'installation. Ghost a besoin d'un fournisseur email (Mailgun, SendGrid, etc.) pour envoyer les newsletters.
       es_es: |
         # Guia de configuracion
 
-        Despues de la instalacion, visite el sitio y vaya a `/ghost` para crear su cuenta de administrador.
+        Despues de la instalacion, la aplicacion abre directamente la **pagina de administracion** (`/ghost`).
 
         No se necesitan credenciales predeterminadas — creara su propia cuenta de administrador en la primera visita.
+
+        **URL del blog:** Su blog esta disponible en `https://ghost-<su-dominio>` (sin `/ghost` al final). Comparta esta URL con sus lectores.
 
         **Email/Newsletter:** Para habilitar el envio de newsletters, configure sus ajustes SMTP en la configuracion PCS antes de instalar. Ghost necesita un proveedor de email (Mailgun, SendGrid, etc.) para enviar newsletters.
