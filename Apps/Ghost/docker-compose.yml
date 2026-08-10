@@ -21,12 +21,11 @@ services:
       caddy_1.reverse_proxy: "{{upstreams 2368}}"
       caddy_2: ghost-${APP_PUBLIC_IP_DASH}.sslip.io
       caddy_2.reverse_proxy: "{{upstreams 2368}}"
-    entrypoint: ["sh", "-c", "if [ -f /var/lib/ghost/content/.setup-done ]; then export url=$$(echo $$url | sed s/^http:/https:/); else touch /var/lib/ghost/content/.setup-done; fi; exec docker-entrypoint.sh node current/index.js"]
     volumes:
       - /DATA/AppData/$AppID/content:/var/lib/ghost/content
     environment:
       NODE_ENV: production
-      url: http://ghost-${APP_DOMAIN}
+      url: https://ghost-${APP_DOMAIN}
       database__client: mysql
       database__connection__host: ghost-db
       database__connection__port: 3306
@@ -37,8 +36,7 @@ services:
       mail__from: $PCS_EMAIL
       mail__options__host: $SMTP_HOST
       mail__options__port: $SMTP_PORT
-      mail__options__auth__user: $SMTP_USER
-      mail__options__auth__pass: $SMTP_PASSWORD
+      mail__options__tls__rejectUnauthorized: "false"
     depends_on:
       db:
         condition: service_healthy
