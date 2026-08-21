@@ -54,7 +54,7 @@ services:
     cpu_shares: 70
 
   tika:
-    image: ghcr.io/paperless-ngx/tika:latest
+    image: docker.io/apache/tika:2.9.1.0
     container_name: paperless-tika
     restart: unless-stopped
     networks:
