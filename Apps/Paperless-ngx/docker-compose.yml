@@ -9,16 +9,16 @@ services:
       - paperless-network
       - pcs
     expose:
-      - "8000"
+      - 80
     labels:
       caddy_0: paperless-${APP_DOMAIN}
       caddy_0.import: gateway_tls
-      caddy_0.reverse_proxy: "{{upstreams 8000}}"
+      caddy_0.reverse_proxy: "{{upstreams 80}}"
       caddy_1: paperless-${APP_PUBLIC_IP_DASH}.nip.io
       caddy_1.import: gateway_tls
-      caddy_1.reverse_proxy: "{{upstreams 8000}}"
+      caddy_1.reverse_proxy: "{{upstreams 80}}"
       caddy_2: paperless-${APP_PUBLIC_IP_DASH}.sslip.io
-      caddy_2.reverse_proxy: "{{upstreams 8000}}"
+      caddy_2.reverse_proxy: "{{upstreams 80}}"
     volumes:
       - /DATA/AppData/$AppID/data:/usr/src/paperless/data
       - /DATA/AppData/$AppID/media:/usr/src/paperless/media
@@ -123,7 +123,7 @@ x-casaos:
     en_us: Paperless-ngx
   store_app_id: paperless-ngx
   main: paperless
-  webui_port: 8000
+  webui_port: 80
   description:
     en_us: |
       **Go paperless. Find any document in seconds.**
