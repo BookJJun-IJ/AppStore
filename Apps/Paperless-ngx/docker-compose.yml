@@ -78,13 +78,12 @@ services:
       POSTGRES_DB: paperless
       POSTGRES_USER: paperless
       POSTGRES_PASSWORD: $APP_DEFAULT_PASSWORD
-      TZ: $TZ
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U paperless -d paperless"]
       interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 30s
+      retries: 15
+      start_period: 120s
     deploy:
       resources:
         limits:
