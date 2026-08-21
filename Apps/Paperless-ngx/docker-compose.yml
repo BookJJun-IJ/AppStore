@@ -2,7 +2,7 @@ name: paperless-ngx
 
 services:
   paperless:
-    image: ghcr.io/paperless-ngx/paperless-ngx:latest
+    image: ghcr.io/paperless-ngx/paperless-ngx:3.0.5
     container_name: paperless
     restart: unless-stopped
     networks:
