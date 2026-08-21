@@ -11,13 +11,13 @@ services:
     expose:
       - 80
     labels:
-      caddy_0: paperless-${APP_DOMAIN}
+      caddy_0: paperlessngx-${APP_DOMAIN}
       caddy_0.import: gateway_tls
       caddy_0.reverse_proxy: "{{upstreams 80}}"
-      caddy_1: paperless-${APP_PUBLIC_IP_DASH}.nip.io
+      caddy_1: paperlessngx-${APP_PUBLIC_IP_DASH}.nip.io
       caddy_1.import: gateway_tls
       caddy_1.reverse_proxy: "{{upstreams 80}}"
-      caddy_2: paperless-${APP_PUBLIC_IP_DASH}.sslip.io
+      caddy_2: paperlessngx-${APP_PUBLIC_IP_DASH}.sslip.io
       caddy_2.reverse_proxy: "{{upstreams 80}}"
     volumes:
       - /DATA/AppData/$AppID/data:/usr/src/paperless/data
@@ -31,7 +31,7 @@ services:
       PAPERLESS_DBUSER: paperless
       PAPERLESS_DBPASS: $APP_DEFAULT_PASSWORD
       PAPERLESS_SECRET_KEY: $APP_DEFAULT_PASSWORD
-      PAPERLESS_URL: https://paperless-${APP_DOMAIN}
+      PAPERLESS_URL: https://paperlessngx-${APP_DOMAIN}
       PAPERLESS_TIME_ZONE: $TZ
       PAPERLESS_OCR_LANGUAGE: eng
       PAPERLESS_ADMIN_USER: admin
@@ -229,4 +229,4 @@ x-casaos:
         - 태그, 발신자, 문서 유형으로 보관소를 정리하세요
 
 x-compose-app:
-  webui-host: paperless-${domain}
+  webui-host: paperlessngx-${domain}
