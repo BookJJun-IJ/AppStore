@@ -30,6 +30,9 @@ services:
       WORDPRESS_CONFIG_EXTRA: |
         define('FS_METHOD', 'direct');
         define('WP_MEMORY_LIMIT', '256M');
+        if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
+          $_SERVER['HTTPS'] = 'on';
+        }
     depends_on:
       db:
         condition: service_healthy
@@ -40,7 +43,7 @@ services:
     cpu_shares: 70
 
   db:
-    image: mariadb:11.8.6
+    image: mariadb:11.8.8
     container_name: wordpress-db
     restart: unless-stopped
     user: "0:0"
@@ -59,8 +62,8 @@ services:
       test: ["CMD-SHELL", "healthcheck.sh --connect --innodb_initialized"]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 40s
+      retries: 15
+      start_period: 120s
     deploy:
       resources:
         limits:
@@ -75,6 +78,8 @@ networks:
     external: true
 
 x-casaos:
+  pre-install-cmd: |
+    mkdir -p /DATA/AppData/$AppID/html /DATA/AppData/$AppID/db
   architectures:
     - amd64
     - arm64
