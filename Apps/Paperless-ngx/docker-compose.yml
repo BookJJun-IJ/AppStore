@@ -107,12 +107,12 @@ x-casaos:
   author: Yundera Team
   category: Utilities
   developer: paperless-ngx
-  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@main/Apps/Paperless-ngx/icon.png
+  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Paperless-ngx/icon.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@main/Apps/Paperless-ngx/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@main/Apps/Paperless-ngx/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@main/Apps/Paperless-ngx/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@main/Apps/Paperless-ngx/thumbnail.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Paperless-ngx/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Paperless-ngx/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Paperless-ngx/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Paperless-ngx/thumbnail.png
   index: /
   tagline:
     en_us: Transform your paper documents into a searchable digital archive
