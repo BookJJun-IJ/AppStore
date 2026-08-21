@@ -1,4 +1,4 @@
-name: paperless-ngx
+name: paperlessngx
 
 services:
   paperless:
