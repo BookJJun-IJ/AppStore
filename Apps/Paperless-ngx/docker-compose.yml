@@ -32,6 +32,7 @@ services:
       PAPERLESS_DBPASS: $APP_DEFAULT_PASSWORD
       PAPERLESS_SECRET_KEY: $APP_DEFAULT_PASSWORD
       PAPERLESS_URL: https://paperlessngx-${APP_DOMAIN}
+      PAPERLESS_TIKA_GOTENBERG_ENDPOINT: http://gotenberg:3000
       PAPERLESS_TIME_ZONE: UTC
       PAPERLESS_OCR_LANGUAGE: eng
       PAPERLESS_ADMIN_USER: admin
@@ -49,6 +50,22 @@ services:
         limits:
           memory: 2G
     cpu_shares: 70
+
+  gotenberg:
+    image: docker.io/gotenberg/gotenberg:8
+    container_name: paperless-gotenberg
+    restart: unless-stopped
+    networks:
+      - paperless-network
+    command:
+      - "gotenberg"
+      - "--chromium-disable-javascript=true"
+      - "--chromium-allow-list=file:///tmp/.*"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    cpu_shares: 10
 
   broker:
     image: docker.io/valkey/valkey:9-alpine
@@ -201,7 +218,7 @@ x-casaos:
 
         After installation, log in with:
         - **Username:** `admin`
-        - **Password:** your app's default password (set during PCS setup)
+        - **Password:** `$APP_DEFAULT_PASSWORD`
 
         **Add documents:**
         - **Web upload:** Drag and drop files directly in the browser
@@ -217,7 +234,7 @@ x-casaos:
 
         설치 후 로그인 정보:
         - **사용자명:** `admin`
-        - **비밀번호:** 앱 기본 비밀번호 (PCS 설정 시 지정한 값)
+        - **비밀번호:** `$APP_DEFAULT_PASSWORD`
 
         **문서 추가:**
         - **웹 업로드:** 브라우저에서 파일을 드래그 앤 드롭
