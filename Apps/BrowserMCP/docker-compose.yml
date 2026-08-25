@@ -30,6 +30,19 @@ services:
       caddy_2: browsermcp-${APP_PUBLIC_IP_DASH}.sslip.io
       caddy_2.reverse_proxy: "{{upstreams 9746}}"
 
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:v3.3.21
+    container_name: flaresolverr
+    restart: unless-stopped
+    environment:
+      - LOG_LEVEL=info
+      - TZ=Asia/Seoul
+    expose:
+      - 8191
+    networks:
+      - pcs
+    cpu_shares: 30
+
 networks:
   pcs:
     name: pcs
