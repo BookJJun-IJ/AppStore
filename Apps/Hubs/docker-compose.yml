@@ -454,6 +454,33 @@ x-casaos:
 
 x-compose-app:
   schema_version: 2
+  init:
+    - name: bootstrap
+      image: ghcr.io/worph/hubs-seed:2.0.0
+      command: bootstrap
+      volumes:
+        - /DATA/AppData/hubs:/data/hubs
+        - /DATA/AppData/hubs/secrets:/data/compose
+      environment:
+        APP_DOMAIN: ${APP_DOMAIN}
+        APP_PUBLIC_IP_DASH: ${APP_PUBLIC_IP_DASH}
+        APP_PUBLIC_IPV4: ${APP_PUBLIC_IPV4}
+        APP_EMAIL: ${APP_EMAIL}
+        PUID: ${PUID}
+        PGID: ${PGID}
+      when: once
+    - name: seed
+      image: ghcr.io/worph/hubs-seed:2.0.0
+      phase: post_up
+      network: hubs-net
+      volumes:
+        - /DATA/AppData/hubs/secrets/.env:/secrets.env:ro
+      environment:
+        SECRETS_ENV_FILE: /secrets.env
+        RET_INTERNAL_URL: https://hubs-reticulum:4000
+        RET_PUBLIC_URL: https://hubs-${APP_DOMAIN}
+        APP_EMAIL: ${APP_EMAIL}
+      when: once
   folders:
     - path: /DATA/AppData/hubs
       user: $PUID
