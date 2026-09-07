@@ -481,6 +481,13 @@ x-compose-app:
         RET_PUBLIC_URL: https://hubs-${APP_DOMAIN}
         APP_EMAIL: ${APP_EMAIL}
       when: once
+  hooks:
+    pre_up: |
+      while IFS='=' read -r key value; do
+        case "$key" in ''|\#*) continue ;; esac
+        grep -q "^$key=" $APP_DIR/.env 2>/dev/null ||
+          printf '%s=%s\n' "$key" "$value" >> $APP_DIR/.env
+      done < /DATA/AppData/hubs/secrets/.env
   folders:
     - path: /DATA/AppData/hubs
       user: $PUID
