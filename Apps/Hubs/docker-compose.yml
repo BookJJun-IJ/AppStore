@@ -1,12 +1,32 @@
 name: hubs
 
 services:
+  # --- init: generates RSA keypair + secrets/.env (idempotent) ---
+  bootstrap:
+    image: ghcr.io/worph/hubs-seed:2.0.0
+    container_name: hubs-bootstrap
+    restart: "no"
+    command: bootstrap
+    volumes:
+      - ${DATA_ROOT:-/DATA}/AppData/hubs:/data/hubs
+      - ${DATA_ROOT:-/DATA}/AppData/hubs/secrets:/data/compose
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN}
+      APP_PUBLIC_IP_DASH: ${APP_PUBLIC_IP_DASH}
+      APP_PUBLIC_IPV4: ${APP_PUBLIC_IPV4}
+      APP_EMAIL: ${APP_EMAIL}
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+
   hubs-client:
     image: hubsfoundation/hubs:stable-3111
     container_name: hubs-client
     restart: unless-stopped
     user: "0:0"
     cpu_shares: 80
+    depends_on:
+      bootstrap:
+        condition: service_completed_successfully
     environment:
       DOMAIN: "${APP_DOMAIN}"
       SUB_DOMAIN: "hubs"
@@ -17,8 +37,8 @@ services:
       turkeyCfg_cors_proxy_server: "hubs-${APP_DOMAIN}"
       turkeyCfg_shortlink_domain: "hubs-${APP_DOMAIN}"
       turkeyCfg_tier: "p1"
-      PUID: $PUID
-      PGID: $PGID
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
       TZ: UTC
     expose:
       - 8080
@@ -50,12 +70,18 @@ services:
     restart: unless-stopped
     user: "0:0"
     cpu_shares: 70
+    depends_on:
+      bootstrap:
+        condition: service_completed_successfully
+    # Secrets (POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB) loaded from
+    # the file that bootstrap generates. env_file is read at container
+    # creation time, after bootstrap has completed.
+    env_file:
+      - path: ${DATA_ROOT:-/DATA}/AppData/hubs/secrets/.env
+        required: false
     environment:
-      POSTGRES_USER: $POSTGRES_USER
-      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
-      POSTGRES_DB: $POSTGRES_DB
-      PUID: $PUID
-      PGID: $PGID
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
       TZ: UTC
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres || exit 1"]
@@ -76,6 +102,17 @@ services:
     restart: unless-stopped
     user: "0:0"
     cpu_shares: 70
+    depends_on:
+      bootstrap:
+        condition: service_completed_successfully
+      db:
+        condition: service_healthy
+    # Secrets (turkeyCfg_DB_USER, turkeyCfg_DB_PASS, turkeyCfg_GUARDIAN_KEY,
+    # turkeyCfg_PHX_KEY, turkeyCfg_PERMS_KEY, etc.) loaded from bootstrap's
+    # generated env file.
+    env_file:
+      - path: ${DATA_ROOT:-/DATA}/AppData/hubs/secrets/.env
+        required: false
     environment:
       POD_IP: "127.0.0.1"
       POD_NAME: "reticulum-1"
@@ -94,17 +131,8 @@ services:
       turkeyCfg_MAILER_RELAY: "smtp"
       turkeyCfg_MAILER_PORT: "587"
       turkeyCfg_MAILER_TLS: "never"
-      turkeyCfg_DB_USER: $turkeyCfg_DB_USER
-      turkeyCfg_DB_PASS: $turkeyCfg_DB_PASS
-      turkeyCfg_DB_NAME: $turkeyCfg_DB_NAME
-      turkeyCfg_NODE_COOKIE: $turkeyCfg_NODE_COOKIE
-      turkeyCfg_GUARDIAN_KEY: $turkeyCfg_GUARDIAN_KEY
-      turkeyCfg_PHX_KEY: $turkeyCfg_PHX_KEY
-      turkeyCfg_DASHBOARD_ACCESS_KEY: $turkeyCfg_DASHBOARD_ACCESS_KEY
-      turkeyCfg_POSTGREST_PASSWORD: $turkeyCfg_POSTGREST_PASSWORD
-      turkeyCfg_PERMS_KEY: $turkeyCfg_PERMS_KEY
-      PUID: $PUID
-      PGID: $PGID
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
       TZ: UTC
     expose:
       - 4000
@@ -112,9 +140,6 @@ services:
     volumes:
       - ${DATA_ROOT:-/DATA}/AppData/hubs/retstorage:/storage
       - ${DATA_ROOT:-/DATA}/AppData/hubs/config.toml.template:/home/ret/config.toml.template:ro
-    depends_on:
-      db:
-        condition: service_healthy
     networks:
       - hubs-net
       - pcs
@@ -142,20 +167,25 @@ services:
     restart: unless-stopped
     user: "0:0"
     cpu_shares: 50
+    depends_on:
+      bootstrap:
+        condition: service_completed_successfully
+      db:
+        condition: service_healthy
+    # Secrets (PGRST_DB_URI, PGRST_JWT_SECRET) loaded from bootstrap's
+    # generated env file.
+    env_file:
+      - path: ${DATA_ROOT:-/DATA}/AppData/hubs/secrets/.env
+        required: false
     environment:
-      PGRST_DB_URI: $PGRST_DB_URI
-      PGRST_JWT_SECRET: $PGRST_JWT_SECRET
       PGRST_LOG_LEVEL: info
       PGRST_DB_SCHEMA: ret0_admin
       PGRST_DB_ANON_ROLE: postgres
-      PUID: $PUID
-      PGID: $PGID
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
       TZ: UTC
     expose:
       - 3000
-    depends_on:
-      db:
-        condition: service_healthy
     networks:
       - hubs-net
 
@@ -165,6 +195,9 @@ services:
     restart: unless-stopped
     user: "0:0"
     cpu_shares: 50
+    depends_on:
+      bootstrap:
+        condition: service_completed_successfully
     environment:
       DOMAIN: "${APP_DOMAIN}"
       SUB_DOMAIN: "hubsspoke"
@@ -175,22 +208,13 @@ services:
       turkeyCfg_cors_proxy_server: "hubs-${APP_DOMAIN}"
       turkeyCfg_shortlink_domain: "hubs-${APP_DOMAIN}"
       turkeyCfg_hubs_server: "hubs-${APP_DOMAIN}"
-      PUID: $PUID
-      PGID: $PGID
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
       TZ: UTC
     expose:
       - 8080
     networks:
       hubs-net:
-        # reticulum's config.toml.template (ghcr.io/worph/hubs-seed) hardcodes
-        # `spoke_page_origin = https://spoke:8080/spoke/pages` — upstream turkey's
-        # service name. This service is app-prefixed for shared-network hygiene,
-        # so `spoke` resolves only through this alias. Without it the name does
-        # not resolve, Ret.PageOriginWarmer.get_aggregated_etag/0 blocks on its
-        # 15s Task.await, the cachex warmer GenServer crashes on every cycle and
-        # the page cache is never populated — so EVERY reticulum page answers
-        # 503 "Missing file <page>.html", including the two pages whose origin
-        # (hubs-client) is perfectly healthy. Verified on demostaging1.
         aliases:
           - spoke
       pcs: {}
@@ -219,6 +243,9 @@ services:
     restart: unless-stopped
     user: "0:0"
     cpu_shares: 70
+    depends_on:
+      bootstrap:
+        condition: service_completed_successfully
     environment:
       AUTH_KEY: /app/certs/perms.pub.pem
       HTTPS_CERT_FULLCHAIN: /app/certs/fullchain.pem
@@ -228,8 +255,8 @@ services:
       MEDIASOUP_MAX_PORT: 40050
       MEDIASOUP_ANNOUNCED_IP: "${APP_PUBLIC_IPV4}"
       DEBUG: "*INFO* *WARN* *ERROR*"
-      PUID: $PUID
-      PGID: $PGID
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
       TZ: UTC
     volumes:
       - ${DATA_ROOT:-/DATA}/AppData/hubs/perms.pub.pem:/app/certs/perms.pub.pem:ro
@@ -266,19 +293,17 @@ services:
     container_name: hubs-nearspark
     restart: unless-stopped
     cpu_shares: 30
+    depends_on:
+      bootstrap:
+        condition: service_completed_successfully
     environment:
-      PUID: $PUID
-      PGID: $PGID
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
       TZ: UTC
     expose:
       - 5000
     networks:
       hubs-net:
-        # Same upstream-name / app-prefix mismatch as hubs-spoke above: the
-        # template's `[...Endpoint.imgproxy_url] host = "nearspark"` names the
-        # thumbnail service, which is `hubs-nearspark` here. Not fatal the way
-        # the spoke one is — it is a separate subsystem from the page warmer —
-        # but without the alias reticulum cannot reach the thumbnailer at all.
         aliases:
           - nearspark
       pcs: {}
@@ -298,13 +323,31 @@ services:
     restart: unless-stopped
     cpu_shares: 30
     environment:
-      PUID: $PUID
-      PGID: $PGID
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
       TZ: UTC
     expose:
       - 5000
     networks:
       - hubs-net
+
+  # --- post_up: seeds admin account + default scene (idempotent) ---
+  seed:
+    image: ghcr.io/worph/hubs-seed:2.0.0
+    container_name: hubs-seed
+    restart: on-failure
+    depends_on:
+      hubs:
+        condition: service_started
+    networks:
+      - hubs-net
+    volumes:
+      - ${DATA_ROOT:-/DATA}/AppData/hubs/secrets/.env:/secrets.env:ro
+    environment:
+      SECRETS_ENV_FILE: /secrets.env
+      RET_INTERNAL_URL: https://hubs-reticulum:4000
+      RET_PUBLIC_URL: https://hubs-${APP_DOMAIN}
+      APP_EMAIL: ${APP_EMAIL}
 
 networks:
   hubs-net:
@@ -321,8 +364,6 @@ x-casaos:
   author: Hubs Foundation
   developer: Hubs Foundation
   category: Communication
-  # `needs-public-ip`: hubs-dialog publishes the mediasoup 40000-40050 range that
-  # remote participants dial in on directly. See the ports: block on that service.
   tags: ["personal", "family", "games", "needs-public-ip"]
 
   icon: icon.png
@@ -413,10 +454,6 @@ x-casaos:
 
 x-compose-app:
   schema_version: 2
-  # Both halves of the seeding are containers — hubs-seed's own image — so they
-  # are declared rather than shelled out to. bootstrap is idempotent: it reuses an
-  # existing keypair and preserves every secret already in secrets/.env, so a
-  # reinstall keeps the credentials the existing pgdata was initialised with.
   init:
     - name: bootstrap
       image: ghcr.io/worph/hubs-seed:2.0.0
@@ -432,8 +469,6 @@ x-compose-app:
         PUID: ${PUID}
         PGID: ${PGID}
       when: once
-    # Runs after the stack is up, on the app's own network, because it talks to
-    # reticulum.
     - name: seed
       image: ghcr.io/worph/hubs-seed:2.0.0
       phase: post_up
@@ -446,22 +481,6 @@ x-compose-app:
         RET_PUBLIC_URL: https://hubs-${APP_DOMAIN}
         APP_EMAIL: ${APP_EMAIL}
       when: once
-  # The merge, not the seeding: the `bootstrap` init step above writes hubs-seed's
-  # generated credentials to secrets/.env, and they have to reach the app's own
-  # .env — the only env file the platform passes to `docker compose`.
-  #
-  # It is `pre_up` and not `pre_install` because the stack-up sequence is
-  # `... -> init(pre_up) -> ... -> pre_up -> docker compose up -d`, while
-  # pre_install runs strictly *before* that whole sequence: a pre_install hook
-  # would read secrets/.env before bootstrap has written it. post_up is too late —
-  # the first `up` would already have started the stack without the credentials.
-  #
-  # It stays a hook because the key set is whatever hubs-seed decided to generate:
-  # `variables:` can ensure keys an author names, and nobody can name these. Each
-  # key is added only when absent and `>` is never used — Maison has already
-  # written APP_DOMAIN, APP_NET, PUID/PGID and the rest into that file, and the
-  # framework passthroughs hubs-seed re-emits must not shadow them. That also makes
-  # it idempotent, which is what a hook running before *every* up has to be.
   hooks:
     pre_up: |
       while IFS='=' read -r key value; do
@@ -469,21 +488,14 @@ x-compose-app:
         grep -q "^$key=" $APP_DIR/.env 2>/dev/null ||
           printf '%s=%s\n' "$key" "$value" >> $APP_DIR/.env
       done < /DATA/AppData/hubs/secrets/.env
-  # Created and owned by Maison before images are pulled, before any hook runs and
-  # before any container starts - on the first boot and every one after it.
   folders:
     - path: /DATA/AppData/hubs
       user: $PUID
       group: $PGID
-    # hubs-seed's generated .env: the database password and the Guardian /
-    # Phoenix / PostgREST keys.
     - path: /DATA/AppData/hubs/secrets
       user: $PUID
       group: $PGID
       mode: "0700"
-    # postgres:14-alpine drops to uid 70 through gosu, so the cluster directory
-    # has to be its own. recursive because a chown of /DATA/AppData can re-lock
-    # the tree to PUID between boots, which crash-loops the database.
     - path: /DATA/AppData/hubs/pgdata
       user: 70
       group: 70
