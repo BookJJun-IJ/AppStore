@@ -14,7 +14,7 @@ services:
       APP_DOMAIN: ${APP_DOMAIN}
       APP_PUBLIC_IP_DASH: ${APP_PUBLIC_IP_DASH}
       APP_PUBLIC_IPV4: ${APP_PUBLIC_IPV4}
-      APP_EMAIL: ${APP_EMAIL}
+      APP_EMAIL: bookjjun0329@gmail.com
       PUID: ${PUID:-1000}
       PGID: ${PGID:-1000}
 
@@ -127,7 +127,7 @@ services:
       turkeyCfg_SPOKE_HOST: "hubsspoke-${APP_DOMAIN}"
       turkeyCfg_DB_HOST: "db"
       turkeyCfg_DB_HOST_T: "db"
-      turkeyCfg_APP_EMAIL: "${APP_EMAIL}"
+      turkeyCfg_APP_EMAIL: "bookjjun0329@gmail.com"
       turkeyCfg_MAILER_RELAY: "smtp"
       turkeyCfg_MAILER_PORT: "587"
       turkeyCfg_MAILER_TLS: "never"
@@ -347,7 +347,7 @@ services:
       SECRETS_ENV_FILE: /secrets.env
       RET_INTERNAL_URL: https://hubs-reticulum:4000
       RET_PUBLIC_URL: https://hubs-${APP_DOMAIN}
-      APP_EMAIL: ${APP_EMAIL}
+      APP_EMAIL: bookjjun0329@gmail.com
 
 networks:
   hubs-net:
@@ -465,7 +465,7 @@ x-compose-app:
         APP_DOMAIN: ${APP_DOMAIN}
         APP_PUBLIC_IP_DASH: ${APP_PUBLIC_IP_DASH}
         APP_PUBLIC_IPV4: ${APP_PUBLIC_IPV4}
-        APP_EMAIL: ${APP_EMAIL}
+        APP_EMAIL: bookjjun0329@gmail.com
         PUID: ${PUID}
         PGID: ${PGID}
       when: once
@@ -479,7 +479,7 @@ x-compose-app:
         SECRETS_ENV_FILE: /secrets.env
         RET_INTERNAL_URL: https://hubs-reticulum:4000
         RET_PUBLIC_URL: https://hubs-${APP_DOMAIN}
-        APP_EMAIL: ${APP_EMAIL}
+        APP_EMAIL: bookjjun0329@gmail.com
       when: once
   hooks:
     pre_up: |
