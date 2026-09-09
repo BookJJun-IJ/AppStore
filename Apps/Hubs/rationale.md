@@ -38,9 +38,9 @@ uninvited rooms. Anyone who wants a private instance should front the app with t
 AppShield sidecar, at the cost of making invite links useless to anyone without a
 PCS account — which for most deployments defeats the purpose.
 
-### 2. Six of the eight services run as root
+### 2. Seven of the ten services run as root
 
-Six of the eight services in the Hubs stack run as `user: "0:0"`:
+Seven of the ten services in the Hubs stack run as `user: "0:0"` or `user: "root"`:
 
 - `db` (`postgres:14-alpine`)
 - `hubs` (`hubsfoundation/reticulum:stable-855`) — Phoenix backend, the user-facing service
@@ -48,8 +48,9 @@ Six of the eight services in the Hubs stack run as `user: "0:0"`:
 - `hubs-client` (`hubsfoundation/hubs:stable-3111`) — static asset server
 - `spoke` (`hubsfoundation/spoke:stable-95`) — scene editor
 - `dialog` (`hubsfoundation/dialog:stable-331`) — Mediasoup WebRTC SFU
+- `hubs-mailpit-proxy` (`ghcr.io/yundera/appshield:2.0.9`) — OIDC auth proxy for the Mailpit web UI
 
-The remaining two (`nearspark`, `photomnemonic`) inherit the default `PUID:PGID`.
+The remaining three (`nearspark`, `photomnemonic`, `mailpit`) inherit the default `PUID:PGID`.
 
 ## Why it is necessary
 
@@ -58,8 +59,17 @@ Every container running as root does so because its **upstream entrypoint expect
 - `postgres:14-alpine` requires root to `chown -R postgres:postgres "$PGDATA"` before `gosu postgres` re-execs the postmaster as uid 70. Running it as a non-root user up front bypasses that chown and produces the `Permission denied: global/pg_filenode.map` failure mode (which is exactly what triggered the original outage on staging).
 - The Hubs Foundation images (`reticulum`, `hubs`, `spoke`, `dialog`) ship with an entrypoint that templates `/home/ret/config.toml` from env vars at startup, writes it under `/home/ret`, and then exec's the application. The template-render step needs write access to a path created at image build time as root.
 - `mozillareality/postgrest` has the same upstream-defined entrypoint pattern.
+- `hubs-mailpit-proxy` (`ghcr.io/yundera/appshield`) runs as root because the AppShield sidecar binds port 80 inside the container and manages OIDC registration with the platform's `auth-registrar`. This is the standard AppShield pattern used across the AppStore (e.g. ConvertX, Spliit, BrowserMCP).
 
-Forcing these images to run unprivileged would require maintaining a downstream rebuild for each — a maintenance burden disproportionate to the security improvement, given the AppData-only volume topology described below.
+Forcing the upstream Hubs images to run unprivileged would require maintaining a downstream rebuild for each — a maintenance burden disproportionate to the security improvement, given the AppData-only volume topology described below.
+
+### 3. Mailpit added for admin magic-link delivery
+
+Hubs authenticates exclusively via magic-link emails. On NSL.sh, `APP_EMAIL` is set to `admin@{domain}` — a non-receivable address — so the admin magic-link cannot be delivered to a real mailbox. Mailpit (`axllent/mailpit`) is added as a local mail capture and relay service:
+
+- **Captures** all outgoing emails from Hubs in a web UI accessible at `https://hubsmail-{domain}`
+- **Relays** emails to the platform's `smtp` container for external delivery (regular users with real email addresses receive their magic-links normally)
+- The Mailpit web UI is **protected by AppShield** (`hubs-mailpit-proxy`) so only authenticated PCS users can access captured emails
 
 ## Security mitigations in place
 
