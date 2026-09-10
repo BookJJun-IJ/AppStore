@@ -66,7 +66,7 @@ Hubs authenticates exclusively via magic-link emails. On NSL.sh, `APP_EMAIL` is 
 
 - **Captures** all outgoing emails from Hubs in a web UI accessible at `https://hubsmail-{domain}`
 - **Relays** emails to the platform's `smtp` container for external delivery (regular users with real email addresses receive their magic-links normally)
-- The Mailpit web UI is **protected by Basic Auth** (`MP_UI_AUTH`) using the `DASHBOARD_ACCESS_KEY` generated during bootstrap as the password
+- The Mailpit web UI is **protected by Basic Auth** (`MP_UI_AUTH`) using the platform-provided `APP_DEFAULT_PASSWORD` as the password
 
 ## Security mitigations in place
 

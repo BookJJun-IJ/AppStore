@@ -91,7 +91,7 @@ services:
       turkeyCfg_DB_HOST: "db"
       turkeyCfg_DB_HOST_T: "db"
       turkeyCfg_APP_EMAIL: "${APP_EMAIL}"
-      turkeyCfg_MAILER_RELAY: "mailpit"
+      turkeyCfg_MAILER_RELAY: "hubs-mailpit"
       turkeyCfg_MAILER_PORT: "587"
       turkeyCfg_MAILER_TLS: "never"
       turkeyCfg_DB_USER: $turkeyCfg_DB_USER
@@ -306,10 +306,11 @@ services:
     networks:
       - hubs-net
 
-  mailpit:
+  hubs-mailpit:
     image: axllent/mailpit:v1.29.7
     container_name: hubs-mailpit
     restart: unless-stopped
+    user: "$PUID:$PGID"
     cpu_shares: 20
     environment:
       MP_SMTP_BIND_ADDR: "0.0.0.0:587"
