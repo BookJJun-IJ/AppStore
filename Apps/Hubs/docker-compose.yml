@@ -319,7 +319,8 @@ services:
       MP_SMTP_RELAY_PORT: 587
       MP_SMTP_RELAY_STARTTLS: "false"
       MP_SMTP_RELAY_ALL: 1
-      MP_UI_AUTH: "admin:${DASHBOARD_ACCESS_KEY}"
+      MP_UI_AUTH: "admin:$APP_DEFAULT_PASSWORD"
+
       TZ: UTC
     expose:
       - 587
@@ -390,7 +391,7 @@ x-casaos:
       en_us: |
         **🔑 Initial admin: `${APP_EMAIL}`** — the only account with admin rights. Sign in with this email at https://hubs-${APP_DOMAIN} to receive a magic-link.
 
-        **How to sign in:** Hubs uses magic-link (email-only) login. Enter `${APP_EMAIL}` at https://hubs-${APP_DOMAIN}/signin, then open the [Local Mailbox](https://hubsmail-${APP_DOMAIN}) to find the magic-link email and click it. Mailbox login — user: `admin`, password: `${DASHBOARD_ACCESS_KEY}`
+        **How to sign in:** Hubs uses magic-link (email-only) login. Enter `${APP_EMAIL}` at https://hubs-${APP_DOMAIN}/signin, then open the [Local Mailbox](https://hubsmail-${APP_DOMAIN}) to find the magic-link email and click it. Mailbox login — user: `admin`, password: `$APP_DEFAULT_PASSWORD`
 
         **Operator surfaces** (after admin sign-in):
         - [Admin panel](https://hubs-${APP_DOMAIN}/admin)
@@ -435,7 +436,7 @@ x-casaos:
       ko_kr: |
         **🔑 초기 관리자: `${APP_EMAIL}`** — 관리자 권한을 가진 유일한 계정입니다. https://hubs-${APP_DOMAIN} 에서 이 이메일로 로그인하면 매직 링크를 받게 됩니다.
 
-        **로그인 방법:** Hubs는 매직링크(이메일 전용) 로그인을 사용합니다. https://hubs-${APP_DOMAIN}/signin 에서 `${APP_EMAIL}`을 입력한 후, [로컬 메일함](https://hubsmail-${APP_DOMAIN})을 열어 매직링크 이메일을 확인하고 클릭하세요. 메일함 로그인 — 사용자: `admin`, 비밀번호: `${DASHBOARD_ACCESS_KEY}`
+        **로그인 방법:** Hubs는 매직링크(이메일 전용) 로그인을 사용합니다. https://hubs-${APP_DOMAIN}/signin 에서 `${APP_EMAIL}`을 입력한 후, [로컬 메일함](https://hubsmail-${APP_DOMAIN})을 열어 매직링크 이메일을 확인하고 클릭하세요. 메일함 로그인 — 사용자: `admin`, 비밀번호: `$APP_DEFAULT_PASSWORD`
 
         **운영자 화면** (관리자 로그인 후):
         - [관리 패널](https://hubs-${APP_DOMAIN}/admin)
