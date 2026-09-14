@@ -1,0 +1,194 @@
+name: yunohost
+
+services:
+  nginxhashlock:
+    image: yundera/nginx-hash-lock:latest
+    container_name: yunohost-proxy
+    restart: unless-stopped
+    user: "0:0"
+    cpu_shares: 80
+    expose:
+      - "80"
+    labels:
+      caddy_0: yunohost-${APP_DOMAIN}
+      caddy_0.import: gateway_tls
+      caddy_0.reverse_proxy: "{{upstreams 80}}"
+      caddy_1: yunohost-\${APP_PUBLIC_IP_DASH}.nip.io
+      caddy_1.import: gateway_tls
+      caddy_1.reverse_proxy: "{{upstreams 80}}"
+      caddy_2: yunohost-\${APP_PUBLIC_IP_DASH}.sslip.io
+      caddy_2.reverse_proxy: "{{upstreams 80}}"
+    depends_on:
+      yunohost:
+        condition: service_started
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    networks:
+      - yunohost-internal
+      - pcs
+
+  yunohost:
+    image: ghcr.io/bookjjun-ij/yunohost:v12.0.0
+    container_name: yunohost
+    restart: unless-stopped
+    privileged: true
+    user: "0:0"
+    cpu_shares: 70
+    expose:
+      - "443"
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+      - /DATA/AppData/$AppID/config:/etc/yunohost
+      - /DATA/AppData/$AppID/data:/home/yunohost.backup
+      - /DATA/AppData/$AppID/apps:/home/yunohost.app
+      - /DATA/AppData/$AppID/mail:/var/mail
+    environment:
+      PCS_DOMAIN: $PCS_DOMAIN
+      PCS_DEFAULT_PASSWORD: $PCS_DEFAULT_PASSWORD
+      PCS_EMAIL: $PCS_EMAIL
+      TZ: $TZ
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+    networks:
+      - yunohost-internal
+
+networks:
+  yunohost-internal:
+    driver: bridge
+  pcs:
+    name: pcs
+    external: true
+
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  main: nginxhashlock
+  store_app_id: yunohost
+  webui_port: 80
+  index: /
+  author: Yundera Team
+  category: Utilities
+  developer: YunoHost
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/YunoHost/icon.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/YunoHost/screenshot-1.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/YunoHost/screenshot-1.png
+  title:
+    en_us: YunoHost
+  tagline:
+    en_us: Self-hosting made easy
+    ko_kr: 쉬운 셀프호스팅 플랫폼
+    zh_cn: 简单的自托管平台
+    fr_fr: L'auto-hebergement facile
+    es_es: Autoalojamiento facil
+  description:
+    en_us: |
+      **YunoHost — Self-Hosting Made Easy**
+
+      YunoHost is a Debian-based operating system that simplifies server administration and makes self-hosting accessible to everyone. Install and manage web applications, email, and more through a clean web interface.
+
+      **Key Features:**
+      - One-click app installation from 500+ packages
+      - Built-in user management and SSO
+      - Automatic HTTPS with Let's Encrypt
+      - Email server (SMTP, IMAP) included
+      - Backup and restore system
+      - Domain and DNS management
+      - Multi-user with fine-grained permissions
+
+      **Note:** This is an experimental deployment running YunoHost inside a Docker container with privileged mode. Some features may not work as expected compared to a native installation.
+    ko_kr: |
+      **YunoHost — 쉬운 셀프호스팅**
+
+      YunoHost는 서버 관리를 간소화하는 Debian 기반 운영체제입니다. 깔끔한 웹 인터페이스를 통해 웹 애플리케이션, 이메일 등을 설치하고 관리하세요.
+
+      **주요 기능:**
+      - 500개 이상의 앱 원클릭 설치
+      - 내장 사용자 관리 및 SSO
+      - Let's Encrypt 자동 HTTPS
+      - 이메일 서버 (SMTP, IMAP) 내장
+      - 백업 및 복원 시스템
+      - 도메인 및 DNS 관리
+
+      **참고:** Docker 컨테이너에서 privileged 모드로 실행되는 실험적 배포입니다.
+    zh_cn: |
+      **YunoHost — 轻松自托管**
+
+      YunoHost 是一个基于 Debian 的操作系统，简化服务器管理，让自托管变得人人可用。通过简洁的 Web 界面安装和管理 Web 应用、邮件等。
+
+      **主要功能：**
+      - 500+ 应用一键安装
+      - 内置用户管理和单点登录
+      - Let's Encrypt 自动 HTTPS
+      - 内置邮件服务器 (SMTP, IMAP)
+      - 备份和恢复系统
+      - 域名和 DNS 管理
+
+      **注意：** 这是在 Docker 容器中以特权模式运行的实验性部署。
+    fr_fr: |
+      **YunoHost — L'auto-hebergement facile**
+
+      YunoHost est un systeme d'exploitation base sur Debian qui simplifie l'administration serveur et rend l'auto-hebergement accessible a tous. Installez et gerez des applications web, des emails et plus via une interface web claire.
+
+      **Fonctionnalites cles :**
+      - Installation en un clic parmi 500+ applications
+      - Gestion des utilisateurs et SSO integres
+      - HTTPS automatique avec Let's Encrypt
+      - Serveur email (SMTP, IMAP) inclus
+      - Systeme de sauvegarde et restauration
+      - Gestion des domaines et DNS
+
+      **Note :** Deploiement experimental executant YunoHost dans un conteneur Docker en mode privilegie.
+    es_es: |
+      **YunoHost — Autoalojamiento facil**
+
+      YunoHost es un sistema operativo basado en Debian que simplifica la administracion de servidores y hace el autoalojamiento accesible para todos. Instala y gestiona aplicaciones web, correo electronico y mas a traves de una interfaz web limpia.
+
+      **Caracteristicas principales:**
+      - Instalacion con un clic de mas de 500 aplicaciones
+      - Gestion de usuarios y SSO integrados
+      - HTTPS automatico con Let's Encrypt
+      - Servidor de correo (SMTP, IMAP) incluido
+      - Sistema de respaldo y restauracion
+      - Gestion de dominios y DNS
+
+      **Nota:** Despliegue experimental ejecutando YunoHost dentro de un contenedor Docker en modo privilegiado.
+  tips:
+    before_install:
+      en_us: |
+        **⚠️ Experimental App**
+
+        This app runs YunoHost inside a Docker container with `--privileged` mode.
+        Some features (email, DNS) may not work as expected.
+
+        **Default Login**
+
+        | Field | Value |
+        |-------|-------|
+        | Username | `admin` |
+        | Password | `$PCS_DEFAULT_PASSWORD` |
+
+        Access the admin panel at the app URL after installation.
+        First startup may take 1-2 minutes while YunoHost initializes.
+
+        **Documentation:** [https://yunohost.org/docs](https://yunohost.org/docs)
+      ko_kr: |
+        **⚠️ 실험적 앱**
+
+        이 앱은 Docker 컨테이너에서 `--privileged` 모드로 YunoHost를 실행합니다.
+        일부 기능(이메일, DNS)이 예상대로 작동하지 않을 수 있습니다.
+
+        **기본 로그인**
+
+        | 항목 | 값 |
+        |------|-----|
+        | 사용자명 | `admin` |
+        | 비밀번호 | `$PCS_DEFAULT_PASSWORD` |
+
+        설치 후 앱 URL에서 관리자 패널에 접근하세요.
+        첫 시작 시 초기화에 1-2분 소요될 수 있습니다.

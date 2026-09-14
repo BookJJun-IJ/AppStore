@@ -1,3 +1,10 @@
 .idea/
 .DS_Store
 *.zip
+
+# Working files — not part of the app store
+Apps/article/
+Apps/BrowserMCP/*.js
+Apps/BrowserMCP/*.json
+Apps/BrowserMCP/*.md
+Apps/BrowserMCP/n8n-backup-2026-08-28/

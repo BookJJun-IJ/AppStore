@@ -2,7 +2,7 @@ name: browsermcp
 services:
   # Single container — Chromium + MCP server (hash-lock) + noVNC (VNC password)
   browsermcp:
-    image: ghcr.io/worph/browser-mcp:1.1.2
+    image: ghcr.io/worph/browser-mcp:1.1.8
     container_name: browsermcp
     hostname: browsermcp
     restart: unless-stopped

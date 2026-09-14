@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4F46E5"/>
+      <stop offset="100%" style="stop-color:#7C3AED"/>
+    </linearGradient>
+  </defs>
+  <rect width="192" height="192" rx="40" fill="url(#bg)"/>
+  <!-- Book body -->
+  <rect x="44" y="40" width="104" height="112" rx="8" fill="white" opacity="0.95"/>
+  <!-- Book spine -->
+  <rect x="44" y="40" width="16" height="112" rx="4" fill="#E0E7FF"/>
+  <!-- Lines of text -->
+  <rect x="72" y="62" width="60" height="6" rx="3" fill="#C7D2FE"/>
+  <rect x="72" y="78" width="50" height="6" rx="3" fill="#C7D2FE"/>
+  <rect x="72" y="94" width="55" height="6" rx="3" fill="#C7D2FE"/>
+  <rect x="72" y="110" width="40" height="6" rx="3" fill="#C7D2FE"/>
+  <!-- Bookmark -->
+  <polygon points="124,40 136,40 136,72 130,64 124,72" fill="#F59E0B"/>
+  <!-- Magnifying glass -->
+  <circle cx="138" cy="130" r="16" fill="none" stroke="white" stroke-width="5"/>
+  <line x1="149" y1="141" x2="160" y2="152" stroke="white" stroke-width="5" stroke-linecap="round"/>
+</svg>

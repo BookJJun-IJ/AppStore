@@ -2,7 +2,7 @@ name: uptimekuma
 
 services:
   uptimekuma:
-    image: louislam/uptime-kuma:2.2.0
+    image: louislam/uptime-kuma:2.4.0
     container_name: uptimekuma
     restart: unless-stopped
     user: "0:0"
