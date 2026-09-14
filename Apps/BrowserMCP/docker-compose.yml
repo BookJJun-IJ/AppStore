@@ -8,15 +8,15 @@ services:
     restart: unless-stopped
     shm_size: "2gb"
     user: 0:0
+    cpu_shares: 70
     expose:
       - 9746
     environment:
-      - AUTH_HASH=$AUTH_HASH
-      - TZ=Asia/Seoul
+      - TZ=$TZ
       - VNC_RESOLUTION=1920x1080x24
     volumes:
       - type: bind
-        source: /DATA/AppData/browser-mcp/
+        source: ${DATA_ROOT:-/DATA}/AppData/$AppID/
         target: /app/data
     networks:
       - pcs
@@ -45,7 +45,7 @@ services:
 
 networks:
   pcs:
-    name: pcs
+    name: ${APP_NET:-pcs}
     external: true
 
 x-casaos:
@@ -95,7 +95,7 @@ x-casaos:
   thumbnail: https://cdn.jsdelivr.net/gh/Worph/AppStore@main/Apps/BrowserMCP/thumbnail.png
   title:
     en_us: Browser MCP
-  index: /?hash=$AUTH_HASH
+  index: /
   chips:
     - key: mcp
       name:
