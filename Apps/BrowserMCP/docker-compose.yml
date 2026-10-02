@@ -3,7 +3,7 @@ services:
   # Main container — Chromium + Playwright + MCP server + noVNC viewer.
   # Reachable at browsermcp-backend:9746 on the pcs network. Beacon discovery on UDP 9099.
   browsermcp-backend:
-    image: ghcr.io/worph/browser-mcp:1.1.4
+    image: ghcr.io/worph/browser-mcp:1.1.8
     container_name: browsermcp-backend
     hostname: browsermcp-backend
     restart: unless-stopped
