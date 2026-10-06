@@ -20,6 +20,9 @@ services:
       - PORT=9746
       - DISCOVERY_PORT=9099
       - CONFIG_PATH=/app/data/config.json
+      # The image bakes VNC_RESOLUTION=1280x720x24 at build time; setting it
+      # empty lets the value in config.json take effect instead.
+      - VNC_RESOLUTION=
       # Kill idle Chrome after this many ms (default 2h); respawns on next use.
       - IDLE_TTL_MS=7200000
     volumes:
@@ -329,5 +332,9 @@ x-compose-app:
     - path: /DATA/AppData/browsermcp/oauth
       user: $PUID
       group: $PGID
+  files:
+    - path: /DATA/AppData/browsermcp/data/config.json
+      from: config.json
+      ensure: missing
   webui-host: browsermcp-${domain}
   webui-path: "/"
