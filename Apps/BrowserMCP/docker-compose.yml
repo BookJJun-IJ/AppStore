@@ -329,9 +329,16 @@ x-compose-app:
     - path: /DATA/AppData/browsermcp/oauth
       user: $PUID
       group: $PGID
-  files:
-    - path: /DATA/AppData/browsermcp/data/config.json
-      from: config.json
-      ensure: missing
+  init:
+    - name: default-config
+      image: alpine:3.20
+      phase: pre_up
+      command:
+        - sh
+        - -c
+        - '[ -f /data/config.json ] || printf ''{"browser":{"autoLaunch":true}}\n'' > /data/config.json'
+      volumes:
+        - ${DATA_ROOT:-/DATA}/AppData/browsermcp/data:/data
+      when: always
   webui-host: browsermcp-${domain}
   webui-path: "/"
