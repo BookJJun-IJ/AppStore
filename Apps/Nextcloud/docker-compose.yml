@@ -18,6 +18,11 @@ services:
       caddy_0: nextcloud-${APP_DOMAIN}
       caddy_0.import: gateway_tls
       caddy_0.reverse_proxy: "{{upstreams 80}}"
+      # Talk signaling rides on the Nextcloud host, like Nextcloud AIO does: a
+      # dedicated subdomain is not known to the NSL.SH mesh (x-mesh-catchall).
+      # handle_path runs before reverse_proxy and strips the prefix.
+      caddy_0.handle_path: /standalone-signaling/*
+      caddy_0.handle_path.reverse_proxy: nextcloud_talk:8081
       caddy_1: nextcloud-${APP_PUBLIC_IP_DASH}.nip.io
       caddy_1.import: gateway_tls
       caddy_1.reverse_proxy: "{{upstreams 80}}"
@@ -195,7 +200,8 @@ services:
   # Talk High-Performance Backend: the official Nextcloud AIO talk image bundles the
   # signaling server, Janus (SFU), NATS and an eturnal TURN server. Without it Talk
   # runs every call peer-to-peer, which falls apart past ~4 participants.
-  # Browsers reach signaling over HTTPS (Caddy → 8081); media goes through TURN on
+  # Browsers reach signaling over HTTPS at nextcloud-<domain>/standalone-signaling/
+  # (see the nextcloud service labels → 8081); media goes through TURN on
   # 3478 tcp/udp of the server's public IP, which Janus also relays through, so 3478
   # is the only port the call path needs.
   talk:
@@ -230,10 +236,6 @@ services:
       - SIGNALING_SECRET=${TALK_SIGNALING_SECRET}
       - INTERNAL_SECRET=${TALK_INTERNAL_SECRET}
       - AIO_LOG_LEVEL=warn
-    labels:
-      caddy_0: nextcloudtalk-${APP_DOMAIN}
-      caddy_0.import: gateway_tls
-      caddy_0.reverse_proxy: "{{upstreams 8081}}"
     healthcheck:
       test: ["CMD", "/healthcheck.sh"]
       interval: 30s
@@ -593,12 +595,14 @@ x-casaos:
     # come from this hook's env and are handed to the container with -e. Each
     # server is deleted before being added so a rerun never stacks duplicates.
     docker exec \
-      -e SIG_URL="https://nextcloudtalk-$APP_DOMAIN" \
+      -e SIG_URL="https://nextcloud-$APP_DOMAIN/standalone-signaling" \
+      -e OLD_SIG_URL="https://nextcloudtalk-$APP_DOMAIN" \
       -e SIG_SECRET="$TALK_SIGNALING_SECRET" \
       -e TURN_HOST="$APP_PUBLIC_IPV4:3478" \
       -e TURN_SECRET="$TALK_TURN_SECRET" \
       nextcloud bash -c '
       php occ app:install spreed 2>/dev/null || php occ app:enable spreed
+      php occ talk:signaling:delete "$OLD_SIG_URL" 2>/dev/null || true
       php occ talk:signaling:delete "$SIG_URL" 2>/dev/null || true
       php occ talk:signaling:add "$SIG_URL" "$SIG_SECRET" --verify
       php occ talk:turn:delete turn "$TURN_HOST" udp,tcp 2>/dev/null || true
