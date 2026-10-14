@@ -1,0 +1,309 @@
+name: jitsi
+services:
+  # Web front end (nginx + Jitsi Meet UI). Proxies /xmpp-websocket to prosody and
+  # /colibri-ws to the videobridge, so Caddy only has to reach this one container.
+  jitsi:
+    image: ghcr.io/jitsi/web:stable-11248
+    container_name: jitsi
+    hostname: jitsi
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /run:size=16M,mode=1750,exec
+      - /tmp:size=16M,mode=1777,noexec
+    expose:
+      - 8000
+    environment:
+      TZ: $TZ
+      PUBLIC_URL: https://jitsi-${APP_DOMAIN}
+      DISABLE_HTTPS: "1"
+      ENABLE_HTTP_REDIRECT: "0"
+      ENABLE_AUTH: "1"
+      AUTH_TYPE: internal
+      ENABLE_GUESTS: "1"
+      ENABLE_XMPP_WEBSOCKET: "1"
+      ENABLE_COLIBRI_WEBSOCKET: "1"
+      XMPP_SERVER: xmpp.meet.jitsi
+    volumes:
+      - ${DATA_ROOT:-/DATA}/AppData/jitsi/web/:/config
+      - ${DATA_ROOT:-/DATA}/AppData/jitsi/storage/web/:/storage
+    labels:
+      caddy_0: jitsi-${APP_DOMAIN}
+      caddy_0.import: gateway_tls
+      caddy_0.reverse_proxy: "{{upstreams 8000}}"
+      caddy_1: jitsi-${APP_PUBLIC_IP_DASH}.nip.io
+      caddy_1.import: gateway_tls
+      caddy_1.reverse_proxy: "{{upstreams 8000}}"
+      caddy_2: jitsi-${APP_PUBLIC_IP_DASH}.sslip.io
+      caddy_2.reverse_proxy: "{{upstreams 8000}}"
+    depends_on:
+      - jvb
+    networks:
+      - pcs
+      - meet
+    cpu_shares: 70
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  # XMPP server: signalling, rooms and the host accounts.
+  prosody:
+    image: ghcr.io/jitsi/prosody:stable-11248
+    container_name: jitsi-prosody
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /run:size=16M,mode=1750,exec
+      - /tmp:size=16M,mode=1777,noexec
+    expose:
+      - 5222
+      - 5280
+    environment:
+      TZ: $TZ
+      PUBLIC_URL: https://jitsi-${APP_DOMAIN}
+      ENABLE_AUTH: "1"
+      AUTH_TYPE: internal
+      ENABLE_GUESTS: "1"
+      ENABLE_XMPP_WEBSOCKET: "1"
+      JICOFO_AUTH_PASSWORD: $JICOFO_AUTH_PASSWORD
+      JVB_AUTH_PASSWORD: $JVB_AUTH_PASSWORD
+    volumes:
+      - ${DATA_ROOT:-/DATA}/AppData/jitsi/prosody/config/:/config
+      - ${DATA_ROOT:-/DATA}/AppData/jitsi/prosody/plugins/:/prosody-plugins-custom
+      - ${DATA_ROOT:-/DATA}/AppData/jitsi/storage/prosody/:/var/lib/prosody
+    networks:
+      meet:
+        aliases:
+          - xmpp.meet.jitsi
+    cpu_shares: 70
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  # Conference focus: allocates participants to the videobridge.
+  jicofo:
+    image: ghcr.io/jitsi/jicofo:stable-11248
+    container_name: jitsi-jicofo
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /run:size=32M,mode=1750,exec
+      - /tmp:size=16M,mode=1777,noexec
+    environment:
+      TZ: $TZ
+      ENABLE_AUTH: "1"
+      AUTH_TYPE: internal
+      XMPP_SERVER: xmpp.meet.jitsi
+      JICOFO_AUTH_PASSWORD: $JICOFO_AUTH_PASSWORD
+      JICOFO_MAX_MEMORY: 512m
+    volumes:
+      - ${DATA_ROOT:-/DATA}/AppData/jitsi/jicofo/:/config
+    depends_on:
+      - prosody
+    networks:
+      - meet
+    cpu_shares: 70
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+
+  # Videobridge: carries the audio/video. Participants send media straight to
+  # UDP 10000 on the server's public IP; HTTPS alone carries signalling only.
+  jvb:
+    image: ghcr.io/jitsi/jvb:stable-11248
+    container_name: jitsi-jvb
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /run:size=32M,mode=1750,exec
+      - /tmp:size=16M,mode=1777,noexec
+    ports:
+      - "10000:10000/udp"
+    environment:
+      TZ: $TZ
+      PUBLIC_URL: https://jitsi-${APP_DOMAIN}
+      XMPP_SERVER: xmpp.meet.jitsi
+      JVB_AUTH_PASSWORD: $JVB_AUTH_PASSWORD
+      JVB_ADVERTISE_IPS: ${APP_PUBLIC_IPV4}
+      JVB_PORT: "10000"
+      VIDEOBRIDGE_MAX_MEMORY: 1024m
+    volumes:
+      - ${DATA_ROOT:-/DATA}/AppData/jitsi/jvb/:/config
+    depends_on:
+      - prosody
+    networks:
+      - meet
+    cpu_shares: 80
+    deploy:
+      resources:
+        limits:
+          memory: 1280M
+
+networks:
+  # The deployment's shared network, under whatever name it carries there.
+  pcs:
+    name: ${APP_NET:-pcs}
+    external: true
+  # Private network: the Jitsi components reach each other by the fixed
+  # *.meet.jitsi names the images are built around.
+  meet:
+    name: jitsi-meet
+
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  main: jitsi
+  index: /
+  author: Yundera Team
+  developer: Jitsi (8x8)
+  category: Communication
+  # `needs-public-ip`: the videobridge publishes UDP 10000, which participants
+  # dial directly. See the ports: block on the jvb service.
+  tags: ["communication", "video", "needs-public-ip"]
+  icon: icon.png
+  thumbnail: thumbnail.png
+  screenshot_link:
+    - screenshot-1.png
+  title:
+    en_us: Jitsi Meet
+  tagline:
+    en_us: Private video meetings, a self-hosted Teams and Zoom alternative
+    fr_fr: Visioconférences privées, une alternative auto-hébergée à Teams et Zoom
+    ko_kr: 프라이빗 화상회의, 셀프호스팅 Teams·Zoom 대안
+  description:
+    en_us: |
+      **Video meetings on your own server**
+
+      Jitsi Meet is the open source video conferencing platform. Meetings run in the browser, with no account or install needed for participants, and the mobile apps work too.
+
+      **What you get:**
+      - HD video and audio, screen sharing, chat, reactions, raise hand
+      - Lobby, meeting passwords and moderator controls
+      - Breakout rooms, polls and a shared whiteboard
+      - End-to-end encryption option
+      - Meeting links you can drop in a calendar invite, like Teams or Zoom
+
+      **Who can do what:**
+      - Only people with an account on this server can **start** a meeting
+      - Anyone with the link can **join** it as a guest once it has started
+
+      **Think of it like:** your own Teams or Zoom, where the calls never leave your server.
+    fr_fr: |
+      **Des visioconférences sur votre propre serveur**
+
+      Jitsi Meet est la plateforme open source de visioconférence. Les réunions se font dans le navigateur, sans compte ni installation pour les participants, et les applications mobiles fonctionnent aussi.
+
+      **Ce que vous obtenez :**
+      - Vidéo et audio HD, partage d'écran, chat, réactions, lever la main
+      - Salle d'attente, mot de passe de réunion et contrôles du modérateur
+      - Sous-salles, sondages et tableau blanc partagé
+      - Option de chiffrement de bout en bout
+      - Des liens de réunion à mettre dans une invitation, comme Teams ou Zoom
+
+      **Qui peut faire quoi :**
+      - Seules les personnes ayant un compte sur ce serveur peuvent **lancer** une réunion
+      - Toute personne qui a le lien peut la **rejoindre** en invité une fois lancée
+    ko_kr: |
+      **내 서버에서 돌아가는 화상회의**
+
+      Jitsi Meet은 오픈소스 화상회의 플랫폼입니다. 참가자는 계정이나 설치 없이 브라우저로 바로 참여할 수 있고, 모바일 앱도 지원합니다.
+
+      **주요 기능:**
+      - HD 영상·음성, 화면 공유, 채팅, 반응, 손들기
+      - 대기실, 회의 비밀번호, 진행자 권한
+      - 소회의실, 투표, 공유 화이트보드
+      - 종단간 암호화 옵션
+      - Teams나 Zoom처럼 캘린더 초대에 넣을 수 있는 회의 링크
+
+      **권한:**
+      - 이 서버에 계정이 있는 사람만 회의를 **시작**할 수 있습니다
+      - 링크를 받은 사람은 회의가 시작된 뒤 게스트로 **참여**할 수 있습니다
+  tips:
+    before_install:
+      en_us: |
+        **Host account** (needed to start a meeting)
+
+        | Username | Password |
+        | -------- | -------- |
+        | `admin` | `$APP_DEFAULT_PASSWORD` |
+
+        **How to use:**
+        1. Open **https://jitsi-${APP_DOMAIN}** and type a meeting name
+        2. Click **I am the host** and sign in with the account above
+        3. Share the meeting link. Guests join without an account
+
+        **Voice and video** need UDP port **10000** reachable on the server's public IP. If only HTTPS reaches the server, people can join but will not see or hear each other.
+
+        **Add more hosts:** run in a terminal on the server
+        `docker exec jitsi-prosody prosodyctl --config /config/prosody.cfg.lua register NAME meet.jitsi PASSWORD`
+
+        **Resources:** ~2 GB RAM. Comfortable for meetings of up to ~15 people with video.
+      fr_fr: |
+        **Compte hôte** (nécessaire pour lancer une réunion)
+
+        | Utilisateur | Mot de passe |
+        | ----------- | ------------ |
+        | `admin` | `$APP_DEFAULT_PASSWORD` |
+
+        **Utilisation :**
+        1. Ouvrez **https://jitsi-${APP_DOMAIN}** et saisissez un nom de réunion
+        2. Cliquez sur **Je suis l'hôte** et connectez-vous avec le compte ci-dessus
+        3. Partagez le lien. Les invités rejoignent sans compte
+
+        **Voix et vidéo** : le port UDP **10000** doit être joignable sur l'IP publique du serveur. Si seul HTTPS atteint le serveur, les participants se connectent mais ne se voient ni ne s'entendent.
+
+        **Ajouter des hôtes** : dans un terminal sur le serveur
+        `docker exec jitsi-prosody prosodyctl --config /config/prosody.cfg.lua register NOM meet.jitsi MOTDEPASSE`
+
+        **Ressources :** ~2 Go de RAM. Confortable jusqu'à ~15 participants en vidéo.
+      ko_kr: |
+        **호스트 계정** (회의를 시작할 때 필요)
+
+        | 사용자명 | 비밀번호 |
+        | -------- | -------- |
+        | `admin` | `$APP_DEFAULT_PASSWORD` |
+
+        **사용 방법:**
+        1. **https://jitsi-${APP_DOMAIN}** 에 접속해서 회의 이름 입력
+        2. **I am the host** 클릭 후 위 계정으로 로그인
+        3. 회의 링크 공유. 게스트는 계정 없이 참여
+
+        **음성·영상**: 서버 공인 IP의 UDP **10000** 포트가 열려 있어야 합니다. HTTPS만 통하는 환경에서는 접속은 되지만 서로 보이거나 들리지 않습니다.
+
+        **호스트 추가**: 서버 터미널에서 실행
+        `docker exec jitsi-prosody prosodyctl --config /config/prosody.cfg.lua register 이름 meet.jitsi 비밀번호`
+
+        **리소스:** RAM 약 2 GB. 영상 포함 ~15명 회의까지 무난합니다.
+
+x-compose-app:
+  schema_version: 2
+  folders:
+    - path: /DATA/AppData/jitsi/web
+    - path: /DATA/AppData/jitsi/storage/web
+    - path: /DATA/AppData/jitsi/prosody/config
+    - path: /DATA/AppData/jitsi/prosody/plugins
+    - path: /DATA/AppData/jitsi/storage/prosody
+    - path: /DATA/AppData/jitsi/jicofo
+    - path: /DATA/AppData/jitsi/jvb
+  secrets:
+    JICOFO_AUTH_PASSWORD: alnum:32
+    JVB_AUTH_PASSWORD: alnum:32
+  init:
+    # The host account. prosody writes its config on first start, so this waits
+    # for it, then registers admin with the deployment's default password.
+    - name: register-host
+      phase: post_up
+      when: once
+      image: ghcr.io/jitsi/prosody:stable-11248
+      entrypoint: ["/bin/sh", "-c"]
+      volumes:
+        - /DATA/AppData/jitsi/prosody/config:/config
+        - /DATA/AppData/jitsi/storage/prosody:/var/lib/prosody
+      command:
+        - "timeout 180 sh -c 'until [ -f /config/prosody.cfg.lua ]; do sleep 2; done' && prosodyctl --config /config/prosody.cfg.lua register admin meet.jitsi \"$APP_DEFAULT_PASSWORD\""
+  webui-host: jitsi-${domain}
+  webui-path: "/"
