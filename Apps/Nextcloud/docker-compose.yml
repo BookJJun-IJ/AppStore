@@ -20,14 +20,19 @@ services:
       caddy_0.reverse_proxy: "{{upstreams 80}}"
       # Talk signaling rides on the Nextcloud host, like Nextcloud AIO does: a
       # dedicated subdomain is not known to the NSL.SH mesh (x-mesh-catchall).
-      # handle_path runs before reverse_proxy and strips the prefix.
+      # handle_path runs before reverse_proxy and strips the prefix. It is on all
+      # three hosts because the mesh may hand the request over on the IP hosts.
       caddy_0.handle_path: /standalone-signaling/*
       caddy_0.handle_path.reverse_proxy: nextcloud_talk:8081
       caddy_1: nextcloud-${APP_PUBLIC_IP_DASH}.nip.io
       caddy_1.import: gateway_tls
       caddy_1.reverse_proxy: "{{upstreams 80}}"
+      caddy_1.handle_path: /standalone-signaling/*
+      caddy_1.handle_path.reverse_proxy: nextcloud_talk:8081
       caddy_2: nextcloud-${APP_PUBLIC_IP_DASH}.sslip.io
       caddy_2.reverse_proxy: "{{upstreams 80}}"
+      caddy_2.handle_path: /standalone-signaling/*
+      caddy_2.handle_path.reverse_proxy: nextcloud_talk:8081
     logging:
       driver: "json-file"
       options:
