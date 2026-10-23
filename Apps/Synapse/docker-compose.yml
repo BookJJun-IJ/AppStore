@@ -42,19 +42,9 @@ services:
       start_period: 60s
     expose:
       - 8008
-    labels:
-      # matrix-* = canonical Matrix identity domain (server_name). Not a WebUI.
-      caddy_0: matrix-${APP_DOMAIN}
-      caddy_0.import: gateway_tls
-      caddy_0.reverse_proxy: "{{upstreams 8008}}"
-      caddy_1: matrix-${APP_PUBLIC_IP_DASH}.nip.io
-      caddy_1.import: gateway_tls
-      caddy_1.reverse_proxy: "{{upstreams 8008}}"
-      caddy_2: matrix-${APP_PUBLIC_IP_DASH}.sslip.io
-      caddy_2.reverse_proxy: "{{upstreams 8008}}"
     networks:
-      # On `pcs` because Caddy must reach it, and on the app's own network
-      # because that is where its database lives.
+      # On `pcs` because its `matrix` route serves it, and on the app's own
+      # network because that is where its database lives.
       - pcs
       - synapse-internal
 
@@ -116,15 +106,6 @@ services:
       start_period: 15s
     expose:
       - 8080
-    labels:
-      caddy_0: synapse-${APP_DOMAIN}
-      caddy_0.import: gateway_tls
-      caddy_0.reverse_proxy: "{{upstreams 8080}}"
-      caddy_1: synapse-${APP_PUBLIC_IP_DASH}.nip.io
-      caddy_1.import: gateway_tls
-      caddy_1.reverse_proxy: "{{upstreams 8080}}"
-      caddy_2: synapse-${APP_PUBLIC_IP_DASH}.sslip.io
-      caddy_2.reverse_proxy: "{{upstreams 8080}}"
     volumes:
       # Rendered from seed/element/config.json.tmpl on every up (x-compose-app.files).
       - ${DATA_ROOT:-/DATA}/AppData/$AppID/element/config.json:/app/config.json:ro
@@ -147,7 +128,6 @@ x-casaos:
   store_app_id: synapse
   webui_port: 8080
   index: /
-  scheme: https
   category: Chat
   developer: Element
   icon: icon.png
@@ -186,14 +166,20 @@ x-casaos:
         **Add a user** (run on the server):
         `docker exec -it synapse register_new_matrix_user -c /data/homeserver.yaml http://localhost:8008`
 
-        | | |
-        |---|---|
-        | Web client (Element) | https://synapse-$APP_DOMAIN/ |
-        | Homeserver for mobile/desktop apps | `matrix-$APP_DOMAIN` |
+        **Connecting a client:** open the app for Element Web. In the Element desktop or mobile app, set the homeserver to `matrix-<your-domain>`.
 
 x-compose-app:
   schema_version: 2
   version: "1.163.0"
+  # How the app is reached, stated without a domain or a proxy: the box's routing
+  # setting decides. The first route is the web UI; each name is the host the app
+  # reads back as APP_* (the first) or ROUTE_<NAME>_* (the others).
+  routes:
+    - { service: synapse-element, name: synapse, upstream-port: 8080 }
+    # matrix-* is the CANONICAL Matrix identity domain shared with Tuwunel: the
+    # server_name, in every user id (@user:matrix-<domain>). Kept engine-neutral on
+    # purpose so an identity survives a switch between homeservers. NEVER rename it.
+    - { service: synapse, name: matrix, upstream-port: 8008 }
   # The store card and the tile. Maison reads x-compose-app only: x-casaos is
   # kept for CasaOS and for Maison builds that predate this, and must match.
   id: synapse
@@ -275,5 +261,3 @@ x-compose-app:
     - path: /DATA/AppData/$AppID/element
       user: $PUID
       group: $PGID
-  webui-host: synapse-${domain}
-  webui-path: "/"
