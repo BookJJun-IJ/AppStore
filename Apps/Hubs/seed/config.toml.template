@@ -143,7 +143,7 @@ frame_src = ""
 img_src = "<RET_HOST> <ASSETS_HOST> <SPOKE_HOST> <NEARSPARK_HOST>"
 manifest_src = ""
 media_src = "<RET_HOST> <ASSETS_HOST> <SPOKE_HOST>"
-script_src = "<SPOKE_HOST>"
+script_src = "<SPOKE_HOST> 'sha256-HdoAyVHHhir7+8DfZLbxtfYc9gLaWgaL6GwPs6mic0k=' 'sha256-1OX1cqGDXGZOzQijoLpHf88OwS4EEX61lCMqICZfrGQ=' 'sha256-R+8PnBsB2H1En6tmpYadztHDOHsp2tWRUjkYhEnP4/w='"
 style_src = "<SPOKE_HOST>"
 worker_src = "<SPOKE_HOST>"
 

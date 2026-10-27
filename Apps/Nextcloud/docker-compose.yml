@@ -208,7 +208,7 @@ services:
   # also relays through, so 3478 is the only port the call path needs.
   talk:
     image: ghcr.io/nextcloud-releases/aio-talk:20260929_105435
-    container_name: nextcloud_talk
+    container_name: nextcloud-talk
     restart: unless-stopped
     user: $PUID:$PGID
     init: true
@@ -235,8 +235,8 @@ services:
       - NC_DOMAIN=${APP_HOST:-nextcloud-${APP_DOMAIN}}
       # Same as AIO: TALK_HOST is the container itself, so TURN relays on the
       # container address and Janus (same container) reaches TURN without hairpin.
-      - TALK_HOST=nextcloud_talk
-      - TURN_DOMAIN=nextcloud_talk
+      - TALK_HOST=nextcloud-talk
+      - TURN_DOMAIN=nextcloud-talk
       - TALK_PORT=3478
       - TURN_SECRET=${TALK_TURN_SECRET}
       - SIGNALING_SECRET=${TALK_SIGNALING_SECRET}
@@ -651,6 +651,13 @@ x-compose-app:
     - screenshot-2.png
     - screenshot-3.png
   architectures: [amd64, arm64]
+  # Sum of the service limits (~3.75G with the Talk backend) plus room for the OS
+  # and other apps.
+  resources:
+    recommended: { memory: 5G }
+  # Talk's TURN relay (3478 tcp/udp) must be dialled from the internet: hidden on a
+  # box behind NAT or the tunnel.
+  requires: [public-ip]
   tips:
     en_us: |
       **Login**

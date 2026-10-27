@@ -50,8 +50,6 @@ services:
         limits:
           memory: 512M
     environment:
-      # The user and database name are hubs-seed's old defaults. Installs that
-      # predate the secrets block still carry them in .env, so they stay overridable.
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: $POSTGRES_PASSWORD
       POSTGRES_DB: ${POSTGRES_DB:-ret_production}
@@ -137,8 +135,7 @@ services:
         limits:
           memory: 128M
     environment:
-      # The password is hex, so it needs no URL escaping.
-      PGRST_DB_URI: "postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-ret_production}"
+      PGRST_DB_URI: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-ret_production}
       PGRST_JWT_SECRET: $PGRST_JWT_SECRET
       PGRST_LOG_LEVEL: info
       PGRST_DB_SCHEMA: ret0_admin
@@ -424,8 +421,13 @@ x-compose-app:
     - screenshot-1.png
     - screenshot-2.png
     - screenshot-3.png
+  # Raw TCP/UDP must be dialled from the internet: hidden on a box behind NAT or the tunnel.
+  requires: [public-ip]
   architectures:
     - amd64
+  # Sum of the service limits (~3.1G); WebRTC media is CPU-bound.
+  resources:
+    recommended: { cpu: 2, memory: 4G }
   tips:
     en_us: "**\U0001F511 Initial admin: `${APP_EMAIL}`** — the only account with admin rights. Sign in with this email at ${APP_URL:-https://hubs-${APP_DOMAIN}} to receive a magic-link.\n\n**Operator surfaces** (after admin sign-in):\n- [Admin panel](${APP_URL:-https://hubs-${APP_DOMAIN}}/admin)\n- [Spoke scene editor](${APP_URL:-https://hubs-${APP_DOMAIN}}/spoke/projects)\n\n**Voice / video** needs UDP ports 40000-40050 reachable on the server's public IP. HTTPS-only tunnels leave signaling working but audio silent.\n\n**Resources:** ~3 GB RAM, ~2 vCPU. Suitable for rooms up to ~10 concurrent users.\n**More info:** [Hubs Community setup guide](https://yundera.com/blog/best-apps-1/hubs-community-available-in-one-click-40)\n"
     fr_fr: "**\U0001F511 Administrateur initial : `${APP_EMAIL}`** — seul compte avec les droits admin. Connectez-vous avec cet email sur ${APP_URL:-https://hubs-${APP_DOMAIN}} pour recevoir un lien magique.\n\n**Interfaces d'administration** (après connexion admin) :\n- [Panneau admin](${APP_URL:-https://hubs-${APP_DOMAIN}}/admin)\n- [Éditeur de scène Spoke](${APP_URL:-https://hubs-${APP_DOMAIN}}/spoke/projects)\n\n**Voix / vidéo** : les ports UDP 40000-40050 doivent être joignables sur l'IP publique du serveur. Un tunnel HTTPS uniquement laisse la signalisation fonctionnelle mais coupe le média.\n\n**Ressources :** ~3 Go de RAM, ~2 vCPU. Adapté aux salons jusqu'à ~10 utilisateurs simultanés.\n**More info:** [Hubs Community setup guide](https://yundera.com/blog/best-apps-1/hubs-community-available-in-one-click-40)\n"
@@ -439,9 +441,9 @@ x-compose-app:
   # on a cluster already at 17.
   data_version: 2
   migrations:
-    # POSTGRES_USER / POSTGRES_DB are hubs-seed's (merged into .env by the old
-    # bootstrap step; the defaults are its own, and what the db service uses). The -alpine variant because postgres:14-alpine
-    # wrote the cluster (musl collation). As root, as the service runs: it chowns
+    # POSTGRES_USER / POSTGRES_DB are in .env on an install made by the former
+    # hubs-seed bootstrap step; the defaults are the values it wrote. The -alpine
+    # variant because postgres:14-alpine wrote the cluster (musl collation). As root, as the service runs: it chowns
     # for the upgrade and restores the original (uid 70) ownership afterwards.
     # PostgREST 8 was checked against 17.11: it connects, loads its schema cache and
     # serves the ret0_admin views and RPCs.
@@ -454,10 +456,10 @@ x-compose-app:
           -e POSTGRES_USER="${POSTGRES_USER:-postgres}" -e POSTGRES_DB="${POSTGRES_DB:-ret_production}" \
           -v "$APP_DIR/pgdata:/var/lib/postgresql/data" \
           pgautoupgrade/pgautoupgrade:17.11-alpine
-  # Every random internal credential, generated once by Maison. The names and
-  # sizes are the ones hubs-seed's bootstrap used to mint and merge into .env, so
-  # an existing install keeps the values its pgdata was initialised with: a key
-  # the .env already holds is reused, never regenerated.
+  # Every internal credential is generated here, once, and kept in .env. The
+  # names and sizes are the ones the former hubs-seed bootstrap step minted, so
+  # an installed box keeps the values its pgdata was initialised with: a key the
+  # .env already holds is reused, never regenerated.
   secrets:
     POSTGRES_PASSWORD: hex:24
     turkeyCfg_NODE_COOKIE: hex:32
@@ -465,42 +467,46 @@ x-compose-app:
     turkeyCfg_PHX_KEY: hex:48
     turkeyCfg_DASHBOARD_ACCESS_KEY: hex:24
     turkeyCfg_POSTGREST_PASSWORD: hex:24
+  # reticulum's config template: hubs-seed 2.0.0's templates/config.toml.template,
+  # with one change. Its CSP script_src adds the hashes of the Google Analytics
+  # loader inline in the hubs-client stable-3111 pages; reticulum's built-in list
+  # holds only older builds' hashes, so the browser refused the script and logged an
+  # error on every page. `always` so a template change in the store reaches
+  # installed apps, as the former bootstrap step's rewrite on every run did.
+  files:
+    - path: /DATA/AppData/hubs/config.toml.template
+      from: config.toml.template
+      ensure: always
   steps:
-    # Reticulum signs room permission tokens with an RSA keypair: hubs-dialog
-    # verifies them with perms.pub.pem, reticulum signs with the private key
-    # (turkeyCfg_PERMS_KEY), and PostgREST checks Guardian JWTs against its JWK
-    # (PGRST_JWT_SECRET). No `secrets:` generator produces an RSA key, and all
-    # three have to come from the same pair, so this step makes it with node in
-    # hubs-seed's image and hands the two values to the app's .env through
-    # $MAISON_ENV, in the encoding hubs-seed's bootstrap used.
-    #
-    # `always`, guarded on the data: an existing keypair is reused (regenerating
-    # it would invalidate every minted Guardian token), and $MAISON_ENV never
-    # overwrites a key the .env already has, so a repeat only re-derives values
-    # that are already there. `--network none` because it only generates a key.
+    # Reticulum's permissions keypair: RSA, which no `secrets` generator produces.
+    # The private key signs room permission tokens and is reused when present -
+    # regenerating it would invalidate every token already minted. Run as the app's
+    # user, so the two files it writes are the app's. Prints the two values derived
+    # from the key, in the exact shape the former bootstrap step wrote them; $MAISON_ENV
+    # adds a key only when .env lacks it, so an installed box keeps its own.
     - name: perms-keypair
       at: setup
       run: always
+      images: [ghcr.io/worph/hubs-seed:2.0.0]
       script: |
         docker run --rm -i --network none --user "$PUID:$PGID" -v "$APP_DIR:/out" \
-          --entrypoint node ghcr.io/worph/hubs-seed:2.0.0 - <<'JS' >> "$MAISON_ENV"
-        const crypto = require("crypto"), fs = require("fs");
-        const priv = "/out/perms.key.pem", pub = "/out/perms.pub.pem";
-        if (!fs.existsSync(priv) || !fs.existsSync(pub)) {
-          const k = crypto.generateKeyPairSync("rsa", { modulusLength: 2048 });
-          fs.writeFileSync(priv, k.privateKey.export({ format: "pem", type: "pkcs1" }), { mode: 0o600 });
-          fs.writeFileSync(pub, k.publicKey.export({ format: "pem", type: "spki" }));
+          --entrypoint node ghcr.io/worph/hubs-seed:2.0.0 - >> "$MAISON_ENV" <<'JS'
+        const fs = require("node:fs");
+        const crypto = require("node:crypto");
+        const privPath = "/out/perms.key.pem", pubPath = "/out/perms.pub.pem";
+        if (!(fs.existsSync(privPath) && fs.existsSync(pubPath))) {
+          const { privateKey, publicKey } = crypto.generateKeyPairSync("rsa", { modulusLength: 2048 });
+          fs.writeFileSync(privPath, privateKey.export({ format: "pem", type: "pkcs1" }), { mode: 0o600 });
+          fs.writeFileSync(pubPath, publicKey.export({ format: "pem", type: "spki" }));
         }
-        const pem = fs.readFileSync(priv, "utf8");
-        const jwk = crypto.createPublicKey(pem).export({ format: "jwk" });
-        console.log("PGRST_JWT_SECRET=" + JSON.stringify({ alg: "RS256", kty: jwk.kty, n: jwk.n, e: jwk.e }));
-        // Reticulum's entrypoint feeds this through sed, which turns a single
-        // backslash-n back into a newline; a doubled one survives as the TOML escape.
-        console.log("turkeyCfg_PERMS_KEY=" + pem.split("\n").join("\\\\n"));
+        const priv = fs.readFileSync(privPath, "utf8");
+        const jwk = crypto.createPublicKey(priv).export({ format: "jwk" });
+        process.stdout.write("PGRST_JWT_SECRET=" + JSON.stringify({ alg: "RS256", kty: jwk.kty, n: jwk.n, e: jwk.e }) + "\n");
+        process.stdout.write("turkeyCfg_PERMS_KEY=" + priv.split("\n").join("\\\\n") + "\n");
         JS
     # Runs after the stack is up, on the app's own network, because it talks to
-    # reticulum. Uploads the default scene and mints its admin token with the
-    # dashboard key, passed by name so it never appears on a command line.
+    # reticulum: mints an admin token with the dashboard key and uploads the default
+    # scene and branding.
     - name: seed
       at: started
       run: once
