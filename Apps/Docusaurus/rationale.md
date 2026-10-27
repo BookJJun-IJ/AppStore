@@ -2,29 +2,52 @@
 
 ## What deviation / exception is being requested
 
-Authentication (AppShield) is disabled. The app is publicly accessible without login.
+1. **No authentication.** The site is served without the AppShield SSO gate.
+2. **Root container.** The Nginx web server runs with `user: "0:0"`.
 
 ## Why it is necessary
 
-Docusaurus serves a **public documentation site**. Authentication would prevent the documentation from being publicly accessible, which defeats its core purpose.
+- **No authentication** — Docusaurus publishes documentation: FAQs, guides and
+  knowledge bases meant to be read by anyone with the link, including customers
+  who have no account on the server. CONTRIBUTING lists "a public website that
+  does not require authentication" as an accepted exception. AppShield 3.x cannot
+  serve a whole site publicly (`ALLOWED_PATHS` opens sub-paths only, never `/`),
+  so the gate is left out rather than configured around.
+- **`docusaurus` (nginx:1.31.8-alpine)** — the official Nginx image's entrypoint
+  runs its template/permission setup as root and then drops the worker processes
+  to the unprivileged `nginx` user itself. It only touches its own app folder,
+  mounted read-only.
 
-- The site is intended to be readable by anyone with the URL, without login or registration.
-- Docusaurus generates **static HTML** served by Nginx — there is no dynamic backend, no user accounts, and no sensitive data processing.
+The one-shot `docusaurus-init` step runs as `$PUID:$PGID`, so the generated
+project stays editable by the user and by the Docusaurus MCP app.
 
 ## Security mitigations in place
 
-- **Read-only web access**: Nginx serves static files in read-only mode (`:ro` volume mount). There is no admin panel or write access exposed through the web interface.
-- **Content management is authenticated**: Content modifications are done either via the host file system or through the DocusaurusMCP tool, which has its own authentication via AppShield.
-- **User warning**: A warning is displayed in the app's install tips:
-  > **Warning:** This is a public documentation site with no login or authentication. Anyone with the address can read everything inside it. Only add content you are happy to share publicly, and never store private notes, credentials, or personal data here.
+- **Read-only, static only.** Nginx mounts the build output `:ro` and serves
+  static HTML. There is no admin panel, no login, no upload path and no write
+  access through the web interface, so there is nothing to protect behind a gate.
+- **Editing is not public.** Content is edited and rebuilt only through the
+  separate **Docusaurus MCP** app, which stays behind the SSO gate / OAuth.
+- **No published ports.** The site is reached only through its route on the
+  shared network; no `ports:` are published.
+- **Resource limits** (`cpu_shares`, memory limit) are set.
+- **Data isolation.** Everything the app writes lives under
+  `/DATA/AppData/$AppID/` (`src/` and `build/`). No user directory
+  (`/DATA/Documents`, `/DATA/Downloads`, `/DATA/Media`, `/DATA/Gallery`) is
+  mounted.
 
 ## Alternatives considered and rejected
 
-- **AppShield sidecar**: Would prevent public access, defeating the purpose of a documentation site.
-- **Basic Auth**: Same issue — documentation should be publicly readable without credentials.
+- **Keeping AppShield and opening paths with `ALLOWED_PATHS`** — tested on
+  AppShield 3.2.0: sub-paths such as `docs` open, but the root `/` (the home page)
+  cannot be bypassed with any value, so visitors would still hit a login on the
+  landing page.
+- **Running Nginx as a non-root user** — the official image's entrypoint needs
+  root for its own setup and drops privileges for the workers on its own.
 
 ## Data protection
 
-- No sensitive data is processed or stored by the web-facing container.
-- The Nginx container mounts the build output as read-only.
-- Source files and build output are stored under `/DATA/AppData/$AppID/` and are only writable by the init container and DocusaurusMCP.
+- No user data is processed: the app serves static HTML generated from Markdown
+  the user puts under `/DATA/AppData/docusaurus/src/`.
+- Do not put private or internal-only content in the site: everything in the
+  build is readable by anyone with the link.

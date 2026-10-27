@@ -1,24 +1,38 @@
 name: wgeasyhost
 
+# Bounded container logs (requirement `log-limits`): json-file never rotates on its own.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   # WireGuard server, running in the HOST network namespace.
   # Because wg0 lives on the host, the VPN server address (10.9.0.1) IS the host,
   # so VPN clients can reach host-bound services (Samba :445, Guacamole, ...) at 10.9.0.1.
-  # A host-networked container cannot be a Caddy upstream, so the web UI is exposed
-  # through the wgeasyhost-proxy sidecar below instead of Caddy labels here.
+  # A host-networked container cannot be a router upstream, so the web UI is exposed
+  # through the wgeasyhost-proxy sidecar below instead of a route here.
   wgeasyhost:
-    image: ghcr.io/wg-easy/wg-easy:15.4.0
+    image: ghcr.io/wg-easy/wg-easy:15.5.0
     container_name: wgeasyhost
     restart: unless-stopped
     user: "0:0"
     network_mode: host
+    # The web UI listens on the docker host-gateway address only (docker0), not on
+    # every host interface: in host networking, the default 0.0.0.0 would put plain
+    # HTTP on the public IP past the gateway (`no-published-web-port`). The name
+    # resolves to the same address the proxy dials, so the two always agree.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
+      HOST: host.docker.internal
       PORT: '51821'            # web UI port on the host (proxied by the sidecar)
       INSECURE: 'true'         # plain HTTP; TLS is terminated by the gateway
       DISABLE_IPV6: 'true'
       INIT_ENABLED: 'true'
       INIT_USERNAME: admin
-      INIT_PASSWORD: $APP_DEFAULT_PASSWORD
+      INIT_PASSWORD: ${WGEASYHOST_ADMIN_PASSWORD}
       INIT_HOST: $APP_PUBLIC_IP   # endpoint written into client configs
       INIT_PORT: '51820'          # WireGuard UDP port on the host
       INIT_DNS: '9.9.9.9'
@@ -37,15 +51,16 @@ services:
       - NET_ADMIN
       - SYS_MODULE
     # NOTE: host network mode forbids setting net.ipv4.* sysctls on the container
-    # (they would mutate the host). They are set on the HOST by pre-install-cmd below.
+    # (they would mutate the host). They are set on the HOST by the `host-ip-forward` step.
     cpu_shares: 50
+    logging: *logging
     mem_limit: 256m
 
   # Bridged reverse-proxy on the pcs network. Carries the gateway labels and forwards
   # to the host-mode web UI via the docker host-gateway (host.docker.internal:51821).
   # nginx.conf ships in seed/ (create-if-absent on every up) and is bind-mounted read-only.
   wgeasyhost-proxy:
-    image: nginx:1.31.5-alpine
+    image: nginx:1.31.8-alpine
     container_name: wgeasyhost-proxy
     restart: unless-stopped
     # Must be root: the CasaOS installer injects `user: $PUID:$PGID` into any service
@@ -54,15 +69,6 @@ services:
     user: "0:0"
     depends_on:
       - wgeasyhost
-    labels:
-      caddy_0: wgeasyhost-${APP_DOMAIN}
-      caddy_0.import: gateway_tls
-      caddy_0.reverse_proxy: "{{upstreams 80}}"
-      caddy_1: wgeasyhost-${APP_PUBLIC_IP_DASH}.nip.io
-      caddy_1.import: gateway_tls
-      caddy_1.reverse_proxy: "{{upstreams 80}}"
-      caddy_2: wgeasyhost-${APP_PUBLIC_IP_DASH}.sslip.io
-      caddy_2.reverse_proxy: "{{upstreams 80}}"
     networks:
       - pcs
     expose:
@@ -72,6 +78,7 @@ services:
     volumes:
       - ${DATA_ROOT:-/DATA}/AppData/$AppID/nginx.conf:/etc/nginx/nginx.conf:ro
     cpu_shares: 80
+    logging: *logging
     mem_limit: 64m
 
 networks:
@@ -80,51 +87,26 @@ networks:
     external: true
 
 x-casaos:
-  # ghcr.io/wg-easy/wg-easy:15.3.0 publishes only linux/amd64 and linux/arm64
-  # (no 32-bit armv7); nginx:1.29.3-alpine is broader, so this is the intersection.
+  # ghcr.io/wg-easy/wg-easy:15.5.0 publishes only linux/amd64 and linux/arm64
+  # (no 32-bit armv7); nginx:1.31.8-alpine is broader, so this is the intersection.
   architectures:
     - amd64
     - arm64
-  # Backend+proxy pattern (cf. lystik): main = the backend service name = subdomain prefix;
-  # the -proxy sidecar carries the caddy labels advertising <main>-user.nsl.sh and forwards
-  # to the host-mode wg-easy. The store installer injects `hostname` (user-specific) at install;
-  # scheme/port_map are static. Health probe follows redirects: / -> /login -> 200. (webui_port
-  # is deprecated.)
-  main: wgeasyhost
+  # Backend+proxy pattern: the -proxy sidecar is the routed service (the first route's) and
+  # forwards to the host-mode wg-easy, so main / webui_port name it and its port, for CasaOS.
+  # The store installer injects `hostname` (user-specific) at install. Health probe follows
+  # redirects: / -> /login -> 200.
+  main: wgeasyhost-proxy
+  webui_port: 80
   store_app_id: wgeasyhost
   index: /
-  # Host kernel parameters, the only reason this app still carries a hook. A hook runs
-  # inside the Maison container, where /proc/sys is read-only — a bare `sysctl -w` there
-  # exits 1, and pre_install is fatal, so it would leave the app installed but stopped.
-  # The supported way to reach the host is through the Docker socket the hook already
-  # holds: --privileged for a writable /proc/sys, --network=host because net.* keys are
-  # per-namespace. Idempotent, and best-effort: clients reach host services at 10.9.0.1
-  # without forwarding (only peer-to-peer and full-tunnel routing need it), so a PCS
-  # that refuses the sysctls should still get the app — the hook always exits 0.
-  # nginx.conf is no longer fetched here; it ships in seed/ (see x-compose-app).
-  pre-install-cmd: |
-    docker run --rm --privileged --network=host alpine:3.20 sh -c '
-      sysctl -w net.ipv4.ip_forward=1
-      sysctl -w net.ipv4.conf.all.src_valid_mark=1
-    ' || echo "[pre-install] host sysctl setup skipped; peer-to-peer and full-tunnel routing may need net.ipv4.ip_forward=1"
-    exit 0
-  # New clients inherit the server-wide default PersistentKeepalive from wg-easy's
-  # userConfig row (factory-seeded to 0 = off). v15 dropped the keepalive env/INIT var,
-  # so the only way to seed a default is to write it after the container has built its
-  # SQLite DB. This runs AFTER container startup: it polls until the user_configs_table
-  # row exists, then sets PersistentKeepalive to 25s (standard NAT-traversal value) — but
-  # only while still at the factory default (0), so a later manual change in the UI is
-  # never clobbered. Uses the image's own bundled @libsql driver (no sqlite3 CLI present).
-  post-install-cmd: |
-    for i in $(seq 1 60); do
-      docker exec -w /app/server wgeasyhost node --input-type=module -e 'import {createClient} from "@libsql/client"; const c=createClient({url:"file:/etc/wireguard/wg-easy.db"}); const r=await c.execute("SELECT count(*) AS n FROM user_configs_table"); if(Number(r.rows[0].n)<1) process.exit(3); await c.execute("UPDATE user_configs_table SET default_persistent_keepalive=25 WHERE default_persistent_keepalive=0"); console.log("wgeasyhost: default PersistentKeepalive set to 25s");' && break
-      sleep 2
-    done
   developer: WeejeWel
   icon: icon.png
   thumbnail: thumbnail.png
   screenshot_link:
     - screenshot-1.png
+    - screenshot-2.png
+    - screenshot-3.png
   category: Network
   # needs-public-ip: a WireGuard server is useless unless inbound UDP 51820 from the
   # internet reaches the host (a CGNAT/tunnelled PCS never accepts a peer).
@@ -158,9 +140,7 @@ x-casaos:
       en_us: |
         # Default Account
 
-        | Username | Password                |
-        | -------- | ----------------------- |
-        | `admin`  | `$APP_DEFAULT_PASSWORD` |
+        The username and password are shown when you open the app (tile menu → Credentials).
 
         This is **WireGuard Easy v15 in host-networking mode**. The admin account is auto-configured; VPN settings can be changed from the web UI after login.
 
@@ -175,13 +155,19 @@ x-casaos:
 
         Notes: the default split-tunnel only routes `10.9.0.0/24`, so your normal internet stays direct (no kill-switch). The target service must listen on all interfaces (`0.0.0.0`), not just one — apps installed from this store already do.
 
-        **Firewall:** the VPN listens on **UDP 51820** - it must be open on your firewall/router. The management UI also binds host port `51821` over plain HTTP; access it via the HTTPS gateway link, and firewall `51821` if you don't want it exposed directly.
+        **Reaching a Windows client from other peers:** clients can also reach each other (e.g. `10.9.0.3` → `10.9.0.4`). A Windows client answers, though, only once its tunnel is a *Private* network. Windows files a new tunnel as *Public*, which blocks every unsolicited inbound connection — ping, file sharing, Remote Desktop — while its own outgoing traffic still works. Once per tunnel, in an **administrator** PowerShell (the tunnel name is the one shown in the WireGuard app):
+
+        ```powershell
+        Set-NetConnectionProfile -InterfaceAlias "<tunnel name>" -NetworkCategory Private
+        ```
+
+        This lets every peer on the VPN reach that PC's shares and Remote Desktop, the same as on a home network. The setting is tied to the tunnel's **name**: keep the name when you re-import a config, or Windows treats it as a new, Public network again.
+
+        **Firewall:** the VPN listens on **UDP 51820** - it must be open on your firewall/router. The management UI is reached only through the HTTPS gateway link.
       fr_fr: |
         # Compte par defaut
 
-        | Nom d'utilisateur | Mot de passe            |
-        | ----------------- | ----------------------- |
-        | `admin`           | `$APP_DEFAULT_PASSWORD` |
+        L'identifiant et le mot de passe s'affichent à l'ouverture de l'application (menu de la tuile → Identifiants).
 
         Ceci est **WireGuard Easy v15 en mode reseau hote**. Le compte admin est configure automatiquement ; les parametres VPN sont modifiables depuis l'interface web apres connexion.
 
@@ -196,10 +182,117 @@ x-casaos:
 
         Notes : le split-tunnel par defaut ne route que `10.9.0.0/24`, votre trafic internet normal reste direct (pas de kill-switch). Le service cible doit ecouter sur toutes les interfaces (`0.0.0.0`).
 
-        **Pare-feu :** le VPN ecoute sur **UDP 51820** - ce port doit etre ouvert. L'interface de gestion ecoute aussi sur le port hote `51821` en HTTP ; utilisez le lien HTTPS de la passerelle.
+        **Joindre un client Windows depuis les autres pairs :** les clients peuvent aussi se joindre entre eux (ex. `10.9.0.3` → `10.9.0.4`). Un client Windows ne repond toutefois qu'une fois son tunnel classe en reseau *Prive*. Windows classe un nouveau tunnel en *Public*, ce qui bloque toute connexion entrante non sollicitee — ping, partage de fichiers, Bureau a distance — alors que son trafic sortant fonctionne. Une fois par tunnel, dans un PowerShell **administrateur** (le nom du tunnel est celui affiche dans l'application WireGuard) :
+
+        ```powershell
+        Set-NetConnectionProfile -InterfaceAlias "<nom du tunnel>" -NetworkCategory Private
+        ```
+
+        Tous les pairs du VPN peuvent alors atteindre les partages et le Bureau a distance de ce PC, comme sur un reseau domestique. Ce reglage est lie au **nom** du tunnel : gardez le meme nom en reimportant une configuration, sinon Windows le traite comme un nouveau reseau Public.
+
+        **Pare-feu :** le VPN ecoute sur **UDP 51820** - ce port doit etre ouvert. L'interface de gestion n'est accessible que par le lien HTTPS de la passerelle.
 
 x-compose-app:
   schema_version: 2
+  version: "15.5.0"
+  # How the app is reached, stated without a domain or a proxy: the box's routing
+  # setting decides. The first route is the web UI; each name is the host the app
+  # reads back as APP_* (the first) or ROUTE_<NAME>_* (the others).
+  routes:
+    - { service: wgeasyhost-proxy, name: wgeasyhost, upstream-port: 80 }
+  # The store card and the tile. Maison reads x-compose-app only: x-casaos is
+  # kept for CasaOS and for Maison builds that predate this, and must match.
+  id: wgeasyhost
+  title:
+    en_us: WireGuard Easy - Host
+  tagline:
+    en_us: WireGuard VPN with host networking - reach Samba, Guacamole & other host services (v15)
+    fr_fr: WireGuard VPN en mode hote - accedez a Samba, Guacamole et autres services de l'hote (v15)
+  description:
+    en_us: |
+      **WireGuard VPN that can reach the rest of your PCS** - built on WireGuard Easy v15, but running in **host networking** mode.
+
+      Unlike the standard WireGuard Easy app (which is isolated on a Docker bridge), this version puts the VPN interface directly on the host. That means the VPN server address `10.9.0.1` **is your PCS**, so connected clients can reach host-bound services - Samba file shares, Guacamole, and anything else listening on the host - at `10.9.0.1:<port>`. This is the closest WireGuard equivalent to a Tailscale-style "reach my whole server" setup.
+
+      **What you can do:**
+      - Reach host services (Samba :445, Guacamole, ...) over the VPN at `10.9.0.1`
+      - Create and manage VPN clients with one click
+      - Download client configs or scan QR codes
+      - Monitor connected clients and bandwidth
+
+      **Requires:** inbound **UDP 51820** reachable on your PCS public IP.
+    fr_fr: |
+      **WireGuard VPN capable d'atteindre le reste de votre PCS** - base sur WireGuard Easy v15, mais en mode **reseau hote**.
+
+      Contrairement a l'app WireGuard Easy standard (isolee sur un bridge Docker), cette version place l'interface VPN directement sur l'hote. L'adresse du serveur VPN `10.9.0.1` **est votre PCS**, donc les clients connectes peuvent atteindre les services de l'hote - partages Samba, Guacamole, etc. - a `10.9.0.1:<port>`. C'est l'equivalent WireGuard le plus proche d'une configuration Tailscale.
+
+      **Necessite :** le port **UDP 51820** entrant accessible sur l'IP publique de votre PCS.
+  developer: WeejeWel
+  category: Network
+  icon: icon.png
+  thumbnail: thumbnail.png
+  screenshots:
+    - screenshot-1.png
+    - screenshot-2.png
+    - screenshot-3.png
+  architectures:
+    - amd64
+    - arm64
+  tips:
+    en_us: |
+      # Default Account
+
+      The username and password are shown when you open the app (tile menu → Credentials).
+
+      This is **WireGuard Easy v15 in host-networking mode**. The admin account is auto-configured; VPN settings can be changed from the web UI after login.
+
+      **Reaching your PCS over the VPN — use `10.9.0.1`:** once a client is connected, the whole server is reachable at the VPN address **`10.9.0.1`** (that address *is* your PCS). Point any tool at that IP:
+
+      - **File shares (Samba), port 445:**
+        - Windows: open Explorer and type `\\10.9.0.1`
+        - macOS: Finder -> *Go* -> *Connect to Server* -> `smb://10.9.0.1`
+        - Linux: in your file manager, `smb://10.9.0.1`
+      - **Other host apps (e.g. Guacamole):** `http://10.9.0.1:<port>`
+      - **Ping test:** `ping 10.9.0.1` should reply once connected.
+
+      Notes: the default split-tunnel only routes `10.9.0.0/24`, so your normal internet stays direct (no kill-switch). The target service must listen on all interfaces (`0.0.0.0`), not just one — apps installed from this store already do.
+
+      **Reaching a Windows client from other peers:** clients can also reach each other (e.g. `10.9.0.3` → `10.9.0.4`). A Windows client answers, though, only once its tunnel is a *Private* network. Windows files a new tunnel as *Public*, which blocks every unsolicited inbound connection — ping, file sharing, Remote Desktop — while its own outgoing traffic still works. Once per tunnel, in an **administrator** PowerShell (the tunnel name is the one shown in the WireGuard app):
+
+      ```powershell
+      Set-NetConnectionProfile -InterfaceAlias "<tunnel name>" -NetworkCategory Private
+      ```
+
+      This lets every peer on the VPN reach that PC's shares and Remote Desktop, the same as on a home network. The setting is tied to the tunnel's **name**: keep the name when you re-import a config, or Windows treats it as a new, Public network again.
+
+      **Firewall:** the VPN listens on **UDP 51820** - it must be open on your firewall/router. The management UI is reached only through the HTTPS gateway link.
+    fr_fr: |
+      # Compte par defaut
+
+      L'identifiant et le mot de passe s'affichent à l'ouverture de l'application (menu de la tuile → Identifiants).
+
+      Ceci est **WireGuard Easy v15 en mode reseau hote**. Le compte admin est configure automatiquement ; les parametres VPN sont modifiables depuis l'interface web apres connexion.
+
+      **Acceder a votre PCS via le VPN — utilisez `10.9.0.1` :** une fois un client connecte, tout le serveur est accessible a l'adresse VPN **`10.9.0.1`** (cette adresse *est* votre PCS). Pointez n'importe quel outil vers cette IP :
+
+      - **Partages de fichiers (Samba), port 445 :**
+        - Windows : ouvrez l'Explorateur et tapez `\\10.9.0.1`
+        - macOS : Finder -> *Aller* -> *Se connecter au serveur* -> `smb://10.9.0.1`
+        - Linux : dans votre gestionnaire de fichiers, `smb://10.9.0.1`
+      - **Autres applis de l'hote (ex. Guacamole) :** `http://10.9.0.1:<port>`
+      - **Test ping :** `ping 10.9.0.1` doit repondre une fois connecte.
+
+      Notes : le split-tunnel par defaut ne route que `10.9.0.0/24`, votre trafic internet normal reste direct (pas de kill-switch). Le service cible doit ecouter sur toutes les interfaces (`0.0.0.0`).
+
+      **Joindre un client Windows depuis les autres pairs :** les clients peuvent aussi se joindre entre eux (ex. `10.9.0.3` → `10.9.0.4`). Un client Windows ne repond toutefois qu'une fois son tunnel classe en reseau *Prive*. Windows classe un nouveau tunnel en *Public*, ce qui bloque toute connexion entrante non sollicitee — ping, partage de fichiers, Bureau a distance — alors que son trafic sortant fonctionne. Une fois par tunnel, dans un PowerShell **administrateur** (le nom du tunnel est celui affiche dans l'application WireGuard) :
+
+      ```powershell
+      Set-NetConnectionProfile -InterfaceAlias "<nom du tunnel>" -NetworkCategory Private
+      ```
+
+      Tous les pairs du VPN peuvent alors atteindre les partages et le Bureau a distance de ce PC, comme sur un reseau domestique. Ce reglage est lie au **nom** du tunnel : gardez le meme nom en reimportant une configuration, sinon Windows le traite comme un nouveau reseau Public.
+
+      **Pare-feu :** le VPN ecoute sur **UDP 51820** - ce port doit etre ouvert. L'interface de gestion n'est accessible que par le lien HTTPS de la passerelle.
   # Directories Maison creates and chowns to $PUID:$PGID before every `up`.
   # Generated by scripts/gen-folders.py from the trailing-slash bind mounts
   # in `volumes:` above — re-run it instead of editing this block by hand.
@@ -212,4 +305,56 @@ x-compose-app:
     - path: /DATA/AppData/wgeasyhost/wireguard
       user: $PUID
       group: $PGID
-  webui-host: wgeasyhost-${domain}
+  secrets:
+    # Seeded: an installed app provisioned its admin at first boot with the former
+    # shared password, which it keeps; a fresh install gets its own.
+    WGEASYHOST_ADMIN_PASSWORD: ${APP_DEFAULT_PASSWORD}|password:24
+  credentials:
+    - label:
+        en_us: Administrator
+      username: admin
+      password: ${WGEASYHOST_ADMIN_PASSWORD}
+      # wg-easy keeps its own argon2 hash in users_table; INIT_PASSWORD is read only by
+      # the first-boot setup, so .env alone would change nothing. Hash and write it the
+      # way the image's `cli db:admin:reset` does — that CLI cannot be used directly: in
+      # 15.3.0 it fails to load (its `citty` dependency is not shipped), and it exits 0
+      # on errors. Unlike it, this leaves the admin's 2FA alone. The 12-character floor
+      # is wg-easy's own password rule.
+      change:
+        apply: script
+        script: |
+          compose exec -w /app/server -e WGEASYHOST_ADMIN_PASSWORD wgeasyhost node --input-type=module -e "
+            import argon2 from 'argon2';
+            import {createClient} from '@libsql/client';
+            const c = createClient({url: 'file:/etc/wireguard/wg-easy.db'});
+            const r = await c.execute({sql: 'UPDATE users_table SET password = ?, updated_at = CURRENT_TIMESTAMP WHERE id = 1', args: [await argon2.hash(process.env.WGEASYHOST_ADMIN_PASSWORD)]});
+            if (r.rowsAffected !== 1) { console.error('wgeasyhost: admin user not found'); process.exit(1); }
+          "
+        policy:
+          min_length: 12
+  steps:
+    # Host kernel parameters. A step's shell runs inside the Maison container, where
+    # /proc/sys is read-only — a bare `sysctl -w` there exits 1, and a failing setup step
+    # is fatal, so it would leave the app installed but stopped. The supported way to
+    # reach the host is through the Docker socket the step already holds: --privileged
+    # for a writable /proc/sys, --network=host because net.* keys are per-namespace.
+    # Idempotent, and best-effort: clients reach host services at 10.9.0.1 without
+    # forwarding (only peer-to-peer and full-tunnel routing need it), so a PCS that
+    # refuses the sysctls should still get the app — the step always exits 0.
+    # The sysctl alone does not make forwarding work on a PCS — see patch-wg-easy-db.
+    # nginx.conf is no longer fetched here; it ships in seed/ (see x-compose-app).
+    - name: host-ip-forward
+      at: setup
+      run: once
+      script: |
+        docker run --rm --privileged --network=host alpine:3.20 sh -c '
+          sysctl -w net.ipv4.ip_forward=1
+          sysctl -w net.ipv4.conf.all.src_valid_mark=1
+        ' || echo "host sysctl setup skipped; peer-to-peer and full-tunnel routing may need net.ipv4.ip_forward=1"
+    # After every start, five idempotent writes to wg-easy's SQLite DB (keepalive,
+    # DOCKER-USER forwarding, uplink device, MTU, MSS clamping), then a restart if any
+    # changed. Long enough to live in its own file, where the why of each write is.
+    - name: patch-wg-easy-db
+      at: started
+      run: always
+      file: scripts/patch-wg-easy-db.sh

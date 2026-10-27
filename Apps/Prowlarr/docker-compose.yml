@@ -1,7 +1,14 @@
 name: prowlarr
 
+# Bounded container logs (requirement `log-limits`): json-file never rotates on its own.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
-  # The SSO gate. It carries the Caddy labels, so this is the only service the
+  # The SSO gate. It is the routed service, so this is the only service the
   # internet can reach.
   #
   # The gate MUST own the bare name `prowlarr`. AppShield builds its OIDC redirect
@@ -18,21 +25,12 @@ services:
   # gate on :80 instead of Prowlarr on :9696 at random. Renaming the gate instead
   # is not an option either, for the OIDC reason above.
   prowlarr-gate:
-    image: ghcr.io/yundera/appshield:3.0.2
+    image: ghcr.io/yundera/appshield:3.2.0
     container_name: prowlarr
     hostname: prowlarr
     restart: unless-stopped
     expose:
       - 80
-    labels:
-      caddy_0: prowlarr-${APP_DOMAIN}
-      caddy_0.import: gateway_tls
-      caddy_0.reverse_proxy: "{{upstreams 80}}"
-      caddy_1: prowlarr-${APP_PUBLIC_IP_DASH}.nip.io
-      caddy_1.import: gateway_tls
-      caddy_1.reverse_proxy: "{{upstreams 80}}"
-      caddy_2: prowlarr-${APP_PUBLIC_IP_DASH}.sslip.io
-      caddy_2.reverse_proxy: "{{upstreams 80}}"
     networks:
       - pcs
     environment:
@@ -43,43 +41,88 @@ services:
       # self-registers with the PCS auth-registrar and every human request is
       # sent through the built-in Authelia SSO.
       OIDC_REGISTRAR_URL: "http://auth-registrar:9092"
-      REDIRECT_HOST_SUFFIXES: "${APP_DOMAIN},${APP_PUBLIC_IP_DASH}.nip.io,${APP_PUBLIC_IP_DASH}.sslip.io"
+      REDIRECT_HOST_SUFFIXES: "${APP_HOST_SUFFIXES:-${APP_DOMAIN},${APP_PUBLIC_IP_DASH}.nip.io,${APP_PUBLIC_IP_DASH}.sslip.io}"
     depends_on:
       - prowlarr-backend
     cpu_shares: 50
+    logging: *logging
     deploy:
       resources:
         limits:
           memory: 128M
 
   prowlarr-backend:
-    image: lscr.io/linuxserver/prowlarr:2.4.0
+    image: lscr.io/linuxserver/prowlarr:2.6.5
     container_name: prowlarr-backend
     restart: unless-stopped
     user: $PUID:$PGID
     expose:
       - 9696
-    # No Caddy labels: this service is deliberately NOT published. It sits on
+    # Not routed: this service is deliberately NOT published. It sits on
     # `pcs` so sibling apps can reach it at `prowlarr-backend:9696` with an
     # X-Api-Key, which is the wiring the Sonarr/Radarr/Lidarr tips describe. The
     # bare name `prowlarr` belongs to the SSO gate on :80 and will NOT serve the
     # API. That path is container-to-container and never leaves the host.
     networks:
       - pcs
+      - prowlarr-internal
     environment:
       TZ: $TZ
     volumes:
       - ${DATA_ROOT:-/DATA}/AppData/prowlarr/config:/config   # dedicated Prowlarr config
+    depends_on:
+      - prowlarr-flaresolverr
     cpu_shares: 50
+    logging: *logging
     deploy:
       resources:
         limits:
           memory: 512M
 
+  # Solves Cloudflare challenges for the indexers that sit behind one. Prowlarr
+  # only hands it a request when a response IS a challenge, and only for indexers
+  # carrying the `flaresolverr` tag (the register-flaresolverr step below creates the tag and the
+  # proxy entry).
+  #
+  # Private network only: FlareSolverr has no authentication — it is a headless
+  # Chrome that fetches any URL it is sent. On `pcs` every container of the PCS
+  # could use it as a browser proxy, including against internal addresses.
+  #
+  # Memory is the one knob that matters. Every challenge is solved in its own
+  # Chromium (~250-300 MB while solving) and Prowlarr queries all tagged indexers
+  # in parallel; FlareSolverr has no concurrency cap. At 1G the cgroup OOM-killed
+  # Chromium thousands of times on a busy box and every tagged indexer failed
+  # with "tab crashed". 2G fits ~6-7 concurrent solves; idle it sits near 350 MB.
+  # (Not /dev/shm: FlareSolverr already starts Chrome with --disable-dev-shm-usage.)
+  prowlarr-flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:v3.5.2
+    container_name: prowlarr-flaresolverr
+    hostname: prowlarr-flaresolverr
+    # The image's own unprivileged `flaresolverr` user. No volumes, so PUID/PGID
+    # have nothing to own here.
+    user: "1000:1000"
+    restart: unless-stopped
+    expose:
+      - 8191
+    networks:
+      - prowlarr-internal
+    environment:
+      TZ: $TZ
+      LOG_LEVEL: info
+    cpu_shares: 20
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+
 networks:
   pcs:
     name: ${APP_NET:-pcs}
     external: true
+  # Backend <-> FlareSolverr only. Named explicitly so the register-flaresolverr step can join it.
+  prowlarr-internal:
+    name: prowlarr-internal
 
 x-casaos:
   main: prowlarr-gate
@@ -97,9 +140,14 @@ x-casaos:
         password you need — open the tile and you are already signed in. Every
         request from the internet passes through that gate first.
 
+        🛡️ **Cloudflare-protected indexers work out of the box.** FlareSolverr is
+        bundled and already registered in Prowlarr (*Settings → Indexers*). It is
+        used for every indexer carrying the `flaresolverr` tag — when an indexer's
+        test fails with a Cloudflare error, edit it and add that tag.
+
         🔗 **Wire up the full media stack** (each app is available standalone in the store, reachable by container name on the same server):
         - **Radarr** (`radarr:7878`) & **Sonarr** (`sonarr:8989`) — add them as *Applications* in Prowlarr so your indexers sync to them automatically.
-        - **qBittorrent** (`qbittorrent:80`) — add it as a *Download Client* inside **Radarr/Sonarr** for automated grabs (a download client added in Prowlarr only powers Prowlarr's own manual searches and does not sync to apps).
+        - **qBittorrent** (`qbittorrent-backend:80`) — add it as a *Download Client* inside **Radarr/Sonarr** for automated grabs (a download client added in Prowlarr only powers Prowlarr's own manual searches and does not sync to apps).
         - **Jellyfin** — point it at `/DATA/Media` to stream everything Radarr/Sonarr import.
 
         ❓ Questions? Contact us at help@yundera.com
@@ -130,12 +178,122 @@ x-casaos:
 
 x-compose-app:
   schema_version: 2
+  version: "2.6.5"
+  # How the app is reached, stated without a domain or a proxy: the box's routing
+  # setting decides. The first route is the web UI; each name is the host the app
+  # reads back as APP_* (the first) or ROUTE_<NAME>_* (the others).
+  routes:
+    - { service: prowlarr-gate, name: prowlarr, upstream-port: 80 }
+  # The store card and the tile. Maison reads x-compose-app only: x-casaos is
+  # kept for CasaOS and for Maison builds that predate this, and must match.
+  id: prowlarr
+  title:
+    en_us: Prowlarr
+  tagline:
+    en_us: Manage all your indexers in one place and sync them to every *arr app.
+    fr_fr: Gérez tous vos indexeurs en un seul endroit et synchronisez-les avec chaque app *arr.
+    es_es: Gestiona todos tus indexadores en un solo lugar y sincronízalos con cada app *arr.
+    zh_cn: 在一处管理所有索引器，并同步到每个 *arr 应用。
+  description:
+    en_us: Prowlarr is an indexer manager and proxy built on the *arr stack. It integrates seamlessly with Radarr, Sonarr, Lidarr and Readarr, managing all of your trackers and indexers from a single interface and keeping them in sync. Pairs with the Radarr, Sonarr and Lidarr standalone apps in this store.
+    fr_fr: Prowlarr est un gestionnaire et proxy d'indexeurs construit sur la suite *arr. Il s'intègre parfaitement avec Radarr, Sonarr, Lidarr et Readarr, gérant tous vos trackers et indexeurs depuis une seule interface et les gardant synchronisés. S'associe aux apps Radarr, Sonarr et Lidarr autonomes de ce store.
+    es_es: Prowlarr es un gestor y proxy de indexadores construido sobre el stack *arr. Se integra perfectamente con Radarr, Sonarr, Lidarr y Readarr, gestionando todos tus trackers e indexadores desde una sola interfaz y manteniéndolos sincronizados. Se combina con las apps Radarr, Sonarr y Lidarr independientes de esta tienda.
+    zh_cn: Prowlarr 是基于 *arr 堆栈构建的索引器管理器和代理。它与 Radarr、Sonarr、Lidarr 和 Readarr 无缝集成，在单一界面中管理您的所有跟踪器和索引器并保持同步。与本商店中的 Radarr、Sonarr 和 Lidarr 独立应用配合使用。
+  developer: Servarr (Prowlarr)
+  category: Media
+  icon: icon.png
+  thumbnail: thumbnail.png
+  screenshots:
+    - screenshot-1.png
+  architectures:
+    - amd64
+    - arm64
+  tips:
+    en_us: "\U0001F50D **Prowlarr** is an indexer manager — it manages your trackers/indexers in one place and syncs them to Radarr, Sonarr and other *arr apps automatically.\n\n\U0001F4C2 Config lives in `/DATA/AppData/prowlarr/`.\n\n\U0001F510 **Protected by your server account (single sign-on).** Prowlarr sits\nbehind the PCS SSO gate, so your existing server login is the only\npassword you need — open the tile and you are already signed in. Every\nrequest from the internet passes through that gate first.\n\n\U0001F6E1️ **Cloudflare-protected indexers work out of the box.** FlareSolverr is\nbundled and already registered in Prowlarr (*Settings → Indexers*). It is\nused for every indexer carrying the `flaresolverr` tag — when an indexer's\ntest fails with a Cloudflare error, edit it and add that tag.\n\n\U0001F517 **Wire up the full media stack** (each app is available standalone in the store, reachable by container name on the same server):\n- **Radarr** (`radarr:7878`) & **Sonarr** (`sonarr:8989`) — add them as *Applications* in Prowlarr so your indexers sync to them automatically.\n- **qBittorrent** (`qbittorrent-backend:80`) — add it as a *Download Client* inside **Radarr/Sonarr** for automated grabs (a download client added in Prowlarr only powers Prowlarr's own manual searches and does not sync to apps).\n- **Jellyfin** — point it at `/DATA/Media` to stream everything Radarr/Sonarr import.\n\n❓ Questions? Contact us at help@yundera.com\n"
   # Directories Maison creates and chowns to $PUID:$PGID before every `up` —
-  # before the image is pulled, before any hook, before the container starts.
+  # before the image is pulled, before any step, before the container starts.
   # Derived from the bind mounts in `volumes:` above; the container drops to
   # $PUID:$PGID, so this must be user-owned or Prowlarr cannot write.
   folders:
     - path: /DATA/AppData/prowlarr/config
       user: $PUID
       group: $PGID
-  webui-host: prowlarr-${domain}
+      # Reclaim a tree an earlier root-running install left behind: the backend
+      # now drops to $PUID:$PGID and dies on an unwritable /config otherwise.
+      recursive: true
+  # Registers the bundled FlareSolverr in Prowlarr. Running the sidecar is not
+  # enough: Prowlarr only uses a solver it has an *indexer proxy* entry for, and
+  # only for indexers sharing that entry's tag. That lives in prowlarr.db, which
+  # the store must not write directly (see rationale.md), so this goes through
+  # Prowlarr's own API with the key it generated on first boot.
+  #
+  # A converge, not a one-shot: it runs after every up and only ever ADDS — the
+  # `flaresolverr` tag when there is none, the proxy when there is no FlareSolverr
+  # proxy at all. A proxy the user already configured (or pointed elsewhere) is
+  # left untouched. Which indexers get the tag stays the user's call: Prowlarr
+  # needs it only on Cloudflare-protected ones, and its own test error says so.
+  steps:
+    - name: register-flaresolverr
+      at: started
+      run: always
+      script: |
+        docker run --rm -i --entrypoint sh --network prowlarr-internal --user "$PUID:$PGID" \
+          -v "$APP_DIR/config:/prowlarr:ro" \
+          -e PROWLARR_API=http://prowlarr-backend:9696 \
+          -e SOLVER_URL=http://prowlarr-flaresolverr:8191/ \
+          curlimages/curl:8.23.0 -s <<'SH'
+        set -u
+
+        # First boot runs migrations and only then writes <ApiKey> into
+        # config.xml, well after the container appears.
+        key=""
+        n=0
+        while :; do
+          key=$(sed -n 's:.*<ApiKey>\(.*\)</ApiKey>.*:\1:p' /prowlarr/config.xml 2>/dev/null)
+          if [ -n "$key" ] && curl -fs -m 5 -o /dev/null "$PROWLARR_API/ping"; then
+            break
+          fi
+          n=$((n + 1))
+          if [ "$n" -ge 150 ]; then
+            echo "prowlarr: no API key / no answer within 5 minutes" >&2
+            exit 1
+          fi
+          sleep 2
+        done
+
+        api() {
+          curl -fsS -m 30 -H "X-Api-Key: $key" -H "Content-Type: application/json" "$@"
+        }
+        # Prowlarr's objects are flat, so one object per line is enough to
+        # pick fields out without jq (not in this image).
+        id_of() { sed -n 's/.*"id" *: *\([0-9][0-9]*\).*/\1/p' | head -n 1; }
+
+        tag=$(api "$PROWLARR_API/api/v1/tag" | tr -d '\n' | tr '}' '\n' |
+          grep '"label" *: *"flaresolverr"' | id_of)
+        if [ -z "$tag" ]; then
+          tag=$(api -X POST -d '{"label":"flaresolverr"}' "$PROWLARR_API/api/v1/tag" |
+            tr -d '\n' | id_of)
+          [ -n "$tag" ] || { echo "prowlarr: could not create the flaresolverr tag" >&2; exit 1; }
+          echo "prowlarr: created tag flaresolverr (id $tag)"
+        fi
+
+        if api "$PROWLARR_API/api/v1/indexerProxy" | tr -d '\n' |
+          grep -q '"implementation" *: *"FlareSolverr"'; then
+          echo "prowlarr: a FlareSolverr proxy already exists, leaving it as configured"
+          exit 0
+        fi
+
+        # forceSave: keep the entry even if Prowlarr's connectivity test races
+        # the sidecar's first start; the proxy re-tests on use.
+        api -X POST "$PROWLARR_API/api/v1/indexerProxy?forceSave=true" -o /dev/null -d '{
+          "name": "FlareSolverr",
+          "implementation": "FlareSolverr",
+          "configContract": "FlareSolverrSettings",
+          "tags": ['"$tag"'],
+          "fields": [
+            {"name": "host", "value": "'"$SOLVER_URL"'"},
+            {"name": "requestTimeout", "value": 60}
+          ]
+        }' || { echo "prowlarr: could not register FlareSolverr" >&2; exit 1; }
+        echo "prowlarr: registered FlareSolverr at $SOLVER_URL for tag flaresolverr"
+        SH

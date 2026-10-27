@@ -1,27 +1,25 @@
 name: n8n
 
+# Bounded container logs (requirement `log-limits`): json-file never rotates on its own.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   n8n:
-    image: n8nio/n8n:2.43.8
+    image: n8nio/n8n:2.45.4
     container_name: n8n
     restart: unless-stopped
     user: $PUID:$PGID
     networks:
-      # On `pcs` because Caddy must reach it, and on the app's own network
+      # On `pcs` because the router must reach it, and on the app's own network
       # because that is where its database lives.
       - pcs
       - n8n-internal
     expose:
       - 80
-    labels:
-      caddy_0: n8n-${APP_DOMAIN}
-      caddy_0.import: gateway_tls
-      caddy_0.reverse_proxy: "{{upstreams 80}}"
-      caddy_1: n8n-${APP_PUBLIC_IP_DASH}.nip.io
-      caddy_1.import: gateway_tls
-      caddy_1.reverse_proxy: "{{upstreams 80}}"
-      caddy_2: n8n-${APP_PUBLIC_IP_DASH}.sslip.io
-      caddy_2.reverse_proxy: "{{upstreams 80}}"
     volumes:
       - ${DATA_ROOT:-/DATA}/AppData/$AppID/data/:/home/node/.n8n
     environment:
@@ -31,8 +29,8 @@ services:
       GENERIC_TIMEZONE: $TZ
       N8N_PORT: 80
       N8N_PROTOCOL: https
-      N8N_EDITOR_BASE_URL: https://n8n-${APP_DOMAIN}/
-      WEBHOOK_URL: https://n8n-${APP_DOMAIN}/
+      N8N_EDITOR_BASE_URL: ${APP_URL:-https://n8n-${APP_DOMAIN}}/
+      WEBHOOK_URL: ${APP_URL:-https://n8n-${APP_DOMAIN}}/
       NODE_ENV: production_self_hosted
       DB_TYPE: postgresdb
       DB_POSTGRESDB_HOST: n8n-postgres
@@ -40,11 +38,6 @@ services:
       DB_POSTGRESDB_DATABASE: n8n
       DB_POSTGRESDB_USER: n8n
       DB_POSTGRESDB_PASSWORD: ${N8N_DB_PASSWORD}
-      # Prune execution history so the database does not grow without bound:
-      # keep 72 hours and at most 500 executions.
-      EXECUTIONS_DATA_PRUNE: "true"
-      EXECUTIONS_DATA_MAX_AGE: 72
-      EXECUTIONS_DATA_PRUNE_MAX_COUNT: 500
     depends_on:
       - n8n-postgres
     deploy:
@@ -55,9 +48,10 @@ services:
         reservations:
           memory: 512M
     cpu_shares: 70
+    logging: *logging
 
   n8n-postgres:
-    image: postgres:16.13-alpine
+    image: postgres:16.15-alpine
     container_name: n8n-postgres
     restart: unless-stopped
     user: "0:0"
@@ -82,6 +76,7 @@ services:
         reservations:
           memory: 256M
     cpu_shares: 50
+    logging: *logging
 
 networks:
   pcs:
@@ -232,7 +227,7 @@ x-casaos:
         • Scheduled workflow execution
 
         **🌐 Access:**
-        Once ready, your app will be available at `https://n8n-[username].nsl.sh`
+        Once ready, your app will be available at `${APP_URL:-https://n8n-${APP_DOMAIN}}`
 
         **How to use:**
         Create your first workflow by clicking the "+" button and connecting nodes together!
@@ -250,7 +245,7 @@ x-casaos:
         • 예약된 워크플로우 실행
 
         **🌐 접근:**
-        준비가 되면 `https://n8n-[username].nsl.sh`로 앱에 접근할 수 있습니다!
+        준비가 되면 `${APP_URL:-https://n8n-${APP_DOMAIN}}`로 앱에 접근할 수 있습니다!
 
         **사용 방법:**
         "+" 버튼을 클릭하고 노드를 연결하여 첫 번째 워크플로우를 만들어 보세요!
@@ -268,7 +263,7 @@ x-casaos:
         • 定时工作流执行
 
         **🌐 访问:**
-        准备就绪后，您的应用将通过 `https://n8n-[username].nsl.sh` 可用！
+        准备就绪后，您的应用将通过 `${APP_URL:-https://n8n-${APP_DOMAIN}}` 可用！
 
         **如何使用:**
         点击 "+" 按钮并连接节点来创建您的第一个工作流！
@@ -286,7 +281,7 @@ x-casaos:
         • Exécution planifiée des flux de travail
 
         **🌐 Accès :**
-        Une fois prêt, votre application sera disponible à `https://n8n-[username].nsl.sh` !
+        Une fois prêt, votre application sera disponible à `${APP_URL:-https://n8n-${APP_DOMAIN}}` !
 
         **Comment utiliser :**
         Créez votre premier flux de travail en cliquant sur le bouton "+" et en connectant les nœuds ensemble !
@@ -304,7 +299,7 @@ x-casaos:
         • Ejecución programada de flujos de trabajo
 
         **🌐 Acceso:**
-        Una vez listo, tu aplicación estará disponible en `https://n8n-[username].nsl.sh`!
+        Una vez listo, tu aplicación estará disponible en `${APP_URL:-https://n8n-${APP_DOMAIN}}`!
 
         **Cómo usar:**
         ¡Crea tu primer flujo de trabajo haciendo clic en el botón "+" y conectando los nodos!
@@ -312,7 +307,12 @@ x-casaos:
 
 x-compose-app:
   schema_version: 2
-  version: "2.43.8"
+  version: "2.45.4"
+  # How the app is reached, stated without a domain or a proxy: the box's routing
+  # setting decides. The first route is the web UI; each name is the host the app
+  # reads back as APP_* (the first) or ROUTE_<NAME>_* (the others).
+  routes:
+    - { service: n8n, name: n8n, upstream-port: 80 }
   # The store card and the tile. Maison reads x-compose-app only: x-casaos is
   # kept for CasaOS and for Maison builds that predate this, and must match.
   id: n8n
@@ -436,13 +436,12 @@ x-compose-app:
   architectures:
     - amd64
     - arm64
-  main: n8n
   tips:
-    en_us: "**\U0001F512 Account Setup:**\nOn first launch, you'll be asked to create an owner account.\nChoose your email and password to get started.\n\n**✨ Features Available:**\n• Connect 400+ apps and services\n• Visual drag-and-drop workflow editor\n• AI-powered automations (OpenAI, Claude, etc.)\n• Webhook support for external triggers\n• JavaScript and Python custom code nodes\n• Scheduled workflow execution\n\n**\U0001F310 Access:**\nOnce ready, your app will be available at `https://n8n-[username].nsl.sh`\n\n**How to use:**\nCreate your first workflow by clicking the \"+\" button and connecting nodes together!\n"
-    ko_kr: "**\U0001F512 계정 설정:**\n첫 실행 시 소유자 계정을 생성하라는 안내가 표시됩니다.\n이메일과 비밀번호를 선택하여 시작하세요.\n\n**✨ 사용 가능한 기능:**\n• 400개 이상의 앱과 서비스 연결\n• 비주얼 드래그 앤 드롭 워크플로우 에디터\n• AI 기반 자동화 (OpenAI, Claude 등)\n• 외부 트리거를 위한 웹훅 지원\n• JavaScript 및 Python 커스텀 코드 노드\n• 예약된 워크플로우 실행\n\n**\U0001F310 접근:**\n준비가 되면 `https://n8n-[username].nsl.sh`로 앱에 접근할 수 있습니다!\n\n**사용 방법:**\n\"+\" 버튼을 클릭하고 노드를 연결하여 첫 번째 워크플로우를 만들어 보세요!\n"
-    zh_cn: "**\U0001F512 账户设置:**\n首次启动时，系统会要求您创建所有者账户。\n选择您的电子邮件和密码即可开始使用。\n\n**✨ 可用功能:**\n• 连接 400+ 应用和服务\n• 可视化拖放工作流编辑器\n• AI 驱动的自动化（OpenAI、Claude 等）\n• 用于外部触发器的 Webhook 支持\n• JavaScript 和 Python 自定义代码节点\n• 定时工作流执行\n\n**\U0001F310 访问:**\n准备就绪后，您的应用将通过 `https://n8n-[username].nsl.sh` 可用！\n\n**如何使用:**\n点击 \"+\" 按钮并连接节点来创建您的第一个工作流！\n"
-    fr_fr: "**\U0001F512 Configuration du compte :**\nAu premier lancement, vous serez invité à créer un compte propriétaire.\nChoisissez votre e-mail et votre mot de passe pour commencer.\n\n**✨ Fonctionnalités disponibles :**\n• Connecter 400+ applications et services\n• Éditeur visuel de flux de travail par glisser-déposer\n• Automatisations alimentées par l'IA (OpenAI, Claude, etc.)\n• Support webhook pour les déclencheurs externes\n• Nœuds de code personnalisé JavaScript et Python\n• Exécution planifiée des flux de travail\n\n**\U0001F310 Accès :**\nUne fois prêt, votre application sera disponible à `https://n8n-[username].nsl.sh` !\n\n**Comment utiliser :**\nCréez votre premier flux de travail en cliquant sur le bouton \"+\" et en connectant les nœuds ensemble !\n"
-    es_es: "**\U0001F512 Configuración de cuenta:**\nEn el primer inicio, se te pedirá crear una cuenta de propietario.\nElige tu correo electrónico y contraseña para comenzar.\n\n**✨ Características disponibles:**\n• Conectar 400+ aplicaciones y servicios\n• Editor visual de flujos de trabajo con arrastrar y soltar\n• Automatizaciones potenciadas por IA (OpenAI, Claude, etc.)\n• Soporte de webhooks para disparadores externos\n• Nodos de código personalizado JavaScript y Python\n• Ejecución programada de flujos de trabajo\n\n**\U0001F310 Acceso:**\nUna vez listo, tu aplicación estará disponible en `https://n8n-[username].nsl.sh`!\n\n**Cómo usar:**\n¡Crea tu primer flujo de trabajo haciendo clic en el botón \"+\" y conectando los nodos!\n"
+    en_us: "**\U0001F512 Account Setup:**\nOn first launch, you'll be asked to create an owner account.\nChoose your email and password to get started.\n\n**✨ Features Available:**\n• Connect 400+ apps and services\n• Visual drag-and-drop workflow editor\n• AI-powered automations (OpenAI, Claude, etc.)\n• Webhook support for external triggers\n• JavaScript and Python custom code nodes\n• Scheduled workflow execution\n\n**\U0001F310 Access:**\nOnce ready, your app will be available at `${APP_URL:-https://n8n-${APP_DOMAIN}}`\n\n**How to use:**\nCreate your first workflow by clicking the \"+\" button and connecting nodes together!\n"
+    ko_kr: "**\U0001F512 계정 설정:**\n첫 실행 시 소유자 계정을 생성하라는 안내가 표시됩니다.\n이메일과 비밀번호를 선택하여 시작하세요.\n\n**✨ 사용 가능한 기능:**\n• 400개 이상의 앱과 서비스 연결\n• 비주얼 드래그 앤 드롭 워크플로우 에디터\n• AI 기반 자동화 (OpenAI, Claude 등)\n• 외부 트리거를 위한 웹훅 지원\n• JavaScript 및 Python 커스텀 코드 노드\n• 예약된 워크플로우 실행\n\n**\U0001F310 접근:**\n준비가 되면 `${APP_URL:-https://n8n-${APP_DOMAIN}}`로 앱에 접근할 수 있습니다!\n\n**사용 방법:**\n\"+\" 버튼을 클릭하고 노드를 연결하여 첫 번째 워크플로우를 만들어 보세요!\n"
+    zh_cn: "**\U0001F512 账户设置:**\n首次启动时，系统会要求您创建所有者账户。\n选择您的电子邮件和密码即可开始使用。\n\n**✨ 可用功能:**\n• 连接 400+ 应用和服务\n• 可视化拖放工作流编辑器\n• AI 驱动的自动化（OpenAI、Claude 等）\n• 用于外部触发器的 Webhook 支持\n• JavaScript 和 Python 自定义代码节点\n• 定时工作流执行\n\n**\U0001F310 访问:**\n准备就绪后，您的应用将通过 `${APP_URL:-https://n8n-${APP_DOMAIN}}` 可用！\n\n**如何使用:**\n点击 \"+\" 按钮并连接节点来创建您的第一个工作流！\n"
+    fr_fr: "**\U0001F512 Configuration du compte :**\nAu premier lancement, vous serez invité à créer un compte propriétaire.\nChoisissez votre e-mail et votre mot de passe pour commencer.\n\n**✨ Fonctionnalités disponibles :**\n• Connecter 400+ applications et services\n• Éditeur visuel de flux de travail par glisser-déposer\n• Automatisations alimentées par l'IA (OpenAI, Claude, etc.)\n• Support webhook pour les déclencheurs externes\n• Nœuds de code personnalisé JavaScript et Python\n• Exécution planifiée des flux de travail\n\n**\U0001F310 Accès :**\nUne fois prêt, votre application sera disponible à `${APP_URL:-https://n8n-${APP_DOMAIN}}` !\n\n**Comment utiliser :**\nCréez votre premier flux de travail en cliquant sur le bouton \"+\" et en connectant les nœuds ensemble !\n"
+    es_es: "**\U0001F512 Configuración de cuenta:**\nEn el primer inicio, se te pedirá crear una cuenta de propietario.\nElige tu correo electrónico y contraseña para comenzar.\n\n**✨ Características disponibles:**\n• Conectar 400+ aplicaciones y servicios\n• Editor visual de flujos de trabajo con arrastrar y soltar\n• Automatizaciones potenciadas por IA (OpenAI, Claude, etc.)\n• Soporte de webhooks para disparadores externos\n• Nodos de código personalizado JavaScript y Python\n• Ejecución programada de flujos de trabajo\n\n**\U0001F310 Acceso:**\nUna vez listo, tu aplicación estará disponible en `${APP_URL:-https://n8n-${APP_DOMAIN}}`!\n\n**Cómo usar:**\n¡Crea tu primer flujo de trabajo haciendo clic en el botón \"+\" y conectando los nodos!\n"
   secrets:
     # Seeded: installs whose database was initialised with the box-wide
     # password keep it; a fresh install gets its own.
@@ -454,7 +453,6 @@ x-compose-app:
     - path: /DATA/AppData/$AppID/data
       user: $PUID
       group: $PGID
-    - path: /DATA/AppData/$AppID/pgdata
-      user: $PUID
-      group: $PGID
-  webui-host: n8n-${domain}
+    # Not /DATA/AppData/$AppID/pgdata: n8n-postgres starts as root and its image hands that directory to
+    # its own user; chowning it to $PUID here would leave the running
+    # database unable to write there.

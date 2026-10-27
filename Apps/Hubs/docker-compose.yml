@@ -1,5 +1,12 @@
 name: hubs
 
+# Bounded container logs (requirement `log-limits`): json-file never rotates on its own.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   hubs-client:
     image: hubsfoundation/hubs:stable-3111
@@ -7,15 +14,20 @@ services:
     restart: unless-stopped
     user: "0:0"
     cpu_shares: 80
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 128M
     environment:
       DOMAIN: "${APP_DOMAIN}"
       SUB_DOMAIN: "hubs"
-      turkeyCfg_thumbnail_server: "hubsnearspark-${APP_DOMAIN}"
-      turkeyCfg_base_assets_path: "https://hubsassets-${APP_DOMAIN}/hubs/"
-      turkeyCfg_non_cors_proxy_domains: "hubs-${APP_DOMAIN},hubsassets-${APP_DOMAIN}"
-      turkeyCfg_reticulum_server: "hubs-${APP_DOMAIN}"
-      turkeyCfg_cors_proxy_server: "hubs-${APP_DOMAIN}"
-      turkeyCfg_shortlink_domain: "hubs-${APP_DOMAIN}"
+      turkeyCfg_thumbnail_server: "${ROUTE_HUBSNEARSPARK_HOST:-hubsnearspark-${APP_DOMAIN}}"
+      turkeyCfg_base_assets_path: "${ROUTE_HUBSASSETS_URL:-https://hubsassets-${APP_DOMAIN}}/hubs/"
+      turkeyCfg_non_cors_proxy_domains: "${APP_HOST:-hubs-${APP_DOMAIN}},${ROUTE_HUBSASSETS_HOST:-hubsassets-${APP_DOMAIN}}"
+      turkeyCfg_reticulum_server: "${APP_HOST:-hubs-${APP_DOMAIN}}"
+      turkeyCfg_cors_proxy_server: "${APP_HOST:-hubs-${APP_DOMAIN}}"
+      turkeyCfg_shortlink_domain: "${APP_HOST:-hubs-${APP_DOMAIN}}"
       turkeyCfg_tier: "p1"
       PUID: $PUID
       PGID: $PGID
@@ -25,35 +37,24 @@ services:
     networks:
       - hubs-net
       - pcs
-    labels:
-      caddy_0: hubsassets-${APP_DOMAIN}
-      caddy_0.import: gateway_tls
-      caddy_0.reverse_proxy: "https://{{upstreams 8080}}"
-      caddy_0.reverse_proxy.transport: http
-      caddy_0.reverse_proxy.transport.tls: ""
-      caddy_0.reverse_proxy.transport.tls_insecure_skip_verify: ""
-      caddy_1: hubsassets-${APP_PUBLIC_IP_DASH}.nip.io
-      caddy_1.import: gateway_tls
-      caddy_1.reverse_proxy: "https://{{upstreams 8080}}"
-      caddy_1.reverse_proxy.transport: http
-      caddy_1.reverse_proxy.transport.tls: ""
-      caddy_1.reverse_proxy.transport.tls_insecure_skip_verify: ""
-      caddy_2: hubsassets-${APP_PUBLIC_IP_DASH}.sslip.io
-      caddy_2.reverse_proxy: "https://{{upstreams 8080}}"
-      caddy_2.reverse_proxy.transport: http
-      caddy_2.reverse_proxy.transport.tls: ""
-      caddy_2.reverse_proxy.transport.tls_insecure_skip_verify: ""
 
   db:
-    image: postgres:14-alpine
+    image: postgres:17.11-alpine
     container_name: hubs-db
     restart: unless-stopped
     user: "0:0"
     cpu_shares: 70
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 512M
     environment:
-      POSTGRES_USER: $POSTGRES_USER
+      # The user and database name are hubs-seed's old defaults. Installs that
+      # predate the secrets block still carry them in .env, so they stay overridable.
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: $POSTGRES_PASSWORD
-      POSTGRES_DB: $POSTGRES_DB
+      POSTGRES_DB: ${POSTGRES_DB:-ret_production}
       PUID: $PUID
       PGID: $PGID
       TZ: UTC
@@ -76,27 +77,32 @@ services:
     restart: unless-stopped
     user: "0:0"
     cpu_shares: 70
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 1G
     environment:
       POD_IP: "127.0.0.1"
       POD_NAME: "reticulum-1"
       turkeyCfg_POD_NS: "hubs"
-      turkeyCfg_HUB_DOMAIN: "hubs-${APP_DOMAIN}"
-      turkeyCfg_DOMAIN: "hubs-${APP_DOMAIN}"
-      turkeyCfg_RET_HOST: "hubs-${APP_DOMAIN}"
-      turkeyCfg_LINK_HOST: "hubslink-${APP_DOMAIN}"
-      turkeyCfg_ASSETS_HOST: "hubsassets-${APP_DOMAIN}"
-      turkeyCfg_DIALOG_HOST: "hubsdialog-${APP_DOMAIN}"
-      turkeyCfg_NEARSPARK_HOST: "hubsnearspark-${APP_DOMAIN}"
-      turkeyCfg_SPOKE_HOST: "hubsspoke-${APP_DOMAIN}"
+      turkeyCfg_HUB_DOMAIN: "${APP_HOST:-hubs-${APP_DOMAIN}}"
+      turkeyCfg_DOMAIN: "${APP_HOST:-hubs-${APP_DOMAIN}}"
+      turkeyCfg_RET_HOST: "${APP_HOST:-hubs-${APP_DOMAIN}}"
+      turkeyCfg_LINK_HOST: "${ROUTE_HUBSLINK_HOST:-hubslink-${APP_DOMAIN}}"
+      turkeyCfg_ASSETS_HOST: "${ROUTE_HUBSASSETS_HOST:-hubsassets-${APP_DOMAIN}}"
+      turkeyCfg_DIALOG_HOST: "${ROUTE_HUBSDIALOG_HOST:-hubsdialog-${APP_DOMAIN}}"
+      turkeyCfg_NEARSPARK_HOST: "${ROUTE_HUBSNEARSPARK_HOST:-hubsnearspark-${APP_DOMAIN}}"
+      turkeyCfg_SPOKE_HOST: "${ROUTE_HUBSSPOKE_HOST:-hubsspoke-${APP_DOMAIN}}"
       turkeyCfg_DB_HOST: "db"
       turkeyCfg_DB_HOST_T: "db"
       turkeyCfg_APP_EMAIL: "${APP_EMAIL}"
-      turkeyCfg_MAILER_RELAY: "hubs-mailpit"
+      turkeyCfg_MAILER_RELAY: "smtp"
       turkeyCfg_MAILER_PORT: "587"
       turkeyCfg_MAILER_TLS: "never"
-      turkeyCfg_DB_USER: $turkeyCfg_DB_USER
-      turkeyCfg_DB_PASS: $turkeyCfg_DB_PASS
-      turkeyCfg_DB_NAME: $turkeyCfg_DB_NAME
+      turkeyCfg_DB_USER: ${POSTGRES_USER:-postgres}
+      turkeyCfg_DB_PASS: $POSTGRES_PASSWORD
+      turkeyCfg_DB_NAME: ${POSTGRES_DB:-ret_production}
       turkeyCfg_NODE_COOKIE: $turkeyCfg_NODE_COOKIE
       turkeyCfg_GUARDIAN_KEY: $turkeyCfg_GUARDIAN_KEY
       turkeyCfg_PHX_KEY: $turkeyCfg_PHX_KEY
@@ -118,32 +124,21 @@ services:
     networks:
       - hubs-net
       - pcs
-    labels:
-      caddy_0: hubs-${APP_DOMAIN}
-      caddy_0.import: gateway_tls
-      caddy_0.reverse_proxy: "{{upstreams 4001}}"
-      caddy_1: hubs-${APP_PUBLIC_IP_DASH}.nip.io
-      caddy_1.import: gateway_tls
-      caddy_1.reverse_proxy: "{{upstreams 4001}}"
-      caddy_2: hubs-${APP_PUBLIC_IP_DASH}.sslip.io
-      caddy_2.reverse_proxy: "{{upstreams 4001}}"
-      caddy_3: hubslink-${APP_DOMAIN}
-      caddy_3.import: gateway_tls
-      caddy_3.reverse_proxy: "{{upstreams 4001}}"
-      caddy_4: hubslink-${APP_PUBLIC_IP_DASH}.nip.io
-      caddy_4.import: gateway_tls
-      caddy_4.reverse_proxy: "{{upstreams 4001}}"
-      caddy_5: hubslink-${APP_PUBLIC_IP_DASH}.sslip.io
-      caddy_5.reverse_proxy: "{{upstreams 4001}}"
 
   postgrest:
-    image: mozillareality/postgrest:8
+    image: mozillareality/postgrest:8@sha256:ab00c933c3d74164041e2316f0d95ad6ed50e5ae13b54223cabe5de9a18d619d
     container_name: hubs-postgrest
     restart: unless-stopped
     user: "0:0"
     cpu_shares: 50
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 128M
     environment:
-      PGRST_DB_URI: $PGRST_DB_URI
+      # The password is hex, so it needs no URL escaping.
+      PGRST_DB_URI: "postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-ret_production}"
       PGRST_JWT_SECRET: $PGRST_JWT_SECRET
       PGRST_LOG_LEVEL: info
       PGRST_DB_SCHEMA: ret0_admin
@@ -165,16 +160,21 @@ services:
     restart: unless-stopped
     user: "0:0"
     cpu_shares: 50
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 128M
     environment:
       DOMAIN: "${APP_DOMAIN}"
       SUB_DOMAIN: "hubsspoke"
-      turkeyCfg_thumbnail_server: "hubsnearspark-${APP_DOMAIN}"
-      turkeyCfg_base_assets_path: "https://hubsspoke-${APP_DOMAIN}/spoke/"
-      turkeyCfg_non_cors_proxy_domains: "hubs-${APP_DOMAIN},hubsspoke-${APP_DOMAIN}"
-      turkeyCfg_reticulum_server: "hubs-${APP_DOMAIN}"
-      turkeyCfg_cors_proxy_server: "hubs-${APP_DOMAIN}"
-      turkeyCfg_shortlink_domain: "hubs-${APP_DOMAIN}"
-      turkeyCfg_hubs_server: "hubs-${APP_DOMAIN}"
+      turkeyCfg_thumbnail_server: "${ROUTE_HUBSNEARSPARK_HOST:-hubsnearspark-${APP_DOMAIN}}"
+      turkeyCfg_base_assets_path: "${ROUTE_HUBSSPOKE_URL:-https://hubsspoke-${APP_DOMAIN}}/spoke/"
+      turkeyCfg_non_cors_proxy_domains: "${APP_HOST:-hubs-${APP_DOMAIN}},${ROUTE_HUBSSPOKE_HOST:-hubsspoke-${APP_DOMAIN}}"
+      turkeyCfg_reticulum_server: "${APP_HOST:-hubs-${APP_DOMAIN}}"
+      turkeyCfg_cors_proxy_server: "${APP_HOST:-hubs-${APP_DOMAIN}}"
+      turkeyCfg_shortlink_domain: "${APP_HOST:-hubs-${APP_DOMAIN}}"
+      turkeyCfg_hubs_server: "${APP_HOST:-hubs-${APP_DOMAIN}}"
       PUID: $PUID
       PGID: $PGID
       TZ: UTC
@@ -194,24 +194,6 @@ services:
         aliases:
           - spoke
       pcs: {}
-    labels:
-      caddy_0: hubsspoke-${APP_DOMAIN}
-      caddy_0.import: gateway_tls
-      caddy_0.reverse_proxy: "https://{{upstreams 8080}}"
-      caddy_0.reverse_proxy.transport: http
-      caddy_0.reverse_proxy.transport.tls: ""
-      caddy_0.reverse_proxy.transport.tls_insecure_skip_verify: ""
-      caddy_1: hubsspoke-${APP_PUBLIC_IP_DASH}.nip.io
-      caddy_1.import: gateway_tls
-      caddy_1.reverse_proxy: "https://{{upstreams 8080}}"
-      caddy_1.reverse_proxy.transport: http
-      caddy_1.reverse_proxy.transport.tls: ""
-      caddy_1.reverse_proxy.transport.tls_insecure_skip_verify: ""
-      caddy_2: hubsspoke-${APP_PUBLIC_IP_DASH}.sslip.io
-      caddy_2.reverse_proxy: "https://{{upstreams 8080}}"
-      caddy_2.reverse_proxy.transport: http
-      caddy_2.reverse_proxy.transport.tls: ""
-      caddy_2.reverse_proxy.transport.tls_insecure_skip_verify: ""
 
   hubs-dialog:
     image: hubsfoundation/dialog:stable-331
@@ -219,6 +201,11 @@ services:
     restart: unless-stopped
     user: "0:0"
     cpu_shares: 70
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 512M
     environment:
       AUTH_KEY: /app/certs/perms.pub.pem
       HTTPS_CERT_FULLCHAIN: /app/certs/fullchain.pem
@@ -242,30 +229,17 @@ services:
     networks:
       - hubs-net
       - pcs
-    labels:
-      caddy_0: hubsdialog-${APP_DOMAIN}
-      caddy_0.import: gateway_tls
-      caddy_0.reverse_proxy: "https://{{upstreams 4443}}"
-      caddy_0.reverse_proxy.transport: http
-      caddy_0.reverse_proxy.transport.tls: ""
-      caddy_0.reverse_proxy.transport.tls_insecure_skip_verify: ""
-      caddy_1: hubsdialog-${APP_PUBLIC_IP_DASH}.nip.io
-      caddy_1.import: gateway_tls
-      caddy_1.reverse_proxy: "https://{{upstreams 4443}}"
-      caddy_1.reverse_proxy.transport: http
-      caddy_1.reverse_proxy.transport.tls: ""
-      caddy_1.reverse_proxy.transport.tls_insecure_skip_verify: ""
-      caddy_2: hubsdialog-${APP_PUBLIC_IP_DASH}.sslip.io
-      caddy_2.reverse_proxy: "https://{{upstreams 4443}}"
-      caddy_2.reverse_proxy.transport: http
-      caddy_2.reverse_proxy.transport.tls: ""
-      caddy_2.reverse_proxy.transport.tls_insecure_skip_verify: ""
 
   hubs-nearspark:
     image: hubsfoundation/nearspark:stable-28
     container_name: hubs-nearspark
     restart: unless-stopped
     cpu_shares: 30
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 256M
     environment:
       PUID: $PUID
       PGID: $PGID
@@ -282,21 +256,17 @@ services:
         aliases:
           - nearspark
       pcs: {}
-    labels:
-      caddy_0: hubsnearspark-${APP_DOMAIN}
-      caddy_0.import: gateway_tls
-      caddy_0.reverse_proxy: "{{upstreams 5000}}"
-      caddy_1: hubsnearspark-${APP_PUBLIC_IP_DASH}.nip.io
-      caddy_1.import: gateway_tls
-      caddy_1.reverse_proxy: "{{upstreams 5000}}"
-      caddy_2: hubsnearspark-${APP_PUBLIC_IP_DASH}.sslip.io
-      caddy_2.reverse_proxy: "{{upstreams 5000}}"
 
   photomnemonic:
     image: hubsfoundation/photomnemonic:stable-75
     container_name: hubs-photomnemonic
     restart: unless-stopped
     cpu_shares: 30
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 512M
     environment:
       PUID: $PUID
       PGID: $PGID
@@ -305,39 +275,6 @@ services:
       - 5000
     networks:
       - hubs-net
-
-  hubs-mailpit:
-    image: axllent/mailpit:v1.29.7
-    container_name: hubs-mailpit
-    restart: unless-stopped
-    user: "$PUID:$PGID"
-    cpu_shares: 20
-    environment:
-      MP_SMTP_BIND_ADDR: "0.0.0.0:587"
-      MP_SMTP_AUTH_ACCEPT_ANY: 1
-      MP_SMTP_AUTH_ALLOW_INSECURE: 1
-      MP_SMTP_RELAY_HOST: smtp
-      MP_SMTP_RELAY_PORT: 587
-      MP_SMTP_RELAY_STARTTLS: "false"
-      MP_SMTP_RELAY_ALL: 1
-      MP_UI_AUTH: "admin:$APP_DEFAULT_PASSWORD"
-
-      TZ: UTC
-    expose:
-      - 587
-      - 8025
-    networks:
-      - hubs-net
-      - pcs
-    labels:
-      caddy_0: hubsmail-${APP_DOMAIN}
-      caddy_0.import: gateway_tls
-      caddy_0.reverse_proxy: "{{upstreams 8025}}"
-      caddy_1: hubsmail-${APP_PUBLIC_IP_DASH}.nip.io
-      caddy_1.import: gateway_tls
-      caddy_1.reverse_proxy: "{{upstreams 8025}}"
-      caddy_2: hubsmail-${APP_PUBLIC_IP_DASH}.sslip.io
-      caddy_2.reverse_proxy: "{{upstreams 8025}}"
 
 networks:
   hubs-net:
@@ -350,6 +287,7 @@ x-casaos:
   architectures:
     - amd64
   main: hubs
+  webui_port: 4001
 
   author: Hubs Foundation
   developer: Hubs Foundation
@@ -390,58 +328,54 @@ x-casaos:
   tips:
     before_install:
       en_us: |
-        **🔑 Initial admin: `${APP_EMAIL}`** — the only account with admin rights. Sign in with this email at https://hubs-${APP_DOMAIN} to receive a magic-link.
-
-        **How to sign in:** Hubs uses magic-link (email-only) login. Enter `${APP_EMAIL}` at https://hubs-${APP_DOMAIN}/signin, then open the [Local Mailbox](https://hubsmail-${APP_DOMAIN}) to find the magic-link email and click it. Mailbox login — user: `admin`, password: `$APP_DEFAULT_PASSWORD`
+        **🔑 Initial admin: `${APP_EMAIL}`** — the only account with admin rights. Sign in with this email at ${APP_URL:-https://hubs-${APP_DOMAIN}} to receive a magic-link.
 
         **Operator surfaces** (after admin sign-in):
-        - [Admin panel](https://hubs-${APP_DOMAIN}/admin)
-        - [Spoke scene editor](https://hubs-${APP_DOMAIN}/spoke/projects)
+        - [Admin panel](${APP_URL:-https://hubs-${APP_DOMAIN}}/admin)
+        - [Spoke scene editor](${APP_URL:-https://hubs-${APP_DOMAIN}}/spoke/projects)
 
         **Voice / video** needs UDP ports 40000-40050 reachable on the server's public IP. HTTPS-only tunnels leave signaling working but audio silent.
 
         **Resources:** ~3 GB RAM, ~2 vCPU. Suitable for rooms up to ~10 concurrent users.
         **More info:** [Hubs Community setup guide](https://yundera.com/blog/best-apps-1/hubs-community-available-in-one-click-40)
       fr_fr: |
-        **🔑 Administrateur initial : `${APP_EMAIL}`** — seul compte avec les droits admin. Connectez-vous avec cet email sur https://hubs-${APP_DOMAIN} pour recevoir un lien magique.
+        **🔑 Administrateur initial : `${APP_EMAIL}`** — seul compte avec les droits admin. Connectez-vous avec cet email sur ${APP_URL:-https://hubs-${APP_DOMAIN}} pour recevoir un lien magique.
 
         **Interfaces d'administration** (après connexion admin) :
-        - [Panneau admin](https://hubs-${APP_DOMAIN}/admin)
-        - [Éditeur de scène Spoke](https://hubs-${APP_DOMAIN}/spoke/projects)
+        - [Panneau admin](${APP_URL:-https://hubs-${APP_DOMAIN}}/admin)
+        - [Éditeur de scène Spoke](${APP_URL:-https://hubs-${APP_DOMAIN}}/spoke/projects)
 
         **Voix / vidéo** : les ports UDP 40000-40050 doivent être joignables sur l'IP publique du serveur. Un tunnel HTTPS uniquement laisse la signalisation fonctionnelle mais coupe le média.
 
         **Ressources :** ~3 Go de RAM, ~2 vCPU. Adapté aux salons jusqu'à ~10 utilisateurs simultanés.
         **More info:** [Hubs Community setup guide](https://yundera.com/blog/best-apps-1/hubs-community-available-in-one-click-40)
       es_es: |
-        **🔑 Administrador inicial: `${APP_EMAIL}`** — la única cuenta con permisos de admin. Inicia sesión con ese correo en https://hubs-${APP_DOMAIN} para recibir un enlace mágico.
+        **🔑 Administrador inicial: `${APP_EMAIL}`** — la única cuenta con permisos de admin. Inicia sesión con ese correo en ${APP_URL:-https://hubs-${APP_DOMAIN}} para recibir un enlace mágico.
 
         **Interfaces de administración** (tras iniciar sesión como admin):
-        - [Panel de admin](https://hubs-${APP_DOMAIN}/admin)
-        - [Editor de escenas Spoke](https://hubs-${APP_DOMAIN}/spoke/projects)
+        - [Panel de admin](${APP_URL:-https://hubs-${APP_DOMAIN}}/admin)
+        - [Editor de escenas Spoke](${APP_URL:-https://hubs-${APP_DOMAIN}}/spoke/projects)
 
         **Voz / vídeo:** los puertos UDP 40000-40050 deben estar accesibles en la IP pública del servidor. Un túnel solo HTTPS deja la señalización funcionando pero corta el audio.
 
         **Recursos:** ~3 GB de RAM, ~2 vCPU. Adecuado para salas de hasta ~10 usuarios simultáneos.
         **More info:** [Hubs Community setup guide](https://yundera.com/blog/best-apps-1/hubs-community-available-in-one-click-40)
       zh_cn: |
-        **🔑 初始管理员：`${APP_EMAIL}`** —— 唯一拥有管理员权限的账户。在 https://hubs-${APP_DOMAIN} 使用该邮箱登录以接收魔法链接。
+        **🔑 初始管理员：`${APP_EMAIL}`** —— 唯一拥有管理员权限的账户。在 ${APP_URL:-https://hubs-${APP_DOMAIN}} 使用该邮箱登录以接收魔法链接。
 
         **管理员界面**（管理员登录后）：
-        - [管理面板](https://hubs-${APP_DOMAIN}/admin)
-        - [Spoke 场景编辑器](https://hubs-${APP_DOMAIN}/spoke/projects)
+        - [管理面板](${APP_URL:-https://hubs-${APP_DOMAIN}}/admin)
+        - [Spoke 场景编辑器](${APP_URL:-https://hubs-${APP_DOMAIN}}/spoke/projects)
 
         **语音 / 视频**：服务器公网 IP 的 UDP 端口 40000-40050 必须开放。仅 HTTPS 隧道可保持信令但会丢失媒体。
 
         **资源：** 约 3 GB 内存、~2 vCPU。适合 ~10 名以下并发用户的房间。
       ko_kr: |
-        **🔑 초기 관리자: `${APP_EMAIL}`** — 관리자 권한을 가진 유일한 계정입니다. https://hubs-${APP_DOMAIN} 에서 이 이메일로 로그인하면 매직 링크를 받게 됩니다.
-
-        **로그인 방법:** Hubs는 매직링크(이메일 전용) 로그인을 사용합니다. https://hubs-${APP_DOMAIN}/signin 에서 `${APP_EMAIL}`을 입력한 후, [로컬 메일함](https://hubsmail-${APP_DOMAIN})을 열어 매직링크 이메일을 확인하고 클릭하세요. 메일함 로그인 — 사용자: `admin`, 비밀번호: `$APP_DEFAULT_PASSWORD`
+        **🔑 초기 관리자: `${APP_EMAIL}`** — 관리자 권한을 가진 유일한 계정입니다. ${APP_URL:-https://hubs-${APP_DOMAIN}} 에서 이 이메일로 로그인하면 매직 링크를 받게 됩니다.
 
         **운영자 화면** (관리자 로그인 후):
-        - [관리 패널](https://hubs-${APP_DOMAIN}/admin)
-        - [Spoke 씬 에디터](https://hubs-${APP_DOMAIN}/spoke/projects)
+        - [관리 패널](${APP_URL:-https://hubs-${APP_DOMAIN}}/admin)
+        - [Spoke 씬 에디터](${APP_URL:-https://hubs-${APP_DOMAIN}}/spoke/projects)
 
         **음성 / 영상**: 서버의 공인 IP에서 UDP 40000-40050 포트가 열려 있어야 합니다. HTTPS 전용 터널 환경에서는 시그널링만 동작하고 미디어는 끊깁니다.
 
@@ -450,82 +384,147 @@ x-casaos:
 
 x-compose-app:
   schema_version: 2
-  # Both halves of the seeding are containers — hubs-seed's own image — so they
-  # are declared rather than shelled out to. bootstrap is idempotent: it reuses an
-  # existing keypair and preserves every secret already in secrets/.env, so a
-  # reinstall keeps the credentials the existing pgdata was initialised with.
-  init:
-    - name: bootstrap
-      image: ghcr.io/worph/hubs-seed:2.0.0
-      command: bootstrap
-      volumes:
-        - ${DATA_ROOT:-/DATA}/AppData/hubs:/data/hubs
-        - ${DATA_ROOT:-/DATA}/AppData/hubs/secrets:/data/compose
-      environment:
-        APP_DOMAIN: ${APP_DOMAIN}
-        APP_PUBLIC_IP_DASH: ${APP_PUBLIC_IP_DASH}
-        APP_PUBLIC_IPV4: ${APP_PUBLIC_IPV4}
-        APP_EMAIL: ${APP_EMAIL}
-        PUID: ${PUID}
-        PGID: ${PGID}
-      when: once
+  version: "stable-855"
+  # How the app is reached, stated without a domain or a proxy: the box's routing
+  # setting decides. The first route is the web UI; each name is the host the app
+  # reads back as APP_* (the first) or ROUTE_<NAME>_* (the others).
+  routes:
+    - { service: hubs, name: hubs, upstream-port: 4001 }
+    - { service: hubs-client, name: hubsassets, upstream-port: 8080, upstream-scheme: https, insecure-upstream: true }
+    - { service: hubs, name: hubslink, upstream-port: 4001 }
+    - { service: hubs-spoke, name: hubsspoke, upstream-port: 8080, upstream-scheme: https, insecure-upstream: true }
+    - { service: hubs-dialog, name: hubsdialog, upstream-port: 4443, upstream-scheme: https, insecure-upstream: true }
+    - { service: hubs-nearspark, name: hubsnearspark, upstream-port: 5000 }
+  # The store card and the tile. Maison reads x-compose-app only: x-casaos is
+  # kept for CasaOS and for Maison builds that predate this, and must match.
+  title:
+    en_us: Hubs
+  tagline:
+    en_us: Self-hosted social VR rooms in your browser
+    fr_fr: Salons VR sociaux auto-hébergés dans votre navigateur
+    es_es: Salas de VR social autoalojadas en tu navegador
+    zh_cn: 自托管的浏览器内社交 VR 房间
+    ko_kr: 브라우저에서 즐기는 셀프호스팅 소셜 VR 룸
+  description:
+    en_us: |
+      Hubs is an open-source social VR platform from the Hubs Foundation. Create persistent virtual rooms for meetings, classes, events, or hangouts — accessible from any browser, no install required, with full WebXR support for VR headsets.
+    fr_fr: |
+      Hubs est une plateforme de VR sociale open-source de la Hubs Foundation. Créez des salons virtuels persistants pour des réunions, cours, événements ou rencontres — accessibles depuis n'importe quel navigateur, sans installation, avec une prise en charge complète de WebXR pour les casques VR.
+    es_es: |
+      Hubs es una plataforma de VR social de código abierto de la Hubs Foundation. Crea salas virtuales persistentes para reuniones, clases, eventos o encuentros — accesibles desde cualquier navegador, sin instalación, con soporte completo de WebXR para visores de VR.
+    zh_cn: |
+      Hubs 是 Hubs Foundation 推出的开源社交 VR 平台。创建持久化的虚拟房间，用于会议、课程、活动或聚会 —— 直接通过浏览器访问，无需安装，并完整支持 WebXR VR 头显。
+    ko_kr: |
+      Hubs는 Hubs Foundation의 오픈소스 소셜 VR 플랫폼입니다. 회의·수업·이벤트·모임을 위한 영구 가상 룸을 만들 수 있으며, 어떤 브라우저에서도 설치 없이 접속할 수 있고 VR 헤드셋용 WebXR을 완벽 지원합니다.
+  developer: Hubs Foundation
+  category: Communication
+  icon: icon.png
+  thumbnail: thumbnail.png
+  screenshots:
+    - screenshot-1.png
+    - screenshot-2.png
+    - screenshot-3.png
+  architectures:
+    - amd64
+  tips:
+    en_us: "**\U0001F511 Initial admin: `${APP_EMAIL}`** — the only account with admin rights. Sign in with this email at ${APP_URL:-https://hubs-${APP_DOMAIN}} to receive a magic-link.\n\n**Operator surfaces** (after admin sign-in):\n- [Admin panel](${APP_URL:-https://hubs-${APP_DOMAIN}}/admin)\n- [Spoke scene editor](${APP_URL:-https://hubs-${APP_DOMAIN}}/spoke/projects)\n\n**Voice / video** needs UDP ports 40000-40050 reachable on the server's public IP. HTTPS-only tunnels leave signaling working but audio silent.\n\n**Resources:** ~3 GB RAM, ~2 vCPU. Suitable for rooms up to ~10 concurrent users.\n**More info:** [Hubs Community setup guide](https://yundera.com/blog/best-apps-1/hubs-community-available-in-one-click-40)\n"
+    fr_fr: "**\U0001F511 Administrateur initial : `${APP_EMAIL}`** — seul compte avec les droits admin. Connectez-vous avec cet email sur ${APP_URL:-https://hubs-${APP_DOMAIN}} pour recevoir un lien magique.\n\n**Interfaces d'administration** (après connexion admin) :\n- [Panneau admin](${APP_URL:-https://hubs-${APP_DOMAIN}}/admin)\n- [Éditeur de scène Spoke](${APP_URL:-https://hubs-${APP_DOMAIN}}/spoke/projects)\n\n**Voix / vidéo** : les ports UDP 40000-40050 doivent être joignables sur l'IP publique du serveur. Un tunnel HTTPS uniquement laisse la signalisation fonctionnelle mais coupe le média.\n\n**Ressources :** ~3 Go de RAM, ~2 vCPU. Adapté aux salons jusqu'à ~10 utilisateurs simultanés.\n**More info:** [Hubs Community setup guide](https://yundera.com/blog/best-apps-1/hubs-community-available-in-one-click-40)\n"
+    es_es: "**\U0001F511 Administrador inicial: `${APP_EMAIL}`** — la única cuenta con permisos de admin. Inicia sesión con ese correo en ${APP_URL:-https://hubs-${APP_DOMAIN}} para recibir un enlace mágico.\n\n**Interfaces de administración** (tras iniciar sesión como admin):\n- [Panel de admin](${APP_URL:-https://hubs-${APP_DOMAIN}}/admin)\n- [Editor de escenas Spoke](${APP_URL:-https://hubs-${APP_DOMAIN}}/spoke/projects)\n\n**Voz / vídeo:** los puertos UDP 40000-40050 deben estar accesibles en la IP pública del servidor. Un túnel solo HTTPS deja la señalización funcionando pero corta el audio.\n\n**Recursos:** ~3 GB de RAM, ~2 vCPU. Adecuado para salas de hasta ~10 usuarios simultáneos.\n**More info:** [Hubs Community setup guide](https://yundera.com/blog/best-apps-1/hubs-community-available-in-one-click-40)\n"
+    zh_cn: "**\U0001F511 初始管理员：`${APP_EMAIL}`** —— 唯一拥有管理员权限的账户。在 ${APP_URL:-https://hubs-${APP_DOMAIN}} 使用该邮箱登录以接收魔法链接。\n\n**管理员界面**（管理员登录后）：\n- [管理面板](${APP_URL:-https://hubs-${APP_DOMAIN}}/admin)\n- [Spoke 场景编辑器](${APP_URL:-https://hubs-${APP_DOMAIN}}/spoke/projects)\n\n**语音 / 视频**：服务器公网 IP 的 UDP 端口 40000-40050 必须开放。仅 HTTPS 隧道可保持信令但会丢失媒体。\n\n**资源：** 约 3 GB 内存、~2 vCPU。适合 ~10 名以下并发用户的房间。\n"
+    ko_kr: "**\U0001F511 초기 관리자: `${APP_EMAIL}`** — 관리자 권한을 가진 유일한 계정입니다. ${APP_URL:-https://hubs-${APP_DOMAIN}} 에서 이 이메일로 로그인하면 매직 링크를 받게 됩니다.\n\n**운영자 화면** (관리자 로그인 후):\n- [관리 패널](${APP_URL:-https://hubs-${APP_DOMAIN}}/admin)\n- [Spoke 씬 에디터](${APP_URL:-https://hubs-${APP_DOMAIN}}/spoke/projects)\n\n**음성 / 영상**: 서버의 공인 IP에서 UDP 40000-40050 포트가 열려 있어야 합니다. HTTPS 전용 터널 환경에서는 시그널링만 동작하고 미디어는 끊깁니다.\n\n**리소스:** RAM 약 3 GB, vCPU 약 2개. 동시 접속 ~10명 이하 룸에 적합합니다.\n**More info:** [Hubs Community setup guide](https://yundera.com/blog/best-apps-1/hubs-community-available-in-one-click-40)\n"
+  # postgres 14 reaches end-of-life in Nov 2026; the store moved to 17.11 on
+  # 2026-10-16. postgres:17 will not start on a 14 cluster, so every earlier install
+  # needs pg_upgrade once. Installs predate .data-version and arrive at data version
+  # 1 whatever cluster they hold: pgautoupgrade reads PG_VERSION and exits untouched
+  # on a cluster already at 17.
+  data_version: 2
+  migrations:
+    # POSTGRES_USER / POSTGRES_DB are hubs-seed's (merged into .env by the old
+    # bootstrap step; the defaults are its own, and what the db service uses). The -alpine variant because postgres:14-alpine
+    # wrote the cluster (musl collation). As root, as the service runs: it chowns
+    # for the upgrade and restores the original (uid 70) ownership afterwards.
+    # PostgREST 8 was checked against 17.11: it connects, loads its schema cache and
+    # serves the ret0_admin views and RPCs.
+    - id: 2
+      name:
+        en_us: postgres-14-to-17
+      images: [pgautoupgrade/pgautoupgrade:17.11-alpine]
+      script: |
+        docker run --rm -e PGAUTO_ONESHOT=yes \
+          -e POSTGRES_USER="${POSTGRES_USER:-postgres}" -e POSTGRES_DB="${POSTGRES_DB:-ret_production}" \
+          -v "$APP_DIR/pgdata:/var/lib/postgresql/data" \
+          pgautoupgrade/pgautoupgrade:17.11-alpine
+  # Every random internal credential, generated once by Maison. The names and
+  # sizes are the ones hubs-seed's bootstrap used to mint and merge into .env, so
+  # an existing install keeps the values its pgdata was initialised with: a key
+  # the .env already holds is reused, never regenerated.
+  secrets:
+    POSTGRES_PASSWORD: hex:24
+    turkeyCfg_NODE_COOKIE: hex:32
+    turkeyCfg_GUARDIAN_KEY: hex:48
+    turkeyCfg_PHX_KEY: hex:48
+    turkeyCfg_DASHBOARD_ACCESS_KEY: hex:24
+    turkeyCfg_POSTGREST_PASSWORD: hex:24
+  steps:
+    # Reticulum signs room permission tokens with an RSA keypair: hubs-dialog
+    # verifies them with perms.pub.pem, reticulum signs with the private key
+    # (turkeyCfg_PERMS_KEY), and PostgREST checks Guardian JWTs against its JWK
+    # (PGRST_JWT_SECRET). No `secrets:` generator produces an RSA key, and all
+    # three have to come from the same pair, so this step makes it with node in
+    # hubs-seed's image and hands the two values to the app's .env through
+    # $MAISON_ENV, in the encoding hubs-seed's bootstrap used.
+    #
+    # `always`, guarded on the data: an existing keypair is reused (regenerating
+    # it would invalidate every minted Guardian token), and $MAISON_ENV never
+    # overwrites a key the .env already has, so a repeat only re-derives values
+    # that are already there. `--network none` because it only generates a key.
+    - name: perms-keypair
+      at: setup
+      run: always
+      script: |
+        docker run --rm -i --network none --user "$PUID:$PGID" -v "$APP_DIR:/out" \
+          --entrypoint node ghcr.io/worph/hubs-seed:2.0.0 - <<'JS' >> "$MAISON_ENV"
+        const crypto = require("crypto"), fs = require("fs");
+        const priv = "/out/perms.key.pem", pub = "/out/perms.pub.pem";
+        if (!fs.existsSync(priv) || !fs.existsSync(pub)) {
+          const k = crypto.generateKeyPairSync("rsa", { modulusLength: 2048 });
+          fs.writeFileSync(priv, k.privateKey.export({ format: "pem", type: "pkcs1" }), { mode: 0o600 });
+          fs.writeFileSync(pub, k.publicKey.export({ format: "pem", type: "spki" }));
+        }
+        const pem = fs.readFileSync(priv, "utf8");
+        const jwk = crypto.createPublicKey(pem).export({ format: "jwk" });
+        console.log("PGRST_JWT_SECRET=" + JSON.stringify({ alg: "RS256", kty: jwk.kty, n: jwk.n, e: jwk.e }));
+        // Reticulum's entrypoint feeds this through sed, which turns a single
+        // backslash-n back into a newline; a doubled one survives as the TOML escape.
+        console.log("turkeyCfg_PERMS_KEY=" + pem.split("\n").join("\\\\n"));
+        JS
     # Runs after the stack is up, on the app's own network, because it talks to
-    # reticulum.
+    # reticulum. Uploads the default scene and mints its admin token with the
+    # dashboard key, passed by name so it never appears on a command line.
     - name: seed
-      image: ghcr.io/worph/hubs-seed:2.0.0
-      phase: post_up
-      network: hubs-net
-      volumes:
-        - ${DATA_ROOT:-/DATA}/AppData/hubs/secrets/.env:/secrets.env:ro
-      environment:
-        SECRETS_ENV_FILE: /secrets.env
-        RET_INTERNAL_URL: https://hubs-reticulum:4000
-        RET_PUBLIC_URL: https://hubs-${APP_DOMAIN}
-        APP_EMAIL: ${APP_EMAIL}
-      when: once
-  # The merge, not the seeding: the `bootstrap` init step above writes hubs-seed's
-  # generated credentials to secrets/.env, and they have to reach the app's own
-  # .env — the only env file the platform passes to `docker compose`.
-  #
-  # It is `pre_up` and not `pre_install` because the stack-up sequence is
-  # `... -> init(pre_up) -> ... -> pre_up -> docker compose up -d`, while
-  # pre_install runs strictly *before* that whole sequence: a pre_install hook
-  # would read secrets/.env before bootstrap has written it. post_up is too late —
-  # the first `up` would already have started the stack without the credentials.
-  #
-  # It stays a hook because the key set is whatever hubs-seed decided to generate:
-  # `variables:` can ensure keys an author names, and nobody can name these. Each
-  # key is added only when absent and `>` is never used — Maison has already
-  # written APP_DOMAIN, APP_NET, PUID/PGID and the rest into that file, and the
-  # framework passthroughs hubs-seed re-emits must not shadow them. That also makes
-  # it idempotent, which is what a hook running before *every* up has to be.
-  hooks:
-    pre_up: |
-      while IFS='=' read -r key value; do
-        case "$key" in ''|\#*) continue ;; esac
-        grep -q "^$key=" $APP_DIR/.env 2>/dev/null ||
-          printf '%s=%s\n' "$key" "$value" >> $APP_DIR/.env
-      done < ${DATA_ROOT:-/DATA}/AppData/hubs/secrets/.env
-  # Created and owned by Maison before images are pulled, before any hook runs and
+      at: started
+      run: once
+      script: |
+        DASHBOARD_ACCESS_KEY="$turkeyCfg_DASHBOARD_ACCESS_KEY" \
+        docker run --rm --network hubs-net \
+          -e DASHBOARD_ACCESS_KEY \
+          -e RET_INTERNAL_URL=https://hubs-reticulum:4000 \
+          -e RET_PUBLIC_URL="${APP_URL:-https://hubs-${APP_DOMAIN}}" \
+          -e APP_EMAIL \
+          ghcr.io/worph/hubs-seed:2.0.0
+  # Created and owned by Maison before images are pulled, before any step runs and
   # before any container starts - on the first boot and every one after it.
   folders:
-    - path: ${DATA_ROOT:-/DATA}/AppData/hubs
+    - path: /DATA/AppData/hubs
       user: $PUID
       group: $PGID
-    # hubs-seed's generated .env: the database password and the Guardian /
-    # Phoenix / PostgREST keys.
-    - path: ${DATA_ROOT:-/DATA}/AppData/hubs/secrets
-      user: $PUID
-      group: $PGID
-      mode: "0700"
-    # postgres:14-alpine drops to uid 70 through gosu, so the cluster directory
-    # has to be its own. recursive because a chown of ${DATA_ROOT:-/DATA}/AppData can re-lock
+    # postgres:17.11-alpine drops to uid 70 through gosu, so the cluster directory
+    # has to be its own. recursive because a chown of /DATA/AppData can re-lock
     # the tree to PUID between boots, which crash-loops the database.
-    - path: ${DATA_ROOT:-/DATA}/AppData/hubs/pgdata
+    - path: /DATA/AppData/hubs/pgdata
       user: 70
       group: 70
       recursive: true
-    - path: ${DATA_ROOT:-/DATA}/AppData/hubs/retstorage
+    - path: /DATA/AppData/hubs/retstorage
       user: $PUID
       group: $PGID
-  webui-host: hubs-${domain}

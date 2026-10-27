@@ -1,0 +1,237 @@
+name: tuwunel
+
+# Bounded container logs (requirement `log-limits`): json-file never rotates on its own.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  tuwunel:
+    image: ghcr.io/matrix-construct/tuwunel:v1.9.4
+    container_name: tuwunel
+    restart: unless-stopped
+    cpu_shares: 70
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+    # Image is distroless (no shell/curl) but ships its own health binary
+    healthcheck:
+      test: ["CMD", "tuwunel", "--health-check"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 60s
+    expose:
+      - 8008
+    environment:
+      TZ: $TZ
+      # --- Identity (permanent — see the `matrix` route note in x-compose-app) ---
+      TUWUNEL_SERVER_NAME: ${ROUTE_MATRIX_HOST:-matrix-${APP_DOMAIN}}
+      # Federation runs over 443 (the gateway); no port 8448 needed.
+      # Tuwunel serves /.well-known/matrix/{client,server} itself with these values.
+      TUWUNEL_WELL_KNOWN: '{client="${ROUTE_MATRIX_URL:-https://matrix-${APP_DOMAIN}}",server="${ROUTE_MATRIX_HOST:-matrix-${APP_DOMAIN}}:443"}'
+      # --- Listener ---
+      TUWUNEL_ADDRESS: 0.0.0.0
+      TUWUNEL_PORT: "8008"
+      TUWUNEL_DATABASE_PATH: /var/lib/tuwunel
+      # --- Registration: token-gated (open signup on a federated server invites abuse).
+      # First registered user becomes the server admin.
+      TUWUNEL_ALLOW_REGISTRATION: "true"
+      TUWUNEL_REGISTRATION_TOKEN: ${TUWUNEL_REGISTRATION_TOKEN}
+      TUWUNEL_NEW_USER_DISPLAYNAME_SUFFIX: ""
+      # --- Federation ---
+      TUWUNEL_ALLOW_FEDERATION: "true"
+      TUWUNEL_TRUSTED_SERVERS: '["matrix.org"]'
+    volumes:
+      - ${DATA_ROOT:-/DATA}/AppData/tuwunel/db/:/var/lib/tuwunel/
+    networks:
+      - pcs
+
+  # Element Web — bundled Matrix client, preconfigured to this homeserver.
+  # This is the app's WebUI; the homeserver itself has no UI.
+  tuwunel-element:
+    image: vectorim/element-web:v1.12.32
+    container_name: tuwunel-element
+    restart: unless-stopped
+    user: $PUID:$PGID
+    cpu_shares: 30
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    depends_on:
+      tuwunel:
+        condition: service_healthy
+    environment:
+      TZ: $TZ
+      # MUST stay 8080. The image's entrypoint renders /etc/nginx/templates into
+      # /etc/nginx/conf.d at startup, but conf.d is owned by the image's `nginx`
+      # user and we run as $PUID — the render silently fails and nginx falls back
+      # to the baked default.conf, which listens on 8080. Anything else (e.g. the
+      # image default of 80) leaves nothing listening on the advertised port.
+      ELEMENT_WEB_PORT: "8080"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/config.json"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    expose:
+      - 8080
+    volumes:
+      # Rendered from seed/element/config.json.tmpl on every up, so it follows the
+      # PCS domain instead of freezing at install (x-compose-app.files)
+      - ${DATA_ROOT:-/DATA}/AppData/tuwunel/element/config.json:/app/config.json:ro
+    networks:
+      - pcs
+
+networks:
+  pcs:
+    name: ${APP_NET:-pcs}
+    external: true
+
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  main: tuwunel-element
+  webui_port: 8080
+  category: Chat
+  tags: ["privacy", "personal", "communication"]
+  developer: Matrix Construct
+  icon: icon.png
+  thumbnail: thumbnail.png
+  screenshot_link:
+    - screenshot-1.png
+    - screenshot-2.png
+    - screenshot-3.png
+  index: /
+  store_app_id: tuwunel
+  title:
+    en_us: Tuwunel
+  tagline:
+    en_us: Your own identity on the Matrix network — federated, private chat under your domain
+  description:
+    en_us: |
+      💬 **What is Tuwunel?**
+
+      **Tuwunel** is a fast, lightweight **Matrix homeserver** — the official successor to conduwuit, written in Rust. Matrix is an open, federated chat network (like email, but for messaging): thousands of servers world-wide all talk to each other, and **nobody owns the network**.
+
+      Running your own homeserver means your chat identity is truly **yours**:
+
+      • Your ID is `@you:matrix-<your-domain>` — issued by **your** server, not a company
+      • Chat with anyone on the Matrix network (matrix.org, mozilla.org, and thousands more)
+      • End-to-end encrypted rooms, voice/video calls, file sharing
+      • Your message history and media stay **on your server**
+
+      ✅ Use it with **Element** (web, desktop, iOS, Android) or any Matrix client — just point the client at your server.
+
+      💻 **Element Web included**
+
+      The app bundles the **Element** web client, preconfigured for your server — open the app and you're on your own Matrix server, no setup needed.
+
+      🚀 **Getting started**
+
+      1. Install the app and open it — Element loads, already pointed at your server
+      2. **Create an account** — use the *registration token* shown when you open the app (tile menu → Credentials)
+      3. The **first account created becomes the server admin**
+      4. On mobile, install the Element app and enter `matrix-<your-domain>` as the homeserver
+
+      🪪 **Your identity is engine-independent**
+
+      Your Matrix ID lives on the neutral `matrix-<your-domain>` address — not on a software-specific one. If your server ships an alternative Matrix server engine in the future, it will use the **same identity domain**, so your `@you:matrix-…` handle survives an engine switch.
+  tips:
+    before_install:
+      en_us: |
+        **⚠️ Your Matrix identity is permanent**
+
+        Your server name will be `matrix-<your-domain>` and your user ID `@name:matrix-<your-domain>`. This identity **cannot be renamed later** — Matrix federation ties all your rooms and contacts to it.
+
+        **🔑 Registration**
+
+        Account creation requires a **registration token**. The **first account registered becomes the admin**. The token is shown when you open the app (tile menu → Credentials).
+
+        | Setting | Value |
+        |---------|-------|
+        | Web Client (Element) | [🔗 Open Element](${APP_URL:-https://tuwunel-${APP_DOMAIN}}/) |
+        | Homeserver (for mobile apps) | `${ROUTE_MATRIX_HOST:-matrix-${APP_DOMAIN}}` |
+
+        Keep the token private — anyone who has it can create accounts on your server.
+
+        **📱 Connecting a client**
+
+        The app's WebUI is the bundled **Element** client, already configured for your server. On mobile, install **Element** and set the homeserver to `matrix-<your-domain>`.
+
+x-compose-app:
+  schema_version: 2
+  version: "1.9.4"
+  # How the app is reached, stated without a domain or a proxy: the box's routing
+  # setting decides. The first route is the web UI; each name is the host the app
+  # reads back as APP_* (the first) or ROUTE_<NAME>_* (the others).
+  routes:
+    - { service: tuwunel-element, name: tuwunel, upstream-port: 8080 }
+    # matrix-* is the CANONICAL Matrix identity domain: the server_name, in every user
+    # id (@user:matrix-<domain>). Engine-neutral on purpose: a future homeserver app
+    # must keep this name to preserve identities. NEVER rename or drop this route.
+    - { service: tuwunel, name: matrix, upstream-port: 8008 }
+  # The store card and the tile. Maison reads x-compose-app only: x-casaos is
+  # kept for CasaOS and for Maison builds that predate this, and must match.
+  id: tuwunel
+  title:
+    en_us: Tuwunel
+  tagline:
+    en_us: Your own identity on the Matrix network — federated, private chat under your domain
+  description:
+    en_us: "\U0001F4AC **What is Tuwunel?**\n\n**Tuwunel** is a fast, lightweight **Matrix homeserver** — the official successor to conduwuit, written in Rust. Matrix is an open, federated chat network (like email, but for messaging): thousands of servers world-wide all talk to each other, and **nobody owns the network**.\n\nRunning your own homeserver means your chat identity is truly **yours**:\n\n• Your ID is `@you:matrix-<your-domain>` — issued by **your** server, not a company\n• Chat with anyone on the Matrix network (matrix.org, mozilla.org, and thousands more)\n• End-to-end encrypted rooms, voice/video calls, file sharing\n• Your message history and media stay **on your server**\n\n✅ Use it with **Element** (web, desktop, iOS, Android) or any Matrix client — just point the client at your server.\n\n\U0001F4BB **Element Web included**\n\nThe app bundles the **Element** web client, preconfigured for your server — open the app and you're on your own Matrix server, no setup needed.\n\n\U0001F680 **Getting started**\n\n1. Install the app and open it — Element loads, already pointed at your server\n2. **Create an account** — use the *registration token* shown when you open the app (tile menu → Credentials)\n3. The **first account created becomes the server admin**\n4. On mobile, install the Element app and enter `matrix-<your-domain>` as the homeserver\n\n\U0001FAAA **Your identity is engine-independent**\n\nYour Matrix ID lives on the neutral `matrix-<your-domain>` address — not on a software-specific one. If your server ships an alternative Matrix server engine in the future, it will use the **same identity domain**, so your `@you:matrix-…` handle survives an engine switch.\n"
+  developer: Matrix Construct
+  category: Chat
+  icon: icon.png
+  thumbnail: thumbnail.png
+  screenshots:
+    - screenshot-1.png
+    - screenshot-2.png
+    - screenshot-3.png
+  architectures:
+    - amd64
+    - arm64
+  tips:
+    en_us: "**⚠️ Your Matrix identity is permanent**\n\nYour server name will be `matrix-<your-domain>` and your user ID `@name:matrix-<your-domain>`. This identity **cannot be renamed later** — Matrix federation ties all your rooms and contacts to it.\n\n**\U0001F511 Registration**\n\nAccount creation requires a **registration token**. The **first account registered becomes the admin**. The token is shown when you open the app (tile menu → Credentials).\n\n| Setting | Value |\n|---------|-------|\n| Web Client (Element) | [\U0001F517 Open Element](${APP_URL:-https://tuwunel-${APP_DOMAIN}}/) |\n| Homeserver (for mobile apps) | `${ROUTE_MATRIX_HOST:-matrix-${APP_DOMAIN}}` |\n\nKeep the token private — anyone who has it can create accounts on your server.\n\n**\U0001F4F1 Connecting a client**\n\nThe app's WebUI is the bundled **Element** client, already configured for your server. On mobile, install **Element** and set the homeserver to `matrix-<your-domain>`.\n"
+  # Element's config carries the deployment's domain, so it is re-rendered on
+  # every up rather than written once at install. The hook this replaces ran
+  # exactly once: change the PCS domain afterwards and Element kept pointing at
+  # the old homeserver, silently, while the app's .env and routes moved on.
+  files:
+    - path: /DATA/AppData/tuwunel/element/config.json
+      from: element/config.json.tmpl
+      ensure: always
+  # Directories Maison creates and chowns to $PUID:$PGID before every `up`.
+  # Generated by scripts/gen-folders.py from the trailing-slash bind mounts
+  # in `volumes:` above — re-run it instead of editing this block by hand.
+  folders:
+    - path: /DATA/AppData/tuwunel/db
+      user: $PUID
+      group: $PGID
+    # Holds the Element config.json declared under files above. The bind mount is
+    # the file itself, so gen-folders.py cannot infer this one — keep it when re-running.
+    - path: /DATA/AppData/tuwunel/element
+      user: $PUID
+      group: $PGID
+  secrets:
+    # Seeded: an installed server keeps the token its owner already handed out (the
+    # former shared password); a fresh install gets its own.
+    TUWUNEL_REGISTRATION_TOKEN: ${APP_DEFAULT_PASSWORD}|password:24
+  credentials:
+    - label:
+        en_us: Registration token
+      password: ${TUWUNEL_REGISTRATION_TOKEN}
+      note:
+        en_us: Share it only with people you invite — anyone who has it can create an account on your server. Changing it only affects future sign-ups; existing accounts keep working.
+      # TUWUNEL_REGISTRATION_TOKEN is read from the environment on every start, so a
+      # new value in .env plus a recreate is the whole change.
+      change:
+        apply: env

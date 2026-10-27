@@ -13,7 +13,7 @@ services:
   # user's @name:matrix-<domain> does not depend on which engine runs it.
   # Federation runs over 443 (serve_server_wellknown), no port 8448 needed.
   synapse:
-    image: ghcr.io/element-hq/synapse:v1.163.0
+    image: ghcr.io/element-hq/synapse:v1.163.2
     container_name: synapse
     hostname: synapse
     restart: unless-stopped
@@ -49,7 +49,7 @@ services:
       - synapse-internal
 
   synapse-db:
-    image: postgres:16.13-alpine
+    image: postgres:16.15-alpine
     container_name: synapse-db
     restart: unless-stopped
     user: "0:0"
@@ -168,9 +168,17 @@ x-casaos:
 
         **Connecting a client:** open the app for Element Web. In the Element desktop or mobile app, set the homeserver to `matrix-<your-domain>`.
 
+        **🌍 Accounts from other servers are not self-hosted**
+
+        Matrix is federated: people with an account on another server (for example one created on matrix.org, which is Element's default) can join your rooms without an account here. Their account and a copy of every room they join live on that other server, not yours. Only `@name:matrix-<your-domain>` accounts are fully self-hosted. To keep everything on your server, create accounts here and have people pick `matrix-<your-domain>` as their homeserver.
+
+        **Keep it to your own accounts (optional):**
+        - **One room:** when creating it in Element, open *Advanced* and tick *Block anyone not part of matrix-<your-domain> from ever joining this room*. This cannot be changed later.
+        - **The whole server:** add `federation_domain_whitelist: []` to `/DATA/AppData/synapse/data/homeserver.yaml` and restart the app. Your server then stops talking to every other Matrix server.
+
 x-compose-app:
   schema_version: 2
-  version: "1.163.0"
+  version: "1.163.2"
   # How the app is reached, stated without a domain or a proxy: the box's routing
   # setting decides. The first route is the web UI; each name is the host the app
   # reads back as APP_* (the first) or ROUTE_<NAME>_* (the others).
@@ -236,7 +244,7 @@ x-compose-app:
         [ -e "$APP_DIR/data/signing.key" ] && exit 0
         docker run --rm --user "$PUID:$PGID" -v "$APP_DIR/data:/data" \
           --entrypoint generate_signing_key \
-          ghcr.io/element-hq/synapse:v1.163.0 -o /data/signing.key
+          ghcr.io/element-hq/synapse:v1.163.2 -o /data/signing.key
     # The admin account, through the shared-secret registration Synapse exposes on
     # localhost. Waits for the homeserver; --exists-ok makes reruns a no-op.
     - name: admin-account

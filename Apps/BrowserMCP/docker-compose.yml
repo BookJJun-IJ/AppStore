@@ -1,9 +1,16 @@
 name: browsermcp
+# Bounded container logs (requirement `log-limits`): json-file never rotates on its own.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   # Main container — Chromium + Playwright + MCP server + noVNC viewer.
   # Reachable at browsermcp-backend:9746 on the pcs network. Beacon discovery on UDP 9099.
   browsermcp-backend:
-    image: ghcr.io/worph/browser-mcp:1.1.8
+    image: ghcr.io/worph/browser-mcp:1.1.9
     container_name: browsermcp-backend
     hostname: browsermcp-backend
     restart: unless-stopped
@@ -18,8 +25,11 @@ services:
     environment:
       - TZ=$TZ
       - PORT=9746
-      - DISCOVERY_PORT=9099
+      # Beacon discovery (UDP). The image keeps it off unless this is set (since 1.1.5).
+      - BEACON_DISCOVERY_PORT=9099
       - CONFIG_PATH=/app/data/config.json
+      # Xvfb takes its screen size from this env at boot (supervisord, also baked in
+      # the image ENV), so the web UI's VNC Resolution field cannot change it — Tips say so.
       - VNC_RESOLUTION=1280x720x24
       # Kill idle Chrome after this many ms (default 2h); respawns on next use.
       - IDLE_TTL_MS=7200000
@@ -34,6 +44,7 @@ services:
     networks:
       - pcs
     cpu_shares: 50
+    logging: *logging
     deploy:
       resources:
         limits:
@@ -43,7 +54,7 @@ services:
   # AppShield provides perimeter authentication: the SSO (OIDC) gate for the
   # web UI and noVNC viewer, and the OAuth 2.1 broker for /mcp (machine clients).
   # The app itself trusts the network (auth is delegated to this sidecar), so the
-  # browsermcp-backend container is never exposed directly — only this proxy gets caddy labels.
+  # browsermcp-backend container is never exposed directly — only this proxy is routed.
   browsermcp-proxy:
     # 2.0.7+ is required: first image with the generic OAUTH_RESOURCE /
     # OAUTH_SCOPE names and a configurable protected path.
@@ -63,12 +74,12 @@ services:
       BACKEND_PORT: "9746"
       LISTEN_PORT: "80"
       OIDC_REGISTRAR_URL: "http://auth-registrar:9092"
-      REDIRECT_HOST_SUFFIXES: "${APP_DOMAIN},${APP_PUBLIC_IP_DASH}.nip.io,${APP_PUBLIC_IP_DASH}.sslip.io"
+      REDIRECT_HOST_SUFFIXES: "${APP_HOST_SUFFIXES:-${APP_DOMAIN},${APP_PUBLIC_IP_DASH}.nip.io,${APP_PUBLIC_IP_DASH}.sslip.io}"
       # Machine/API auth for the MCP endpoint. AppShield runs an OAuth/OIDC
       # authorization server fronting Dex and gates exactly the path named by the
       # resource URL (/mcp) on Bearer tokens; everything else stays behind the
       # SSO gate.
-      OAUTH_RESOURCE: "https://browsermcp-${APP_DOMAIN}/mcp"
+      OAUTH_RESOURCE: "${APP_URL:-https://browsermcp-${APP_DOMAIN}}/mcp"
       OAUTH_SCOPE: "mcp"
       OAUTH_DATA_DIR: "/data/oauth"
     volumes:
@@ -79,15 +90,7 @@ services:
     networks:
       - pcs
     cpu_shares: 80
-    labels:
-      caddy_0: browsermcp-${APP_DOMAIN}
-      caddy_0.import: gateway_tls
-      caddy_0.reverse_proxy: "{{upstreams 80}}"
-      caddy_1: browsermcp-${APP_PUBLIC_IP_DASH}.nip.io
-      caddy_1.import: gateway_tls
-      caddy_1.reverse_proxy: "{{upstreams 80}}"
-      caddy_2: browsermcp-${APP_PUBLIC_IP_DASH}.sslip.io
-      caddy_2.reverse_proxy: "{{upstreams 80}}"
+    logging: *logging
     deploy:
       resources:
         limits:
@@ -106,11 +109,12 @@ networks:
 x-casaos:
   architectures:
     - amd64
-  # The AppShield sidecar, not the backend: it is the container the Caddy labels
+  # The AppShield sidecar, not the backend: it is the container the routes
   # point at and the one users actually reach, so the dashboard tile's health now
   # tracks what is served instead of staying green while the served container is
   # unreachable. It is also the service Maison attaches ${APP_NET} to.
   main: browsermcp-proxy
+  webui_port: 80
   index: /
   developer: Worph
   category: Developer
@@ -190,11 +194,16 @@ x-casaos:
       en_us: |
         **Getting Started**
 
-        After installation, open the Web UI and click **Save Config** to start the Chromium browser.
+        Chromium starts on demand, on the first MCP tool call or browser action, inside a virtual display.
+        It is shut down after 2 hours idle and starts again on the next use.
         The Web UI is protected by your server's single sign-on — you sign in with your existing server account.
 
         **Web Interface:**
         - **Main UI** — Dashboard with live noVNC browser view, status, and tool information
+        - The dashboard's *MCP Server Info* panel shows `http://browsermcp:9746/mcp`, which does not answer:
+          use the addresses below instead.
+        - The *VNC Resolution* field in the configuration form has no effect; the virtual display is fixed
+          at 1280x720.
 
         **MCP Integration (for AI/LLMs):**
 
@@ -211,14 +220,13 @@ x-casaos:
           "mcpServers": {
             "browser-mcp": {
               "type": "http",
-              "url": "https://browsermcp-${APP_DOMAIN}/mcp"
+              "url": "${APP_URL:-https://browsermcp-${APP_DOMAIN}}/mcp"
             }
           }
         }
         ```
         For clients that need a pre-created client_id/client_secret (n8n, custom
-        scripts), open **https://browsermcp-${APP_DOMAIN}/AppShield/oauth** and
-        create one there.
+        scripts), create it with a `POST` of its registration (JSON with `client_name` and `redirect_uris`) to **${APP_URL:-https://browsermcp-${APP_DOMAIN}}/AppShield/oauth/clients**, sent from a browser signed in to this app; **${APP_URL:-https://browsermcp-${APP_DOMAIN}}/AppShield/oauth** lists the clients that exist and revokes them.
 
         **Option 2: Local Docker connection (no auth required)**
 
@@ -240,25 +248,15 @@ x-casaos:
         If you have **Beacon** installed, Browser MCP auto-registers there and its tools
         show up under the `browser-mcp__*` namespace — no extra config.
 
-        **Available MCP Tools:**
-        | Tool | Description |
-        |------|-------------|
-        | `navigate` | Navigate the browser to a URL |
-        | `click` | Click on an element by CSS/text selector |
-        | `type` | Type text into an input element |
-        | `screenshot` | Take a screenshot of the current page |
-        | `evaluate` | Execute JavaScript in the browser context |
-        | `get_text` | Get the text content of an element |
-        | `get_page_content` | Get the full HTML of the current page |
-        | `wait_for` | Wait for an element to reach a specific state |
-        | `go_back` | Navigate back in browser history |
-        | `go_forward` | Navigate forward in browser history |
-        | `set_viewport` | Set the browser viewport size |
-        | `get_console_logs` | Get browser console log entries |
-        | `pdf` | Generate a PDF of the current page |
-        | `get_cookies` | Get browser cookies |
-        | `set_cookies` | Set browser cookies |
-        | `clear_cookies` | Clear all browser cookies |
+        **Available MCP Tools (29, from Chrome DevTools MCP):**
+        | Category | Tools |
+        |----------|-------|
+        | Pages | `navigate_page`, `new_page`, `list_pages`, `select_page`, `close_page`, `resize_page`, `wait_for` |
+        | Input | `click`, `hover`, `drag`, `fill`, `fill_form`, `type_text`, `press_key`, `upload_file`, `handle_dialog` |
+        | Inspection | `take_snapshot`, `take_screenshot`, `evaluate_script` |
+        | Console & network | `list_console_messages`, `get_console_message`, `list_network_requests`, `get_network_request` |
+        | Performance & audits | `performance_start_trace`, `performance_stop_trace`, `performance_analyze_insight`, `lighthouse_audit`, `take_heapsnapshot` |
+        | Emulation | `emulate` |
 
         **Security:**
         - The Web UI, live noVNC viewer, and `/api` endpoints sit behind your server's
@@ -270,10 +268,12 @@ x-casaos:
       zh_cn: |
         **快速开始**
 
-        安装后，打开 Web 界面并点击 **Save Config** 以启动 Chromium 浏览器。Web 界面受您服务器的单点登录 (SSO) 保护——使用您现有的服务器账号登录即可。
+        Chromium 在虚拟显示中按需启动：第一次 MCP 工具调用或浏览器操作时启动，空闲 2 小时后关闭，下次使用时再次启动。Web 界面受您服务器的单点登录 (SSO) 保护——使用您现有的服务器账号登录即可。
 
         **Web 界面：**
         - **主 UI** — 带有实时 noVNC 浏览器视图、状态和工具信息的仪表板
+        - 仪表板 *MCP Server Info* 面板显示的 `http://browsermcp:9746/mcp` 无法连接，请使用下面的地址。
+        - 配置表单中的 *VNC Resolution* 字段不起作用，虚拟显示固定为 1280x720。
 
         **MCP 集成（用于 AI/LLM）：**
 
@@ -286,13 +286,12 @@ x-casaos:
           "mcpServers": {
             "browser-mcp": {
               "type": "http",
-              "url": "https://browsermcp-${APP_DOMAIN}/mcp"
+              "url": "${APP_URL:-https://browsermcp-${APP_DOMAIN}}/mcp"
             }
           }
         }
         ```
-        对于需要预先创建 client_id/client_secret 的客户端（n8n、自定义脚本），请打开
-        **https://browsermcp-${APP_DOMAIN}/AppShield/oauth** 创建。
+        对于需要预先创建 client_id/client_secret 的客户端（n8n、自定义脚本），请从已登录本应用的浏览器向 **${APP_URL:-https://browsermcp-${APP_DOMAIN}}/AppShield/oauth/clients** 发送 `POST` 注册请求（包含 `client_name` 和 `redirect_uris` 的 JSON）来创建；**${APP_URL:-https://browsermcp-${APP_DOMAIN}}/AppShield/oauth** 页面可列出并撤销已有客户端。
 
         **选项 2：本地 Docker 连接（无需认证）**
         ```json
@@ -311,33 +310,27 @@ x-casaos:
 
         如果安装了 **Beacon**，Browser MCP 会自动注册，其工具显示在 `browser-mcp__*` 命名空间下，无需额外配置。
 
-        **可用 MCP 工具：**
-        | 工具 | 描述 |
+        **可用 MCP 工具（29 个，来自 Chrome DevTools MCP）：**
+        | 类别 | 工具 |
         |------|------|
-        | `navigate` | 将浏览器导航到 URL |
-        | `click` | 通过 CSS/文本选择器点击元素 |
-        | `type` | 在输入元素中输入文本 |
-        | `screenshot` | 截取当前页面截图 |
-        | `evaluate` | 在浏览器上下文中执行 JavaScript |
-        | `get_text` | 获取元素的文本内容 |
-        | `get_page_content` | 获取当前页面的完整 HTML |
-        | `wait_for` | 等待元素达到特定状态 |
-        | `go_back` | 在浏览器历史中后退 |
-        | `go_forward` | 在浏览器历史中前进 |
-        | `set_viewport` | 设置浏览器视口大小 |
-        | `get_console_logs` | 获取浏览器控制台日志 |
-        | `pdf` | 生成当前页面的 PDF |
-        | `get_cookies` | 获取浏览器 cookies |
-        | `set_cookies` | 设置浏览器 cookies |
-        | `clear_cookies` | 清除所有浏览器 cookies |
+        | 页面 | `navigate_page`, `new_page`, `list_pages`, `select_page`, `close_page`, `resize_page`, `wait_for` |
+        | 输入 | `click`, `hover`, `drag`, `fill`, `fill_form`, `type_text`, `press_key`, `upload_file`, `handle_dialog` |
+        | 检查 | `take_snapshot`, `take_screenshot`, `evaluate_script` |
+        | 控制台与网络 | `list_console_messages`, `get_console_message`, `list_network_requests`, `get_network_request` |
+        | 性能与审计 | `performance_start_trace`, `performance_stop_trace`, `performance_analyze_insight`, `lighthouse_audit`, `take_heapsnapshot` |
+        | 模拟 | `emulate` |
       ko_kr: |
         **시작하기**
 
-        설치 후, Web UI를 열고 **Save Config** 버튼을 클릭하여 Chromium 브라우저를 시작하세요.
+        Chromium은 가상 디스플레이 안에서 필요할 때 시작됩니다. 첫 MCP 도구 호출이나 브라우저 동작 때 실행되고,
+        2시간 동안 사용하지 않으면 종료되며, 다음에 사용할 때 다시 시작됩니다.
         Web UI는 서버의 싱글 사인온(SSO)으로 보호됩니다 — 기존 서버 계정으로 로그인하세요.
 
         **웹 인터페이스:**
         - **메인 UI** — 실시간 noVNC 브라우저 뷰, 상태, 도구 정보가 포함된 대시보드
+        - 대시보드의 *MCP Server Info* 패널에 표시되는 `http://browsermcp:9746/mcp`는 연결되지 않습니다.
+          아래 주소를 사용하세요.
+        - 설정 폼의 *VNC Resolution* 항목은 적용되지 않으며, 가상 디스플레이는 1280x720으로 고정됩니다.
 
         **MCP 연동 (AI/LLM용):**
 
@@ -346,20 +339,19 @@ x-casaos:
         **옵션 1: 공개 URL (OAuth)**
 
         `/mcp` 엔드포인트는 OAuth 2.1로 보호됩니다. 아래 URL을 클라이언트에 설정하세요.
-        OAuth 디스커버리를 지원하는 클라이언트(claude.ai, Claude Desktop)는 자동으로
-        등록되며 서버 계정(SSO)으로 승인합니다.
+        OAuth 디스커버리를 지원하는 클라이언트(claude.ai, Claude Desktop)는 스스로 등록한 뒤
+        브라우저를 열어 서버 계정(싱글 사인온)으로 승인하게 합니다.
         ```json
         {
           "mcpServers": {
             "browser-mcp": {
               "type": "http",
-              "url": "https://browsermcp-${APP_DOMAIN}/mcp"
+              "url": "${APP_URL:-https://browsermcp-${APP_DOMAIN}}/mcp"
             }
           }
         }
         ```
-        client_id/client_secret가 필요한 클라이언트(n8n, 커스텀 스크립트)는
-        **https://browsermcp-${APP_DOMAIN}/AppShield/oauth** 에서 생성하세요.
+        client_id/client_secret를 미리 만들어야 하는 클라이언트(n8n, 커스텀 스크립트)는 이 앱에 로그인된 브라우저에서 **${APP_URL:-https://browsermcp-${APP_DOMAIN}}/AppShield/oauth/clients** 로 등록 정보(`client_name`과 `redirect_uris`가 담긴 JSON)를 `POST`해서 만드세요. **${APP_URL:-https://browsermcp-${APP_DOMAIN}}/AppShield/oauth** 에서 기존 클라이언트를 확인하고 폐기할 수 있습니다.
 
         **옵션 2: 로컬 Docker 연결 (인증 불필요)**
 
@@ -378,30 +370,301 @@ x-casaos:
 
         **옵션 3: Beacon 경유 (통합)**
 
-        **Beacon**이 설치되어 있으면 Browser MCP가 자동 등록되며, `browser-mcp__*` 네임스페이스에서 도구를 사용할 수 있습니다.
+        **Beacon**이 설치되어 있으면 Browser MCP가 자동 등록되며, `browser-mcp__*` 네임스페이스에서 도구를 사용할 수 있습니다. 추가 설정은 필요 없습니다.
 
-        **사용 가능한 MCP 도구:**
-        | 도구 | 설명 |
+        **사용 가능한 MCP 도구 (29개, Chrome DevTools MCP 제공):**
+        | 분류 | 도구 |
         |------|------|
-        | `navigate` | URL로 브라우저 이동 |
-        | `click` | CSS/텍스트 선택자로 요소 클릭 |
-        | `type` | 입력 요소에 텍스트 입력 |
-        | `screenshot` | 현재 페이지 스크린샷 |
-        | `evaluate` | 브라우저에서 JavaScript 실행 |
-        | `get_text` | 요소의 텍스트 내용 가져오기 |
-        | `get_page_content` | 현재 페이지 전체 HTML 가져오기 |
-        | `wait_for` | 요소가 특정 상태에 도달할 때까지 대기 |
-        | `go_back` | 브라우저 뒤로 가기 |
-        | `go_forward` | 브라우저 앞으로 가기 |
-        | `set_viewport` | 브라우저 뷰포트 크기 설정 |
-        | `get_console_logs` | 브라우저 콘솔 로그 가져오기 |
-        | `pdf` | 현재 페이지 PDF 생성 |
-        | `get_cookies` | 브라우저 쿠키 가져오기 |
-        | `set_cookies` | 브라우저 쿠키 설정 |
-        | `clear_cookies` | 모든 브라우저 쿠키 삭제 |
+        | 페이지 | `navigate_page`, `new_page`, `list_pages`, `select_page`, `close_page`, `resize_page`, `wait_for` |
+        | 입력 | `click`, `hover`, `drag`, `fill`, `fill_form`, `type_text`, `press_key`, `upload_file`, `handle_dialog` |
+        | 검사 | `take_snapshot`, `take_screenshot`, `evaluate_script` |
+        | 콘솔 및 네트워크 | `list_console_messages`, `get_console_message`, `list_network_requests`, `get_network_request` |
+        | 성능 및 감사 | `performance_start_trace`, `performance_stop_trace`, `performance_analyze_insight`, `lighthouse_audit`, `take_heapsnapshot` |
+        | 에뮬레이션 | `emulate` |
+
+        **보안:**
+        - Web UI, 실시간 noVNC 뷰어, `/api` 엔드포인트는 서버의 싱글 사인온 뒤에 있습니다.
+        - `/mcp`는 OAuth 2.1 Bearer 토큰으로 따로 보호되므로, 공개 URL의 어떤 것도 자격 증명 없이는
+          접근할 수 없습니다. 인증이 없는 주소는 네트워크 내부 주소
+          `http://browsermcp-backend:9746/mcp`(옵션 2)뿐이며, `pcs` Docker 네트워크 밖으로는 공개되지 않습니다.
 
 x-compose-app:
   schema_version: 2
+  version: "1.1.9"
+  # How the app is reached, stated without a domain or a proxy: the box's routing
+  # setting decides. The first route is the web UI; each name is the host the app
+  # reads back as APP_* (the first) or ROUTE_<NAME>_* (the others).
+  routes:
+    - { service: browsermcp-proxy, name: browsermcp, upstream-port: 80 }
+  # The store card and the tile. Maison reads x-compose-app only: x-casaos is
+  # kept for CasaOS and for Maison builds that predate this, and must match.
+  title:
+    en_us: Browser MCP
+  tagline:
+    en_us: AI-controlled web browser via MCP
+    fr_fr: Navigateur web controle par l'IA via MCP
+    zh_cn: 通过 MCP 由 AI 控制的网页浏览器
+    ko_kr: MCP를 통해 AI가 제어하는 웹 브라우저
+  description:
+    en_us: |
+      **A headless Chromium browser in the cloud, controlled by AI via MCP**
+
+      Browser MCP bundles a full Chromium browser, Playwright automation, and an MCP (Model Context Protocol) server in a single container. It lets LLMs and AI assistants navigate websites, click elements, fill forms, take screenshots, and extract content programmatically.
+
+      **What you can do:**
+      - Control a real Chromium browser from any MCP-compatible AI assistant
+      - Navigate websites, click elements, fill forms, and interact with web pages
+      - Take screenshots for visual feedback loops (screenshot → decide → act)
+      - Execute JavaScript in the browser context for advanced automation
+      - View the browser live via the built-in noVNC web viewer
+      - Access the Web UI dashboard for status monitoring
+
+      **Think of it like:** A web browser in the cloud that AI can see and control.
+
+      **Perfect if you:** Want to automate web browsing, scrape websites, test web apps, or give your AI assistant the ability to interact with any website.
+    fr_fr: |
+      **Un navigateur Chromium headless dans le cloud, controle par l'IA via MCP**
+
+      Browser MCP regroupe un navigateur Chromium complet, l'automatisation Playwright et un serveur MCP (Model Context Protocol) dans un seul conteneur. Il permet aux LLMs et assistants IA de naviguer sur les sites web, cliquer sur des elements, remplir des formulaires, prendre des captures d'ecran et extraire du contenu par programmation.
+
+      **Ce que vous pouvez faire:**
+      - Controler un vrai navigateur Chromium depuis tout assistant IA compatible MCP
+      - Naviguer sur les sites, cliquer, remplir des formulaires et interagir avec les pages
+      - Prendre des captures d'ecran pour des boucles de retour visuel (capture → decision → action)
+      - Executer du JavaScript dans le contexte du navigateur pour une automatisation avancee
+      - Visualiser le navigateur en direct via le viewer web noVNC integre
+      - Acceder au tableau de bord Web UI pour le suivi de l'etat
+    zh_cn: |
+      **云端无头 Chromium 浏览器，通过 MCP 由 AI 控制**
+
+      Browser MCP 将完整的 Chromium 浏览器、Playwright 自动化和 MCP（模型上下文协议）服务器整合在一个容器中。它允许 LLM 和 AI 助手浏览网站、点击元素、填写表单、截屏并以编程方式提取内容。
+
+      **功能：**
+      - 从任何兼容 MCP 的 AI 助手控制真实的 Chromium 浏览器
+      - 浏览网站、点击元素、填写表单、与网页交互
+      - 截取屏幕截图用于视觉反馈循环（截图 → 决策 → 操作）
+      - 在浏览器上下文中执行 JavaScript 进行高级自动化
+      - 通过内置 noVNC 网页查看器实时查看浏览器
+      - 访问 Web UI 仪表板进行状态监控
+    ko_kr: |
+      **MCP를 통해 AI가 제어하는 클라우드 Chromium 브라우저**
+
+      Browser MCP는 Chromium 브라우저, Playwright 자동화, MCP(Model Context Protocol) 서버를 하나의 컨테이너에 통합합니다. LLM과 AI 어시스턴트가 웹사이트를 탐색하고, 요소를 클릭하고, 폼을 입력하고, 스크린샷을 찍고, 콘텐츠를 추출할 수 있습니다.
+
+      **주요 기능:**
+      - MCP 호환 AI 어시스턴트에서 실제 Chromium 브라우저 제어
+      - 웹사이트 탐색, 요소 클릭, 폼 입력, 웹 페이지 상호작용
+      - 시각적 피드백 루프를 위한 스크린샷 (스크린샷 → 판단 → 실행)
+      - 브라우저 컨텍스트에서 JavaScript 실행
+      - 내장 noVNC 웹 뷰어로 브라우저 실시간 확인
+      - Web UI 대시보드에서 상태 모니터링
+  developer: Worph
+  category: Developer
+  icon: icon.png
+  thumbnail: thumbnail.png
+  screenshots:
+    - screenshot-1.png
+    - screenshot-2.png
+    - screenshot-3.png
+  architectures:
+    - amd64
+  tips:
+    en_us: |
+      **Getting Started**
+
+      Chromium starts on demand, on the first MCP tool call or browser action, inside a virtual display.
+      It is shut down after 2 hours idle and starts again on the next use.
+      The Web UI is protected by your server's single sign-on — you sign in with your existing server account.
+
+      **Web Interface:**
+      - **Main UI** — Dashboard with live noVNC browser view, status, and tool information
+      - The dashboard's *MCP Server Info* panel shows `http://browsermcp:9746/mcp`, which does not answer:
+        use the addresses below instead.
+      - The *VNC Resolution* field in the configuration form has no effect; the virtual display is fixed
+        at 1280x720.
+
+      **MCP Integration (for AI/LLMs):**
+
+      Connect your AI assistant to control the browser.
+
+      **Option 1: Public URL (OAuth)**
+
+      The `/mcp` endpoint is protected by OAuth 2.1. Point your client at the
+      URL below — clients that support OAuth discovery (claude.ai, Claude
+      Desktop) register themselves and open a browser for you to approve with
+      your server account (single sign-on).
+      ```json
+      {
+        "mcpServers": {
+          "browser-mcp": {
+            "type": "http",
+            "url": "${APP_URL:-https://browsermcp-${APP_DOMAIN}}/mcp"
+          }
+        }
+      }
+      ```
+      For clients that need a pre-created client_id/client_secret (n8n, custom
+      scripts), create it with a `POST` of its registration (JSON with `client_name` and `redirect_uris`) to **${APP_URL:-https://browsermcp-${APP_DOMAIN}}/AppShield/oauth/clients**, sent from a browser signed in to this app; **${APP_URL:-https://browsermcp-${APP_DOMAIN}}/AppShield/oauth** lists the clients that exist and revokes them.
+
+      **Option 2: Local Docker connection (no auth required)**
+
+      For AI assistants running on the same server, connect directly via the Docker network:
+      ```json
+      {
+        "mcpServers": {
+          "browser-mcp": {
+            "type": "http",
+            "url": "http://browsermcp-backend:9746/mcp"
+          }
+        }
+      }
+      ```
+      *Note: Requires the AI assistant to be on the `pcs` Docker network.*
+
+      **Option 3: Via Beacon (aggregated)**
+
+      If you have **Beacon** installed, Browser MCP auto-registers there and its tools
+      show up under the `browser-mcp__*` namespace — no extra config.
+
+      **Available MCP Tools (29, from Chrome DevTools MCP):**
+      | Category | Tools |
+      |----------|-------|
+      | Pages | `navigate_page`, `new_page`, `list_pages`, `select_page`, `close_page`, `resize_page`, `wait_for` |
+      | Input | `click`, `hover`, `drag`, `fill`, `fill_form`, `type_text`, `press_key`, `upload_file`, `handle_dialog` |
+      | Inspection | `take_snapshot`, `take_screenshot`, `evaluate_script` |
+      | Console & network | `list_console_messages`, `get_console_message`, `list_network_requests`, `get_network_request` |
+      | Performance & audits | `performance_start_trace`, `performance_stop_trace`, `performance_analyze_insight`, `lighthouse_audit`, `take_heapsnapshot` |
+      | Emulation | `emulate` |
+
+      **Security:**
+      - The Web UI, live noVNC viewer, and `/api` endpoints sit behind your server's
+        single sign-on.
+      - `/mcp` is gated separately on OAuth 2.1 Bearer tokens, so nothing on the
+        public URL is reachable without a credential. Only the in-network address
+        `http://browsermcp-backend:9746/mcp` (Option 2) is unauthenticated, and it
+        is not published outside the `pcs` Docker network.
+    zh_cn: |
+      **快速开始**
+
+      Chromium 在虚拟显示中按需启动：第一次 MCP 工具调用或浏览器操作时启动，空闲 2 小时后关闭，下次使用时再次启动。Web 界面受您服务器的单点登录 (SSO) 保护——使用您现有的服务器账号登录即可。
+
+      **Web 界面：**
+      - **主 UI** — 带有实时 noVNC 浏览器视图、状态和工具信息的仪表板
+      - 仪表板 *MCP Server Info* 面板显示的 `http://browsermcp:9746/mcp` 无法连接，请使用下面的地址。
+      - 配置表单中的 *VNC Resolution* 字段不起作用，虚拟显示固定为 1280x720。
+
+      **MCP 集成（用于 AI/LLM）：**
+
+      **选项 1：公共 URL（OAuth 2.1）**
+
+      `/mcp` 端点受 OAuth 2.1 保护。将客户端指向下面的 URL——支持 OAuth 发现的客户端
+      （claude.ai、Claude Desktop）会自动注册并打开浏览器，使用您服务器的账号（单点登录）授权。
+      ```json
+      {
+        "mcpServers": {
+          "browser-mcp": {
+            "type": "http",
+            "url": "${APP_URL:-https://browsermcp-${APP_DOMAIN}}/mcp"
+          }
+        }
+      }
+      ```
+      对于需要预先创建 client_id/client_secret 的客户端（n8n、自定义脚本），请从已登录本应用的浏览器向 **${APP_URL:-https://browsermcp-${APP_DOMAIN}}/AppShield/oauth/clients** 发送 `POST` 注册请求（包含 `client_name` 和 `redirect_uris` 的 JSON）来创建；**${APP_URL:-https://browsermcp-${APP_DOMAIN}}/AppShield/oauth** 页面可列出并撤销已有客户端。
+
+      **选项 2：本地 Docker 连接（无需认证）**
+      ```json
+      {
+        "mcpServers": {
+          "browser-mcp": {
+            "type": "http",
+            "url": "http://browsermcp-backend:9746/mcp"
+          }
+        }
+      }
+      ```
+      *注意：需要 AI 助手在 `pcs` Docker 网络上。*
+
+      **选项 3：通过 Beacon（聚合）**
+
+      如果安装了 **Beacon**，Browser MCP 会自动注册，其工具显示在 `browser-mcp__*` 命名空间下，无需额外配置。
+
+      **可用 MCP 工具（29 个，来自 Chrome DevTools MCP）：**
+      | 类别 | 工具 |
+      |------|------|
+      | 页面 | `navigate_page`, `new_page`, `list_pages`, `select_page`, `close_page`, `resize_page`, `wait_for` |
+      | 输入 | `click`, `hover`, `drag`, `fill`, `fill_form`, `type_text`, `press_key`, `upload_file`, `handle_dialog` |
+      | 检查 | `take_snapshot`, `take_screenshot`, `evaluate_script` |
+      | 控制台与网络 | `list_console_messages`, `get_console_message`, `list_network_requests`, `get_network_request` |
+      | 性能与审计 | `performance_start_trace`, `performance_stop_trace`, `performance_analyze_insight`, `lighthouse_audit`, `take_heapsnapshot` |
+      | 模拟 | `emulate` |
+    ko_kr: |
+      **시작하기**
+
+      Chromium은 가상 디스플레이 안에서 필요할 때 시작됩니다. 첫 MCP 도구 호출이나 브라우저 동작 때 실행되고,
+      2시간 동안 사용하지 않으면 종료되며, 다음에 사용할 때 다시 시작됩니다.
+      Web UI는 서버의 싱글 사인온(SSO)으로 보호됩니다 — 기존 서버 계정으로 로그인하세요.
+
+      **웹 인터페이스:**
+      - **메인 UI** — 실시간 noVNC 브라우저 뷰, 상태, 도구 정보가 포함된 대시보드
+      - 대시보드의 *MCP Server Info* 패널에 표시되는 `http://browsermcp:9746/mcp`는 연결되지 않습니다.
+        아래 주소를 사용하세요.
+      - 설정 폼의 *VNC Resolution* 항목은 적용되지 않으며, 가상 디스플레이는 1280x720으로 고정됩니다.
+
+      **MCP 연동 (AI/LLM용):**
+
+      AI 어시스턴트를 연결하여 브라우저를 제어할 수 있습니다.
+
+      **옵션 1: 공개 URL (OAuth)**
+
+      `/mcp` 엔드포인트는 OAuth 2.1로 보호됩니다. 아래 URL을 클라이언트에 설정하세요.
+      OAuth 디스커버리를 지원하는 클라이언트(claude.ai, Claude Desktop)는 스스로 등록한 뒤
+      브라우저를 열어 서버 계정(싱글 사인온)으로 승인하게 합니다.
+      ```json
+      {
+        "mcpServers": {
+          "browser-mcp": {
+            "type": "http",
+            "url": "${APP_URL:-https://browsermcp-${APP_DOMAIN}}/mcp"
+          }
+        }
+      }
+      ```
+      client_id/client_secret를 미리 만들어야 하는 클라이언트(n8n, 커스텀 스크립트)는 이 앱에 로그인된 브라우저에서 **${APP_URL:-https://browsermcp-${APP_DOMAIN}}/AppShield/oauth/clients** 로 등록 정보(`client_name`과 `redirect_uris`가 담긴 JSON)를 `POST`해서 만드세요. **${APP_URL:-https://browsermcp-${APP_DOMAIN}}/AppShield/oauth** 에서 기존 클라이언트를 확인하고 폐기할 수 있습니다.
+
+      **옵션 2: 로컬 Docker 연결 (인증 불필요)**
+
+      같은 서버에서 실행 중인 AI 어시스턴트는 Docker 네트워크로 직접 연결:
+      ```json
+      {
+        "mcpServers": {
+          "browser-mcp": {
+            "type": "http",
+            "url": "http://browsermcp-backend:9746/mcp"
+          }
+        }
+      }
+      ```
+      *참고: AI 어시스턴트가 `pcs` Docker 네트워크에 있어야 합니다.*
+
+      **옵션 3: Beacon 경유 (통합)**
+
+      **Beacon**이 설치되어 있으면 Browser MCP가 자동 등록되며, `browser-mcp__*` 네임스페이스에서 도구를 사용할 수 있습니다. 추가 설정은 필요 없습니다.
+
+      **사용 가능한 MCP 도구 (29개, Chrome DevTools MCP 제공):**
+      | 분류 | 도구 |
+      |------|------|
+      | 페이지 | `navigate_page`, `new_page`, `list_pages`, `select_page`, `close_page`, `resize_page`, `wait_for` |
+      | 입력 | `click`, `hover`, `drag`, `fill`, `fill_form`, `type_text`, `press_key`, `upload_file`, `handle_dialog` |
+      | 검사 | `take_snapshot`, `take_screenshot`, `evaluate_script` |
+      | 콘솔 및 네트워크 | `list_console_messages`, `get_console_message`, `list_network_requests`, `get_network_request` |
+      | 성능 및 감사 | `performance_start_trace`, `performance_stop_trace`, `performance_analyze_insight`, `lighthouse_audit`, `take_heapsnapshot` |
+      | 에뮬레이션 | `emulate` |
+
+      **보안:**
+      - Web UI, 실시간 noVNC 뷰어, `/api` 엔드포인트는 서버의 싱글 사인온 뒤에 있습니다.
+      - `/mcp`는 OAuth 2.1 Bearer 토큰으로 따로 보호되므로, 공개 URL의 어떤 것도 자격 증명 없이는
+        접근할 수 없습니다. 인증이 없는 주소는 네트워크 내부 주소
+        `http://browsermcp-backend:9746/mcp`(옵션 2)뿐이며, `pcs` Docker 네트워크 밖으로는 공개되지 않습니다.
   # Directories Maison creates and chowns to $PUID:$PGID before every `up`.
   # Generated by scripts/gen-folders.py from the trailing-slash bind mounts
   # in `volumes:` above — re-run it instead of editing this block by hand.
@@ -412,5 +675,3 @@ x-compose-app:
     - path: /DATA/AppData/browsermcp/oauth
       user: $PUID
       group: $PGID
-  webui-host: browsermcp-${domain}
-  webui-path: "/"

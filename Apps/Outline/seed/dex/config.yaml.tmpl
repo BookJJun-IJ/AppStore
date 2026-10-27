@@ -1,0 +1,18 @@
+issuer: ${ROUTE_OUTLINE_AUTH_URL:-https://outline-auth-${APP_DOMAIN}}
+storage:
+  type: sqlite3
+  config:
+    file: /data/dex.db
+web:
+  http: 0.0.0.0:5556
+staticClients:
+  - id: outline
+    secret: ${OUTLINE_OIDC_SECRET}
+    name: Outline
+    redirectURIs:
+      - ${APP_URL:-https://outline-${APP_DOMAIN}}/auth/oidc.callback
+enablePasswordDB: true
+staticPasswords:
+  - email: "${APP_EMAIL:-admin@${APP_DOMAIN}}"
+    hash: "${OUTLINE_DEX_PASSWORD_HASH}"
+    username: admin

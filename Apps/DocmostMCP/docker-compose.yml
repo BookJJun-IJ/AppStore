@@ -1,13 +1,25 @@
 name: docmostmcp
+# Bounded container logs (requirement `log-limits`): json-file never rotates on its own.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   # Main MCP server — reachable at docmostmcp-backend:8000 on the pcs network
   docmostmcp-backend:
-    image: ghcr.io/yundera/docmost-mcp:1.2.0
+    image: ghcr.io/yundera/docmost-mcp:1.2.1
     container_name: docmostmcp-backend
     hostname: docmostmcp-backend
     user: "0:0"
     restart: unless-stopped
     cpu_shares: 50
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 256M
     expose:
       - 8000
     environment:
@@ -37,11 +49,16 @@ services:
   # Beaconify sidecar — makes this MCP discoverable by the Beacon aggregator.
   # Proxies the upstream MCP and replies to Beacon's UDP discovery on port 9099.
   docmostmcp-beacon:
-    image: ghcr.io/worph/beaconify@sha256:63ce59fbe15365540cb3d45849a46b68b8132a2c1d605ea8b7b310d010540107
+    image: ghcr.io/worph/beaconify:1.0.2
     container_name: docmostmcp-beacon
     hostname: docmostmcp-beacon
     restart: unless-stopped
     cpu_shares: 20
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 128M
     expose:
       - 9099
     environment:
@@ -61,7 +78,7 @@ services:
     # fronting Dex) that protects whatever path OAUTH_RESOURCE names.
     # 2.0.9+ additionally advertises offline_access and adds prompt=consent, so
     # clients get a refresh token instead of needing re-authorization each hour.
-    image: ghcr.io/yundera/appshield:3.0.2
+    image: ghcr.io/yundera/appshield:3.2.0
     container_name: docmostmcp
     # OIDC identity: the AppShield auth-service builds its OIDC redirect URIs from
     # os.hostname(), and the auth-registrar independently attests this app's name via the
@@ -70,6 +87,11 @@ services:
     hostname: docmostmcp
     restart: unless-stopped
     cpu_shares: 50
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 128M
     expose:
       - 80
     user: "0:0"   # numeric: scratch image has no passwd; /data/oauth is chowned $PUID
@@ -78,13 +100,13 @@ services:
       BACKEND_PORT: "8000"
       LISTEN_PORT: "80"
       OIDC_REGISTRAR_URL: "http://auth-registrar:9092"
-      REDIRECT_HOST_SUFFIXES: "${APP_DOMAIN},${APP_PUBLIC_IP_DASH}.nip.io,${APP_PUBLIC_IP_DASH}.sslip.io"
+      REDIRECT_HOST_SUFFIXES: "${APP_HOST_SUFFIXES:-${APP_DOMAIN},${APP_PUBLIC_IP_DASH}.nip.io,${APP_PUBLIC_IP_DASH}.sslip.io}"
       # Machine/API auth for the MCP endpoint. AppShield runs an OAuth/OIDC
       # authorization server fronting Dex and gates exactly the path named by the
       # resource URL (/mcp) on Bearer tokens; everything else stays behind the
       # SSO gate. Replaces ALLOWED_PATHS, which exempted /mcp from the gate
       # and — with AUTH_HASH inert under Maison — left it uncredentialed.
-      OAUTH_RESOURCE: "https://docmostmcp-${APP_DOMAIN}/mcp"
+      OAUTH_RESOURCE: "${APP_URL:-https://docmostmcp-${APP_DOMAIN}}/mcp"
       OAUTH_SCOPE: "mcp"
       OAUTH_DATA_DIR: "/data/oauth"
     volumes:
@@ -94,15 +116,6 @@ services:
       - docmostmcp-backend
     networks:
       - pcs
-    labels:
-      caddy_0: docmostmcp-${APP_DOMAIN}
-      caddy_0.import: gateway_tls
-      caddy_0.reverse_proxy: "{{upstreams 80}}"
-      caddy_1: docmostmcp-${APP_PUBLIC_IP_DASH}.nip.io
-      caddy_1.import: gateway_tls
-      caddy_1.reverse_proxy: "{{upstreams 80}}"
-      caddy_2: docmostmcp-${APP_PUBLIC_IP_DASH}.sslip.io
-      caddy_2.reverse_proxy: "{{upstreams 80}}"
 
 networks:
   pcs:
@@ -113,10 +126,11 @@ x-casaos:
   architectures:
     - amd64
     - arm64
-  # The served service: docmostmcp-proxy carries the caddy_N labels and is what
-  # webui-host resolves to. docmostmcp-backend is reachable only inside `pcs`.
+  # The served service: docmostmcp-proxy is the routed service, the
+  # one the tile opens. docmostmcp-backend is reachable only inside `pcs`.
   main: docmostmcp-proxy
-  hostname: docmostmcp-${APP_DOMAIN}
+  webui_port: 80
+  hostname: ${APP_HOST:-docmostmcp-${APP_DOMAIN}}
   scheme: https
   port_map: "443"
   index: /
@@ -137,6 +151,7 @@ x-casaos:
       description:
         en_us: HTTP timeout (seconds) for Docmost API calls. Default 30.
         fr_fr: Delai d'expiration HTTP (en secondes) pour les appels a l'API Docmost. Par defaut 30.
+  developer: Yundera
   category: Developer
   tags: ["developer", "ai"]
   description:
@@ -196,14 +211,13 @@ x-casaos:
           "mcpServers": {
             "docmost-mcp": {
               "type": "http",
-              "url": "https://docmostmcp-${APP_DOMAIN}/mcp"
+              "url": "${APP_URL:-https://docmostmcp-${APP_DOMAIN}}/mcp"
             }
           }
         }
         ```
         For clients that need a pre-created client_id/client_secret (n8n, custom
-        scripts), open **https://docmostmcp-${APP_DOMAIN}/AppShield/oauth** and
-        create one there.
+        scripts), create it with a `POST` of its registration (JSON with `client_name` and `redirect_uris`) to **${APP_URL:-https://docmostmcp-${APP_DOMAIN}}/AppShield/oauth/clients**, sent from a browser signed in to this app; **${APP_URL:-https://docmostmcp-${APP_DOMAIN}}/AppShield/oauth** lists the clients that exist and revokes them.
 
         **Option 2: Local Docker connection (no auth required)**
 
@@ -245,6 +259,116 @@ x-casaos:
 
 x-compose-app:
   schema_version: 2
+  version: "1.2.1"
+  # How the app is reached, stated without a domain or a proxy: the box's routing
+  # setting decides. The first route is the web UI; each name is the host the app
+  # reads back as APP_* (the first) or ROUTE_<NAME>_* (the others).
+  routes:
+    - { service: docmostmcp-proxy, name: docmostmcp, upstream-port: 80 }
+  # The store card and the tile. Maison reads x-compose-app only: x-casaos is
+  # kept for CasaOS and for Maison builds that predate this, and must match.
+  title:
+    en_us: Docmost MCP
+  tagline:
+    en_us: MCP server for Docmost — read, write, search, move pages
+    fr_fr: Serveur MCP pour Docmost — lire, ecrire, rechercher, deplacer des pages
+  description:
+    en_us: |
+      **Docmost knowledge base control for AI assistants via MCP**
+
+      Docmost MCP exposes the [Docmost](https://docmost.com) REST API as an MCP (Model Context Protocol) server, letting LLMs and AI assistants list and search spaces, read pages, create and update content, move and duplicate pages, and manage comments — all against your self-hosted Docmost instance.
+
+      Wraps the community [`aleksvin8888/local-docmost-mcp`](https://github.com/aleksvin8888/local-docmost-mcp) Python server with a streamable-HTTP transport shim so any MCP-compatible client can connect (Claude Desktop, Claude Code, Cursor, VS Code, etc.).
+
+      **Think of it like:** A programmable remote control for your Docmost wiki, driven by natural language.
+
+      **Perfect if you:** Have a self-hosted Docmost and want AI assistants to read from, write to, or maintain it without paying for Docmost's Enterprise plan (which is the only tier with built-in MCP support).
+    fr_fr: |
+      **Controle de base de connaissances Docmost pour les assistants IA via MCP**
+
+      Docmost MCP expose l'API REST de [Docmost](https://docmost.com) en tant que serveur MCP (Model Context Protocol), permettant aux LLMs et assistants IA de lister et rechercher des espaces, lire des pages, creer et mettre a jour du contenu, deplacer et dupliquer des pages, et gerer les commentaires — sur votre instance Docmost auto-hebergee.
+
+      Enveloppe le serveur Python communautaire [`aleksvin8888/local-docmost-mcp`](https://github.com/aleksvin8888/local-docmost-mcp) avec un shim de transport streamable-HTTP pour que tout client compatible MCP puisse se connecter (Claude Desktop, Claude Code, Cursor, VS Code, etc.).
+
+      **Parfait si vous:** Avez un Docmost auto-heberge et voulez que des assistants IA lisent, ecrivent ou maintiennent son contenu sans payer le plan Enterprise de Docmost (le seul niveau avec support MCP integre).
+  developer: Yundera
+  category: Developer
+  icon: icon.png
+  thumbnail: thumbnail.png
+  screenshots:
+    - screenshot-1.png
+    - screenshot-2.png
+  architectures:
+    - amd64
+    - arm64
+  tips:
+    en_us: |
+      **Set your Docmost credentials in the config UI after install**
+
+      You set the credentials after install rather than in an install form — the app installs with `DOCMOST_EMAIL` and `DOCMOST_PASSWORD` empty and the MCP server starts, but every Docmost call fails until you set them. Click **Open** on the app card to land on the bundled **config UI** at `/`, where you enter the credentials, run a live **Test connection** against Docmost, and copy the ready-to-paste public MCP URL. What you save is written to `/DATA/AppData/docmostmcp/data/config.json` and survives redeploys.
+
+      **Prerequisites:**
+      1. A running **Docmost** instance reachable from the `pcs` Docker network (typically the companion Docmost app installed from this store)
+      2. A Docmost user account — **strongly recommended** to create a dedicated service account in Docmost rather than reusing admin, since this MCP can read/write/move every page that account can see
+
+      **MCP Integration (for AI/LLMs):**
+
+      **Option 1: Public URL (OAuth)**
+
+      The `/mcp` endpoint is protected by OAuth 2.1. Point your client at the URL
+      below — clients that support OAuth discovery (claude.ai, Claude Desktop)
+      register themselves and open a browser for you to approve with your
+      server account (single sign-on).
+      ```json
+      {
+        "mcpServers": {
+          "docmost-mcp": {
+            "type": "http",
+            "url": "${APP_URL:-https://docmostmcp-${APP_DOMAIN}}/mcp"
+          }
+        }
+      }
+      ```
+      For clients that need a pre-created client_id/client_secret (n8n, custom
+      scripts), create it with a `POST` of its registration (JSON with `client_name` and `redirect_uris`) to **${APP_URL:-https://docmostmcp-${APP_DOMAIN}}/AppShield/oauth/clients**, sent from a browser signed in to this app; **${APP_URL:-https://docmostmcp-${APP_DOMAIN}}/AppShield/oauth** lists the clients that exist and revokes them.
+
+      **Option 2: Local Docker connection (no auth required)**
+
+      For AI assistants running on the same server, connect directly via the Docker network:
+      ```json
+      {
+        "mcpServers": {
+          "docmost-mcp": {
+            "type": "http",
+            "url": "http://docmostmcp-backend:8000/mcp"
+          }
+        }
+      }
+      ```
+      *Note: Requires the AI assistant to be on the `pcs` Docker network.*
+
+      **Option 3: Via Beacon (aggregated)**
+
+      If you have **Beacon** installed, Docmost MCP auto-registers there via the bundled `beaconify` sidecar and its tools show up under the `docmost-mcp__*` namespace — no extra config.
+
+      **Available MCP Tools:**
+      | Tool | Description |
+      |------|-------------|
+      | `list_spaces` | List all workspace spaces |
+      | `search_docs` | Full-text search across pages |
+      | `get_page` | Read page content as Markdown |
+      | `create_space` | Create a new space |
+      | `create_page` | Create a new page from Markdown |
+      | `update_page` | Update title/content (replace / append / prepend) |
+      | `duplicate_page` | Duplicate a page (recursive) |
+      | `move_page` | Move a page within the hierarchy |
+      | `move_page_to_space` | Move a page across spaces |
+      | `create_comment` | Add a comment to a page |
+      | `resolve_comment` | Resolve a comment with a note |
+
+      **Security:**
+      - Docmost credentials are stored only in `/DATA/AppData/docmostmcp/data/config.json` on this server and never logged or returned via the API
+      - Authentication is on by default: the config UI is behind the server's single sign-on, and `/mcp` is behind OAuth 2.1. Nothing is reachable unauthenticated from the public URL
   # Directories Maison creates and chowns to $PUID:$PGID before every `up`.
   # Generated by scripts/gen-folders.py from the trailing-slash bind mounts
   # in `volumes:` above — re-run it instead of editing this block by hand.
@@ -255,5 +379,3 @@ x-compose-app:
     - path: /DATA/AppData/docmostmcp/oauth
       user: $PUID
       group: $PGID
-  webui-host: docmostmcp-${domain}
-  webui-path: "/"

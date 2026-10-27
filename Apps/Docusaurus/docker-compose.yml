@@ -8,27 +8,21 @@ x-logging: &logging
     max-file: "3"
 
 services:
-  # Public documentation site: Nginx serves the static build straight to Caddy.
+  # Public documentation site: Nginx serves the static build directly.
   # No AppShield gate on purpose — readers must not need an account (see rationale.md).
   docusaurus:
-    image: nginx:1.27-alpine
+    image: nginx:1.31.8-alpine
     container_name: docusaurus
     hostname: docusaurus
     restart: unless-stopped
     user: "0:0"
     expose:
       - "80"
-    labels:
-      caddy_0: docusaurus-${APP_DOMAIN}
-      caddy_0.import: gateway_tls
-      caddy_0.reverse_proxy: "{{upstreams 80}}"
-      caddy_1: docusaurus-${APP_PUBLIC_IP_DASH}.nip.io
-      caddy_1.import: gateway_tls
-      caddy_1.reverse_proxy: "{{upstreams 80}}"
-      caddy_2: docusaurus-${APP_PUBLIC_IP_DASH}.sslip.io
-      caddy_2.reverse_proxy: "{{upstreams 80}}"
     volumes:
       - ${DATA_ROOT:-/DATA}/AppData/$AppID/build/:/usr/share/nginx/html/:ro
+    configs:
+      - source: docusaurus-nginx
+        target: /etc/nginx/conf.d/redirect.conf
     cpu_shares: 50
     logging: *logging
     deploy:
@@ -37,6 +31,14 @@ services:
           memory: 64M
     networks:
       - pcs
+
+# nginx's own "add the trailing slash" redirect would otherwise name the internal
+# host it was reached on (docusaurus-<ip>.nip.io) instead of the address the visitor
+# actually used. Included at http level by the image's default nginx.conf.
+configs:
+  docusaurus-nginx:
+    content: |
+      absolute_redirect off;
 
 networks:
   pcs:
@@ -89,6 +91,11 @@ x-casaos:
 x-compose-app:
   schema_version: 2
   version: "3.10.1"
+  # How the app is reached, stated without a domain or a proxy: the box's routing
+  # setting decides. The first route is the web UI; each name is the host the app
+  # reads back as APP_* (the first) or ROUTE_<NAME>_* (the others).
+  routes:
+    - { service: docusaurus, name: docusaurus, upstream-port: 80 }
   # The store card and the tile. Maison reads x-compose-app only: x-casaos is
   # kept for CasaOS and for Maison builds that predate this, and must match.
   id: docusaurus
@@ -129,15 +136,17 @@ x-compose-app:
       same two directories.
   # Generating the site needs Docusaurus's own build tooling, so it runs in a node
   # container. Guarded on the `.initialized` marker the build leaves behind.
+  # Runs as $PUID:$PGID so the generated project stays editable by the user and the
+  # Docusaurus MCP app; npm gets a writable HOME in /tmp since $PUID has none there.
   steps:
     - name: docusaurus-init
       at: setup
       run: always
       script: |
         [ -e "$APP_DIR/src/.initialized" ] && exit 0
-        docker run --rm -i --entrypoint sh --user 0:0 \
+        docker run --rm -i --entrypoint sh --user "$PUID:$PGID" -e HOME=/tmp \
           -v "$APP_DIR/src:/output" -v "$APP_DIR/build:/build-output" \
-          node:20-alpine3.20 -s <<'SH'
+          node:20.19.2-alpine3.20 -s <<'SH'
         set -e
         cd /tmp
         echo "Initializing Docusaurus project..."
@@ -159,5 +168,3 @@ x-compose-app:
     - path: /DATA/AppData/$AppID/build
       user: $PUID
       group: $PGID
-  webui-host: docusaurus-${domain}
-  webui-path: "/"

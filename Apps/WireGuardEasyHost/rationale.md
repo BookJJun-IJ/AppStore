@@ -38,26 +38,45 @@ knowingly rather than inheriting it.
 - **The sysctls cannot be set on the container.** `net.ipv4.ip_forward` and
   `net.ipv4.conf.all.src_valid_mark` are namespaced settings, and a host-mode container
   shares the host's namespace — Docker therefore refuses a `sysctls:` block here, since
-  it would be mutating the host. They are set on the host by `pre-install-cmd`, using the
+  it would be mutating the host. They are set on the host by the `host-ip-forward` step, using the
   supported recipe: `docker run --rm --privileged --network=host alpine:3.20 sysctl -w …`.
-  A hook runs *inside* the Maison container, where `/proc/sys` is read-only, so a bare
-  `sysctl -w` changes nothing and (being `pre_install`, which is fatal) would leave the
+  A step runs *inside* the Maison container, where `/proc/sys` is read-only, so a bare
+  `sysctl -w` changes nothing and (being a setup step, which is fatal) would leave the
   app installed but stopped. The one-shot container is pinned to `alpine:3.20`, lives for
   the two writes and exits; nothing privileged stays running. The step is idempotent and
-  **best-effort** — the hook ends with `exit 0`, because reaching host services at
+  **best-effort** — the step always succeeds, because reaching host services at
   `10.9.0.1` does not need IP forwarding (only peer-to-peer and full-tunnel routing do),
-  so a host that refuses the writes should still get a working app.
-- **A host-mode container cannot be a Caddy upstream**, which is why the web UI is not
-  served directly. `wgeasyhost` binds the UI on host port `51821`, and the bridged
-  `wgeasyhost-proxy` sidecar on the `pcs` network carries the gateway labels and
-  forwards to it via `host.docker.internal`.
+  so a host that refuses the writes should still get a working app. `sysctl -w` is not
+  persisted, and the step is `run: once`: after a host reboot the values are
+  whatever the host boots with. In practice Docker turns `ip_forward` back on itself when
+  its daemon starts; `src_valid_mark` is not restored until the app is reinstalled.
+- **Forwarding needs one rule in Docker's firewall.** wg-easy's own `FORWARD` accepts
+  are written with the image's `iptables`, which is iptables-legacy, but Docker writes
+  its rules with nft and sets the nft `FORWARD` policy to `DROP`. A forwarded packet has
+  to pass both, so on any Docker host (every PCS) peer-to-peer and full-tunnel traffic
+  is silently dropped. The `patch-wg-easy-db` step (after every start) therefore appends rules to wg-easy's own
+  PostUp/PostDown hooks that insert, via `iptables-nft`, into Docker's `DOCKER-USER` chain:
+  `wg0 → wg0`, `wg0 → uplink`, and `uplink → wg0` for established replies only. Because
+  they live in the hooks, `wg-quick` re-applies them on every start (reboots included)
+  and removes them when the interface goes down or the app is uninstalled. Nothing is
+  written to the host's persistent firewall config. The rules are deliberately scoped:
+  a blanket `-i wg0 ACCEPT` would also let a peer route into Docker's container networks
+  and skip the gateway. The same step sets wg-easy's uplink device, which it hard-codes to
+  `eth0`, to the host's actual default-route interface.
+- **A host-mode container cannot be a route's service**, which is why the web UI is not
+  served directly. `wgeasyhost` binds the UI on port `51821` of the docker host-gateway
+  address (`HOST: host.docker.internal`, mapped to `host-gateway` by `extra_hosts`, i.e.
+  `docker0`) — not on every host interface, which in host networking would amount to a
+  published plain-HTTP web port on the public IP. The bridged `wgeasyhost-proxy` sidecar
+  on the `pcs` network is the route's service and forwards to the same name.
 
 ## Security mitigations in place
 
 - **Authentication is on by default.** `INIT_ENABLED: 'true'` with
-  `INIT_USERNAME: admin` and `INIT_PASSWORD: $APP_DEFAULT_PASSWORD` provisions the admin
-  account at first boot, so the app is never published in its unauthenticated first-run
-  wizard state. The credentials appear in `tips.before_install`.
+  `INIT_USERNAME: admin` and `INIT_PASSWORD: ${WGEASYHOST_ADMIN_PASSWORD}` (a per-app
+  secret) provisions the admin account at first boot, so the app is never published in its
+  unauthenticated first-run wizard state. Maison shows the credentials when the app is
+  opened (`x-compose-app.credentials`).
 - **The default tunnel is split, not a catch-all.** `INIT_ALLOWED_IPS: '10.9.0.0/24'`
   seeds new clients with the VPN subnet only — not `0.0.0.0/0`. A connected client
   reaches host services and other peers; its normal internet traffic stays direct and
@@ -72,10 +91,9 @@ knowingly rather than inheriting it.
   VPN, `64m` / `cpu_shares: 80` for the proxy).
 - **The proxy image is pinned** to `nginx:1.29.3-alpine`, and its config ships in `seed/`
   (no CDN fetch at install time) and is bind-mounted read-only.
-- **Host port exposure is disclosed before install.** `tips.before_install` tells the
-  user that UDP `51820` must be open on their firewall and that the management UI also
-  binds host port `51821` over plain HTTP, with the advice to reach it through the
-  HTTPS gateway link and firewall `51821` otherwise.
+- **Only WireGuard faces the internet.** The management UI is not bound on the public
+  interface (see above), so the only host port the app opens there is UDP `51820`, which
+  `tips.before_install` tells the user must be open on their firewall.
 
 ## Alternatives considered and rejected
 

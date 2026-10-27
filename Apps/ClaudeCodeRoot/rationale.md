@@ -39,9 +39,10 @@ identity rather than reuse of the server owner's own account: the operator can
 see it in `/etc/passwd`, audit its `authorized_keys`, and delete it.
 
 The sandboxed sibling app, **`ClaudeCode`**, is the answer for anyone who does
-not want this. It ships the same image with `MCP_ENABLED=true` and none of the
-four mounts above — no Docker socket, no host SSH, no `/DATA` — and is the app
-to install for programmatic automation (e.g. n8n driving Claude over MCP).
+not want this. It ships the same image with none of the four mounts above — no
+Docker socket, no host SSH, no `/DATA`. (It also ships `MCP_ENABLED=false`, for
+the discovery-leak reason in its own `rationale.md`, so neither app currently
+offers programmatic MCP automation.)
 Splitting the two apps *is* the mitigation: the privileged capability is opt-in
 by choosing this app rather than that one.
 
@@ -53,31 +54,39 @@ by choosing this app rather than that one.
   VM, and both name the sandboxed `ClaudeCode` app as the alternative.
 - **Authentication is on by default and never hardcoded.** Every route is behind
   the auth layer on port 9090: `/login` and `/logout` are served by it directly,
-  and everything else goes through Caddy `forward_auth` to `/auth`, redirecting
-  to `/login` on 401. The password comes from `$APP_DEFAULT_PASSWORD`, which is
-  generated per server at install time.
+  and everything else goes through the app's own router (`clauderoot-router`,
+  nginx `auth_request` to `/auth`), redirecting to `/login` on 401 — the same
+  router as the sandboxed `ClaudeCode`, whose rationale describes it. The password is this app's own secret,
+  `CLAUDECODEROOT_AUTH_PASSWORD`, generated at install time (seeded from the
+  former box-wide `$APP_DEFAULT_PASSWORD` on installs that predate it), shown in
+  Maison's Credentials dialog and changeable from its Security tab.
 - **MCP automation is turned off** (`MCP_ENABLED=false`). The programmatic
   endpoint that lets another service drive Claude Code is deliberately not
   available on the privileged app, so the only way to reach this shell is an
-  interactive, authenticated browser session. `MCP_ENABLED=true` belongs to the
-  sandboxed sibling, which has no host access.
+  interactive, authenticated browser session. The sandboxed sibling has it
+  off too.
 - **No `privileged: true` and no `cap_add`.** The escalation is exactly the four
   mounts listed above and nothing more; the container gains no kernel
   capabilities beyond the Docker default set.
-- **No published host ports.** `expose:` only, on the external `pcs` network, so
-  8080 and 9090 are reachable solely through the gateway-terminated Caddy
-  routes.
+- **The gate cannot be walked around.** Only `clauderoot-router` is on the shared
+  `pcs` network; `clauderoot` is on the app-private `clauderoot-net`. ttyd (8080)
+  has no login of its own, and on this app it is a root-capable shell: no other
+  container on the box can reach it or the auth server (9090) directly. (Before
+  the router, `clauderoot` sat on `pcs` and any co-tenant container could open
+  `http://clauderoot:8080/` past the gate.)
+- **No published host ports.** `expose:` only, so the router's port 80 is
+  reachable solely through the gateway-terminated Caddy routes.
 - **Pinned image**, `ghcr.io/worph/claude-code-container:1.0.26`, and a pinned
-  `alpine:3.20` in the pre-install hook — no `:latest` anywhere.
+  `alpine:3.20` in the `host-claude-user` step — no `:latest` anywhere.
 - **Resource limits**: `cpu_shares: 70`, `memory: 2048M`.
-- **The host provisioning hook is idempotent and non-fatal.** Each step is
+- **The host provisioning step is idempotent and non-fatal.** Each command is
   guarded (`id claude`, `[ ! -f /etc/sudoers.d/claude ]`) and the script always
   exits 0, so a host where the break-out is unavailable still installs the app —
   it simply has no host-SSH feature. The `claude` account is created with `*` as
   its password field, i.e. no password: it is reachable by key only, never by
   password login.
 - **Nothing is copied into the SSH mount.** `/home/claude/.ssh/` is mounted so
-  the user can place their *own* key there; the hook only ensures the directory
+  the user can place their *own* key there; the step only ensures the directory
   and an empty `authorized_keys` exist with `0700`/`0600`. The app ships no key
   material.
 
@@ -126,7 +135,17 @@ decision to install it. Practically that means:
   same tool, no host access.
 - To revoke host access after uninstalling: delete the host account and its sudo
   rule (`userdel -r claude`, `rm /etc/sudoers.d/claude`). Uninstalling the app
-  removes the container, not the account the pre-install hook created.
+  removes the container, not the account the `host-claude-user` step created.
+
+## Third-party sign-in (Anthropic)
+
+The app's login gate is this app's own, but Claude Code itself does nothing
+until it is signed in to **Anthropic**, an identity provider the operator does
+not control. On first run its wizard offers a Claude subscription (Pro/Max,
+OAuth at `claude.com`), an Anthropic Console API key, or a cloud provider
+account (Amazon Bedrock, Microsoft Foundry, Google Vertex AI). There is no
+self-hosted model path: the CLI is a client of Anthropic's API. `tips` tells the
+user this before install.
 
 ## Source repository
 

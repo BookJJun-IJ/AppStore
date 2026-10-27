@@ -1,8 +1,15 @@
 name: n8nmcp
+# Bounded container logs (requirement `log-limits`): json-file never rotates on its own.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   # Main MCP server — reachable at n8nmcp-backend:9640 on the pcs network
   n8nmcp-backend:
-    image: ghcr.io/bookjjun-ij/n8nmcp:main
+    image: ghcr.io/worph/n8nmcp:1.0.2
     container_name: n8nmcp-backend
     hostname: n8nmcp-backend
     # supervisord is PID 1 and MUST start as root so it can drop privileges for
@@ -24,6 +31,12 @@ services:
       # Pre-seed the companion n8n app's in-network hostname.
       # The API key is left blank — paste it in the Web UI on first launch.
       - N8N_BASE_URL=http://n8n:80
+      # n8n-mcp's SSRF guard defaults to `strict`, which refuses private IPs — and the
+      # companion n8n is reached at its container address on the shared network, so
+      # every API call fails with "Private IP addresses not allowed". `permissive`
+      # allows private addresses and still blocks cloud metadata endpoints. Read by
+      # the upstream process, which supervisord starts with this environment.
+      - WEBHOOK_SECURITY_MODE=permissive
     # The image inherits HEALTHCHECK CMD-SHELL "curl ... /health" from the upstream
     # n8n-mcp stage, but the wrapper never implements a /health route (only
     # /api/status), so the container permanently reports unhealthy even while
@@ -46,6 +59,7 @@ services:
       - pcs
     # 80 — user-facing API backend + Web UI (CONTRIBUTING "CPU Share Allocation").
     cpu_shares: 80
+    logging: *logging
     deploy:
       resources:
         limits:
@@ -53,7 +67,7 @@ services:
 
   # AppShield provides perimeter authentication: the SSO (OIDC) gate for the
   # Web UI, and the OAuth 2.1 broker for /mcp (machine clients). The backend trusts
-  # the network, so it is never exposed directly — only this proxy gets caddy labels.
+  # the network, so it is never exposed directly — only this proxy is routed.
   n8nmcp-proxy:
     # 2.0.7+ is required for the generic OAUTH_RESOURCE / OAUTH_SCOPE names and a
     # configurable protected path; 2.0.9+ advertises offline_access and sends
@@ -69,6 +83,7 @@ services:
     restart: unless-stopped
     # 80 — reverse proxy / user-facing interactive (CONTRIBUTING "CPU Share Allocation").
     cpu_shares: 80
+    logging: *logging
     deploy:
       resources:
         limits:
@@ -81,13 +96,13 @@ services:
       BACKEND_PORT: "9640"
       LISTEN_PORT: "80"
       OIDC_REGISTRAR_URL: "http://auth-registrar:9092"
-      REDIRECT_HOST_SUFFIXES: "${APP_DOMAIN},${APP_PUBLIC_IP_DASH}.nip.io,${APP_PUBLIC_IP_DASH}.sslip.io"
+      REDIRECT_HOST_SUFFIXES: "${APP_HOST_SUFFIXES:-${APP_DOMAIN},${APP_PUBLIC_IP_DASH}.nip.io,${APP_PUBLIC_IP_DASH}.sslip.io}"
       # Machine/API auth for the MCP endpoint. AppShield runs an OAuth/OIDC
       # authorization server fronting Dex and gates exactly the path named by the
       # resource URL (/mcp) on Bearer tokens; everything else stays behind the
       # SSO gate. Replaces ALLOWED_PATHS, which exempted /mcp from the gate
       # and — with AUTH_HASH inert under Maison — left it uncredentialed.
-      OAUTH_RESOURCE: "https://n8nmcp-${APP_DOMAIN}/mcp"
+      OAUTH_RESOURCE: "${APP_URL:-https://n8nmcp-${APP_DOMAIN}}/mcp"
       OAUTH_SCOPE: "mcp"
       OAUTH_DATA_DIR: "/data/oauth"
     volumes:
@@ -97,15 +112,6 @@ services:
       - n8nmcp-backend
     networks:
       - pcs
-    labels:
-      caddy_0: n8nmcp-${APP_DOMAIN}
-      caddy_0.import: gateway_tls
-      caddy_0.reverse_proxy: "{{upstreams 80}}"
-      caddy_1: n8nmcp-${APP_PUBLIC_IP_DASH}.nip.io
-      caddy_1.import: gateway_tls
-      caddy_1.reverse_proxy: "{{upstreams 80}}"
-      caddy_2: n8nmcp-${APP_PUBLIC_IP_DASH}.sslip.io
-      caddy_2.reverse_proxy: "{{upstreams 80}}"
 
 networks:
   pcs:
@@ -116,12 +122,14 @@ x-casaos:
   architectures:
     - amd64
     - arm64
-  # The AppShield sidecar, not the backend: it is the container the Caddy labels
+  # The AppShield sidecar, not the backend: it is the container the routes
   # point at and the one users actually reach, and it is the service Maison
   # attaches ${APP_NET} to. The tile's health follows main, so pointing it at the
   # backend reported "unhealthy" while the app was serving correctly.
   main: n8nmcp-proxy
+  webui_port: 80
   index: /
+  developer: Worph
   category: Developer
   tags: ["developer", "ai"]
   description:
@@ -198,14 +206,13 @@ x-casaos:
           "mcpServers": {
             "n8n-mcp": {
               "type": "http",
-              "url": "https://n8nmcp-${APP_DOMAIN}/mcp"
+              "url": "${APP_URL:-https://n8nmcp-${APP_DOMAIN}}/mcp"
             }
           }
         }
         ```
         For clients that need a pre-created client_id/client_secret (n8n, custom
-        scripts), open **https://n8nmcp-${APP_DOMAIN}/AppShield/oauth** and
-        create one there.
+        scripts), create it with a `POST` of its registration (JSON with `client_name` and `redirect_uris`) to **${APP_URL:-https://n8nmcp-${APP_DOMAIN}}/AppShield/oauth/clients**, sent from a browser signed in to this app; **${APP_URL:-https://n8nmcp-${APP_DOMAIN}}/AppShield/oauth** lists the clients that exist and revokes them.
 
         **Option 2: Local Docker connection (no auth required)**
 
@@ -251,7 +258,12 @@ x-casaos:
 
 x-compose-app:
   schema_version: 2
-  version: "1.0.1"
+  version: "1.0.2"
+  # How the app is reached, stated without a domain or a proxy: the box's routing
+  # setting decides. The first route is the web UI; each name is the host the app
+  # reads back as APP_* (the first) or ROUTE_<NAME>_* (the others).
+  routes:
+    - { service: n8nmcp-proxy, name: n8nmcp, upstream-port: 80 }
   # The store card and the tile. Maison reads x-compose-app only: x-casaos is
   # kept for CasaOS and for Maison builds that predate this, and must match.
   title:
@@ -288,6 +300,7 @@ x-compose-app:
       - Configurer la connexion n8n via l'interface Web integree — sans editer de fichiers
 
       **Parfait si vous:** Voulez que Claude / Cursor / tout client MCP construise et pilote vos automatisations n8n, ou combiner avec d'autres apps MCP (Beacon, Ntfy, Chronos) pour des workflows pilotes par IA de bout en bout.
+  developer: Worph
   category: Developer
   icon: icon.png
   thumbnail: thumbnail.png
@@ -300,7 +313,6 @@ x-compose-app:
   architectures:
     - amd64
     - arm64
-  main: n8nmcp-proxy
   tips:
     en_us: |
       **Getting Started**
@@ -328,14 +340,13 @@ x-compose-app:
         "mcpServers": {
           "n8n-mcp": {
             "type": "http",
-            "url": "https://n8nmcp-${APP_DOMAIN}/mcp"
+            "url": "${APP_URL:-https://n8nmcp-${APP_DOMAIN}}/mcp"
           }
         }
       }
       ```
       For clients that need a pre-created client_id/client_secret (n8n, custom
-      scripts), open **https://n8nmcp-${APP_DOMAIN}/AppShield/oauth** and
-      create one there.
+      scripts), create it with a `POST` of its registration (JSON with `client_name` and `redirect_uris`) to **${APP_URL:-https://n8nmcp-${APP_DOMAIN}}/AppShield/oauth/clients**, sent from a browser signed in to this app; **${APP_URL:-https://n8nmcp-${APP_DOMAIN}}/AppShield/oauth** lists the clients that exist and revokes them.
 
       **Option 2: Local Docker connection (no auth required)**
 
@@ -388,5 +399,3 @@ x-compose-app:
     - path: /DATA/AppData/n8nmcp/oauth
       user: $PUID
       group: $PGID
-  webui-host: n8nmcp-${domain}
-  webui-path: "/"
