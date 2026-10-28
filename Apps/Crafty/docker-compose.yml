@@ -16,9 +16,7 @@ services:
     logging: *logging
     restart: unless-stopped
     expose:
-      - 8443                             # self-signed HTTPS panel, reached by crafty-router over crafty-net only
-    # Game traffic only. No Dynmap (8123): it is an HTTP web map, and HTTP goes
-    # through a route, never a published port (`no-published-web-port`).
+      - 8443                             # self-signed HTTPS panel, reached only by crafty-router over crafty-net
     ports:
       - "25500-25600:25500-25600"       # Minecraft Java server port pool (Crafty's default range for new servers)
       - "19132:19132/udp"               # Minecraft Bedrock
@@ -30,7 +28,6 @@ services:
       - ${DATA_ROOT:-/DATA}/AppData/$AppID/servers/:/crafty/servers
       - ${DATA_ROOT:-/DATA}/AppData/$AppID/config/:/crafty/app/config
       - ${DATA_ROOT:-/DATA}/AppData/$AppID/import/:/crafty/import
-    # App network only: nothing but the router needs the panel.
     networks:
       - crafty-net
     deploy:
@@ -38,10 +35,14 @@ services:
         limits:
           memory: 2048M
 
-  # The app's own router: the routed service. The panel's websocket (live console
-  # and server status) is refused by Tornado unless its Origin matches the Host it
-  # sees, so the browser's Host must reach the panel unchanged -- the router sets
-  # it, with the websocket upgrade, in front of the self-signed HTTPS backend.
+  # ── The app's own router, in front of the panel ────────────────────
+  # The panel's live status and console are a websocket (/ws), and Crafty
+  # (Tornado's check_origin) refuses the handshake with 403 "Cross origin
+  # websockets not allowed" unless the Host it sees matches the browser's Origin.
+  # A route is only "host -> one port", so the header fix lives here: Host passed
+  # through as the browser sent it, Upgrade/Connection forwarded, the forwarded
+  # scheme kept. It also makes the self-signed HTTPS hop to 8443 itself, so the
+  # route is plain HTTP.
   crafty-router:
     image: nginx:1.31.8-alpine
     container_name: crafty-router
@@ -67,11 +68,11 @@ services:
       retries: 3
 
 networks:
+  crafty-net:
+    name: crafty-net
   pcs:
     name: ${APP_NET:-pcs}
     external: true
-  crafty-net:
-    name: crafty-net
 
 configs:
   crafty-router:
@@ -80,40 +81,59 @@ configs:
       resolver 127.0.0.11 valid=10s ipv6=off;
 
       map $$http_upgrade $$connection_upgrade { default upgrade; "" close; }
-      map $$http_x_forwarded_proto $$fwd_proto { default $$http_x_forwarded_proto; "" $$scheme; }
-      # The client address is the LAST X-Forwarded-For entry: the one the proxy in
-      # front appended, which a client cannot forge. Crafty reads X-Real-IP first
-      # for its login and audit logs.
+      # Crafty logs logins by X-Real-IP: take it from the LAST X-Forwarded-For
+      # entry, the one the platform proxy appended, never the client's first.
       map $$http_x_forwarded_for $$client_ip { "~([^,\s]+)\s*$$" $$1; default $$remote_addr; }
 
       server {
         listen 80;
         absolute_redirect off;
 
-        # Server imports and backup downloads: no size cap, no buffering.
+        # Server jars, world imports and backup downloads go through the panel.
         client_max_body_size 0;
         proxy_request_buffering off;
         proxy_buffering off;
-        # The live console is one long-lived websocket.
         proxy_read_timeout 3600s;
         proxy_send_timeout 3600s;
 
         proxy_http_version 1.1;
         proxy_set_header Host $$http_host;
         proxy_set_header X-Real-IP $$client_ip;
-        proxy_set_header X-Forwarded-For $$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $$fwd_proto;
+        proxy_set_header X-Forwarded-For $$http_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $$http_x_forwarded_proto;
         proxy_set_header X-Forwarded-Host $$http_host;
         proxy_set_header Upgrade $$http_upgrade;
         proxy_set_header Connection $$connection_upgrade;
 
-        # The panel only speaks HTTPS, with a self-signed certificate, which is
-        # left unverified (nginx's default) -- what the route's
-        # `insecure-upstream` used to do.
+        # Self-signed panel certificate, not verified (nginx's default); crafty-net only.
         set $$panel crafty:8443;
 
         location = /_router/health { access_log off; return 204; }
         location / { proxy_pass https://$$panel; }
+
+        # Crafty 4.10.7's own pages link files its image does not ship (login.html:
+        # login.css, the `assest` typo, settings.js, todolist.js; base.html:
+        # fontawesome6). Each is a 404 and a console error on every load. Answer
+        # them empty, which is what the browser made of the 404 anyway.
+        location = /static/assets/css/login.css                    { default_type text/css; return 200 ""; }
+        location = /static/assest/css/internal/root.css            { default_type text/css; return 200 ""; }
+        location = /static/assets/vendors/fontawesome6/css/all.css { default_type text/css; return 200 ""; }
+        location = /static/assets/js/shared/settings.js            { default_type application/javascript; return 200 ""; }
+        location = /static/assets/js/shared/todolist.js            { default_type application/javascript; return 200 ""; }
+
+        # The login page probes this to decide whether to show the passkey button;
+        # with passkeys off (Crafty's default) the panel answers 400 PASSKEY_DISABLED,
+        # a console error on every login. Same answer as a 200: the page only reads
+        # `status`. With passkeys on, the panel's 200 passes through untouched.
+        location = /api/v2/auth/passkey/login/options/ {
+          proxy_pass https://$$panel;
+          proxy_intercept_errors on;
+          error_page 400 = @passkey_off;
+        }
+        location @passkey_off {
+          default_type application/json;
+          return 200 '{"status":"error","error":"PASSKEY_DISABLED"}';
+        }
       }
 
 x-casaos:

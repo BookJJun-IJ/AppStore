@@ -33,7 +33,7 @@ services:
       LISTEN_PORT: "80"
       # Presence of OIDC_REGISTRAR_URL enables OIDC (Authelia SSO) mode.
       OIDC_REGISTRAR_URL: "http://auth-registrar:9092"
-      REDIRECT_HOST_SUFFIXES: "${APP_HOST_SUFFIXES:-${APP_DOMAIN},${APP_PUBLIC_IP_DASH}.nip.io,${APP_PUBLIC_IP_DASH}.sslip.io}"
+      REDIRECT_HOST_SUFFIXES: "${APP_HOST_SUFFIXES:-${APP_DOMAIN}}"
       # Adding a file is a POST of that whole file to /api/v0/add. Any cap here is a
       # cap on what the user can put in their own node, so there is none.
       CLIENT_MAX_BODY_SIZE: "0"
@@ -97,7 +97,7 @@ services:
       # of being OOM-killed at the edge.
       GOMEMLIMIT: 768MiB
       # Consumed by seed/init.d/01-configure-node.sh on every start.
-      IPFS_ALLOWED_ORIGINS: "${APP_URLS:-https://kubo-${APP_DOMAIN},https://kubo-${APP_PUBLIC_IP_DASH}.nip.io,https://kubo-${APP_PUBLIC_IP_DASH}.sslip.io}"
+      IPFS_ALLOWED_ORIGINS: "${APP_URLS:-https://kubo-${APP_DOMAIN},https://kubo-${APP_PUBLIC_IP_DASH}.sslip.io}"
       # Set to "false" to let the public gateway hostname fetch any CID from the
       # network on a visitor's behalf, turning this node into an open gateway for
       # anyone who finds the address. Left true, it serves only what this node holds.

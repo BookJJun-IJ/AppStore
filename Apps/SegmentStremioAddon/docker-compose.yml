@@ -30,7 +30,7 @@ services:
       # No ALLOWED_PATHS: this sidecar never sees /api/, because the router sends it
       # straight to the addon.
       OIDC_REGISTRAR_URL: "http://auth-registrar:9092"
-      REDIRECT_HOST_SUFFIXES: "${APP_HOST_SUFFIXES:-${APP_DOMAIN},${APP_PUBLIC_IP_DASH}.nip.io,${APP_PUBLIC_IP_DASH}.sslip.io}"
+      REDIRECT_HOST_SUFFIXES: "${APP_HOST_SUFFIXES:-${APP_DOMAIN}}"
     depends_on:
       - ssa-backend
     networks:

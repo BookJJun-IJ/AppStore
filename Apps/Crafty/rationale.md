@@ -13,24 +13,15 @@ This app deviates from the default AppStore requirements in two ways:
 
 **No sidecar.** The Crafty panel speaks HTTPS on `8443` with a self-signed certificate and depends on a persistent WebSocket (WSS) connection for the live console and server status. Fronting it with the `nginx-hash-lock` sidecar would add a second TLS hop in front of the self-signed upstream plus a websocket upgrade path the sidecar is not configured to pass through, which breaks the live console. Crafty enforces authentication on every panel route (no anonymous access), which the guide accepts as a valid built-in login gate. The admin password is the per-app `CRAFTY_ADMIN_PASSWORD` secret (plus a trailing `!`), written at install time, so authentication is enabled by default with no manual step.
 
-## Routing: the app's own router
-
-The panel's websocket (`/ws`: live console and server status) is a Tornado handler that
-refuses any handshake whose `Origin` does not match the `Host` it receives ("Cross origin
-websockets not allowed"). Routed straight to the self-signed HTTPS panel, the browser's
-`Host` did not reach it, so every browser got a 403 while the rest of the panel worked.
-`crafty-router` (nginx, config inline in `configs: crafty-router`) is now the routed
-service: it passes `Host` and `X-Forwarded-*` through, upgrades the websocket and speaks
-HTTPS to `crafty:8443` itself. The platform only routes `crafty-<domain>` to its port 80,
-which is also `x-casaos.webui_port`.
+**Router.** The panel is reached through `crafty-router`, an nginx service that is the route's service (port `80`, so `x-casaos.webui_port: 80`). It passes `Host` through as the browser sent it and forwards the websocket `Upgrade`/`Connection` headers, which Crafty needs: its websocket handler rejects any handshake whose `Origin` does not match the `Host` it sees (403 "Cross origin websockets not allowed"), and that breaks the live console and server status. The router makes the self-signed HTTPS hop to `8443` on the app's own network (`crafty-net`); the Crafty container itself is not on `pcs`.
 
 ## Security mitigations in place
 
-- The panel backend is reachable only through `crafty-router`: `crafty` is on the app-private `crafty-net` and only the router is on the shared `pcs` network. `expose: 8443` is not a host port binding, so the panel is never published directly to the host.
+- The panel backend is reachable only through `crafty-router` on the app's own network. `expose: 8443` is not a host port binding, so the panel is never published directly to the host.
 - Authentication is enabled by default. The admin account is created at install with the per-app `CRAFTY_ADMIN_PASSWORD` secret (plus a trailing `!`), and Maison shows it under the app's Credentials; the user should change it after first login.
 - No credentials are hardcoded in the compose file. The password comes from the `CRAFTY_ADMIN_PASSWORD` secret, generated once per install (seeded from the former shared password on boxes that already had the app).
 - Resource limits cap the container at 2048M of memory, and `cpu_shares: 50` prevents it from starving other apps under load.
-- The published game ports (`25500-25600/tcp`, `19132/udp`) are required for Minecraft clients to reach the servers from the internet. These are game-server endpoints, not panel routes; the management panel itself stays behind authentication. Dynmap's web map (`8123`) is no longer published: it is HTTP, which goes through a route, not a host port.
+- The published game ports (`25500-25600/tcp`, `19132/udp`) are required for Minecraft clients to reach the servers from the internet. They carry the Minecraft protocol only; no HTTP port is published, and the management panel stays behind authentication.
 
 ## Alternatives considered and rejected
 
