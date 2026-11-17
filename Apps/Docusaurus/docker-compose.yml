@@ -41,7 +41,9 @@ services:
     image: node:20.19.2-alpine3.20
     container_name: docusaurus-build
     restart: "no"
-    user: $PUID:$PGID
+    # root: installs made by the old root-run init left node_modules root-owned,
+    # and `npm ci` must be able to replace them.
+    user: "0:0"
     working_dir: /output
     environment:
       HOME: /tmp
