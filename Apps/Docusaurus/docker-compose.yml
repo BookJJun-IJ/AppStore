@@ -32,6 +32,35 @@ services:
     networks:
       - pcs
 
+  # Rebuilds the site on every start, so stopping and starting the app publishes
+  # edited Markdown without a terminal. Skips until the setup step has generated
+  # the project. Low CPU priority; the 2G cap covers a multi-locale build.
+  docusaurus-build:
+    image: node:20.19.2-alpine3.20
+    container_name: docusaurus-build
+    restart: "no"
+    user: $PUID:$PGID
+    working_dir: /output
+    environment:
+      HOME: /tmp
+      NODE_OPTIONS: --max-old-space-size=1536
+    volumes:
+      - ${DATA_ROOT:-/DATA}/AppData/$AppID/src/:/output
+      - ${DATA_ROOT:-/DATA}/AppData/$AppID/build/:/build-output
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        [ -e .initialized ] || { echo "Project not generated yet, skipping."; exit 0; }
+        echo "Building Docusaurus site..."
+        npm run build && cp -r build/* /build-output/ && echo "Build complete."
+    network_mode: none
+    cpu_shares: 50
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+
 # nginx's own "add the trailing slash" redirect would otherwise name the internal
 # host it was reached on (docusaurus-<ip>.nip.io) instead of the address the visitor
 # actually used. Included at http level by the image's default nginx.conf.
@@ -83,10 +112,11 @@ x-casaos:
         /DATA/AppData/docusaurus/build/.
 
         Editing the Markdown is not enough on its own — the site has to be
-        rebuilt before changes appear, and restarting this app does not rebuild
-        it: the build runs once, at first install. Install the **Docusaurus MCP**
-        app from this store to edit pages and trigger a rebuild; it works on the
-        same two directories.
+        rebuilt before changes appear. To rebuild, stop the app and start it
+        again: the site is rebuilt automatically on every start (it takes a
+        few minutes; the old version stays online until the build finishes).
+        The **Docusaurus MCP** app from this store lets an AI assistant edit
+        the pages; it works on the same two directories.
 
 x-compose-app:
   schema_version: 2
@@ -130,10 +160,11 @@ x-compose-app:
       /DATA/AppData/docusaurus/build/.
 
       Editing the Markdown is not enough on its own — the site has to be
-      rebuilt before changes appear, and restarting this app does not rebuild
-      it: the build runs once, at first install. Install the **Docusaurus MCP**
-      app from this store to edit pages and trigger a rebuild; it works on the
-      same two directories.
+      rebuilt before changes appear. To rebuild, stop the app and start it
+      again: the site is rebuilt automatically on every start (it takes a
+      few minutes; the old version stays online until the build finishes).
+      The **Docusaurus MCP** app from this store lets an AI assistant edit
+      the pages; it works on the same two directories.
   # Generating the site needs Docusaurus's own build tooling, so it runs in a node
   # container. Guarded on the `.initialized` marker the build leaves behind.
   # Runs as $PUID:$PGID so the generated project stays editable by the user and the
