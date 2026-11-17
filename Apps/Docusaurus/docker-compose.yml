@@ -35,6 +35,8 @@ services:
   # Rebuilds the site on every start, so stopping and starting the app publishes
   # edited Markdown without a terminal. Skips until the setup step has generated
   # the project. Low CPU priority; the 2G cap covers a multi-locale build.
+  # Maison backups drop every `cache/` dir, which breaks node_modules after a
+  # restore (webpack/lib/cache), so a failed build reinstalls with `npm ci` once.
   docusaurus-build:
     image: node:20.19.2-alpine3.20
     container_name: docusaurus-build
@@ -52,8 +54,8 @@ services:
       - |
         [ -e .initialized ] || { echo "Project not generated yet, skipping."; exit 0; }
         echo "Building Docusaurus site..."
-        npm run build && cp -r build/* /build-output/ && echo "Build complete."
-    network_mode: none
+        npm run build || { echo "Build failed, reinstalling dependencies..."; npm ci && npm run build; } || exit 1
+        cp -r build/* /build-output/ && echo "Build complete."
     cpu_shares: 50
     logging: *logging
     deploy:
