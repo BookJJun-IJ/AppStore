@@ -9,7 +9,7 @@ x-logging: &logging
 
 services:
   guide:
-    image: ghcr.io/yundera/guideapp:1.0.3
+    image: ghcr.io/bookjjun-ij/guideapp:1.0.4-rc.1  # Start Here 테스트용 fork 이미지, upstream 1.0.4 나오면 되돌릴 것
     container_name: guide
     user: 0:0  # nginx needs root to bind port 80; no volumes (see rationale.md)
     cpu_shares: 80
