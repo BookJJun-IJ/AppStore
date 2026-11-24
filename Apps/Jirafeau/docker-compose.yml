@@ -101,6 +101,10 @@ services:
     volumes:
       # Uploaded files, links and unfinished uploads (files/, links/, async/).
       - ${DATA_ROOT:-/DATA}/AppData/$AppID/data/:/data
+    configs:
+      # The image's own lighttpd.conf with keep-alive off (see the config below).
+      - source: jirafeau-lighttpd
+        target: /etc/lighttpd/lighttpd.conf
     expose:
       - 80                  # no route, no ports, not on pcs: reachable only via the router and the gate
     cpu_shares: 50
@@ -120,6 +124,50 @@ networks:
     driver: bridge
 
 configs:
+  # Upstream 4.8.0 docker/lighttpd.conf, unchanged except the last setting.
+  # lighttpd closes an idle keep-alive connection after 5 s while the AppShield gate
+  # keeps it in its pool longer, so a POST (admin login, upload chunk) landing on a
+  # just-closed connection came back 502. With keep-alive off every request from
+  # the gate gets a fresh connection. `$$` is compose's escape for `$`.
+  jirafeau-lighttpd:
+    content: |
+      var.basedir  = "/www"
+      var.logdir   = "/var/log/lighttpd"
+      var.statedir = "/var/lib/lighttpd"
+
+      server.port = 80
+      server.modules = (
+          "mod_access",
+          "mod_expire",
+          "mod_accesslog"
+      )
+
+      include "mod_fastcgi_fpm.conf"
+
+      server.username      = "lighttpd"
+      server.groupname     = "www-data"
+
+      server.pid-file      = "/run/lighttpd.pid"
+      server.errorlog      = var.logdir  + "/error.log"
+      server.indexfiles    = ("index.php", "index.html", "index.htm")
+      server.follow-symlink = "enable"
+      server.document-root = var.basedir
+      server.max-request-size = 0
+
+      dir-listing.show-header = "disable"
+      dir-listing.hide-header-file = "enable"
+      dir-listing.activate = "disable"
+
+      static-file.exclude-extensions = (".php")
+
+      accesslog.filename   = var.logdir + "/access.log"
+      url.access-deny = ("~", ".inc")
+      $$HTTP["url"] =~ "^/var-*" {
+           url.access-deny = ("")
+      }
+
+      server.max-keep-alive-requests = 0
+
   jirafeau-router:
     # `$$` is compose's escape for nginx's own `$`.
     content: |
