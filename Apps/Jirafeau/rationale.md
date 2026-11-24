@@ -34,9 +34,13 @@
   icons). These are what `f.php` and `lib/template/header.php` / `footer.php` load in
   4.8.0. Everything else goes to the gate: `/`, `index.php`, `script.php` (all upload
   calls), `admin.php`, `install.php`.
-- The public locations pass a fixed path (or nginx's normalised `$uri` for `/media/`),
-  never the client's raw URI, so `/index.php/..%2Ff.php` and similar cannot make
-  lighttpd run another script through PATH_INFO.
+- The three exact locations pass a fixed path, never the client's URI, so
+  `/index.php/..%2Ff.php` and similar cannot make lighttpd run another script through
+  PATH_INFO.
+- `/media/` refuses (400) any request whose raw URI contains `%` or `..` (theme files
+  have plain names), and forwards the raw URI unchanged. It must not forward nginx's
+  decoded `$uri`: lighttpd decodes again, so a double-encoded `/media/%252e%252e/script.php`
+  would reach the upload script without the gate.
 - Deleting a file through `f.php` needs the delete code, which only the uploader is shown.
 - `jirafeau-backend` is on the app-internal network only: no route, no published port,
   not on `pcs`. The router and the gate are the only ways in.

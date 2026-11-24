@@ -155,12 +155,19 @@ configs:
 
         # Public: exactly what a recipient's download page loads (f.php, its
         # script, its stylesheet and icons, the terms of service it links to).
-        # Each passes a fixed or normalised path, never the client's raw URI, so
-        # a trick like /index.php/..%2Ff.php cannot reach another script.
+        # The exact locations pass a fixed path, so a trick like
+        # /index.php/..%2Ff.php cannot reach another script.
         location = /f.php                { proxy_pass http://$$jirafeau/f.php$$is_args$$args; }
         location = /lib/functions.js.php { proxy_pass http://$$jirafeau/lib/functions.js.php; }
         location = /tos.php              { proxy_pass http://$$jirafeau/tos.php; }
-        location /media/                 { proxy_pass http://$$jirafeau$$uri; }
+        # Theme files have plain names: refuse any encoding or dot segment, and
+        # forward the raw URI (proxy_pass with no URI part). Never splice nginx's
+        # decoded $$uri here: lighttpd decodes again, so /media/%252e%252e/script.php
+        # would run the upload script without the gate.
+        location /media/ {
+          if ($$request_uri ~ "%|\.\.") { return 400; }
+          proxy_pass http://$$jirafeau;
+        }
 
         # The gate's own endpoints (login, SSO callback, logout), and its pre-4.0 ones.
         location /AppShield/ { proxy_pass http://$$gate; }
