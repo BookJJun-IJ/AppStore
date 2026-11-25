@@ -46,8 +46,10 @@ services:
       - REDIS_HOST_PASSWORD=${NEXTCLOUD_REDIS_PASSWORD}
       # Install-time only; the trusted-domains step keeps the list current afterwards.
       - NEXTCLOUD_TRUSTED_DOMAINS=localhost $APP_DOMAIN ${APP_HOST:-nextcloud-${APP_DOMAIN}}
+      # No OVERWRITEHOST: it would pin every link and redirect to one host, sending
+      # visitors of the app's other addresses (dot name, sslip.io) back to it. The
+      # proxy passes the Host through and trusted-domains vouches for each address.
       - OVERWRITEPROTOCOL=https
-      - OVERWRITEHOST=${APP_HOST:-nextcloud-${APP_DOMAIN}}
       - TRUSTED_PROXIES=172.16.0.0/12 10.0.0.0/8 192.168.0.0/16
       - NC_maintenance_window_start=4
     volumes:
@@ -108,7 +110,7 @@ services:
       start_period: 60s
 
   redis:
-    image: redis:8.10.2-alpine3.23
+    image: redis:8.10.3-alpine3.23
     container_name: nextcloud_redis
     cpu_shares: 70
     deploy:
@@ -759,6 +761,17 @@ x-compose-app:
       user: $PUID
       group: $PGID
   steps:
+    # The db healthcheck logs in through the credentials file the MariaDB image wrote at
+    # init. MariaDB ignores a world-writable option file, so a db folder that was ever
+    # chmod -R 777'd (older installs) leaves the healthcheck unable to log in: db never
+    # turns healthy and nextcloud, which waits on it, never starts.
+    - name: healthcheck-cnf-perms
+      at: setup
+      run: always
+      script: |
+        f="$APP_DIR/db/.my-healthcheck.cnf"
+        [ -f "$f" ] && chmod 600 "$f"
+        exit 0
     # IMPORTANT: Keep these commands idempotent - safe to run multiple times.
     # Variables meant for the nextcloud container ($REDIS_HOST_PASSWORD) stay inside
     # the single-quoted `compose exec … bash -c` block and are expanded there, not here.
@@ -804,10 +817,13 @@ x-compose-app:
       at: started
       run: always
       script: |
-        compose exec nextcloud php occ status 2>/dev/null | grep -q 'installed: true' || {
-          echo "Nextcloud is not installed yet; Talk backend not configured" >&2
-          exit 1
-        }
+        # Read the status into a variable first: piping occ into `grep -q` lets grep
+        # exit early, occ dies of SIGPIPE, and under pipefail the check fails at random.
+        status=$(compose exec nextcloud php occ status 2>/dev/null || true)
+        case "$status" in
+          *"installed: true"*) ;;
+          *) echo "Nextcloud is not installed yet; Talk backend not configured" >&2; exit 1 ;;
+        esac
         compose exec \
           -e SIG_URL="${ROUTE_NEXTCLOUD_SIGNALING_URL:-https://nextcloud-signaling-$APP_DOMAIN}" \
           -e SIG_SECRET="$TALK_SIGNALING_SECRET" \
@@ -831,6 +847,8 @@ x-compose-app:
       run: always
       script: |
         compose exec nextcloud php occ status 2>/dev/null | grep -q 'installed: true' || exit 0
+        # Installs from before OVERWRITEHOST was dropped keep it in config.php.
+        compose exec nextcloud php occ config:system:delete overwritehost >/dev/null || true
         i=2
         for host in $(printf '%s' "${APP_HOSTS:-nextcloud-$APP_DOMAIN,nextcloud-$APP_PUBLIC_IP_DASH.sslip.io}" | tr ',' ' '); do
           compose exec nextcloud php occ config:system:set trusted_domains "$i" --value "$host" >/dev/null
