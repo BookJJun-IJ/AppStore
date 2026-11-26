@@ -1,0 +1,1157 @@
+name: bigbluebutton
+
+# Bounded container logs (requirement `log-limits`): json-file never rotates on its own.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+# BigBlueButton 4.0 on LiveKit, meetings only: audio, video, screen sharing, chat,
+# shared notes, whiteboard and presentations (PDF and images). Left out on purpose:
+# recordings, office-document conversion (Collabora), SIP dial-in, webhooks, the
+# Prometheus exporter and bbb-docker's own HTTPS proxy (the platform terminates TLS).
+#
+# Images are the community bbb-docker builds (github.com/bigbluebutton/docker, release
+# v4.0.3). Their configs name sibling services by short name (redis, postgres, bbb-web,
+# ...) and, in a few places, by bbb-docker's fixed IPs (10.7.7.x) or host networking.
+# Here the short names are network aliases on the app network, and every file that held
+# a fixed IP or host.docker.internal is replaced by a `configs:` entry at the bottom.
+# No service uses host networking or extra capabilities.
+
+services:
+  # The app's own router: the only routed service. Everything goes to BigBlueButton's
+  # nginx, which dispatches by path itself (HTML5 client, API, GraphQL, LiveKit
+  # signalling, shared notes, Greenlight). This one only adapts to the platform proxy:
+  # forwarded scheme, websockets, no body limit, no buffering.
+  bigbluebutton-router:
+    image: nginx:1.31.10-alpine
+    container_name: bigbluebutton-router
+    restart: unless-stopped
+    cpu_shares: 80
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+    expose:
+      - 80
+    configs:
+      - source: bigbluebutton-router
+        target: /etc/nginx/conf.d/default.conf
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/_router/health >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      - bigbluebutton-nginx
+    networks:
+      - pcs
+      - bigbluebutton
+
+  # BigBlueButton's nginx: serves the HTML5 client and dispatches to bbb-web, the
+  # GraphQL middleware, LiveKit, the notes server and Greenlight. App network only.
+  bigbluebutton-nginx:
+    image: alangecker/bbb-docker-nginx:v4.0.3-v5.4.8-1.31
+    container_name: bigbluebutton-nginx
+    restart: unless-stopped
+    cpu_shares: 80
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    expose:
+      - 48087
+    tmpfs:
+      - /tmp
+    volumes:
+      - ${DATA_ROOT:-/DATA}/AppData/$AppID/bigbluebutton/:/var/bigbluebutton/:ro
+      # The slide every meeting opens with (seed/presentation/default.pdf, BigBlueButton's own).
+      - ${DATA_ROOT:-/DATA}/AppData/$AppID/presentation/default.pdf:/www/default.pdf:ro
+    configs:
+      - source: bbb-nginx-site
+        target: /etc/nginx/conf.d/default.conf
+      - source: bbb-nginx-livekit
+        target: /etc/nginx/bbb/livekit.nginx
+      - source: bbb-nginx-webrtc-sfu
+        target: /etc/nginx/bbb/webrtc-sfu.nginx
+      - source: bbb-nginx-disabled
+        target: /etc/nginx/bbb/demo.nginx
+      - source: bbb-nginx-disabled
+        target: /etc/nginx/bbb/webhooks.nginx
+      - source: bbb-nginx-disabled
+        target: /etc/nginx/bbb/bbb-exporter.nginx
+    # nginx resolves its upstream names when it starts.
+    depends_on:
+      - bigbluebutton-web
+      - bigbluebutton-greenlight
+      - bigbluebutton-graphql-server
+      - bigbluebutton-graphql-middleware
+      - bigbluebutton-notes
+      - bigbluebutton-livekit
+      - bigbluebutton-webrtc-sfu
+    networks:
+      bigbluebutton:
+        # bbb-graphql-middleware reaches Hasura through nginx:8185 (its baked config).
+        aliases: [nginx]
+
+  # bbb-web: the BigBlueButton API (what Greenlight calls), presentation upload and
+  # conversion, session checks for the client.
+  bigbluebutton-web:
+    image: alangecker/bbb-docker-web:v4.0.3
+    container_name: bigbluebutton-web
+    restart: unless-stopped
+    cpu_shares: 70
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    environment:
+      DOMAIN: ${APP_HOST:-bigbluebutton-${APP_DOMAIN}}
+      SHARED_SECRET: ${BBB_SHARED_SECRET}
+      PAGE_TOKEN_SECRET: ${BBB_PAGE_TOKEN_SECRET}
+      TURN_SECRET: ${TURN_SECRET}
+      # Where browsers find STUN/TURN (coturn below). The public IP, not the host name:
+      # the name may resolve to a gateway that does not carry TURN.
+      TURN_HOST: ${APP_PUBLIC_IPV4:-${APP_HOST:-bigbluebutton-${APP_DOMAIN}}}
+      ENABLE_RECORDING: "false"
+      ENABLE_HTTPS_PROXY: "false"
+      IGNORE_TLS_CERT_ERRORS: "false"
+      ENABLE_LEARNING_DASHBOARD: "true"
+      WELCOME_MESSAGE: "Welcome to <b>%%CONFNAME%%</b>!<br><br>To join the audio, click the microphone button. Use a headset to avoid causing background noise for others."
+      WELCOME_FOOTER: "This server is running <a href='https://docs.bigbluebutton.org/' target='_blank'><u>BigBlueButton</u></a>."
+    volumes:
+      - ${DATA_ROOT:-/DATA}/AppData/$AppID/bigbluebutton/:/var/bigbluebutton/
+    configs:
+      - source: bbb-web-properties
+        target: /etc/bigbluebutton/bbb-web.custom.properties
+      - source: bbb-web-turn
+        target: /etc/bigbluebutton/turn-stun-servers.xml.tmpl
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-proxy -q --spider http://127.0.0.1:8090/bigbluebutton/api || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 2m
+    depends_on:
+      bigbluebutton-redis:
+        condition: service_healthy
+    networks:
+      bigbluebutton:
+        aliases: [bbb-web]
+
+  # akka-apps: the meeting state machine.
+  bigbluebutton-akka:
+    image: alangecker/bbb-docker-apps-akka:v4.0.3
+    container_name: bigbluebutton-akka
+    restart: unless-stopped
+    cpu_shares: 70
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    environment:
+      DOMAIN: ${APP_HOST:-bigbluebutton-${APP_DOMAIN}}
+      SHARED_SECRET: ${BBB_SHARED_SECRET}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    configs:
+      - source: bbb-apps-akka
+        target: /etc/bigbluebutton/bbb-apps-akka.conf.tmpl
+      - source: bbb-html5
+        target: /etc/bigbluebutton/bbb-html5.yml
+    depends_on:
+      bigbluebutton-redis:
+        condition: service_healthy
+      bigbluebutton-postgres:
+        condition: service_healthy
+    networks:
+      bigbluebutton:
+        aliases: [apps-akka]
+
+  # Hasura: the client's GraphQL API. Its start script recreates the bbb_graphql
+  # database on every start (meeting state only, nothing durable).
+  bigbluebutton-graphql-server:
+    image: alangecker/bbb-docker-graphql-server:v4.0.3
+    container_name: bigbluebutton-graphql-server
+    restart: unless-stopped
+    cpu_shares: 70
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      HASURA_GRAPHQL_ADMIN_SECRET: ${HASURA_ADMIN_SECRET}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8085/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 1m
+    depends_on:
+      bigbluebutton-postgres:
+        condition: service_healthy
+      bigbluebutton-web:
+        condition: service_started
+      bigbluebutton-akka:
+        condition: service_started
+      bigbluebutton-graphql-actions:
+        condition: service_started
+    networks:
+      bigbluebutton:
+        aliases: [bbb-graphql-server]
+
+  bigbluebutton-graphql-actions:
+    image: alangecker/bbb-docker-graphql-actions:v4.0.3
+    container_name: bigbluebutton-graphql-actions
+    restart: unless-stopped
+    cpu_shares: 50
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    environment:
+      BBB_REDIS_HOST: redis
+    depends_on:
+      bigbluebutton-redis:
+        condition: service_healthy
+      bigbluebutton-akka:
+        condition: service_started
+    networks:
+      bigbluebutton:
+        aliases: [bbb-graphql-actions]
+
+  bigbluebutton-graphql-middleware:
+    image: alangecker/bbb-docker-graphql-middleware:v4.0.3
+    container_name: bigbluebutton-graphql-middleware
+    restart: unless-stopped
+    cpu_shares: 70
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    depends_on:
+      bigbluebutton-redis:
+        condition: service_healthy
+      bigbluebutton-graphql-server:
+        condition: service_started
+      bigbluebutton-graphql-actions:
+        condition: service_started
+      bigbluebutton-web:
+        condition: service_started
+    networks:
+      bigbluebutton:
+        aliases: [bbb-graphql-middleware]
+
+  # Shared notes (BlockNote/Hocuspocus). Notes live in postgres (blocknote_app).
+  bigbluebutton-notes:
+    image: alangecker/bbb-shared-notes-server:v4.0.3
+    container_name: bigbluebutton-notes
+    restart: unless-stopped
+    cpu_shares: 50
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 384M
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    depends_on:
+      bigbluebutton-redis:
+        condition: service_healthy
+      bigbluebutton-postgres:
+        condition: service_healthy
+      bigbluebutton-web:
+        condition: service_started
+    networks:
+      bigbluebutton:
+        aliases: [bbb-shared-notes-server]
+
+  # Exports a presentation with its whiteboard annotations as PDF.
+  bigbluebutton-export-annotations:
+    image: alangecker/bbb-docker-bbb-export-annotations:v4.0.3
+    container_name: bigbluebutton-export-annotations
+    restart: unless-stopped
+    cpu_shares: 30
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 384M
+    tmpfs:
+      - /tmp
+    volumes:
+      - ${DATA_ROOT:-/DATA}/AppData/$AppID/bigbluebutton/:/var/bigbluebutton/
+    depends_on:
+      bigbluebutton-redis:
+        condition: service_healthy
+    networks:
+      - bigbluebutton
+
+  # The LiveKit adapter: issues LiveKit tokens and follows LiveKit's webhooks.
+  # Configured by environment (bbb-webrtc-sfu's custom-environment-variables), which
+  # takes precedence over the image's config file and its fixed 10.7.7.x addresses.
+  bigbluebutton-webrtc-sfu:
+    image: alangecker/bbb-docker-webrtc-sfu:v2.25.0-beta.3
+    container_name: bigbluebutton-webrtc-sfu
+    restart: unless-stopped
+    cpu_shares: 50
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    environment:
+      REDIS_HOST: redis
+      LIVEKIT_HOST: http://livekit:7880
+      LIVEKIT_KEY: bbb
+      LIVEKIT_SECRET: ${LIVEKIT_SECRET}
+      LIVEKIT_BBB_DOMAIN: ${APP_HOST:-bigbluebutton-${APP_DOMAIN}}
+      LIVEKIT_SIP_ENABLED: "false"
+      # No FreeSWITCH, mediasoup or Kurento: LiveKit carries all media.
+      MEDIA_SERVER_ADAPTERS: "[]"
+    tmpfs:
+      - /var/log/bbb-webrtc-sfu
+    depends_on:
+      bigbluebutton-redis:
+        condition: service_healthy
+    networks:
+      bigbluebutton:
+        aliases: [webrtc-sfu]
+
+  # LiveKit: the media server for audio, video and screen sharing. One UDP port for all
+  # media (rtc.udp_port), published below; browsers on networks that block it fall back
+  # to TURN (coturn). Signalling goes over HTTPS through the router (/livekit/).
+  bigbluebutton-livekit:
+    image: alangecker/bbb-docker-livekit:v1.13.11
+    container_name: bigbluebutton-livekit
+    restart: unless-stopped
+    cpu_shares: 80
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    command: ["--config", "/etc/livekit.yaml"]
+    environment:
+      # "<api key>: <secret>". The key name `bbb` is an identifier the adapter and the
+      # webhook config share; the secret is generated.
+      LIVEKIT_KEYS: "bbb: ${LIVEKIT_SECRET}"
+    configs:
+      - source: livekit
+        target: /etc/livekit.yaml
+    ports:
+      - "7882:7882/udp"   # WebRTC media (audio, video, screen sharing), all participants multiplexed on one UDP port
+    depends_on:
+      bigbluebutton-redis:
+        condition: service_healthy
+    networks:
+      bigbluebutton:
+        # Fixed: coturn relays only to this address (allowed-peer-ip in its config).
+        ipv4_address: 10.213.78.20
+        aliases: [livekit]
+
+  # TURN relay for participants whose network blocks UDP 7882 (TURN over UDP or TCP 3479).
+  # 3479, not the standard 3478: Nextcloud Talk publishes 3478, and the two must coexist.
+  # It relays only to LiveKit, inside the app network; every other peer is denied.
+  bigbluebutton-coturn:
+    image: coturn/coturn:4.18.0-alpine
+    container_name: bigbluebutton-coturn
+    restart: unless-stopped
+    cpu_shares: 80
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    # Replaces the image's default arguments, which detect and announce the public IP:
+    # relay addresses stay on the app network, where LiveKit is.
+    command: ["-c", "/etc/coturn/bigbluebutton.conf", "--static-auth-secret=${TURN_SECRET}"]
+    configs:
+      - source: turnserver
+        target: /etc/coturn/bigbluebutton.conf
+    # The image declares a volume here for coturn's user database; with a shared
+    # secret there is none, so keep it in memory rather than an anonymous volume.
+    tmpfs:
+      - /var/lib/coturn:mode=1777
+    ports:
+      - "3479:3479/udp"   # TURN/STUN over UDP, the media fallback for restrictive networks
+      - "3479:3479/tcp"   # TURN over TCP, for networks that block UDP entirely
+    networks:
+      - bigbluebutton
+
+  bigbluebutton-redis:
+    image: redis:8.10.3-alpine
+    container_name: bigbluebutton-redis
+    restart: unless-stopped
+    cpu_shares: 70
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    volumes:
+      - ${DATA_ROOT:-/DATA}/AppData/$AppID/redis/:/data/
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    networks:
+      bigbluebutton:
+        aliases: [redis]
+
+  # One server for Greenlight (greenlight), Hasura (hasura_app, bbb_graphql) and the
+  # shared notes (blocknote_app, which the notes image creates itself).
+  bigbluebutton-postgres:
+    image: postgres:16.16-alpine
+    container_name: bigbluebutton-postgres
+    restart: unless-stopped
+    cpu_shares: 70
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: greenlight
+    volumes:
+      - ${DATA_ROOT:-/DATA}/AppData/$AppID/postgres/:/var/lib/postgresql/data/
+    configs:
+      - source: postgres-init
+        target: /docker-entrypoint-initdb.d/bigbluebutton.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      bigbluebutton:
+        aliases: [postgres]
+
+  # Greenlight 3: the web UI. Rooms, accounts and the public room links guests join by.
+  bigbluebutton-greenlight:
+    image: bigbluebutton/greenlight:v3.9.2.1
+    container_name: bigbluebutton-greenlight
+    restart: unless-stopped
+    cpu_shares: 80
+    logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    environment:
+      SECRET_KEY_BASE: ${GREENLIGHT_SECRET_KEY_BASE}
+      # The public API URL, not the internal nginx: Greenlight also hands browsers the
+      # join links it builds from this, so it must be the address they reach.
+      BIGBLUEBUTTON_ENDPOINT: ${APP_URL:-https://bigbluebutton-${APP_DOMAIN}}/bigbluebutton/api/
+      BIGBLUEBUTTON_SECRET: ${BBB_SHARED_SECRET}
+      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@bigbluebutton-postgres:5432/greenlight
+      REDIS_URL: redis://bigbluebutton-redis:6379
+      # Rails host authorization: every address the box serves the app at.
+      URL_HOST: ${APP_HOSTS:-bigbluebutton-${APP_DOMAIN}}
+      LOG_LEVEL: info
+      # Mail (account verification, invitations, password resets) through the PCS relay:
+      # port 587, no authentication.
+      SMTP_SERVER: smtp
+      SMTP_PORT: "587"
+      SMTP_DOMAIN: ${APP_DOMAIN}
+      SMTP_SENDER_EMAIL: bigbluebutton@${APP_DOMAIN}
+      SMTP_SENDER_NAME: BigBlueButton
+      SMTP_STARTTLS_AUTO: "false"
+      SMTP_STARTTLS: "false"
+      SMTP_TLS: "false"
+    volumes:
+      - ${DATA_ROOT:-/DATA}/AppData/$AppID/greenlight/storage/:/usr/src/app/storage/
+    depends_on:
+      bigbluebutton-postgres:
+        condition: service_healthy
+      bigbluebutton-redis:
+        condition: service_healthy
+    networks:
+      # On pcs only to reach the box's mail relay (smtp); the router is the way in.
+      pcs: {}
+      bigbluebutton:
+        aliases: [greenlight]
+
+networks:
+  pcs:
+    name: ${APP_NET:-pcs}
+    external: true
+  # The app network. Its subnet is fixed because coturn's allowed-peer-ip needs
+  # LiveKit's address (10.213.78.20), as in BigBlueButton's own compose setup; Docker
+  # hands everything else out of the upper half. 10.213.78.0/24 sits outside Docker's
+  # default address pools (172.17-31.x, 192.168.x). See rationale.md.
+  bigbluebutton:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.213.78.0/24
+          ip_range: 10.213.78.128/25
+
+configs:
+  bigbluebutton-router:
+    # `$$` is compose's escape for nginx's own `$`.
+    content: |
+      resolver 127.0.0.11 valid=10s ipv6=off;
+
+      map $$http_upgrade $$connection_upgrade { default upgrade; "" close; }
+      # The scheme the platform proxy saw (https on a PCS), not this hop's http.
+      map $$http_x_forwarded_proto $$fwd_proto { default $$http_x_forwarded_proto; "" $$scheme; }
+      # The client address is the LAST X-Forwarded-For entry: the one the proxy in
+      # front appended, which a client cannot forge.
+      map $$http_x_forwarded_for $$client_ip { "~([^,\s]+)\s*$$" $$1; default $$remote_addr; }
+
+      server {
+        listen 80;
+        absolute_redirect off;
+
+        # Presentation uploads; bbb-web enforces its own size limit.
+        client_max_body_size 0;
+        proxy_request_buffering off;
+        proxy_buffering off;
+        # Long-lived websockets: GraphQL, LiveKit signalling, Greenlight's /cable.
+        proxy_read_timeout 6h;
+        proxy_send_timeout 6h;
+
+        proxy_http_version 1.1;
+        proxy_set_header Host $$http_host;
+        proxy_set_header X-Real-IP $$client_ip;
+        proxy_set_header X-Forwarded-For $$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $$fwd_proto;
+        proxy_set_header X-Forwarded-Host $$http_host;
+        proxy_set_header Upgrade $$http_upgrade;
+        proxy_set_header Connection $$connection_upgrade;
+
+        set $$bbb bigbluebutton-nginx:48087;
+
+        location = /_router/health { access_log off; return 204; }
+        location / { proxy_pass http://$$bbb; }
+      }
+
+  # bbb-docker's site with the scheme taken from the router (Greenlight forces https and
+  # would otherwise redirect forever), without the PROXY-protocol listeners of its own
+  # HTTPS proxy.
+  bbb-nginx-site:
+    content: |
+      # CVE-2026-111497 interim workaround (as upstream): refuse Brotli request bodies.
+      map $$http_content_encoding $$reject_br {
+          default 0;
+          "~*\bbr\b" 1;
+      }
+      map $$http_x_forwarded_proto $$bbb_fwd_proto { default $$http_x_forwarded_proto; "" https; }
+
+      server {
+        listen 48087 default_server;
+        server_name _;
+        access_log /dev/stdout;
+        absolute_redirect off;
+        root /www/;
+
+        # Used instead of $$scheme by the bigbluebutton include files.
+        set $$real_scheme $$bbb_fwd_proto;
+
+        add_header Permissions-Policy "interest-cohort=()";
+
+        if ($$reject_br) {
+            return 415;
+        }
+
+        http2 off;
+
+        include /etc/nginx/bbb/*.nginx;
+
+        # Old Greenlight v2 room links.
+        location ~ "/b/([a-z0-9\-]+)" {
+          return 302 /rooms/$$1;
+        }
+
+        location = /default.pdf {
+          try_files $$uri =404;
+        }
+
+        location / {
+          proxy_pass          http://greenlight:3000;
+          proxy_set_header    Host              $$host;
+          proxy_set_header    X-Forwarded-For   "127.0.0.1";
+          proxy_set_header    X-Forwarded-Proto $$bbb_fwd_proto;
+          proxy_set_header    X-Forwarded-Ssl   on;
+          proxy_http_version  1.1;
+          client_max_body_size 1000m;
+        }
+
+        location /cable {
+          proxy_pass          http://greenlight:3000;
+          proxy_set_header    Host              $$host;
+          proxy_set_header    X-Forwarded-For   "127.0.0.1";
+          proxy_set_header    X-Forwarded-Proto $$bbb_fwd_proto;
+          proxy_set_header    X-Forwarded-Ssl   on;
+          proxy_set_header    Upgrade           $$http_upgrade;
+          proxy_set_header    Connection        "Upgrade";
+          proxy_http_version  1.1;
+          proxy_read_timeout  6h;
+          proxy_send_timeout  6h;
+          client_body_timeout 6h;
+          send_timeout        6h;
+        }
+      }
+
+      # Hasura, for bbb-graphql-middleware (its baked config: ws://nginx:8185).
+      upstream hasura {
+          least_conn;
+          server bbb-graphql-server:8085;
+      }
+      server {
+          listen 8185;
+          http2 off;
+          root /var/www/html;
+          location / {
+              proxy_http_version 1.1;
+              proxy_set_header Upgrade $$http_upgrade;
+              proxy_set_header Connection "Upgrade";
+              proxy_set_header Host $$host;
+              proxy_pass http://hasura;
+          }
+      }
+
+  # Was host.docker.internal:7880 (LiveKit on host networking).
+  bbb-nginx-livekit:
+    content: |
+      location /livekit/ {
+          proxy_pass http://livekit:7880/;
+          proxy_http_version 1.1;
+          proxy_set_header Upgrade $$http_upgrade;
+          proxy_set_header Connection "Upgrade";
+
+          proxy_read_timeout 60s;
+          proxy_send_timeout 60s;
+          client_body_timeout 60s;
+          send_timeout 60s;
+      }
+
+  # Was 10.7.7.1:3008.
+  bbb-nginx-webrtc-sfu:
+    content: |
+      location /bbb-webrtc-sfu {
+          auth_request /bigbluebutton/connection/checkAuthorization;
+          auth_request_set $$auth_status $$upstream_status;
+          auth_request_set $$user_id $$sent_http_user_id;
+          auth_request_set $$meeting_id $$sent_http_meeting_id;
+          auth_request_set $$voice_bridge $$sent_http_voice_bridge;
+          auth_request_set $$user_name $$sent_http_user_name;
+
+          proxy_pass http://webrtc-sfu:3008;
+          proxy_http_version 1.1;
+          proxy_set_header Upgrade $$http_upgrade;
+          proxy_set_header Connection "Upgrade";
+          proxy_set_header User-Id $$user_id;
+          proxy_set_header Meeting-Id $$meeting_id;
+          proxy_set_header Voice-Bridge $$voice_bridge;
+          proxy_set_header User-Name $$user_name;
+
+          proxy_read_timeout 60s;
+          proxy_send_timeout 60s;
+          client_body_timeout 60s;
+          send_timeout 60s;
+      }
+
+  # The API demos (host.docker.internal:8001), webhooks (10.7.7.17) and the Prometheus
+  # exporter (10.7.7.33) are not part of this app.
+  bbb-nginx-disabled:
+    content: |
+      # not part of this app
+
+  # Appended to bbb-web's generated properties (the entrypoint needs the file).
+  bbb-web-properties:
+    content: |
+      # Meetings only: recordings are not part of this app (disableRecordingDefault
+      # comes from ENABLE_RECORDING=false).
+
+  # bbb-web's TURN/STUN list for browsers, a dockerize template like the image's own,
+  # with coturn on the public IP (TURN_HOST) instead of the domain, and no TURN over
+  # 443: the platform's proxy holds 443 and does not carry TURN.
+  bbb-web-turn:
+    content: |
+      <?xml version="1.0" encoding="UTF-8"?>
+      <beans xmlns="http://www.springframework.org/schema/beans"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://www.springframework.org/schema/beans
+          http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
+        <bean id="stun1" class="org.bigbluebutton.web.services.turn.StunServer">
+          <constructor-arg index="0" value="stun:{{ .Env.TURN_HOST }}:3479"/>
+        </bean>
+        <bean id="turn0" class="org.bigbluebutton.web.services.turn.TurnServer">
+          <constructor-arg index="0" value="{{ .Env.TURN_SECRET }}"/>
+          <constructor-arg index="1" value="turn:{{ .Env.TURN_HOST }}:3479"/>
+          <constructor-arg index="2" value="86400"/>
+        </bean>
+        <bean id="turn1" class="org.bigbluebutton.web.services.turn.TurnServer">
+          <constructor-arg index="0" value="{{ .Env.TURN_SECRET }}"/>
+          <constructor-arg index="1" value="turn:{{ .Env.TURN_HOST }}:3479?transport=tcp"/>
+          <constructor-arg index="2" value="86400"/>
+        </bean>
+        <bean id="stunTurnService" class="org.bigbluebutton.web.services.turn.StunTurnService">
+          <property name="stunServers"><set><ref bean="stun1"/></set></property>
+          <property name="turnServers"><set><ref bean="turn0"/><ref bean="turn1"/></set></property>
+          <property name="remoteIceCandidates"><set/></property>
+        </bean>
+      </beans>
+
+  # bbb-docker's akka-apps template with service names in place of 10.7.7.5 (redis) and
+  # 10.7.7.32 (middleware), and bbb-web called internally rather than through the public
+  # URL. The entrypoint still substitutes SHARED_SECRET and POSTGRES_PASSWORD from env.
+  bbb-apps-akka:
+    content: |
+      include "/bbb-apps-akka/conf/application.conf"
+
+      redis {
+          host="redis"
+      }
+
+      services {
+        bbbWebAPI="http://bbb-web:8090/bigbluebutton/api"
+        sharedSecret="SHARED_SECRET"
+        graphqlMiddlewareAPI = "http://bbb-graphql-middleware:8378"
+      }
+      http {
+        interface = "0.0.0.0"
+      }
+
+      postgres {
+        properties = {
+            serverName = "postgres"
+            portNumber = "5432"
+            databaseName = "bbb_graphql"
+            user = "postgres"
+            password = "POSTGRES_PASSWORD"
+        }
+      }
+
+  # Client settings override (/etc/bigbluebutton/bbb-html5.yml). Without Collabora,
+  # office documents cannot be converted: offer PDF and images only.
+  bbb-html5:
+    content: |
+      public:
+        presentation:
+          uploadValidMimeTypes:
+            - extension: .pdf
+              mime: application/pdf
+            - extension: .jpg
+              mime: image/jpeg
+            - extension: .jpeg
+              mime: image/jpeg
+            - extension: .png
+              mime: image/png
+            - extension: .webp
+              mime: image/webp
+
+  # LiveKit on the bridge network, as BigBlueButton's own compose setup runs it: one UDP
+  # port for all media, the box's public IPv4 announced, and the internal address too,
+  # so coturn's relay reaches it on the app network.
+  livekit:
+    content: |
+      port: 7880
+      logging:
+        level: info
+      rtc:
+        port_range_start: 0
+        port_range_end: 0
+        udp_port: 7882
+        tcp_port: 0
+        allow_tcp_fallback: false
+        use_external_ip: false
+        node_ip: "${APP_PUBLIC_IPV4:-}"
+        advertise_internal_ip: true
+      redis:
+        address: redis:6379
+      webhook:
+        api_key: bbb
+        urls:
+          - http://webrtc-sfu:3040/livekit-webhook
+      audio:
+        active_level: 50
+        min_percentile: 10
+        update_interval: 500
+        smooth_intervals: 0
+      room:
+        enabled_codecs:
+          - mime: audio/opus
+          - mime: audio/red
+          - mime: video/vp8
+          - mime: video/rtx
+        enable_remote_unmute: true
+
+  # Based on BigBlueButton's own compose turnserver.conf: shared-secret auth, no TLS
+  # (the platform holds 443), and relaying only to LiveKit's fixed address.
+  turnserver:
+    content: |
+      listening-port=3479
+      min-port=32769
+      max-port=65535
+      log-file=stdout
+      pidfile=/tmp/turnserver.pid
+
+      fingerprint
+      use-auth-secret
+      realm=bigbluebutton
+
+      keep-address-family
+
+      no-tls
+      no-dtls
+
+      no-multicast-peers
+      no-tcp-relay
+
+      # Relay only to LiveKit on the app network.
+      denied-peer-ip=0.0.0.0-255.255.255.255
+      denied-peer-ip=::-ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff
+      allowed-peer-ip=10.213.78.20
+
+  # Greenlight's database comes from POSTGRES_DB; these two are BigBlueButton's.
+  # Runs once, on an empty data directory.
+  postgres-init:
+    content: |
+      CREATE DATABASE bbb_graphql;
+      CREATE DATABASE hasura_app;
+
+x-casaos:
+  architectures:
+    - amd64
+  main: bigbluebutton-router
+  store_app_id: bigbluebutton
+  category: Chat
+  # `needs-public-ip`: LiveKit publishes 7882/udp and coturn 3479/udp+tcp, which every
+  # participant's browser dials directly. Mirror of `requires: [public-ip]`.
+  tags: ["communication", "video", "education", "business", "needs-public-ip"]
+  developer: BigBlueButton Inc.
+  icon: icon.png
+  screenshot_link:
+    - screenshot-1.png
+    - screenshot-2.png
+    - screenshot-3.png
+  title:
+    en_us: BigBlueButton
+  tagline: &tagline
+    en_us: Video meetings and online classes in your browser, with a whiteboard, shared notes and screen sharing.
+    ko_kr: 브라우저에서 바로 하는 화상회의와 온라인 수업. 화이트보드, 공유 메모, 화면 공유까지.
+    fr_fr: Réunions vidéo et classes en ligne dans le navigateur, avec tableau blanc, notes partagées et partage d'écran.
+    es_es: Reuniones por vídeo y clases en línea en el navegador, con pizarra, notas compartidas y pantalla compartida.
+    zh_cn: 在浏览器中进行视频会议和在线课堂，带白板、共享笔记和屏幕共享。
+  description: &description
+    en_us: |
+      **BigBlueButton** is an open-source web conferencing system built for online classes
+      and meetings. Everyone joins from the browser: no app to install, no account needed
+      for guests.
+
+      - **Audio and video** for every participant, with a grid layout for large groups
+      - **Screen sharing**
+      - **Public and private chat**
+      - **Shared notes** everyone can edit during the meeting
+      - **Multi-user whiteboard** on top of your slides
+      - **Presentations**: upload PDF files or images and present them
+      - **Polls, raised hands, breakout rooms** and a learning analytics dashboard
+
+      Meetings are organised in **Greenlight**, the web interface that comes with it: create
+      rooms, get a permanent link for each, and share that link. Guests open it, type their
+      name and join, without an account.
+
+      This edition covers live meetings. Recording, office documents (Word, PowerPoint),
+      phone dial-in and webhooks are not included.
+
+      **Requires a public IP address**: browsers send audio and video directly to your
+      server on UDP 7882 and, as a fallback, TCP/UDP 3479.
+    ko_kr: |
+      **BigBlueButton**은 온라인 수업과 회의를 위해 만들어진 오픈소스 화상회의 시스템입니다.
+      모두 브라우저로 참여합니다. 앱 설치가 필요 없고, 게스트는 계정도 필요 없습니다.
+
+      - 모든 참가자의 **음성과 영상**, 대규모 그룹용 그리드 레이아웃
+      - **화면 공유**
+      - **공개 채팅과 개인 채팅**
+      - 회의 중 모두가 편집하는 **공유 메모**
+      - 슬라이드 위에 함께 그리는 **다중 사용자 화이트보드**
+      - **프레젠테이션**: PDF 파일이나 이미지를 올려 발표
+      - **투표, 손들기, 소회의실**과 학습 분석 대시보드
+
+      회의는 함께 제공되는 웹 인터페이스 **Greenlight**에서 관리합니다. 방을 만들면 방마다
+      고정 링크가 생기고, 그 링크를 공유하면 됩니다. 게스트는 링크를 열고 이름만 입력하면
+      계정 없이 참여합니다.
+
+      이 버전은 실시간 회의용입니다. 녹화, 오피스 문서(Word, PowerPoint), 전화 참여,
+      웹훅은 포함되지 않습니다.
+
+      **공인 IP 주소가 필요합니다**: 브라우저가 음성과 영상을 서버의 UDP 7882로, 대체 경로로
+      TCP/UDP 3479로 직접 보냅니다.
+    fr_fr: |
+      **BigBlueButton** est un système de visioconférence open source conçu pour les cours
+      et les réunions en ligne. Tout le monde rejoint depuis le navigateur : aucune
+      application à installer, aucun compte pour les invités.
+
+      - **Audio et vidéo** pour chaque participant, avec une vue en grille pour les grands groupes
+      - **Partage d'écran**
+      - **Chat public et privé**
+      - **Notes partagées** modifiables par tous pendant la réunion
+      - **Tableau blanc multi-utilisateur** par-dessus vos diapositives
+      - **Présentations** : envoyez des PDF ou des images et présentez-les
+      - **Sondages, mains levées, salles de sous-groupes** et tableau de bord d'analyse
+
+      Les réunions s'organisent dans **Greenlight**, l'interface web fournie : créez des
+      salles, chacune avec un lien permanent, et partagez ce lien. Les invités l'ouvrent,
+      saisissent leur nom et rejoignent, sans compte.
+
+      Cette édition couvre les réunions en direct. L'enregistrement, les documents
+      bureautiques (Word, PowerPoint), l'accès par téléphone et les webhooks ne sont pas inclus.
+
+      **Nécessite une adresse IP publique** : les navigateurs envoient l'audio et la vidéo
+      directement à votre serveur sur UDP 7882 et, en secours, TCP/UDP 3479.
+    es_es: |
+      **BigBlueButton** es un sistema de videoconferencia de código abierto pensado para
+      clases y reuniones en línea. Todos se unen desde el navegador: sin aplicaciones que
+      instalar y sin cuenta para los invitados.
+
+      - **Audio y vídeo** para cada participante, con vista en cuadrícula para grupos grandes
+      - **Pantalla compartida**
+      - **Chat público y privado**
+      - **Notas compartidas** que todos pueden editar durante la reunión
+      - **Pizarra multiusuario** sobre tus diapositivas
+      - **Presentaciones**: sube archivos PDF o imágenes y preséntalos
+      - **Encuestas, manos levantadas, salas de grupos** y panel de analítica
+
+      Las reuniones se organizan en **Greenlight**, la interfaz web incluida: crea salas,
+      cada una con un enlace permanente, y comparte ese enlace. Los invitados lo abren,
+      escriben su nombre y entran, sin cuenta.
+
+      Esta edición cubre reuniones en directo. No incluye grabación, documentos de oficina
+      (Word, PowerPoint), acceso telefónico ni webhooks.
+
+      **Requiere una dirección IP pública**: los navegadores envían el audio y el vídeo
+      directamente a tu servidor por UDP 7882 y, como alternativa, TCP/UDP 3479.
+    zh_cn: |
+      **BigBlueButton** 是一个为在线课堂和会议打造的开源网络会议系统。所有人都通过浏览器
+      加入：无需安装应用，访客也无需账户。
+
+      - 每位参与者的**音频和视频**，大型会议可用网格布局
+      - **屏幕共享**
+      - **公共聊天和私聊**
+      - 会议中所有人都可编辑的**共享笔记**
+      - 叠加在幻灯片上的**多人白板**
+      - **演示文稿**：上传 PDF 文件或图片进行演示
+      - **投票、举手、分组讨论室**以及学习分析面板
+
+      会议在随附的网页界面 **Greenlight** 中管理：创建会议室，每个会议室都有固定链接，
+      分享该链接即可。访客打开链接、输入姓名即可加入，无需账户。
+
+      此版本用于实时会议，不包含录制、Office 文档（Word、PowerPoint）、电话拨入和 Webhook。
+
+      **需要公网 IP 地址**：浏览器会将音视频直接发送到服务器的 UDP 7882 端口，备用路径为
+      TCP/UDP 3479。
+  tips:
+    before_install: &tips
+      en_us: |
+        **Requirements.** This app needs the server's **public IP address**, with **UDP 7882**
+        and **TCP + UDP 3479** reachable from the internet (open them in your provider's
+        firewall if it has one). Recommended: **4 vCPU and 8 GB of RAM**. The first start
+        takes a few minutes.
+
+        **First login.** Open the app and click **Sign In**. The administrator's email and
+        password are in the tile menu under **Credentials**. Change the password from your
+        profile afterwards.
+
+        **Accounts.** Sign-up is by invitation only: invite people or create accounts under
+        **Admin Panel → Manage Users**. You can switch to open sign-up or approval in
+        **Admin Panel → Registration**.
+
+        **Guests.** Open a room and copy its link (the **Copy** button next to the room
+        address). Anyone with the link can join by typing their name, no account needed.
+        Under **Room settings** you can require moderator approval or an access code.
+
+        **Limits.** Participants on networks that only allow HTTPS (port 443) may not get
+        audio or video: TURN over 443 is not available behind the server's shared web
+        gateway. Recording, office documents (present PDF or images instead), phone dial-in
+        and webhooks are not included.
+      ko_kr: |
+        **요구 사항.** 이 앱은 서버의 **공인 IP 주소**가 필요하며, 인터넷에서 **UDP 7882**와
+        **TCP + UDP 3479**에 접근할 수 있어야 합니다 (호스팅 업체 방화벽이 있다면 열어 주세요).
+        권장 사양은 **vCPU 4개, RAM 8GB**입니다. 첫 시작은 몇 분 걸립니다.
+
+        **첫 로그인.** 앱을 열고 **Sign In**을 누르세요. 관리자 이메일과 비밀번호는 타일 메뉴의
+        **Credentials**에 있습니다. 로그인 후 프로필에서 비밀번호를 바꾸세요.
+
+        **계정.** 가입은 초대제입니다. **Admin Panel → Manage Users**에서 사람을 초대하거나
+        계정을 만드세요. **Admin Panel → Registration**에서 자유 가입이나 승인제로 바꿀 수 있습니다.
+
+        **게스트.** 방을 열고 링크를 복사하세요 (방 주소 옆 **Copy** 버튼). 링크를 가진 누구나
+        이름만 입력하면 계정 없이 참여합니다. **Room settings**에서 진행자 승인이나 접근 코드를
+        요구할 수 있습니다.
+
+        **제한 사항.** HTTPS(443 포트)만 허용하는 네트워크의 참가자는 음성·영상이 안 될 수
+        있습니다. 서버의 공용 웹 게이트웨이 뒤에서는 443 포트 TURN을 쓸 수 없습니다. 녹화,
+        오피스 문서(PDF나 이미지로 발표하세요), 전화 참여, 웹훅은 포함되지 않습니다.
+      fr_fr: |
+        **Prérequis.** Cette application a besoin de l'**adresse IP publique** du serveur, avec
+        **UDP 7882** et **TCP + UDP 3479** accessibles depuis Internet (ouvrez-les dans le
+        pare-feu de votre hébergeur s'il en a un). Recommandé : **4 vCPU et 8 Go de RAM**. Le
+        premier démarrage prend quelques minutes.
+
+        **Première connexion.** Ouvrez l'app et cliquez sur **Sign In**. L'e-mail et le mot de
+        passe administrateur sont dans le menu de la tuile, sous **Credentials**. Changez
+        ensuite le mot de passe depuis votre profil.
+
+        **Comptes.** L'inscription se fait sur invitation : invitez des personnes ou créez des
+        comptes dans **Admin Panel → Manage Users**. Vous pouvez passer à l'inscription libre
+        ou avec approbation dans **Admin Panel → Registration**.
+
+        **Invités.** Ouvrez une salle et copiez son lien (bouton **Copy** à côté de l'adresse).
+        Toute personne qui a le lien peut rejoindre en saisissant son nom, sans compte. Dans
+        **Room settings**, vous pouvez exiger l'approbation d'un modérateur ou un code d'accès.
+
+        **Limites.** Les participants sur des réseaux qui n'autorisent que HTTPS (port 443)
+        peuvent ne pas avoir d'audio ni de vidéo : le TURN sur 443 n'est pas disponible
+        derrière la passerelle web partagée du serveur. L'enregistrement, les documents
+        bureautiques (présentez des PDF ou des images), l'accès par téléphone et les webhooks
+        ne sont pas inclus.
+      es_es: |
+        **Requisitos.** Esta app necesita la **dirección IP pública** del servidor, con
+        **UDP 7882** y **TCP + UDP 3479** accesibles desde Internet (ábrelos en el cortafuegos
+        de tu proveedor si tiene uno). Recomendado: **4 vCPU y 8 GB de RAM**. El primer
+        arranque tarda unos minutos.
+
+        **Primer inicio de sesión.** Abre la app y pulsa **Sign In**. El correo y la contraseña
+        del administrador están en el menú del icono, en **Credentials**. Después cambia la
+        contraseña desde tu perfil.
+
+        **Cuentas.** El registro es solo por invitación: invita a personas o crea cuentas en
+        **Admin Panel → Manage Users**. Puedes cambiar a registro abierto o con aprobación en
+        **Admin Panel → Registration**.
+
+        **Invitados.** Abre una sala y copia su enlace (botón **Copy** junto a la dirección).
+        Cualquiera con el enlace puede entrar escribiendo su nombre, sin cuenta. En
+        **Room settings** puedes exigir la aprobación de un moderador o un código de acceso.
+
+        **Límites.** Los participantes en redes que solo permiten HTTPS (puerto 443) pueden
+        quedarse sin audio ni vídeo: TURN por el 443 no está disponible detrás de la pasarela
+        web compartida del servidor. No incluye grabación, documentos de oficina (presenta PDF
+        o imágenes), acceso telefónico ni webhooks.
+      zh_cn: |
+        **要求。** 本应用需要服务器的**公网 IP 地址**，并且互联网可以访问 **UDP 7882** 和
+        **TCP + UDP 3479**（如果服务商有防火墙，请开放这些端口）。推荐配置：**4 个 vCPU、
+        8 GB 内存**。首次启动需要几分钟。
+
+        **首次登录。** 打开应用并点击 **Sign In**。管理员邮箱和密码在磁贴菜单的
+        **Credentials** 中。登录后请在个人资料中修改密码。
+
+        **账户。** 注册仅限邀请：在 **Admin Panel → Manage Users** 中邀请他人或创建账户。
+        可在 **Admin Panel → Registration** 中改为开放注册或审批注册。
+
+        **访客。** 打开会议室并复制其链接（会议室地址旁的 **Copy** 按钮）。任何持有链接的人
+        输入姓名即可加入，无需账户。在 **Room settings** 中可要求主持人批准或访问码。
+
+        **限制。** 只允许 HTTPS（443 端口）的网络中的参与者可能无法使用音视频：服务器共享的
+        网页网关后无法提供 443 端口的 TURN。不包含录制、Office 文档（请用 PDF 或图片演示）、
+        电话拨入和 Webhook。
+  index: /
+  webui_port: 80
+
+x-compose-app:
+  schema_version: 2
+  id: bigbluebutton
+  version: "4.0.3"
+  # How the app is reached, stated without a domain or a proxy: the box's routing
+  # setting decides. The first route is the web UI.
+  routes:
+    - { service: bigbluebutton-router, name: bigbluebutton, upstream-port: 80 }
+  # LiveKit (7882/udp) and coturn (3479/udp+tcp) must be dialled from the internet.
+  requires: [public-ip]
+  resources:
+    recommended: { cpu: 4, memory: 8G }
+  secrets:
+    # The BigBlueButton API secret (Greenlight signs its calls with it).
+    BBB_SHARED_SECRET: hex:32
+    # bbb-web's page/session token signing key.
+    BBB_PAGE_TOKEN_SECRET: hex:32
+    # LiveKit API secret, shared by LiveKit and the LiveKit adapter.
+    LIVEKIT_SECRET: hex:32
+    # coturn's shared secret; bbb-web derives short-lived TURN credentials from it.
+    TURN_SECRET: hex:32
+    # Hasura's admin secret (replaces bbb-docker's TODO_CHANGE_ME).
+    HASURA_ADMIN_SECRET: hex:32
+    # The postgres superuser (internal, app network only). Hex: it sits in URLs and seds.
+    POSTGRES_PASSWORD: hex:32
+    # Rails secret_key_base for Greenlight (128 hex characters).
+    GREENLIGHT_SECRET_KEY_BASE: hex:64
+    # Greenlight's first administrator.
+    GREENLIGHT_ADMIN_PASSWORD: password:20
+  credentials:
+    - label:
+        en_us: Greenlight administrator
+        ko_kr: Greenlight 관리자
+        fr_fr: Administrateur Greenlight
+        es_es: Administrador de Greenlight
+        zh_cn: Greenlight 管理员
+      username: ${APP_EMAIL:-admin@${APP_DOMAIN}}
+      # Greenlight requires a lower-case letter, a capital, a digit and a symbol; the
+      # fixed "-Aa1" guarantees those classes, the generated part is the secret.
+      password: ${GREENLIGHT_ADMIN_PASSWORD}-Aa1
+      note:
+        en_us: Sign in with the Sign In button. Change the password from your profile (Account → Password) after the first login.
+        ko_kr: Sign In 버튼으로 로그인하세요. 첫 로그인 후 프로필(Account → Password)에서 비밀번호를 바꾸세요.
+        fr_fr: Connectez-vous avec le bouton Sign In. Changez le mot de passe depuis votre profil (Account → Password) après la première connexion.
+        es_es: Inicia sesión con el botón Sign In. Cambia la contraseña desde tu perfil (Account → Password) tras el primer inicio de sesión.
+        zh_cn: 点击 Sign In 登录。首次登录后请在个人资料（Account → Password）中修改密码。
+  folders:
+    # bbb-web (root, then gosu 998) and export-annotations (998) share it; bbb-web
+    # re-owns it to 998:998 on every start, so declaring the same owner avoids a fight.
+    - path: /DATA/AppData/$AppID/bigbluebutton
+      user: "998"
+      group: "998"
+      mode: "0755"
+    - path: /DATA/AppData/$AppID/postgres
+      user: "70"
+      group: "70"
+      mode: "0700"
+    - path: /DATA/AppData/$AppID/redis
+      user: "999"
+      group: "1000"
+      mode: "0755"
+    - /DATA/AppData/$AppID/greenlight/storage
+  steps:
+    # Greenlight's first administrator, created with Greenlight's own CLI
+    # (rake admin:create), then sign-up switched to invitation-only through Greenlight's
+    # admin API, the same call its Admin panel makes. Guarded on a marker in the app
+    # folder, so it runs once per data set, reinstall included.
+    - name: greenlight-admin
+      at: started
+      run: always
+      timeout: 25m
+      file: scripts/greenlight-admin.sh
+  backup:
+    exclude:
+      # Per-meeting slide conversions: meetings are live only, nothing to restore.
+      - bigbluebutton/
+      # Pub/sub and caches; Greenlight's records are in postgres.
+      - redis/
+  title:
+    en_us: BigBlueButton
+  tagline: *tagline
+  description: *description
+  developer: BigBlueButton Inc.
+  category: Chat
+  icon: icon.png
+  screenshots:
+    - screenshot-1.png
+    - screenshot-2.png
+    - screenshot-3.png
+  # The bbb-docker images (and Greenlight's) are published for amd64 only.
+  architectures:
+    - amd64
+  tips: *tips
