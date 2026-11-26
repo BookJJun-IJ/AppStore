@@ -45,9 +45,11 @@ echo "Greenlight administrator: $result ($GL_ADMIN_EMAIL)."
 # Sign in as the administrator and set RegistrationMethod=invite, over HTTP to
 # Greenlight inside its own container (Host = the app's address for Rails' host check,
 # X-Forwarded-Proto = https for its force_ssl). Exit 2 = the login was refused.
-status=0
-compose exec -e GL_ADMIN_EMAIL -e GL_ADMIN_PASSWORD -e GL_HOST bigbluebutton-greenlight \
-  ruby - <<'RUBY' || status=$?
+# The rake task above runs before Puma listens on :3000, so this half retries too:
+# until it succeeds, sign-up would stay open.
+lock_signup() {
+compose exec -T -e GL_ADMIN_EMAIL -e GL_ADMIN_PASSWORD -e GL_HOST bigbluebutton-greenlight \
+  ruby - <<'RUBY'
 require "net/http"
 require "json"
 
@@ -90,6 +92,15 @@ set = api.call(Net::HTTP::Patch.new("/api/v1/admin/site_settings/RegistrationMet
                site_setting: { value: "invite" })
 abort("setting the registration method failed (HTTP #{set.code})") unless set.is_a?(Net::HTTPSuccess)
 RUBY
+}
+
+status=1
+for _ in $(seq 1 40); do
+  status=0
+  lock_signup || status=$?
+  case "$status" in 0|2) break ;; esac
+  sleep 15
+done
 
 case "$status" in
   0) echo "Greenlight sign-up set to invitation only." ;;

@@ -119,6 +119,9 @@ services:
       TURN_HOST: ${APP_PUBLIC_IPV4:-${APP_HOST:-bigbluebutton-${APP_DOMAIN}}}
       ENABLE_RECORDING: "false"
       ENABLE_HTTPS_PROXY: "false"
+      # The v4.0.3 bbb-web template reads this unconditionally (`isTrue`) and crash-loops
+      # when it is unset. No SIP dial-in in this listing.
+      DEFAULT_DIAL_ACCESS_NUMBER: "false"
       IGNORE_TLS_CERT_ERRORS: "false"
       ENABLE_LEARNING_DASHBOARD: "true"
       WELCOME_MESSAGE: "Welcome to <b>%%CONFNAME%%</b>!<br><br>To join the audio, click the microphone button. Use a headset to avoid causing background noise for others."
