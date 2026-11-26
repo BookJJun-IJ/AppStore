@@ -786,7 +786,8 @@ x-compose-app:
       script: |
         timeout=300
         while [ $timeout -gt 0 ]; do
-          if compose exec nextcloud php occ status 2>/dev/null | grep -q 'installed: true'; then
+          status=$(compose exec nextcloud php occ status 2>/dev/null || true)
+          if case "$status" in *"installed: true"*) true ;; *) false ;; esac; then
             echo "NextCloud installation complete"
             break
           fi
@@ -797,10 +798,13 @@ x-compose-app:
         # The loop above always ends with status 0, so check the outcome itself: on a
         # timeout, fail loudly (Maison logs the failed step and retries it on the next
         # up) instead of running occ against an uninstalled Nextcloud.
-        compose exec nextcloud php occ status 2>/dev/null | grep -q 'installed: true' || {
-          echo "Nextcloud did not finish installing within 300 s; Redis cache and cron were not configured" >&2
-          exit 1
-        }
+        # Read the status into a variable: `occ status | grep -q` lets grep exit early,
+        # occ dies of SIGPIPE and under pipefail the check fails at random.
+        status=$(compose exec nextcloud php occ status 2>/dev/null || true)
+        case "$status" in
+          *"installed: true"*) ;;
+          *) echo "Nextcloud did not finish installing within 300 s; Redis cache and cron were not configured" >&2; exit 1 ;;
+        esac
         compose exec nextcloud bash -c '
           php occ config:system:set redis host --value redis
           php occ config:system:set redis port --value 6379 --type=integer
@@ -846,7 +850,8 @@ x-compose-app:
       at: started
       run: always
       script: |
-        compose exec nextcloud php occ status 2>/dev/null | grep -q 'installed: true' || exit 0
+        status=$(compose exec nextcloud php occ status 2>/dev/null || true)
+        case "$status" in *"installed: true"*) ;; *) exit 0 ;; esac
         # Installs from before OVERWRITEHOST was dropped keep it in config.php.
         compose exec nextcloud php occ config:system:delete overwritehost >/dev/null || true
         i=2
